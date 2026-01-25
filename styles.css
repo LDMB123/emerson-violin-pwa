@@ -409,6 +409,89 @@ body {
   gap: 6px;
 }
 
+.level-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.level-badge {
+  display: inline-flex;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #ffd166;
+  border: 3px solid var(--stroke);
+  font-weight: 900;
+  width: fit-content;
+  box-shadow: var(--shadow-strong);
+}
+
+.xp-bar {
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  border: 3px solid var(--stroke);
+  background: #fff1f0;
+  overflow: hidden;
+}
+
+.xp-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4cc9f0, #ff5c8a);
+  transition: width 0.2s ease;
+}
+
+.xp-text {
+  font-weight: 800;
+}
+
+.reward-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.reward-card {
+  background: #fff7f1;
+  border-radius: 16px;
+  border: 3px solid var(--stroke);
+  padding: 10px 12px;
+  font-weight: 800;
+  box-shadow: var(--shadow-strong);
+}
+
+.achievement-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.achievement-card {
+  background: #fff7f0;
+  border-radius: 16px;
+  border: 3px solid var(--stroke);
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+  font-weight: 800;
+  box-shadow: var(--shadow-strong);
+}
+
+.achievement-card.locked {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.achievement-title {
+  font-family: "Fraunces", serif;
+}
+
+.achievement-status {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .chat-log {
   min-height: 160px;
   max-height: 260px;
@@ -870,6 +953,11 @@ button.primary:hover {
   font-weight: 800;
   cursor: pointer;
   box-shadow: var(--shadow-strong);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .tuner-panel, .tuner-full {

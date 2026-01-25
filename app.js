@@ -524,6 +524,78 @@ const LEARNING_PATH = [
   },
 ];
 
+const LEVEL_REWARDS = {
+  2: "Panda Sparkle Badge",
+  3: "Golden Bow Sticker",
+  4: "Rhythm Crown",
+  5: "Songbird Cape",
+  6: "Brave Performer Medal",
+  7: "Panda Maestro Title",
+};
+
+const ACHIEVEMENTS = [
+  {
+    id: "first-game",
+    title: "First Game Win",
+    desc: "Complete your first game.",
+    check: (stats) => stats.totalGames >= 1,
+  },
+  {
+    id: "song-starter",
+    title: "Song Starter",
+    desc: "Play along with 1 song.",
+    check: (_stats, _sessions, _games, songLogs) => songLogs.length >= 1,
+  },
+  {
+    id: "practice-brave",
+    title: "Practice Brave",
+    desc: "Log 5 practice sessions.",
+    check: (stats) => stats.totalSessions >= 5,
+  },
+  {
+    id: "streak-3",
+    title: "3-Day Streak",
+    desc: "Practice 3 days in a row.",
+    check: (stats) => stats.streak >= 3,
+  },
+  {
+    id: "ear-explorer",
+    title: "Ear Explorer",
+    desc: "Score 15+ in Ear Trainer.",
+    check: (stats) => stats.bestEar >= 15,
+  },
+  {
+    id: "rhythm-ranger",
+    title: "Rhythm Ranger",
+    desc: "Score 40+ in Rhythm Dash or Rhythm Painter.",
+    check: (stats) => stats.bestRhythm >= 40 || stats.bestPattern >= 40,
+  },
+  {
+    id: "intonation-star",
+    title: "Intonation Star",
+    desc: "Average accuracy 80%+.",
+    check: (stats) => (stats.accuracyAvg || 0) >= 80,
+  },
+  {
+    id: "song-collector",
+    title: "Song Collector",
+    desc: "Play along with 5 different songs.",
+    check: (_stats, _sessions, _games, songLogs) => new Set(songLogs.map((s) => s.songId)).size >= 5,
+  },
+  {
+    id: "panda-performer",
+    title: "Panda Performer",
+    desc: "Practice 120 total minutes.",
+    check: (stats) => stats.totalMinutes >= 120,
+  },
+  {
+    id: "recording-star",
+    title: "Studio Star",
+    desc: "Make your first recording.",
+    check: (stats) => stats.totalRecordings >= 1,
+  },
+];
+
 const DB_NAME = "emerson-violin";
 const DB_VERSION = 3;
 const dbPromise = openDB();
@@ -544,6 +616,7 @@ async function init() {
   setupPracticeTimer();
   await setupSongs();
   setupGames();
+  setupRewards();
   setupRecording();
   setupParent();
   setupReminderTimer();
@@ -1412,6 +1485,7 @@ async function logSongPractice(durationSec) {
       tempo: parseInt($("#song-tempo").value, 10) || song.bpm,
       durationSec,
     });
+    await awardXP(Math.max(5, Math.round(durationSec / 5)), "Song play");
     await renderRepertoire();
   } catch (err) {
     console.warn("Song log failed", err);
@@ -1480,9 +1554,11 @@ function finishPitchQuest(manual = false) {
     const score = Math.round(avg * 100);
     const stars = Math.max(1, Math.round(avg * 5));
     resultEl.textContent = `Accuracy ${score}% • Stars ${"⭐".repeat(stars)}`;
-    addGameResult({ type: "pitch", score, stars, target: currentTarget }).then(() => {
+    const result = { type: "pitch", score, stars, target: currentTarget };
+    addGameResult(result).then(() => {
       refreshDashboard();
       renderGameCoach();
+      awardGameXP(result);
     });
   }
   if (pitchGameAutoStop) stopTuner();
@@ -1538,9 +1614,11 @@ function setupRhythmDash() {
     clearInterval(rhythmDashInterval);
     $("#rhythm-dash-beat").classList.remove("active");
     const stars = rhythmDashHits ? Math.min(5, Math.ceil(rhythmDashScore / (rhythmDashHits * 5) * 5)) : 1;
-    addGameResult({ type: "rhythm", score: rhythmDashScore, stars, tempo: rhythmDashTempo }).then(() => {
+    const result = { type: "rhythm", score: rhythmDashScore, stars, tempo: rhythmDashTempo };
+    addGameResult(result).then(() => {
       refreshDashboard();
       renderGameCoach();
+      awardGameXP(result);
     });
     showToast("Rhythm Dash complete!");
   });
@@ -1599,9 +1677,11 @@ function setupMemoryGame() {
         const stars = Math.min(5, 1 + Math.floor(memoryScore / 2));
         scoreEl.textContent = `Score: ${memoryScore}`;
         sequenceEl.textContent = "Brilliant! Ready for the next one.";
-        addGameResult({ type: "memory", score: memoryScore, stars }).then(() => {
+        const result = { type: "memory", score: memoryScore, stars };
+        addGameResult(result).then(() => {
           refreshDashboard();
           renderGameCoach();
+          awardGameXP(result);
         });
         memorySequence = [];
         memoryInput = [];
@@ -1633,9 +1713,11 @@ function setupBowHold() {
     scoreEl.textContent = `Best: ${bowBest.toFixed(1)}s`;
     timerEl.textContent = `${elapsed.toFixed(1)}s`;
     const stars = Math.min(5, Math.max(1, Math.floor(elapsed / 5) + 1));
-    addGameResult({ type: "bow", score: Math.round(elapsed), stars }).then(() => {
+    const result = { type: "bow", score: Math.round(elapsed), stars };
+    addGameResult(result).then(() => {
       refreshDashboard();
       renderGameCoach();
+      awardGameXP(result);
     });
     bowStart = 0;
   });
@@ -1685,9 +1767,11 @@ function setupEarTrainer() {
       scoreEl.textContent = `Score: ${earScore}`;
       if (earRound % 5 === 0) {
         const stars = Math.min(5, Math.max(1, Math.round(earScore / 10)));
-        addGameResult({ type: "ear", score: earScore, stars, difficulty: earDifficulty }).then(() => {
+        const result = { type: "ear", score: earScore, stars, difficulty: earDifficulty };
+        addGameResult(result).then(() => {
           refreshDashboard();
           renderGameCoach();
+          awardGameXP(result);
         });
       }
     });
@@ -1748,9 +1832,11 @@ function setupRhythmPainter() {
     scoreEl.textContent = `Score: ${patternScore}`;
     if (patternIndex > patternSequence.length) {
       const stars = Math.min(5, Math.max(1, Math.round(patternScore / 8)));
-      addGameResult({ type: "pattern", score: patternScore, stars, length: patternSequence.length }).then(() => {
+      const result = { type: "pattern", score: patternScore, stars, length: patternSequence.length };
+      addGameResult(result).then(() => {
         refreshDashboard();
         renderGameCoach();
+        awardGameXP(result);
       });
       showToast("Rhythm Painter complete!");
       patternSequence = [];
@@ -1793,6 +1879,14 @@ async function setupGameCoach() {
 
   updateEarOptions();
   renderGameCoach();
+}
+
+function setupRewards() {
+  const claim = $("#claim-reward");
+  if (claim) {
+    claim.addEventListener("click", claimReward);
+  }
+  renderLevelPanel();
 }
 
 async function renderGameCoach() {
@@ -2331,10 +2425,12 @@ function setupRhythmGame() {
       clearInterval(spawnTimer);
       active = false;
       const stars = Math.min(5, Math.max(1, Math.round(score / 20)));
-      await addGameResult({ type: "pizzicato", score, stars });
+      const result = { type: "pizzicato", score, stars };
+      await addGameResult(result);
       showToast("Panda Pizzicato complete!");
       await refreshDashboard();
       renderGameCoach();
+      awardGameXP(result);
     }, 15000);
   });
 }
@@ -2455,6 +2551,7 @@ function setupPracticeLogger() {
       notes,
       accuracy,
     });
+    await awardXP(Math.round(minutes * 2 + focus * 5), "Practice session");
     $("#journal-notes").value = "";
     $("#minutes-input").value = "";
     showToast("Practice logged! 🌟");
@@ -2535,6 +2632,7 @@ function setupPracticeTimer() {
       notes,
       accuracy,
     });
+    await awardXP(Math.round(minutes * 2 + focus * 5), "Timer session");
     practiceTimerRunning = false;
     clearInterval(practiceTimerId);
     practiceTimerElapsed = 0;
@@ -2611,6 +2709,8 @@ async function refreshDashboard() {
   $("#focus-stars").textContent = `${calcFocusStars(sessions)}`;
   renderStickerShelf(stats);
   await updateGoalProgress(stats);
+  await renderLevelPanel();
+  await checkAchievements(stats, sessions, games, songLogs);
   await renderDailyPlan(sessions, games, songLogs);
   renderSongOfDay();
   await renderRepertoire();
@@ -2662,6 +2762,167 @@ function calcFocusStars(sessions) {
   const total = sessions.reduce((sum, s) => sum + (s.focus || 0), 0);
   if (!sessions.length) return 0;
   return Math.round((total / sessions.length) * 2);
+}
+
+async function getXPState() {
+  const state = await getSetting("xpState", null);
+  if (state && typeof state === "object") return state;
+  return { totalXP: 0, level: 1, lastRewardLevel: 1 };
+}
+
+function computeLevel(totalXP) {
+  let level = 1;
+  let remaining = totalXP;
+  let next = 100;
+  while (remaining >= next) {
+    remaining -= next;
+    level += 1;
+    next = Math.round(100 + level * 60);
+  }
+  return { level, currentXP: remaining, nextXP: next };
+}
+
+async function awardXP(points, reason = "") {
+  if (!points || points <= 0) return;
+  const state = await getXPState();
+  const previousLevel = state.level || 1;
+  state.totalXP = (state.totalXP || 0) + points;
+  const computed = computeLevel(state.totalXP);
+  state.level = computed.level;
+  if (!state.lastRewardLevel) state.lastRewardLevel = 1;
+  await setSetting("xpState", state);
+  renderLevelPanel(state, computed);
+  if (computed.level > previousLevel) {
+    showToast(`Level up! Level ${computed.level} 🎉`);
+    if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+  } else if (reason) {
+    showToast(`+${points} XP • ${reason}`);
+  }
+}
+
+async function awardGameXP(result) {
+  if (!result || !result.type) return;
+  const base = (() => {
+    switch (result.type) {
+      case "pitch":
+        return Math.round((result.score || 0) / 4);
+      case "rhythm":
+        return Math.round((result.score || 0) / 3);
+      case "pizzicato":
+        return Math.round((result.score || 0) / 3);
+      case "memory":
+        return Math.round((result.score || 0) * 2);
+      case "bow":
+        return Math.round((result.score || 0) * 3);
+      case "ear":
+        return Math.round((result.score || 0) * 2);
+      case "pattern":
+        return Math.round((result.score || 0) * 2);
+      default:
+        return Math.round((result.score || 0) / 2);
+    }
+  })();
+  const bonus = (result.stars || 0) * 5;
+  const total = Math.max(5, base + bonus);
+  await awardXP(total, `${gameName(result.type)} points`);
+}
+
+function gameName(type) {
+  switch (type) {
+    case "pitch":
+      return "Pitch Quest";
+    case "rhythm":
+      return "Rhythm Dash";
+    case "pizzicato":
+      return "Panda Pizzicato";
+    case "memory":
+      return "Note Memory";
+    case "bow":
+      return "Bow Hold Hero";
+    case "ear":
+      return "Ear Trainer";
+    case "pattern":
+      return "Rhythm Painter";
+    default:
+      return "Game";
+  }
+}
+
+async function renderLevelPanel(stateOverride, computedOverride) {
+  const badge = $("#level-badge");
+  const bar = $("#xp-bar");
+  const text = $("#xp-text");
+  const reward = $("#next-reward");
+  const claimBtn = $("#claim-reward");
+  if (!badge || !bar || !text || !reward) return;
+  const state = stateOverride || await getXPState();
+  const computed = computedOverride || computeLevel(state.totalXP || 0);
+  badge.textContent = `Level ${computed.level}`;
+  const percent = computed.nextXP ? Math.round((computed.currentXP / computed.nextXP) * 100) : 0;
+  bar.style.width = `${percent}%`;
+  text.textContent = `${computed.currentXP} / ${computed.nextXP} XP`;
+  const pendingReward = computed.level > (state.lastRewardLevel || 1);
+  if (pendingReward) {
+    const rewardText = LEVEL_REWARDS[computed.level] || "Mystery Panda Reward";
+    reward.textContent = `Reward Ready: ${rewardText}`;
+  } else {
+    const nextRewardLevel = Math.max(computed.level + 1, (state.lastRewardLevel || 1) + 1);
+    const rewardText = LEVEL_REWARDS[nextRewardLevel] || "Mystery Panda Reward";
+    reward.textContent = `Next Reward: ${rewardText}`;
+  }
+  if (claimBtn) {
+    claimBtn.disabled = !pendingReward;
+    claimBtn.textContent = pendingReward ? "Claim" : "Locked";
+  }
+}
+
+async function claimReward() {
+  const state = await getXPState();
+  const computed = computeLevel(state.totalXP || 0);
+  if (computed.level <= (state.lastRewardLevel || 1)) {
+    showToast("No rewards to claim yet.");
+    return;
+  }
+  const rewardText = LEVEL_REWARDS[computed.level] || "Mystery Panda Reward";
+  state.lastRewardLevel = computed.level;
+  await setSetting("xpState", state);
+  showToast(`Reward unlocked: ${rewardText}!`);
+  renderLevelPanel(state, computed);
+}
+
+async function renderAchievements(stats, sessions, games, songLogs) {
+  const grid = $("#achievement-grid");
+  if (!grid) return;
+  const unlocked = new Set(await getSetting("achievementsUnlocked", []));
+  grid.innerHTML = "";
+  ACHIEVEMENTS.forEach((ach) => {
+    const isUnlocked = unlocked.has(ach.id);
+    const card = document.createElement("div");
+    card.className = `achievement-card ${isUnlocked ? "unlocked" : "locked"}`;
+    card.innerHTML = `
+      <div class="achievement-title">${ach.title}</div>
+      <div class="muted">${ach.desc}</div>
+      <div class="achievement-status">${isUnlocked ? "Unlocked ✨" : "Locked"}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+async function checkAchievements(stats, sessions, games, songLogs) {
+  const unlocked = new Set(await getSetting("achievementsUnlocked", []));
+  let newUnlocked = [];
+  ACHIEVEMENTS.forEach((ach) => {
+    if (!unlocked.has(ach.id) && ach.check(stats, sessions, games, songLogs)) {
+      unlocked.add(ach.id);
+      newUnlocked.push(ach);
+    }
+  });
+  if (newUnlocked.length) {
+    await setSetting("achievementsUnlocked", Array.from(unlocked));
+    newUnlocked.forEach((ach) => showToast(`Achievement unlocked: ${ach.title}`));
+    if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+  }
+  renderAchievements(stats, sessions, games, songLogs);
 }
 
 async function renderDailyPlan(sessions, games, songLogs) {
