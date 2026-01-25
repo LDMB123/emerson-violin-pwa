@@ -402,6 +402,10 @@
             <button class="ghost" id="song-stop">Stop</button>
             <button class="ghost" id="song-preview">Preview</button>
           </div>
+          <div class="song-progress">
+            <div class="song-progress-bar" id="song-progress-bar"></div>
+          </div>
+          <div class="song-countdown" id="song-countdown">Ready to play!</div>
           <div class="song-timeline" id="song-timeline"></div>
           <div class="song-coach" id="song-coach"></div>
           <div class="song-reflection">
@@ -431,6 +435,7 @@
           <div class="game-panel">
             <div class="game-target" id="pitch-target">Target: A4</div>
             <div class="game-result" id="pitch-result">Tap start and play your note!</div>
+            <label class="toggle"><input type="checkbox" id="pitch-auto" checked /> Auto target (Coach picks)</label>
             <div class="row">
               <button class="primary" id="pitch-start">Start Pitch Quest</button>
               <button class="ghost" id="pitch-stop">Stop</button>
@@ -452,6 +457,7 @@
               <input type="range" min="60" max="160" value="96" id="rhythm-tempo" />
             </label>
             <div class="tempo-display" id="rhythm-tempo-display">96 BPM</div>
+            <label class="toggle"><input type="checkbox" id="rhythm-auto" checked /> Auto tempo (Coach picks)</label>
             <div class="row">
               <button class="primary" id="rhythm-dash-start">Start</button>
               <button class="ghost" id="rhythm-dash-stop">Stop</button>
@@ -525,6 +531,28 @@
             </div>
             <div class="score" id="pattern-score">Score: 0</div>
           </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Game Coach</h2>
+        <p class="muted">Adaptive difficulty based on Emerson’s recent scores.</p>
+        <div class="coach-settings">
+          <label class="toggle"><input type="checkbox" id="adaptive-coach" checked /> Adaptive Coach</label>
+          <label>
+            Focus Game
+            <select id="game-focus">
+              <option value="auto">Auto (Coach decides)</option>
+              <option value="pitch">Pitch Quest</option>
+              <option value="rhythm">Rhythm Dash</option>
+              <option value="ear">Ear Trainer</option>
+              <option value="pattern">Rhythm Painter</option>
+            </select>
+          </label>
+        </div>
+        <div class="coach-recommend" id="game-recommend">Play a game to get recommendations.</div>
+        <div class="row">
+          <button class="primary" id="apply-game-settings">Apply Suggestions</button>
+          <button class="ghost" id="refresh-game-coach">Refresh</button>
         </div>
       </div>
       <div class="card">

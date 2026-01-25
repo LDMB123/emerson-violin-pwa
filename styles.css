@@ -393,6 +393,22 @@ body {
   gap: 10px;
 }
 
+.coach-settings {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.coach-recommend {
+  background: #fff7f0;
+  border-radius: 16px;
+  border: 3px solid var(--stroke);
+  padding: 12px;
+  font-weight: 800;
+  display: grid;
+  gap: 6px;
+}
+
 .chat-log {
   min-height: 160px;
   max-height: 260px;
@@ -524,6 +540,29 @@ body {
   display: grid;
   gap: 8px;
   margin-top: 8px;
+}
+
+.song-progress {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  border: 3px solid var(--stroke);
+  background: #fff1f0;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.song-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4cc9f0, #ff5c8a);
+  transition: width 0.15s ease;
+}
+
+.song-countdown {
+  margin-top: 8px;
+  font-weight: 800;
+  color: var(--primary-dark);
 }
 
 .toggle-grid {
@@ -905,6 +944,11 @@ button.primary:hover {
   background: #ffe9d6;
   font-weight: 700;
   cursor: pointer;
+}
+
+.chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .coach-notes {

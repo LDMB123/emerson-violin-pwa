@@ -56,6 +56,10 @@ let patternStartTime = 0;
 let toneHistory = [];
 let lastToneUpdate = 0;
 let liveMetrics = { stability: null, warmth: null, dynamics: null, vibrato: null };
+let adaptiveCoachEnabled = true;
+let gameFocus = "auto";
+let earDifficulty = 2;
+let patternLength = 4;
 let songState = {
   selectedId: null,
   tempo: 84,
@@ -75,6 +79,10 @@ let songPlaybackTotalBeats = 0;
 let songPracticeStart = 0;
 let favoriteSongIds = new Set();
 let songTimeline = [];
+let songProgressStart = 0;
+let songProgressDuration = 0;
+let songCountInDuration = 0;
+let songCountInBeats = 0;
 
 const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const NOTE_OFFSETS = {
@@ -244,6 +252,105 @@ const SONG_LIBRARY = [
       ["G3", 2], ["D4", 2], ["C4", 2], ["D4", 2],
     ],
     tips: ["Use long bows for a warm sound.", "Keep fingers soft and curved."],
+  },
+  {
+    id: "merrily",
+    title: "Merrily We Roll Along",
+    level: "beginner",
+    bpm: 96,
+    key: "A major",
+    strings: ["A", "E"],
+    focus: "Light fingers + even rhythm",
+    notes: [
+      ["E5", 1], ["D5", 1], ["C#5", 1], ["D5", 1], ["E5", 1], ["E5", 1], ["E5", 2],
+      ["D5", 1], ["D5", 1], ["D5", 2], ["E5", 1], ["A5", 1], ["A5", 2],
+    ],
+    tips: ["Keep fingers close to the string.", "Bow changes should be smooth."],
+  },
+  {
+    id: "aunt-rhody",
+    title: "Go Tell Aunt Rhody",
+    level: "early",
+    bpm: 84,
+    key: "D major",
+    strings: ["A", "E"],
+    focus: "Stepwise motion, gentle bow",
+    notes: [
+      ["D5", 1], ["D5", 1], ["E5", 1], ["F#5", 1], ["F#5", 1], ["E5", 1], ["D5", 1], ["E5", 1],
+      ["F#5", 1], ["F#5", 1], ["E5", 1], ["D5", 2],
+    ],
+    tips: ["Listen for clean finger taps.", "Keep the bow in the center lane."],
+  },
+  {
+    id: "old-macdonald",
+    title: "Old MacDonald",
+    level: "early",
+    bpm: 92,
+    key: "A major",
+    strings: ["A", "E"],
+    focus: "String crossings and rhythm",
+    notes: [
+      ["A4", 1], ["A4", 1], ["A4", 1], ["E5", 1], ["F#5", 1], ["F#5", 1], ["E5", 2],
+      ["D5", 1], ["D5", 1], ["C#5", 1], ["C#5", 1], ["B4", 1], ["B4", 1], ["A4", 2],
+    ],
+    tips: ["Keep the bow straight on string crossings.", "Count the steady beat."],
+  },
+  {
+    id: "au-clair",
+    title: "Au Clair de la Lune",
+    level: "early",
+    bpm: 76,
+    key: "A major",
+    strings: ["A", "E"],
+    focus: "Smooth bow, lyrical sound",
+    notes: [
+      ["A4", 1], ["A4", 1], ["A4", 1], ["B4", 1], ["C#5", 2], ["B4", 2],
+      ["A4", 1], ["A4", 1], ["A4", 1], ["B4", 1], ["C#5", 2], ["B4", 2],
+      ["A4", 2], ["B4", 2], ["C#5", 2], ["D5", 2],
+    ],
+    tips: ["Use long bows and breathe with the phrase.", "Listen for a calm tone."],
+  },
+  {
+    id: "scale-ladder",
+    title: "A Major Scale Ladder",
+    level: "early",
+    bpm: 80,
+    key: "A major",
+    strings: ["A", "E"],
+    focus: "Clear fingers and steady tempo",
+    notes: [
+      ["A4", 1], ["B4", 1], ["C#5", 1], ["D5", 1], ["E5", 1], ["F#5", 1], ["G#5", 1], ["A5", 2],
+      ["A5", 1], ["G#5", 1], ["F#5", 1], ["E5", 1], ["D5", 1], ["C#5", 1], ["B4", 1], ["A4", 2],
+    ],
+    tips: ["Keep fingers curved and relaxed.", "Use slow, even bows."],
+  },
+  {
+    id: "panda-waltz",
+    title: "Panda Waltz",
+    level: "early",
+    bpm: 90,
+    key: "G major",
+    strings: ["G", "D"],
+    focus: "3-beat feel and bow control",
+    notes: [
+      ["G3", 1], ["D4", 1], ["G4", 1], ["G4", 1], ["D4", 1], ["G3", 1],
+      ["G3", 1], ["D4", 1], ["E4", 1], ["E4", 1], ["D4", 1], ["G3", 1],
+    ],
+    tips: ["Count 1-2-3 in each bar.", "Make the first beat a little stronger."],
+  },
+  {
+    id: "rainbow-arpeggio",
+    title: "Rainbow Arpeggio",
+    level: "early",
+    bpm: 88,
+    key: "A major",
+    strings: ["A", "E"],
+    focus: "Arpeggio shape + intonation",
+    notes: [
+      ["A4", 1], ["C#5", 1], ["E5", 1], ["A5", 2],
+      ["A5", 1], ["E5", 1], ["C#5", 1], ["A4", 2],
+    ],
+    tips: ["Listen for sparkling top notes.", "Keep the bow steady on string changes."],
   },
 ].map((song) => ({
   ...song,
@@ -503,6 +610,9 @@ function setupNavigation() {
       if (target === "analysis") {
         renderAnalysis();
       }
+      if (target === "games") {
+        renderGameCoach();
+      }
       if (target === "songs") {
         renderSongsView();
       }
@@ -572,6 +682,7 @@ function setupGames() {
   setupBowHold();
   setupEarTrainer();
   setupRhythmPainter();
+  setupGameCoach();
 }
 
 async function setupSongs() {
@@ -981,6 +1092,10 @@ async function startSongPlayback({ preview = false, preserveStart = false } = {}
 
   const startTime = audioCtx.currentTime + 0.15;
   const musicStart = startTime + countInBeats * secondsPerBeat;
+  songCountInBeats = countInBeats;
+  songCountInDuration = countInBeats * secondsPerBeat * 1000;
+  songProgressStart = performance.now();
+  songProgressDuration = (countInBeats + totalBeats) * secondsPerBeat * 1000;
 
   if (songState.click) {
     const totalClickBeats = countInBeats + totalBeats;
@@ -1043,6 +1158,10 @@ function stopSongPlayback(log = true) {
   clearTimeout(songPlaybackTimeout);
   if (songHighlightTimer) cancelAnimationFrame(songHighlightTimer);
   songTimeline.forEach((entry) => entry.element && entry.element.classList.remove("active"));
+  const bar = $("#song-progress-bar");
+  if (bar) bar.style.width = "0%";
+  const countdown = $("#song-countdown");
+  if (countdown) countdown.textContent = "Ready to play!";
   stopSongNodes();
   releaseWakeLock();
   if (log && !songPlaybackSequence.length) return;
@@ -1058,6 +1177,10 @@ async function finishSongPlayback({ preview = false } = {}) {
   songState.previewing = false;
   if (songHighlightTimer) cancelAnimationFrame(songHighlightTimer);
   songTimeline.forEach((entry) => entry.element && entry.element.classList.remove("active"));
+  const bar = $("#song-progress-bar");
+  if (bar) bar.style.width = "0%";
+  const countdown = $("#song-countdown");
+  if (countdown) countdown.textContent = preview ? "Preview done!" : "Song complete!";
   stopSongNodes();
   releaseWakeLock();
   if (!preview) {
@@ -1081,6 +1204,22 @@ function updateSongHighlight(secondsPerBeat, totalBeats) {
   const now = performance.now();
   const elapsed = (now - songPlaybackStart) / 1000;
   const beat = elapsed / secondsPerBeat;
+  const progressElapsed = now - songProgressStart;
+  const progress = songProgressDuration ? Math.min(1, Math.max(0, progressElapsed / songProgressDuration)) : 0;
+  const bar = $("#song-progress-bar");
+  if (bar) bar.style.width = `${Math.round(progress * 100)}%`;
+  const countdown = $("#song-countdown");
+  if (countdown) {
+    if (progressElapsed < songCountInDuration) {
+      const beatMs = songCountInDuration / songCountInBeats;
+      const beatsLeft = Math.ceil((songCountInDuration - progressElapsed) / beatMs);
+      countdown.textContent = `Count in: ${beatsLeft}`;
+    } else if (songState.playing) {
+      countdown.textContent = "Play!";
+    } else {
+      countdown.textContent = "Ready to play!";
+    }
+  }
   songTimeline.forEach((entry) => {
     entry.element.classList.toggle("active", beat >= entry.startBeat && beat < entry.endBeat);
   });
@@ -1161,6 +1300,15 @@ function formatLevel(level) {
 function setupPitchQuest() {
   const resultEl = $("#pitch-result");
   updatePitchTargetLabel();
+  const pitchAuto = $("#pitch-auto");
+  if (pitchAuto) {
+    getSetting("pitchAuto", true).then((val) => {
+      pitchAuto.checked = Boolean(val);
+    });
+    pitchAuto.addEventListener("change", () => {
+      setSetting("pitchAuto", pitchAuto.checked);
+    });
+  }
 
   $$(".pitch-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
@@ -1175,6 +1323,13 @@ function setupPitchQuest() {
     pitchGameActive = true;
     resultEl.textContent = "Listening... play your note!";
     pitchGameAutoStop = !tunerActive;
+    if (pitchAuto && pitchAuto.checked && adaptiveCoachEnabled) {
+      const target = await recommendPitchTarget();
+      if (target) {
+        currentTarget = target;
+        updatePitchTargetLabel();
+      }
+    }
     if (!tunerActive) {
       await startTuner();
     }
@@ -1197,7 +1352,10 @@ function finishPitchQuest(manual = false) {
     const score = Math.round(avg * 100);
     const stars = Math.max(1, Math.round(avg * 5));
     resultEl.textContent = `Accuracy ${score}% • Stars ${"⭐".repeat(stars)}`;
-    addGameResult({ type: "pitch", score, stars }).then(refreshDashboard);
+    addGameResult({ type: "pitch", score, stars, target: currentTarget }).then(() => {
+      refreshDashboard();
+      renderGameCoach();
+    });
   }
   if (pitchGameAutoStop) stopTuner();
 }
@@ -1207,6 +1365,16 @@ function setupRhythmDash() {
   const display = $("#rhythm-tempo-display");
   const beat = $("#rhythm-dash-beat");
   const scoreEl = $("#rhythm-dash-score");
+  const rhythmAuto = $("#rhythm-auto");
+
+  if (rhythmAuto) {
+    getSetting("rhythmAuto", true).then((val) => {
+      rhythmAuto.checked = Boolean(val);
+    });
+    rhythmAuto.addEventListener("change", () => {
+      setSetting("rhythmAuto", rhythmAuto.checked);
+    });
+  }
 
   tempo.addEventListener("input", () => {
     rhythmDashTempo = parseInt(tempo.value, 10);
@@ -1216,6 +1384,12 @@ function setupRhythmDash() {
   $("#rhythm-dash-start").addEventListener("click", async () => {
     if (rhythmDashActive) return;
     await ensureAudioContext();
+    if (rhythmAuto && rhythmAuto.checked && adaptiveCoachEnabled) {
+      const recTempo = await recommendRhythmTempo();
+      rhythmDashTempo = recTempo;
+      tempo.value = recTempo;
+      display.textContent = `${recTempo} BPM`;
+    }
     rhythmDashActive = true;
     rhythmDashScore = 0;
     rhythmDashHits = 0;
@@ -1236,7 +1410,10 @@ function setupRhythmDash() {
     clearInterval(rhythmDashInterval);
     $("#rhythm-dash-beat").classList.remove("active");
     const stars = rhythmDashHits ? Math.min(5, Math.ceil(rhythmDashScore / (rhythmDashHits * 5) * 5)) : 1;
-    addGameResult({ type: "rhythm", score: rhythmDashScore, stars }).then(refreshDashboard);
+    addGameResult({ type: "rhythm", score: rhythmDashScore, stars, tempo: rhythmDashTempo }).then(() => {
+      refreshDashboard();
+      renderGameCoach();
+    });
     showToast("Rhythm Dash complete!");
   });
 
@@ -1294,7 +1471,10 @@ function setupMemoryGame() {
         const stars = Math.min(5, 1 + Math.floor(memoryScore / 2));
         scoreEl.textContent = `Score: ${memoryScore}`;
         sequenceEl.textContent = "Brilliant! Ready for the next one.";
-        addGameResult({ type: "memory", score: memoryScore, stars }).then(refreshDashboard);
+        addGameResult({ type: "memory", score: memoryScore, stars }).then(() => {
+          refreshDashboard();
+          renderGameCoach();
+        });
         memorySequence = [];
         memoryInput = [];
       }
@@ -1325,7 +1505,10 @@ function setupBowHold() {
     scoreEl.textContent = `Best: ${bowBest.toFixed(1)}s`;
     timerEl.textContent = `${elapsed.toFixed(1)}s`;
     const stars = Math.min(5, Math.max(1, Math.floor(elapsed / 5) + 1));
-    addGameResult({ type: "bow", score: Math.round(elapsed), stars }).then(refreshDashboard);
+    addGameResult({ type: "bow", score: Math.round(elapsed), stars }).then(() => {
+      refreshDashboard();
+      renderGameCoach();
+    });
     bowStart = 0;
   });
 }
@@ -1336,26 +1519,27 @@ function setupEarTrainer() {
 
   const playTarget = async () => {
     await ensureAudioContext();
-    if (!earTarget) earTarget = randomNote();
+    if (!earTarget) earTarget = randomEarNote();
     const freq = violinTargets[earTarget];
     if (freq) playTone(freq, audioCtx.currentTime + 0.05, 0.5);
     if (prompt) prompt.textContent = "Listen carefully... what note is it?";
   };
 
   $("#ear-play").addEventListener("click", () => {
-    earTarget = randomNote();
+    earTarget = randomEarNote();
     playTarget();
   });
 
   $("#ear-repeat").addEventListener("click", () => {
     if (!earTarget) {
-      earTarget = randomNote();
+      earTarget = randomEarNote();
     }
     playTarget();
   });
 
   $$(".ear-note").forEach((btn) => {
     btn.addEventListener("click", () => {
+      if (btn.disabled) return;
       if (!earTarget) {
         showToast("Tap play to hear a note first!");
         return;
@@ -1373,10 +1557,15 @@ function setupEarTrainer() {
       scoreEl.textContent = `Score: ${earScore}`;
       if (earRound % 5 === 0) {
         const stars = Math.min(5, Math.max(1, Math.round(earScore / 10)));
-        addGameResult({ type: "ear", score: earScore, stars }).then(refreshDashboard);
+        addGameResult({ type: "ear", score: earScore, stars, difficulty: earDifficulty }).then(() => {
+          refreshDashboard();
+          renderGameCoach();
+        });
       }
     });
   });
+
+  updateEarOptions();
 }
 
 function setupRhythmPainter() {
@@ -1393,7 +1582,7 @@ function setupRhythmPainter() {
   };
 
   $("#pattern-start").addEventListener("click", () => {
-    patternSequence = Array.from({ length: 4 }, () => (Math.random() > 0.4 ? 1 : 0.5));
+    patternSequence = Array.from({ length: patternLength }, () => (Math.random() > 0.4 ? 1 : 0.5));
     patternIndex = 0;
     patternScore = 0;
     patternStartTime = 0;
@@ -1431,7 +1620,10 @@ function setupRhythmPainter() {
     scoreEl.textContent = `Score: ${patternScore}`;
     if (patternIndex > patternSequence.length) {
       const stars = Math.min(5, Math.max(1, Math.round(patternScore / 8)));
-      addGameResult({ type: "pattern", score: patternScore, stars }).then(refreshDashboard);
+      addGameResult({ type: "pattern", score: patternScore, stars, length: patternSequence.length }).then(() => {
+        refreshDashboard();
+        renderGameCoach();
+      });
       showToast("Rhythm Painter complete!");
       patternSequence = [];
       patternIndex = 0;
@@ -1440,9 +1632,187 @@ function setupRhythmPainter() {
   });
 }
 
+async function setupGameCoach() {
+  adaptiveCoachEnabled = await getSetting("adaptiveCoach", true);
+  gameFocus = await getSetting("gameFocus", "auto");
+  earDifficulty = parseInt(await getSetting("earDifficulty", 2), 10) || 2;
+  patternLength = parseInt(await getSetting("patternLength", 4), 10) || 4;
+
+  const adaptiveToggle = $("#adaptive-coach");
+  if (adaptiveToggle) {
+    adaptiveToggle.checked = Boolean(adaptiveCoachEnabled);
+    adaptiveToggle.addEventListener("change", async () => {
+      adaptiveCoachEnabled = adaptiveToggle.checked;
+      await setSetting("adaptiveCoach", adaptiveCoachEnabled);
+      renderGameCoach();
+    });
+  }
+
+  const focusSelect = $("#game-focus");
+  if (focusSelect) {
+    focusSelect.value = gameFocus;
+    focusSelect.addEventListener("change", async () => {
+      gameFocus = focusSelect.value;
+      await setSetting("gameFocus", gameFocus);
+      renderGameCoach();
+    });
+  }
+
+  const applyBtn = $("#apply-game-settings");
+  if (applyBtn) applyBtn.addEventListener("click", () => applyGameRecommendations());
+  const refreshBtn = $("#refresh-game-coach");
+  if (refreshBtn) refreshBtn.addEventListener("click", () => renderGameCoach());
+
+  updateEarOptions();
+  renderGameCoach();
+}
+
+async function renderGameCoach() {
+  const panel = $("#game-recommend");
+  if (!panel) return;
+  const games = await getGameResults();
+  const recs = await getGameRecommendations(games);
+  const focus = gameFocus === "auto" ? recs.focus : gameFocus;
+  panel.innerHTML = `
+    <div><strong>Focus:</strong> ${focusAreaLabel(focus)}</div>
+    <div>Pitch Quest target: <strong>${recs.pitchTarget}</strong></div>
+    <div>Rhythm Dash tempo: <strong>${recs.rhythmTempo} BPM</strong></div>
+    <div>Ear Trainer difficulty: <strong>${recs.earDifficulty}</strong></div>
+    <div>Rhythm Painter length: <strong>${recs.patternLength}</strong> beats</div>
+  `;
+}
+
+async function getGameRecommendations(games) {
+  const pitchTarget = await recommendPitchTarget(games);
+  const rhythmTempo = await recommendRhythmTempo(games);
+  const earDifficultyRec = recommendEarDifficulty(games);
+  const patternLengthRec = recommendPatternLength(games);
+  const focus = recommendGameFocus(games);
+  return {
+    pitchTarget,
+    rhythmTempo,
+    earDifficulty: earDifficultyRec,
+    patternLength: patternLengthRec,
+    focus,
+  };
+}
+
+function recommendGameFocus(games) {
+  const pitch = averageRecentScore(games, "pitch");
+  const rhythm = averageRecentScore(games, "rhythm");
+  const ear = averageRecentScore(games, "ear");
+  const pattern = averageRecentScore(games, "pattern");
+  const scores = [
+    { type: "pitch", value: pitch || 50 },
+    { type: "rhythm", value: rhythm || 50 },
+    { type: "pattern", value: pattern || 50 },
+    { type: "ear", value: ear || 50 },
+  ];
+  scores.sort((a, b) => a.value - b.value);
+  return scores[0].type;
+}
+
+async function recommendPitchTarget(gamesOverride) {
+  const games = gamesOverride || await getGameResults();
+  const pitchGames = games.filter((g) => g.type === "pitch" && g.target);
+  if (!pitchGames.length) return currentTarget;
+  const grouped = pitchGames.reduce((acc, g) => {
+    acc[g.target] = acc[g.target] || [];
+    acc[g.target].push(g.score || 0);
+    return acc;
+  }, {});
+  let weakest = currentTarget;
+  let lowest = Infinity;
+  Object.entries(grouped).forEach(([target, scores]) => {
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    if (avg < lowest) {
+      lowest = avg;
+      weakest = target;
+    }
+  });
+  return weakest;
+}
+
+async function recommendRhythmTempo(gamesOverride) {
+  const games = gamesOverride || await getGameResults();
+  const avg = averageRecentScore(games, "rhythm");
+  if (avg < 20) return 72;
+  if (avg < 45) return 84;
+  if (avg < 70) return 96;
+  return 108;
+}
+
+function recommendEarDifficulty(gamesOverride) {
+  const games = gamesOverride || [];
+  const avg = averageRecentScore(games, "ear");
+  if (avg < 10) return 1;
+  if (avg < 30) return 2;
+  return 3;
+}
+
+function recommendPatternLength(gamesOverride) {
+  const games = gamesOverride || [];
+  const avg = averageRecentScore(games, "pattern");
+  if (avg < 10) return 3;
+  if (avg < 25) return 4;
+  return 5;
+}
+
+function averageRecentScore(games, type) {
+  const recent = games.filter((g) => g.type === type).slice(-6);
+  if (!recent.length) return 0;
+  return recent.reduce((sum, g) => sum + (g.score || 0), 0) / recent.length;
+}
+
+async function applyGameRecommendations() {
+  if (!adaptiveCoachEnabled) {
+    showToast("Adaptive coach is off.");
+    return;
+  }
+  const games = await getGameResults();
+  const recs = await getGameRecommendations(games);
+  currentTarget = recs.pitchTarget;
+  updatePitchTargetLabel();
+
+  const rhythmTempo = $("#rhythm-tempo");
+  const rhythmDisplay = $("#rhythm-tempo-display");
+  if (rhythmTempo) {
+    rhythmTempo.value = recs.rhythmTempo;
+    rhythmDashTempo = recs.rhythmTempo;
+    if (rhythmDisplay) rhythmDisplay.textContent = `${recs.rhythmTempo} BPM`;
+  }
+
+  earDifficulty = recs.earDifficulty;
+  patternLength = recs.patternLength;
+  updateEarOptions();
+  await setSetting("earDifficulty", earDifficulty);
+  await setSetting("patternLength", patternLength);
+  showToast("Coach settings applied!");
+  renderGameCoach();
+}
+
 function randomNote() {
   const keys = Object.keys(violinTargets);
   return keys[Math.floor(Math.random() * keys.length)];
+}
+
+function randomEarNote() {
+  const pool = getEarNotePool();
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function getEarNotePool() {
+  if (earDifficulty <= 1) return ["A4", "E5"];
+  if (earDifficulty === 2) return ["D4", "A4", "E5"];
+  return ["G3", "D4", "A4", "E5"];
+}
+
+function updateEarOptions() {
+  const pool = new Set(getEarNotePool());
+  $$(".ear-note").forEach((btn) => {
+    const note = btn.dataset.note;
+    btn.disabled = !pool.has(note);
+  });
 }
 
 async function playNoteSequence(sequence) {
@@ -1836,6 +2206,7 @@ function setupRhythmGame() {
       await addGameResult({ type: "pizzicato", score, stars });
       showToast("Panda Pizzicato complete!");
       await refreshDashboard();
+      renderGameCoach();
     }, 15000);
   });
 }
@@ -2211,9 +2582,12 @@ function generateDailyPlan(sessions, games, songLogs, goalMinutes, focusPref = "
 
 function focusAreaLabel(area) {
   if (area === "intonation") return "Intonation (in-tune fingers)";
+  if (area === "pitch") return "Intonation (in-tune fingers)";
   if (area === "rhythm") return "Rhythm (steady beat)";
+  if (area === "pattern") return "Rhythm patterns (steady beat)";
   if (area === "bow") return "Bow control (smooth sound)";
   if (area === "tone") return "Tone (beautiful sound)";
+  if (area === "ear") return "Ear training (listening)";
   return "All-around balance";
 }
 
