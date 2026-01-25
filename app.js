@@ -46,8 +46,46 @@ let practiceTimerElapsed = 0;
 let practiceTimerStart = 0;
 let questState = { date: "", items: [], checks: [] };
 let wakeLock = null;
+let songState = {
+  selectedId: null,
+  tempo: 84,
+  guide: true,
+  click: true,
+  drone: false,
+  loop: false,
+  playing: false,
+  previewing: false,
+};
+let songPlaybackNodes = [];
+let songPlaybackTimeout;
+let songPlaybackStart = 0;
+let songHighlightTimer;
+let songPlaybackSequence = [];
+let songPlaybackTotalBeats = 0;
+let songPracticeStart = 0;
+let favoriteSongIds = new Set();
+let songTimeline = [];
 
 const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const NOTE_OFFSETS = {
+  C: 0,
+  "C#": 1,
+  Db: 1,
+  D: 2,
+  "D#": 3,
+  Eb: 3,
+  E: 4,
+  F: 5,
+  "F#": 6,
+  Gb: 6,
+  G: 7,
+  "G#": 8,
+  Ab: 8,
+  A: 9,
+  "A#": 10,
+  Bb: 10,
+  B: 11,
+};
 const violinTargets = {
   G3: 196.0,
   D4: 293.66,
@@ -65,10 +103,143 @@ const QUEST_POOL = [
   "Long tone breathing (1 min)",
   "Rhythm Dash taps (2 min)",
   "Pitch Quest accuracy (3 min)",
+  "Play along with a new song (4 min)",
+  "Slow practice: favorite song (4 min)",
 ];
 
+const SONG_LIBRARY = [
+  {
+    id: "twinkle",
+    title: "Twinkle Twinkle Little Star",
+    level: "beginner",
+    bpm: 84,
+    key: "A major",
+    strings: ["A", "E"],
+    focus: "Open strings + first/second finger",
+    notes: [
+      ["A4", 1], ["A4", 1], ["E5", 1], ["E5", 1], ["F#5", 1], ["F#5", 1], ["E5", 2],
+      ["D5", 1], ["D5", 1], ["C#5", 1], ["C#5", 1], ["B4", 1], ["B4", 1], ["A4", 2],
+      ["E5", 1], ["E5", 1], ["D5", 1], ["D5", 1], ["C#5", 1], ["C#5", 1], ["B4", 2],
+      ["E5", 1], ["E5", 1], ["D5", 1], ["D5", 1], ["C#5", 1], ["C#5", 1], ["B4", 2],
+      ["A4", 1], ["A4", 1], ["E5", 1], ["E5", 1], ["F#5", 1], ["F#5", 1], ["E5", 2],
+      ["D5", 1], ["D5", 1], ["C#5", 1], ["C#5", 1], ["B4", 1], ["B4", 1], ["A4", 2],
+    ],
+    tips: ["Keep bow slow on long notes.", "Listen for a bright, ringing E string."],
+  },
+  {
+    id: "mary",
+    title: "Mary Had a Little Lamb",
+    level: "beginner",
+    bpm: 90,
+    key: "D major",
+    strings: ["A", "E"],
+    focus: "Step-wise fingers, gentle bow changes",
+    notes: [
+      ["E5", 1], ["D5", 1], ["C#5", 1], ["D5", 1], ["E5", 1], ["E5", 1], ["E5", 2],
+      ["D5", 1], ["D5", 1], ["D5", 2], ["E5", 1], ["G5", 1], ["G5", 2],
+      ["E5", 1], ["D5", 1], ["C#5", 1], ["D5", 1], ["E5", 1], ["E5", 1], ["E5", 1], ["E5", 1],
+      ["D5", 1], ["D5", 1], ["E5", 1], ["D5", 1], ["C#5", 2],
+    ],
+    tips: ["Use tiny finger taps for C#.", "Keep the bow in the middle lane."],
+  },
+  {
+    id: "hot-cross-buns",
+    title: "Hot Cross Buns",
+    level: "beginner",
+    bpm: 96,
+    key: "D major",
+    strings: ["A"],
+    focus: "Two-finger patterns, steady bow",
+    notes: [
+      ["E5", 1], ["D5", 1], ["C#5", 2],
+      ["E5", 1], ["D5", 1], ["C#5", 2],
+      ["C#5", 0.5], ["C#5", 0.5], ["C#5", 0.5], ["C#5", 0.5],
+      ["D5", 0.5], ["D5", 0.5], ["D5", 0.5], ["D5", 0.5],
+      ["E5", 1], ["D5", 1], ["C#5", 2],
+    ],
+    tips: ["Keep fingers curved like a bridge.", "Aim for even rhythm on repeated notes."],
+  },
+  {
+    id: "lightly-row",
+    title: "Lightly Row",
+    level: "early",
+    bpm: 92,
+    key: "A major",
+    strings: ["A", "E"],
+    focus: "String crossings, easy slurs",
+    notes: [
+      ["E5", 1], ["E5", 1], ["F#5", 1], ["G5", 1], ["G5", 1], ["F#5", 1], ["E5", 1], ["D5", 1],
+      ["C#5", 1], ["D5", 1], ["E5", 1], ["E5", 1], ["D5", 1], ["D5", 2],
+    ],
+    tips: ["Use a tiny wrist wave for crossings.", "Listen for smooth bow changes."],
+  },
+  {
+    id: "ode-to-joy",
+    title: "Ode to Joy (Theme)",
+    level: "early",
+    bpm: 88,
+    key: "D major",
+    strings: ["A", "E"],
+    focus: "Even bowing, steady tempo",
+    notes: [
+      ["E5", 1], ["E5", 1], ["F#5", 1], ["G5", 1], ["G5", 1], ["F#5", 1], ["E5", 1], ["D5", 1],
+      ["C#5", 1], ["C#5", 1], ["D5", 1], ["E5", 1], ["E5", 1], ["D5", 1], ["D5", 2],
+    ],
+    tips: ["Breathe before the phrase starts.", "Keep the bow parallel to the bridge."],
+  },
+  {
+    id: "jingle-bells",
+    title: "Jingle Bells (Refrain)",
+    level: "early",
+    bpm: 100,
+    key: "A major",
+    strings: ["A", "E"],
+    focus: "Quick notes and light bow",
+    notes: [
+      ["E5", 1], ["E5", 1], ["E5", 2],
+      ["E5", 1], ["E5", 1], ["E5", 2],
+      ["E5", 1], ["G5", 1], ["C#5", 1], ["D5", 1], ["E5", 2],
+      ["F#5", 1], ["F#5", 1], ["F#5", 1], ["F#5", 1], ["F#5", 1],
+      ["E5", 1], ["E5", 1], ["E5", 1], ["E5", 1], ["E5", 1],
+      ["D5", 1], ["D5", 1], ["E5", 1], ["D5", 2], ["G5", 2],
+    ],
+    tips: ["Use a springy bow for repeated notes.", "Keep fingers close to the string."],
+  },
+  {
+    id: "open-strings",
+    title: "Open String Parade",
+    level: "beginner",
+    bpm: 80,
+    key: "D major",
+    strings: ["G", "D", "A", "E"],
+    focus: "Beautiful open strings, straight bow",
+    notes: [
+      ["G3", 2], ["D4", 2], ["A4", 2], ["E5", 2],
+      ["E5", 2], ["A4", 2], ["D4", 2], ["G3", 2],
+    ],
+    tips: ["Bow lane check: middle between bridge and fingerboard.", "Relax shoulders and breathe."],
+  },
+  {
+    id: "panda-lullaby",
+    title: "Panda Lullaby",
+    level: "early",
+    bpm: 72,
+    key: "G major",
+    strings: ["G", "D"],
+    focus: "Warm tone, slow bows",
+    notes: [
+      ["G3", 2], ["D4", 2], ["E4", 2], ["D4", 2],
+      ["G3", 2], ["D4", 2], ["C4", 2], ["D4", 2],
+    ],
+    tips: ["Use long bows for a warm sound.", "Keep fingers soft and curved."],
+  },
+].map((song) => ({
+  ...song,
+  notes: song.notes.map(([note, beats]) => ({ note, beats })),
+}));
+
 const DB_NAME = "emerson-violin";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const dbPromise = openDB();
 
 init();
@@ -85,6 +256,7 @@ async function init() {
   setupPracticeLogger();
   await setupQuest();
   setupPracticeTimer();
+  await setupSongs();
   setupGames();
   setupRecording();
   setupParent();
@@ -249,11 +421,13 @@ function setupLifecycle() {
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       stopTuner();
+      stopSongPlayback(false);
       releaseWakeLock();
     }
   });
   window.addEventListener("pagehide", () => {
     stopTuner();
+    stopSongPlayback(false);
     releaseWakeLock();
   });
 }
@@ -273,6 +447,9 @@ function setupNavigation() {
       }
       if (target === "analysis") {
         renderAnalysis();
+      }
+      if (target === "songs") {
+        renderSongsView();
       }
       if (target === "progress") {
         renderProgress();
@@ -321,6 +498,488 @@ function setupGames() {
   setupRhythmDash();
   setupMemoryGame();
   setupBowHold();
+}
+
+async function setupSongs() {
+  const list = $("#song-list");
+  if (!list) return;
+
+  const savedSong = await getSetting("lastSongId", SONG_LIBRARY[0]?.id || null);
+  const savedTempo = await getSetting("songTempo", SONG_LIBRARY[0]?.bpm || 84);
+  const savedFavorites = await getSetting("favoriteSongs", []);
+  favoriteSongIds = new Set(Array.isArray(savedFavorites) ? savedFavorites : []);
+
+  songState.selectedId = savedSong;
+  songState.tempo = savedTempo;
+
+  renderSongLibrary();
+  selectSongById(songState.selectedId || SONG_LIBRARY[0]?.id, { silent: true });
+
+  const tempoSlider = $("#song-tempo");
+  const tempoDisplay = $("#song-tempo-display");
+  if (tempoSlider) {
+    tempoSlider.value = songState.tempo;
+    if (tempoDisplay) tempoDisplay.textContent = `${songState.tempo} BPM`;
+    tempoSlider.addEventListener("input", () => {
+      songState.tempo = parseInt(tempoSlider.value, 10);
+      tempoDisplay.textContent = `${tempoSlider.value} BPM`;
+      setSetting("songTempo", songState.tempo);
+    });
+  }
+
+  $("#song-search").addEventListener("input", renderSongLibrary);
+  $("#song-level-filter").addEventListener("change", renderSongLibrary);
+  $("#song-string-filter").addEventListener("change", renderSongLibrary);
+
+  $("#song-start").addEventListener("click", () => startSongPlayback());
+  $("#song-stop").addEventListener("click", () => stopSongPlayback());
+  $("#song-preview").addEventListener("click", () => startSongPlayback({ preview: true }));
+
+  songState.guide = $("#song-guide").checked;
+  songState.click = $("#song-click").checked;
+  songState.drone = $("#song-drone").checked;
+  songState.loop = $("#song-loop").checked;
+
+  $("#song-guide").addEventListener("change", (event) => {
+    songState.guide = event.target.checked;
+  });
+  $("#song-click").addEventListener("change", (event) => {
+    songState.click = event.target.checked;
+  });
+  $("#song-drone").addEventListener("change", (event) => {
+    songState.drone = event.target.checked;
+  });
+  $("#song-loop").addEventListener("change", (event) => {
+    songState.loop = event.target.checked;
+  });
+
+  $("#browse-songs").addEventListener("click", () => {
+    document.querySelector('[data-nav="songs"]').click();
+  });
+
+  $("#play-song-of-day").addEventListener("click", () => {
+    const song = pickSongOfDay();
+    selectSongById(song.id);
+    document.querySelector('[data-nav="songs"]').click();
+    startSongPlayback();
+  });
+
+  $("#start-daily-plan").addEventListener("click", () => {
+    document.querySelector('[data-nav="trainer"]').click();
+    showToast("Plan started! Follow the steps and have fun 🎻");
+  });
+
+  $("#refresh-daily-plan").addEventListener("click", async () => {
+    await refreshDashboard();
+    showToast("Plan refreshed ✨");
+  });
+
+  $("#refresh-ml").addEventListener("click", async () => {
+    await renderSmartCoach();
+    showToast("Coach insights updated");
+  });
+
+  renderSongOfDay();
+}
+
+function renderSongsView() {
+  renderSongLibrary();
+  renderRepertoire();
+  renderSongOfDay();
+}
+
+function renderSongLibrary() {
+  const list = $("#song-list");
+  if (!list) return;
+  const query = $("#song-search").value.trim().toLowerCase();
+  const levelFilter = $("#song-level-filter").value;
+  const stringFilter = $("#song-string-filter").value;
+
+  const filtered = SONG_LIBRARY.filter((song) => {
+    const matchQuery = !query || song.title.toLowerCase().includes(query);
+    const matchLevel = levelFilter === "all" || song.level === levelFilter;
+    const matchString = stringFilter === "all" || song.strings.includes(stringFilter);
+    return matchQuery && matchLevel && matchString;
+  });
+
+  list.innerHTML = "";
+  if (!filtered.length) {
+    list.textContent = "No songs found. Try a different filter.";
+    return;
+  }
+
+  filtered.forEach((song) => {
+    const card = document.createElement("div");
+    card.className = "song-card";
+    const isFav = favoriteSongIds.has(song.id);
+    card.innerHTML = `
+      <h3>${song.title}</h3>
+      <div class="song-meta">
+        <span class="song-chip">${formatLevel(song.level)}</span>
+        <span class="song-chip">${song.key}</span>
+        <span class="song-chip">${song.bpm} BPM</span>
+        <span class="song-chip">Strings: ${song.strings.join(" ")}</span>
+      </div>
+      <div class="muted">${song.focus}</div>
+    `;
+    const row = document.createElement("div");
+    row.className = "row";
+    const selectBtn = document.createElement("button");
+    selectBtn.className = "ghost";
+    selectBtn.textContent = "Select";
+    selectBtn.addEventListener("click", () => selectSongById(song.id));
+    const playBtn = document.createElement("button");
+    playBtn.className = "primary";
+    playBtn.textContent = "Play Along";
+    playBtn.addEventListener("click", () => {
+      selectSongById(song.id);
+      startSongPlayback();
+    });
+    const favBtn = document.createElement("button");
+    favBtn.className = "ghost";
+    favBtn.textContent = isFav ? "★ Favorite" : "☆ Favorite";
+    favBtn.addEventListener("click", async () => {
+      toggleFavorite(song.id);
+      favBtn.textContent = favoriteSongIds.has(song.id) ? "★ Favorite" : "☆ Favorite";
+      await setSetting("favoriteSongs", Array.from(favoriteSongIds));
+    });
+    row.appendChild(selectBtn);
+    row.appendChild(playBtn);
+    row.appendChild(favBtn);
+    card.appendChild(row);
+    list.appendChild(card);
+  });
+}
+
+function toggleFavorite(songId) {
+  if (favoriteSongIds.has(songId)) {
+    favoriteSongIds.delete(songId);
+  } else {
+    favoriteSongIds.add(songId);
+  }
+}
+
+function selectSongById(songId, { silent = false } = {}) {
+  const song = SONG_LIBRARY.find((s) => s.id === songId) || SONG_LIBRARY[0];
+  if (!song) return;
+  songState.selectedId = song.id;
+  const selectedEl = $("#song-selected");
+  const metaEl = $("#song-meta");
+  if (selectedEl) selectedEl.textContent = song.title;
+  if (metaEl) {
+    metaEl.innerHTML = `
+      <span class="song-chip">${formatLevel(song.level)}</span>
+      <span class="song-chip">${song.key}</span>
+      <span class="song-chip">${song.strings.join(" ")}</span>
+      <span class="song-chip">${song.bpm} BPM</span>
+    `;
+  }
+  const tempoSlider = $("#song-tempo");
+  const tempoDisplay = $("#song-tempo-display");
+  if (tempoSlider && !silent) {
+    tempoSlider.value = song.bpm;
+    songState.tempo = song.bpm;
+    if (tempoDisplay) tempoDisplay.textContent = `${song.bpm} BPM`;
+    setSetting("songTempo", song.bpm);
+  }
+
+  renderSongTimeline(song);
+  updateSongCoachTip(song);
+  setSetting("lastSongId", song.id);
+}
+
+function renderSongTimeline(song) {
+  const timeline = $("#song-timeline");
+  if (!timeline) return;
+  timeline.innerHTML = "";
+  songTimeline = [];
+  let beat = 0;
+  song.notes.forEach((noteObj, index) => {
+    const chip = document.createElement("div");
+    chip.className = "note-chip";
+    chip.textContent = noteObj.note === "R" ? "Rest" : noteObj.note;
+    timeline.appendChild(chip);
+    songTimeline.push({
+      index,
+      startBeat: beat,
+      endBeat: beat + noteObj.beats,
+      note: noteObj.note,
+      element: chip,
+    });
+    beat += noteObj.beats;
+  });
+}
+
+function updateSongCoachTip(song) {
+  const coach = $("#song-coach");
+  if (!coach) return;
+  const tip = song.tips ? song.tips[Math.floor(Math.random() * song.tips.length)] : "Play slowly and enjoy the melody.";
+  coach.textContent = tip;
+}
+
+function pickSongOfDay() {
+  const key = dayKey(new Date());
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) % 10000;
+  return SONG_LIBRARY[hash % SONG_LIBRARY.length];
+}
+
+function renderSongOfDay() {
+  const song = pickSongOfDay();
+  const card = $("#song-of-day");
+  if (card) {
+    card.innerHTML = `
+      <div><strong>${song.title}</strong></div>
+      <div class="muted">${formatLevel(song.level)} • ${song.key}</div>
+      <div class="song-meta">
+        <span class="song-chip">${song.bpm} BPM</span>
+        <span class="song-chip">Strings: ${song.strings.join(" ")}</span>
+      </div>
+    `;
+  }
+  const meta = $("#song-of-day-meta");
+  if (meta) meta.textContent = song.focus;
+}
+
+async function renderRepertoire() {
+  const statsEl = $("#repertoire-stats");
+  const grid = $("#repertoire-grid");
+  if (!statsEl || !grid) return;
+  const logs = await getSongLogs();
+  const totals = logs.reduce((acc, log) => {
+    acc.count += 1;
+    acc.minutes += (log.durationSec || 0) / 60;
+    acc.bySong[log.songId] = (acc.bySong[log.songId] || 0) + 1;
+    return acc;
+  }, { count: 0, minutes: 0, bySong: {} });
+  const unique = Object.keys(totals.bySong).length;
+
+  statsEl.innerHTML = `
+    <div>Total Plays: <strong>${totals.count}</strong></div>
+    <div>Unique Songs: <strong>${unique}</strong></div>
+    <div>Play Time: <strong>${Math.round(totals.minutes)} min</strong></div>
+  `;
+
+  grid.innerHTML = "";
+  if (!logs.length) {
+    grid.textContent = "Play a song to start your repertoire!";
+    return;
+  }
+
+  SONG_LIBRARY.forEach((song) => {
+    const plays = totals.bySong[song.id] || 0;
+    if (!plays && !favoriteSongIds.has(song.id)) return;
+    const card = document.createElement("div");
+    card.className = "repertoire-card";
+    card.innerHTML = `
+      <div>${song.title}</div>
+      <div class="muted">${formatLevel(song.level)} • ${song.key}</div>
+      <div>Plays: <strong>${plays}</strong></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function getSelectedSong() {
+  return SONG_LIBRARY.find((s) => s.id === songState.selectedId) || SONG_LIBRARY[0];
+}
+
+async function startSongPlayback({ preview = false, preserveStart = false } = {}) {
+  const song = getSelectedSong();
+  if (!song) return;
+  await ensureAudioContext();
+  stopSongPlayback(false);
+  stopSongNodes();
+  await requestWakeLock();
+
+  songState.playing = true;
+  songState.previewing = preview;
+  const tempo = parseInt($("#song-tempo").value, 10) || song.bpm;
+  const secondsPerBeat = 60 / tempo;
+  const countInBeats = 2;
+  const noteSequence = preview ? sliceNotesByBeats(song.notes, 8) : song.notes;
+  const totalBeats = noteSequence.reduce((sum, n) => sum + n.beats, 0);
+  songPlaybackSequence = noteSequence;
+  songPlaybackTotalBeats = totalBeats;
+  if (!preserveStart) songPracticeStart = Date.now();
+
+  const startTime = audioCtx.currentTime + 0.15;
+  const musicStart = startTime + countInBeats * secondsPerBeat;
+
+  if (songState.click) {
+    const totalClickBeats = countInBeats + totalBeats;
+    for (let beat = 0; beat <= totalClickBeats; beat += 1) {
+      const when = startTime + beat * secondsPerBeat;
+      scheduleClickAt(when, beat % 4 === 0);
+    }
+  }
+
+  if (songState.drone) {
+    const droneFreq = noteToFrequency("A4");
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = droneFreq;
+    osc.type = "triangle";
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, startTime + 0.3);
+    gain.gain.setValueAtTime(0.08, startTime + totalBeats * secondsPerBeat);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + (totalBeats + countInBeats) * secondsPerBeat);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + (totalBeats + countInBeats) * secondsPerBeat + 0.1);
+    songPlaybackNodes.push(osc, gain);
+  }
+
+  if (songState.guide) {
+    let beatCursor = 0;
+    noteSequence.forEach((noteObj) => {
+      const freq = noteToFrequency(noteObj.note);
+      const duration = noteObj.beats * secondsPerBeat * 0.9;
+      const when = musicStart + beatCursor * secondsPerBeat;
+      if (freq) {
+        scheduleGuideTone(freq, when, duration);
+      }
+      beatCursor += noteObj.beats;
+    });
+  }
+
+  songPlaybackStart = performance.now() + countInBeats * secondsPerBeat * 1000;
+  updateSongHighlight(secondsPerBeat, totalBeats);
+
+  clearTimeout(songPlaybackTimeout);
+  songPlaybackTimeout = setTimeout(async () => {
+    if (songState.loop && !preview) {
+      await startSongPlayback({ preview: false, preserveStart: true });
+      return;
+    }
+    await finishSongPlayback({ preview });
+  }, (countInBeats + totalBeats) * secondsPerBeat * 1000 + 200);
+
+  showToast(preview ? "Previewing song ✨" : "Play along started!");
+}
+
+function stopSongPlayback(log = true) {
+  if (!songState.playing) return;
+  const wasPreviewing = songState.previewing;
+  songState.playing = false;
+  songState.previewing = false;
+  clearTimeout(songPlaybackTimeout);
+  if (songHighlightTimer) cancelAnimationFrame(songHighlightTimer);
+  songTimeline.forEach((entry) => entry.element && entry.element.classList.remove("active"));
+  stopSongNodes();
+  releaseWakeLock();
+  if (log && !songPlaybackSequence.length) return;
+  if (log && !wasPreviewing) {
+    const durationSec = Math.max(1, Math.round((Date.now() - songPracticeStart) / 1000));
+    logSongPractice(durationSec);
+  }
+  if (log) showToast("Song stopped");
+}
+
+async function finishSongPlayback({ preview = false } = {}) {
+  songState.playing = false;
+  songState.previewing = false;
+  if (songHighlightTimer) cancelAnimationFrame(songHighlightTimer);
+  songTimeline.forEach((entry) => entry.element && entry.element.classList.remove("active"));
+  stopSongNodes();
+  releaseWakeLock();
+  if (!preview) {
+    const durationSec = Math.max(1, Math.round((Date.now() - songPracticeStart) / 1000));
+    await logSongPractice(durationSec);
+  }
+  await renderRepertoire();
+  showToast(preview ? "Preview done!" : "Song complete!");
+}
+
+function stopSongNodes() {
+  songPlaybackNodes.forEach((node) => {
+    try { node.stop(); } catch (err) { /* ignore */ }
+    try { node.disconnect(); } catch (err) { /* ignore */ }
+  });
+  songPlaybackNodes = [];
+}
+
+function updateSongHighlight(secondsPerBeat, totalBeats) {
+  songHighlightTimer = requestAnimationFrame(() => updateSongHighlight(secondsPerBeat, totalBeats));
+  const now = performance.now();
+  const elapsed = (now - songPlaybackStart) / 1000;
+  const beat = elapsed / secondsPerBeat;
+  songTimeline.forEach((entry) => {
+    entry.element.classList.toggle("active", beat >= entry.startBeat && beat < entry.endBeat);
+  });
+  if (beat > totalBeats) {
+    songTimeline.forEach((entry) => entry.element.classList.remove("active"));
+  }
+}
+
+function sliceNotesByBeats(notes, maxBeats) {
+  const sliced = [];
+  let total = 0;
+  for (const note of notes) {
+    if (total >= maxBeats) break;
+    sliced.push(note);
+    total += note.beats;
+  }
+  return sliced;
+}
+
+function scheduleClickAt(when, accent = false) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "square";
+  osc.frequency.value = accent ? 1400 : 1000;
+  gain.gain.setValueAtTime(0.0001, when);
+  gain.gain.exponentialRampToValueAtTime(accent ? 0.25 : 0.18, when + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.08);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(when);
+  osc.stop(when + 0.09);
+  songPlaybackNodes.push(osc, gain);
+}
+
+function scheduleGuideTone(freq, when, duration) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 2400;
+  osc.type = "triangle";
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.0001, when);
+  gain.gain.exponentialRampToValueAtTime(0.18, when + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(when);
+  osc.stop(when + duration + 0.05);
+  songPlaybackNodes.push(osc, gain, filter);
+}
+
+async function logSongPractice(durationSec) {
+  const song = getSelectedSong();
+  if (!song) return;
+  try {
+    await addSongLog({
+      songId: song.id,
+      tempo: parseInt($("#song-tempo").value, 10) || song.bpm,
+      durationSec,
+    });
+    await renderRepertoire();
+  } catch (err) {
+    console.warn("Song log failed", err);
+  }
+}
+
+function formatLevel(level) {
+  if (level === "beginner") return "Beginner";
+  if (level === "early") return "Early Intermediate";
+  if (level === "intermediate") return "Intermediate";
+  return level;
 }
 
 function setupPitchQuest() {
@@ -643,6 +1302,19 @@ function frequencyFromNoteNumber(note) {
   return 440 * Math.pow(2, (note - 69) / 12);
 }
 
+function noteToFrequency(note) {
+  if (!note || note === "R") return null;
+  const match = note.match(/^([A-G])([#b]?)(-?\d)$/);
+  if (!match) return null;
+  const [, letter, accidental, octaveRaw] = match;
+  const key = `${letter}${accidental || ""}`;
+  const semitone = NOTE_OFFSETS[key];
+  if (semitone === undefined) return null;
+  const octave = parseInt(octaveRaw, 10);
+  const midi = (octave + 1) * 12 + semitone;
+  return frequencyFromNoteNumber(midi);
+}
+
 function autoCorrelate(buffer, sampleRate) {
   let rms = 0;
   for (let i = 0; i < buffer.length; i++) {
@@ -853,6 +1525,9 @@ function setupPracticeLogger() {
     if (!minutes) return;
     const mood = $("#mood-select").value;
     const focus = parseInt($("#focus-range").value, 10);
+    const rhythm = parseInt($("#rhythm-range").value, 10);
+    const intonation = parseInt($("#intonation-range").value, 10);
+    const tone = parseInt($("#tone-range").value, 10);
     const notes = $("#journal-notes").value.trim();
     const accuracy = averageAccuracy();
 
@@ -861,6 +1536,9 @@ function setupPracticeLogger() {
       minutes,
       mood,
       focus,
+      rhythm,
+      intonation,
+      tone,
       notes,
       accuracy,
     });
@@ -924,6 +1602,9 @@ function setupPracticeTimer() {
     const minutes = Math.max(1, Math.round(practiceTimerElapsed / 60000));
     const mood = $("#mood-select").value;
     const focus = parseInt($("#focus-range").value, 10);
+    const rhythm = parseInt($("#rhythm-range").value, 10);
+    const intonation = parseInt($("#intonation-range").value, 10);
+    const tone = parseInt($("#tone-range").value, 10);
     const notes = $("#journal-notes").value.trim();
     const accuracy = averageAccuracy();
     await addSession({
@@ -931,6 +1612,9 @@ function setupPracticeTimer() {
       minutes,
       mood,
       focus,
+      rhythm,
+      intonation,
+      tone,
       notes,
       accuracy,
     });
@@ -1003,12 +1687,16 @@ async function refreshDashboard() {
   const sessions = await getSessions();
   const games = await getGameResults();
   const recordings = await getRecordings();
+  const songLogs = await getSongLogs();
   const stats = computeStats(sessions, games, recordings);
   $("#streak-count").textContent = `${stats.streak} days`;
   $("#week-minutes").textContent = `${stats.weekMinutes} min`;
   $("#focus-stars").textContent = `${calcFocusStars(sessions)}`;
   renderStickerShelf(stats);
   await updateGoalProgress(stats);
+  await renderDailyPlan(sessions, games, songLogs);
+  renderSongOfDay();
+  await renderRepertoire();
   renderAnalysis();
   renderProgress();
   await renderRecordings();
@@ -1059,6 +1747,278 @@ function calcFocusStars(sessions) {
   return Math.round((total / sessions.length) * 2);
 }
 
+async function renderDailyPlan(sessions, games, songLogs) {
+  const list = $("#daily-plan");
+  if (!list) return;
+  let goal = await getSetting("goalMinutes", 20);
+  if (!goal || Number.isNaN(goal)) goal = 20;
+  const plan = generateDailyPlan(sessions, games, songLogs, goal);
+  list.innerHTML = "";
+  plan.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    list.appendChild(li);
+  });
+}
+
+function generateDailyPlan(sessions, games, songLogs, goalMinutes) {
+  const profile = computeSkillProfile(sessions, games, songLogs);
+  const focusArea = pickFocusArea(profile);
+  const song = pickSongOfDay();
+  const game = focusArea === "rhythm"
+    ? "Rhythm Dash"
+    : focusArea === "intonation"
+      ? "Pitch Quest"
+      : focusArea === "bow"
+        ? "Bow Hold Hero"
+        : "Panda Pizzicato";
+
+  const steps = [
+    { label: "Warm-up: open strings + bow rainbows", minutes: 3 },
+    { label: `Skill focus: ${focusAreaLabel(focusArea)}`, minutes: 4 },
+    { label: `Song: ${song.title}`, minutes: 5 },
+    { label: `Game boost: ${game}`, minutes: 3 },
+    { label: "Cool down: long tones + stretch", minutes: 2 },
+  ];
+
+  const total = steps.reduce((sum, s) => sum + s.minutes, 0);
+  const scale = Math.max(0.7, Math.min(1.4, goalMinutes / total));
+  return steps.map((step) => `${step.label} (${Math.max(1, Math.round(step.minutes * scale))} min)`);
+}
+
+function focusAreaLabel(area) {
+  if (area === "intonation") return "Intonation (in-tune fingers)";
+  if (area === "rhythm") return "Rhythm (steady beat)";
+  if (area === "bow") return "Bow control (smooth sound)";
+  if (area === "tone") return "Tone (beautiful sound)";
+  return "All-around balance";
+}
+
+function pickFocusArea(profile) {
+  const entries = [
+    ["intonation", profile.intonation],
+    ["rhythm", profile.rhythm],
+    ["bow", profile.bow],
+    ["tone", profile.tone],
+  ];
+  entries.sort((a, b) => a[1] - b[1]);
+  return entries[0][0];
+}
+
+async function renderSmartCoach(sessions, games, songLogs) {
+  const summary = $("#ml-summary");
+  const insights = $("#ml-insights");
+  const grid = $("#skill-grid");
+  if (!summary || !insights || !grid) return;
+
+  const sessionData = sessions || await getSessions();
+  const gameData = games || await getGameResults();
+  const songData = songLogs || await getSongLogs();
+  const profile = computeSkillProfile(sessionData, gameData, songData);
+  const quality = sessionQualityModel(sessionData);
+  const window = preferredPracticeWindow(sessionData);
+
+  summary.innerHTML = `
+    <div>Quality Cluster: <strong>${quality.label}</strong> ${quality.confidence}</div>
+    <div>Focus Trend: <strong>${quality.trend}</strong></div>
+    <div>Best Practice Window: <strong>${window}</strong></div>
+  `;
+
+  const focusArea = pickFocusArea(profile);
+  const spotlightTip = buildSpotlightTip(focusArea);
+  const song = pickSongOfDay();
+  insights.innerHTML = `
+    <div>Coach Suggestion: ${spotlightTip}</div>
+    <div>Song Match: ${song.title} • ${song.focus}</div>
+    <div>Next Goal: ${profile.consistency >= 80 ? "Add 2 min to the daily goal." : "Keep the same goal and build consistency."}</div>
+  `;
+
+  grid.innerHTML = "";
+  [
+    { key: "intonation", label: "Intonation", value: profile.intonation },
+    { key: "rhythm", label: "Rhythm", value: profile.rhythm },
+    { key: "bow", label: "Bow Control", value: profile.bow },
+    { key: "tone", label: "Tone", value: profile.tone },
+    { key: "consistency", label: "Consistency", value: profile.consistency },
+    { key: "repertoire", label: "Repertoire", value: profile.repertoire },
+  ].forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "skill-card";
+    card.innerHTML = `
+      <h4>${item.label}</h4>
+      <div class="skill-meter"><span style="width:${item.value}%"></span></div>
+      <div class="muted">${item.value}%</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function buildSpotlightTip(area) {
+  if (area === "intonation") return "Tune one string at a time and hold each note for 4 beats.";
+  if (area === "rhythm") return "Clap the rhythm first, then play with the metronome.";
+  if (area === "bow") return "Watch the bow lane and keep it straight like a train track.";
+  if (area === "tone") return "Use slow bows and listen for a warm, steady sound.";
+  return "Keep a balanced practice with songs + games.";
+}
+
+function computeSkillProfile(sessions, games, songLogs) {
+  const safeSessions = Array.isArray(sessions) ? sessions : [];
+  const safeGames = Array.isArray(games) ? games : [];
+  const safeSongLogs = Array.isArray(songLogs) ? songLogs : [];
+  const accuracyValues = safeSessions.map((s) => s.accuracy).filter((v) => typeof v === "number");
+  const accuracyAvg = accuracyValues.length ? accuracyValues.reduce((a, b) => a + b, 0) / accuracyValues.length : 0;
+  const rhythmAvg = averageRating(safeSessions, "rhythm");
+  const intonationAvg = averageRating(safeSessions, "intonation");
+  const toneAvg = averageRating(safeSessions, "tone");
+
+  const byType = safeGames.reduce((acc, g) => {
+    acc[g.type] = acc[g.type] || [];
+    acc[g.type].push(g);
+    return acc;
+  }, {});
+
+  const bestPitch = Math.max(0, ...(byType.pitch || []).map((g) => g.score || 0));
+  const bestRhythm = Math.max(0, ...(byType.rhythm || []).map((g) => g.score || 0));
+  const bestPizzicato = Math.max(0, ...(byType.pizzicato || []).map((g) => g.score || 0));
+  const bestBow = Math.max(0, ...(byType.bow || []).map((g) => g.score || 0));
+
+  const intonationScore = blendScores([
+    scaleScore(accuracyAvg, 100),
+    scaleScore(bestPitch, 100),
+    scaleScore((intonationAvg || 3) * 20, 100),
+  ]);
+
+  const rhythmScore = blendScores([
+    scaleScore(bestRhythm, 80),
+    scaleScore(bestPizzicato, 80),
+    scaleScore((rhythmAvg || 3) * 20, 100),
+  ]);
+
+  const bowScore = blendScores([
+    scaleScore(bestBow, 30),
+    scaleScore((toneAvg || 3) * 20, 100),
+  ]);
+
+  const toneScore = blendScores([
+    scaleScore((toneAvg || 3) * 20, 100),
+    scaleScore(accuracyAvg, 100),
+  ]);
+
+  const streak = calcStreak(safeSessions);
+  const consistencyScore = scaleScore(streak, 7);
+
+  const uniqueSongs = new Set(safeSongLogs.map((s) => s.songId)).size;
+  const repertoireScore = scaleScore(uniqueSongs, SONG_LIBRARY.length);
+
+  return {
+    intonation: intonationScore,
+    rhythm: rhythmScore,
+    bow: bowScore,
+    tone: toneScore,
+    consistency: consistencyScore,
+    repertoire: repertoireScore,
+  };
+}
+
+function averageRating(sessions, key) {
+  const values = sessions.map((s) => s[key]).filter((v) => typeof v === "number");
+  if (!values.length) return null;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+function scaleScore(value, max) {
+  if (!max || Number.isNaN(max)) return 0;
+  return clampScore((value / max) * 100);
+}
+
+function blendScores(values) {
+  const valid = values.filter((v) => typeof v === "number" && !Number.isNaN(v));
+  if (!valid.length) return 0;
+  return clampScore(valid.reduce((a, b) => a + b, 0) / valid.length);
+}
+
+function clampScore(value) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function preferredPracticeWindow(sessions) {
+  if (!sessions.length) return "Anytime that feels calm";
+  const buckets = new Array(6).fill(0);
+  sessions.forEach((s) => {
+    const date = new Date(s.date);
+    const hour = date.getHours();
+    const bucket = Math.min(5, Math.floor(hour / 4));
+    buckets[bucket] += 1;
+  });
+  const best = buckets.indexOf(Math.max(...buckets));
+  const start = best * 4;
+  const end = start + 4;
+  return `${start}:00–${end}:00`;
+}
+
+function sessionQualityModel(sessions) {
+  const data = sessions
+    .filter((s) => s.minutes)
+    .map((s) => [
+      Math.min(1, (s.minutes || 0) / 40),
+      Math.min(1, (s.focus || 0) / 5),
+      Math.min(1, (s.accuracy || 0) / 100),
+    ]);
+  if (data.length < 4) {
+    return { label: "Learning mode", confidence: "", trend: "Growing" };
+  }
+  const { centroids, labels } = kMeans(data, 3, 10);
+  const lastLabel = labels[labels.length - 1];
+  const scores = centroids.map((c) => c.reduce((a, b) => a + b, 0));
+  const order = scores
+    .map((score, index) => ({ score, index }))
+    .sort((a, b) => a.score - b.score);
+  const labelMap = {};
+  labelMap[order[0].index] = "Growing";
+  labelMap[order[1].index] = "Steady";
+  labelMap[order[2].index] = "High Focus";
+  const label = labelMap[lastLabel] || "Steady";
+  const confidence = data.length > 8 ? "• strong data" : "• building data";
+
+  const recent = sessions.slice(-3).map((s) => s.focus || 0);
+  const trend = recent.length >= 2 && recent[recent.length - 1] >= recent[0] ? "Upward" : "Steady";
+  return { label, confidence, trend };
+}
+
+function kMeans(data, k, iterations) {
+  const centroids = [];
+  const labels = new Array(data.length).fill(0);
+  for (let i = 0; i < k; i++) {
+    centroids.push([...data[Math.floor(Math.random() * data.length)]]);
+  }
+  for (let iter = 0; iter < iterations; iter++) {
+    data.forEach((point, idx) => {
+      let best = 0;
+      let bestDist = Infinity;
+      centroids.forEach((centroid, cIdx) => {
+        const dist = Math.sqrt(point.reduce((sum, val, i) => sum + (val - centroid[i]) ** 2, 0));
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = cIdx;
+        }
+      });
+      labels[idx] = best;
+    });
+    for (let c = 0; c < k; c++) {
+      const members = data.filter((_, idx) => labels[idx] === c);
+      if (!members.length) continue;
+      const next = new Array(data[0].length).fill(0);
+      members.forEach((point) => {
+        point.forEach((val, i) => {
+          next[i] += val;
+        });
+      });
+      centroids[c] = next.map((sum) => sum / members.length);
+    }
+  }
+  return { centroids, labels };
+}
+
 async function renderAnalysis() {
   const chart = $("#analysis-chart");
   if (!chart) return;
@@ -1076,6 +2036,7 @@ async function renderAnalysis() {
   const sessions = await getSessions();
   const games = await getGameResults();
   const recordings = await getRecordings();
+  const songLogs = await getSongLogs();
   const stats = computeStats(sessions, games, recordings);
 
   const data = tunerHistory.slice(-40);
@@ -1127,6 +2088,8 @@ async function renderAnalysis() {
       <div>Recordings: <strong>${stats.totalRecordings}</strong></div>
     `;
   }
+
+  await renderSmartCoach(sessions, games, songLogs);
 }
 
 async function renderRecordings() {
@@ -1157,6 +2120,7 @@ async function renderProgress() {
   const sessions = await getSessions();
   const games = await getGameResults();
   const recordings = await getRecordings();
+  const songLogs = await getSongLogs();
   const stats = computeStats(sessions, games, recordings);
   garden.innerHTML = "";
   const last7 = sessions
@@ -1183,6 +2147,7 @@ async function renderProgress() {
     <div>Average Session: <strong>${avg} min</strong></div>
     <div>Streak: <strong>${calcStreak(sessions)} days</strong></div>
     <div>Game Stars (7d): <strong>${gameStars}</strong></div>
+    <div>Song Plays (7d): <strong>${songLogs.filter((s) => Date.now() - new Date(s.date).getTime() < 7 * 86400000).length}</strong></div>
   `;
 
   if (highlights) {
@@ -1272,6 +2237,7 @@ async function renderParentInsights() {
   const sessions = await getSessions();
   const games = await getGameResults();
   const recordings = await getRecordings();
+  const songLogs = await getSongLogs();
   const stats = computeStats(sessions, games, recordings);
   let goal = await getSetting("goalMinutes", 20);
   if (!goal || Number.isNaN(goal)) goal = 20;
@@ -1283,6 +2249,7 @@ async function renderParentInsights() {
     <div>Average Accuracy: <strong>${avgAccuracy}%</strong></div>
     <div>Sessions: <strong>${sessions.length}</strong></div>
     <div>Games Played: <strong>${games.length}</strong></div>
+    <div>Songs Practiced: <strong>${songLogs.length}</strong></div>
     <div>Today: <strong>${stats.todayMinutes} / ${goal} min</strong></div>
   `;
 }
@@ -1291,8 +2258,9 @@ async function exportData() {
   const sessions = await getSessions();
   const games = await getGameResults();
   const recordings = await getRecordings();
+  const songLogs = await getSongLogs();
   const settings = await getAllSettings();
-  const payload = { sessions, games, recordings: recordings.map((r) => ({ ...r, blob: undefined })), settings };
+  const payload = { sessions, games, songLogs, recordings: recordings.map((r) => ({ ...r, blob: undefined })), settings };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const file = new File([blob], "emerson-violin-data.json", { type: "application/json" });
   if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -1318,7 +2286,7 @@ async function importData(event) {
     const text = await file.text();
     const data = JSON.parse(text);
     const db = await dbPromise;
-    const tx = db.transaction(["sessions", "games", "settings"], "readwrite");
+    const tx = db.transaction(["sessions", "games", "songLogs", "settings"], "readwrite");
     if (Array.isArray(data.sessions)) {
       const store = tx.objectStore("sessions");
       data.sessions.forEach((s) => {
@@ -1330,6 +2298,13 @@ async function importData(event) {
       const store = tx.objectStore("games");
       data.games.forEach((g) => {
         const { id, ...rest } = g;
+        store.add(rest);
+      });
+    }
+    if (Array.isArray(data.songLogs)) {
+      const store = tx.objectStore("songLogs");
+      data.songLogs.forEach((log) => {
+        const { id, ...rest } = log;
         store.add(rest);
       });
     }
@@ -1401,6 +2376,9 @@ async function openDB() {
       if (!db.objectStoreNames.contains("games")) {
         db.createObjectStore("games", { keyPath: "id", autoIncrement: true });
       }
+      if (!db.objectStoreNames.contains("songLogs")) {
+        db.createObjectStore("songLogs", { keyPath: "id", autoIncrement: true });
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -1446,6 +2424,29 @@ async function getGameResults() {
   return new Promise((resolve, reject) => {
     const tx = db.transaction("games", "readonly");
     const store = tx.objectStore("games");
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function addSongLog(log) {
+  const db = await dbPromise;
+  const payload = { ...log, date: new Date().toISOString() };
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("songLogs", "readwrite");
+    const store = tx.objectStore("songLogs");
+    const request = store.add(payload);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getSongLogs() {
+  const db = await dbPromise;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("songLogs", "readonly");
+    const store = tx.objectStore("songLogs");
     const request = store.getAll();
     request.onsuccess = () => resolve(request.result || []);
     request.onerror = () => reject(request.error);

@@ -109,6 +109,7 @@
       <button data-nav="home" class="pill active">Home</button>
       <button data-nav="coach" class="pill">Coach</button>
       <button data-nav="trainer" class="pill">Trainer</button>
+      <button data-nav="songs" class="pill">Songs</button>
       <button data-nav="games" class="pill">Games</button>
       <button data-nav="tuner" class="pill">Tuner</button>
       <button data-nav="analysis" class="pill">Analysis</button>
@@ -158,6 +159,18 @@
               <input type="range" min="1" max="5" value="3" id="focus-range" />
             </label>
             <label>
+              Rhythm Confidence
+              <input type="range" min="1" max="5" value="3" id="rhythm-range" />
+            </label>
+            <label>
+              Intonation Confidence
+              <input type="range" min="1" max="5" value="3" id="intonation-range" />
+            </label>
+            <label>
+              Tone & Bow Quality
+              <input type="range" min="1" max="5" value="3" id="tone-range" />
+            </label>
+            <label>
               Minutes Practiced
               <input type="number" min="1" max="120" id="minutes-input" placeholder="15" />
             </label>
@@ -177,6 +190,27 @@
         <div class="spark-actions">
           <button class="primary" id="coach-speak">Give Me a Tip</button>
           <button class="ghost" id="toggle-voice">Voice: Off</button>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div class="card">
+          <h2>Today’s Plan</h2>
+          <p class="muted">Adaptive, kid-friendly steps based on Emerson’s progress.</p>
+          <ol class="plan" id="daily-plan"></ol>
+          <div class="row">
+            <button class="primary" id="start-daily-plan">Start Plan</button>
+            <button class="ghost" id="refresh-daily-plan">Refresh</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Song of the Day</h2>
+          <p class="muted" id="song-of-day-meta">A joyful piece chosen by the Panda Coach.</p>
+          <div class="song-of-day" id="song-of-day"></div>
+          <div class="row">
+            <button class="primary" id="play-song-of-day">Play Along</button>
+            <button class="ghost" id="browse-songs">Browse Songs</button>
+          </div>
         </div>
       </div>
     </section>
@@ -261,6 +295,64 @@
           </div>
           <div class="muted" id="timer-status">Ready for practice.</div>
         </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-songs" data-view="songs">
+      <div class="grid two">
+        <div class="card">
+          <h2>Song Library</h2>
+          <p class="muted">Choose a song and grow your repertoire.</p>
+          <div class="song-filters">
+            <input type="search" id="song-search" placeholder="Search songs" />
+            <select id="song-level-filter">
+              <option value="all">All Levels</option>
+              <option value="beginner">Beginner</option>
+              <option value="early">Early Intermediate</option>
+              <option value="intermediate">Intermediate</option>
+            </select>
+            <select id="song-string-filter">
+              <option value="all">All Strings</option>
+              <option value="G">G string</option>
+              <option value="D">D string</option>
+              <option value="A">A string</option>
+              <option value="E">E string</option>
+            </select>
+          </div>
+          <div class="song-list" id="song-list"></div>
+        </div>
+        <div class="card">
+          <h2>Play-Along Studio</h2>
+          <p class="muted">Play with a guide melody, metronome, and drone.</p>
+          <div class="song-selected" id="song-selected">Pick a song to get started.</div>
+          <div class="song-meta" id="song-meta"></div>
+          <div class="song-controls">
+            <label>
+              Tempo (BPM)
+              <input type="range" min="50" max="160" value="84" id="song-tempo" />
+            </label>
+            <div class="tempo-display" id="song-tempo-display">84 BPM</div>
+            <div class="toggle-grid">
+              <label class="toggle"><input type="checkbox" id="song-guide" checked /> Guide Melody</label>
+              <label class="toggle"><input type="checkbox" id="song-click" checked /> Metronome</label>
+              <label class="toggle"><input type="checkbox" id="song-drone" /> A Drone</label>
+              <label class="toggle"><input type="checkbox" id="song-loop" /> Loop Phrase</label>
+            </div>
+          </div>
+          <div class="row">
+            <button class="primary" id="song-start">Play Along</button>
+            <button class="ghost" id="song-stop">Stop</button>
+            <button class="ghost" id="song-preview">Preview</button>
+          </div>
+          <div class="song-timeline" id="song-timeline"></div>
+          <div class="song-coach" id="song-coach"></div>
+        </div>
+      </div>
+      <div class="card full">
+        <h2>Repertoire Progress</h2>
+        <p class="muted">Track favorite songs, streaks, and milestones.</p>
+        <div class="repertoire-stats" id="repertoire-stats"></div>
+        <div class="repertoire-grid" id="repertoire-grid"></div>
       </div>
     </section>
 
@@ -385,6 +477,20 @@
           <div class="recordings" id="recordings-list"></div>
         </div>
       </div>
+      <div class="grid two">
+        <div class="card">
+          <h2>Smart Coach Lab</h2>
+          <p class="muted">On-device learning that adapts to Emerson’s practice habits.</p>
+          <div class="ml-summary" id="ml-summary"></div>
+          <div class="ml-insights" id="ml-insights"></div>
+          <button class="ghost" id="refresh-ml">Refresh Coach Insights</button>
+        </div>
+        <div class="card">
+          <h2>Skill Spotlight</h2>
+          <p class="muted">Balanced growth across rhythm, intonation, tone, and bow control.</p>
+          <div class="skill-grid" id="skill-grid"></div>
+        </div>
+      </div>
     </section>
 
     <section class="view" id="view-progress" data-view="progress">
@@ -456,7 +562,7 @@
               </label>
               <button class="ghost danger" id="clear-data">Clear All Data</button>
             </div>
-            <p class="muted small">Import merges sessions and games. Recordings are kept on this device.</p>
+            <p class="muted small">Import merges sessions, games, and song plays. Recordings stay on this device.</p>
           </div>
         </div>
       </div>

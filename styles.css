@@ -346,6 +346,216 @@ body {
   font-weight: 800;
 }
 
+.plan {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.plan li {
+  background: #fff7f1;
+  border: 3px solid var(--stroke);
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-strong);
+  font-weight: 800;
+}
+
+.song-of-day {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #fff1e4;
+  border: 3px solid var(--stroke);
+  font-weight: 800;
+}
+
+.song-filters {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  margin-bottom: 12px;
+}
+
+.song-list {
+  display: grid;
+  gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.song-card {
+  background: #fff7f1;
+  border-radius: 16px;
+  padding: 12px;
+  border: 3px solid var(--stroke);
+  display: grid;
+  gap: 8px;
+  box-shadow: var(--shadow-strong);
+}
+
+.song-card h3 {
+  margin: 0;
+  font-family: "Fraunces", serif;
+}
+
+.song-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.song-chip {
+  background: #ffe2ef;
+  border-radius: 999px;
+  padding: 4px 10px;
+  border: 2px solid var(--stroke);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.song-selected {
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-family: "Fraunces", serif;
+}
+
+.song-controls {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.toggle-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff1f0;
+  border-radius: 12px;
+  padding: 6px 10px;
+  border: 2px solid var(--stroke);
+  font-weight: 800;
+}
+
+.song-timeline {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 10px;
+  margin-top: 12px;
+  border-radius: 16px;
+  background: #fff7f0;
+  border: 3px solid var(--stroke);
+  -webkit-overflow-scrolling: touch;
+}
+
+.note-chip {
+  min-width: 48px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: #fff;
+  border: 2px solid var(--stroke);
+  font-weight: 800;
+  text-align: center;
+  box-shadow: var(--shadow-strong);
+}
+
+.note-chip.active {
+  background: #ffd166;
+  transform: translateY(-2px);
+}
+
+.song-coach {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #fff7f1;
+  border: 3px solid var(--stroke);
+  font-weight: 700;
+}
+
+.repertoire-stats {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-bottom: 16px;
+}
+
+.repertoire-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.repertoire-card {
+  background: #fff7f1;
+  border-radius: 16px;
+  padding: 12px;
+  border: 3px solid var(--stroke);
+  display: grid;
+  gap: 6px;
+  font-weight: 800;
+  box-shadow: var(--shadow-strong);
+}
+
+.ml-summary, .ml-insights {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ml-insights div {
+  background: #fff1e4;
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 3px solid var(--stroke);
+  font-weight: 800;
+}
+
+.skill-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.skill-card {
+  background: #fff7f0;
+  border-radius: 16px;
+  padding: 12px;
+  border: 3px solid var(--stroke);
+  box-shadow: var(--shadow-strong);
+}
+
+.skill-card h4 {
+  margin: 0 0 6px;
+}
+
+.skill-meter {
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid var(--stroke);
+  background: #ffe2ef;
+  overflow: hidden;
+}
+
+.skill-meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
 .parent-tools {
   margin-top: 16px;
   padding-top: 12px;

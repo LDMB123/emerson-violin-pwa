@@ -2,6 +2,8 @@
   "name": "Emerson's Violin Studio",
   "short_name": "ViolinPanda",
   "description": "Local-first violin teacher, coach, trainer, tuner, and progress tracker for Emerson.",
+  "categories": ["education", "music", "kids"],
+  "lang": "en-US",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -67,6 +69,28 @@
       "name": "Start Practice",
       "short_name": "Practice",
       "url": "./?view=coach",
+      "icons": [
+        {
+          "src": "./assets/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Play Songs",
+      "short_name": "Songs",
+      "url": "./?view=songs",
+      "icons": [
+        {
+          "src": "./assets/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Play Games",
+      "short_name": "Games",
+      "url": "./?view=games",
       "icons": [
         {
           "src": "./assets/icons/icon-192.png",
