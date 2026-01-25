@@ -409,6 +409,87 @@ body {
   gap: 6px;
 }
 
+.lesson-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lesson-title {
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+
+.lesson-focus {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.lesson-progress {
+  height: 12px;
+  border-radius: 999px;
+  border: 3px solid var(--stroke);
+  background: #fff1f0;
+  overflow: hidden;
+}
+
+.lesson-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4cc9f0, #ff5c8a);
+  transition: width 0.2s ease;
+}
+
+.lesson-timer {
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.lesson-steps {
+  display: grid;
+  gap: 8px;
+}
+
+.lesson-step {
+  background: #fff7f1;
+  border-radius: 14px;
+  border: 3px solid var(--stroke);
+  padding: 10px 12px;
+  font-weight: 800;
+  box-shadow: var(--shadow-strong);
+}
+
+.lesson-step.active {
+  background: #ffd166;
+}
+
+.mission-card {
+  background: #fff7f1;
+  border-radius: 16px;
+  border: 3px solid var(--stroke);
+  padding: 12px;
+  font-weight: 800;
+  display: grid;
+  gap: 6px;
+  box-shadow: var(--shadow-strong);
+}
+
+.mission-title {
+  font-family: "Fraunces", serif;
+  font-size: 1.2rem;
+}
+
+.lesson-mini {
+  background: #fff7f0;
+  border-radius: 16px;
+  border: 3px solid var(--stroke);
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
 .level-panel {
   display: grid;
   gap: 12px;

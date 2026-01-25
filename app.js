@@ -65,6 +65,15 @@ let storyAnswers = {};
 let storySong = null;
 let storyPlaybackNodes = [];
 let storyPlaybackTimeout;
+let lessonState = {
+  lessonId: null,
+  stepIndex: 0,
+  running: false,
+  remainingSec: 0,
+  totalSec: 0,
+  elapsedSec: 0,
+  timerId: null,
+};
 let songState = {
   selectedId: null,
   tempo: 84,
@@ -552,6 +561,76 @@ const STORY_QUESTIONS = [
   },
 ];
 
+const LESSON_LIBRARY = [
+  {
+    id: "warmup-wizard",
+    title: "Warmup Wizard",
+    focus: "Posture + open strings + calm bow",
+    steps: [
+      { text: "Stretch shoulders + breathe (1 min)", minutes: 1 },
+      { text: "Open strings G-D-A-E (2 min)", minutes: 2, tool: "tuner" },
+      { text: "Bowing rainbows on A string (2 min)", minutes: 2 },
+      { text: "Left-hand spider taps (2 min)", minutes: 2 },
+      { text: "Long tone finish (1 min)", minutes: 1 },
+    ],
+  },
+  {
+    id: "tone-builder",
+    title: "Tone Builder",
+    focus: "Warm tone + straight bow",
+    steps: [
+      { text: "Bow lane check (1 min)", minutes: 1 },
+      { text: "Open string long bows (3 min)", minutes: 3, tool: "trainer" },
+      { text: "Crescendo / diminuendo (2 min)", minutes: 2 },
+      { text: "Finish with favorite note (1 min)", minutes: 1 },
+    ],
+  },
+  {
+    id: "intonation-lab",
+    title: "Intonation Lab",
+    focus: "Targeted pitch accuracy",
+    steps: [
+      { text: "Tune A string (1 min)", minutes: 1, tool: "tuner" },
+      { text: "Pitch Quest practice (3 min)", minutes: 3, tool: "games" },
+      { text: "Slow song notes (3 min)", minutes: 3, tool: "songs" },
+      { text: "Celebrate with a perfect A (1 min)", minutes: 1 },
+    ],
+  },
+  {
+    id: "rhythm-explorer",
+    title: "Rhythm Explorer",
+    focus: "Steady beat + patterns",
+    steps: [
+      { text: "Clap steady beat (1 min)", minutes: 1 },
+      { text: "Rhythm Dash (3 min)", minutes: 3, tool: "games" },
+      { text: "Rhythm Painter (3 min)", minutes: 3, tool: "games" },
+      { text: "Play a song with metronome (2 min)", minutes: 2, tool: "songs" },
+    ],
+  },
+  {
+    id: "technique-lab",
+    title: "Technique Lab",
+    focus: "Bow + fingers",
+    steps: [
+      { text: "Straight bow check (1 min)", minutes: 1 },
+      { text: "String crossings G-D-A-E (2 min)", minutes: 2 },
+      { text: "Left-hand spider taps (2 min)", minutes: 2 },
+      { text: "Bow Hold Hero (2 min)", minutes: 2, tool: "games" },
+    ],
+  },
+  {
+    id: "song-artist",
+    title: "Song Artist",
+    focus: "Song expression + memory",
+    steps: [
+      { text: "Pick a favorite song (1 min)", minutes: 1, tool: "songs" },
+      { text: "Play along with guide (4 min)", minutes: 4, tool: "songs" },
+      { text: "Note Memory game (2 min)", minutes: 2, tool: "games" },
+      { text: "Perform for the panda (1 min)", minutes: 1 },
+    ],
+  },
+];
+
 const LEVEL_REWARDS = {
   2: "Panda Sparkle Badge",
   3: "Golden Bow Sticker",
@@ -648,6 +727,7 @@ async function init() {
   setupInstallTip();
   setupLifecycle();
   setupCoach();
+  setupLessonStudio();
   setupTuner();
   setupMetronome();
   setupRhythmGame();
@@ -913,6 +993,229 @@ function setupCoach() {
         handler();
       }
     });
+  }
+}
+
+function setupLessonStudio() {
+  const select = $("#lesson-select");
+  if (!select) return;
+  select.innerHTML = "";
+  LESSON_LIBRARY.forEach((lesson) => {
+    const option = document.createElement("option");
+    option.value = lesson.id;
+    option.textContent = lesson.title;
+    select.appendChild(option);
+  });
+  lessonState.lessonId = LESSON_LIBRARY[0]?.id || null;
+  lessonState.remainingSec = Math.round(getLessonById(lessonState.lessonId).steps[0].minutes * 60);
+  renderLesson();
+
+  select.addEventListener("change", () => {
+    lessonState.lessonId = select.value;
+    lessonState.stepIndex = 0;
+    const lesson = getLessonById(lessonState.lessonId);
+    lessonState.remainingSec = lesson ? Math.round(lesson.steps[0].minutes * 60) : 0;
+    stopLessonTimer();
+    renderLesson();
+  });
+
+  $("#lesson-start").addEventListener("click", () => startLesson());
+  $("#lesson-pause").addEventListener("click", () => pauseLesson());
+  $("#lesson-next").addEventListener("click", () => nextLessonStep());
+  $("#lesson-back").addEventListener("click", () => prevLessonStep());
+  $("#lesson-open-tool").addEventListener("click", () => openLessonTool());
+
+  $("#mission-start").addEventListener("click", () => startMission());
+  $("#mission-refresh").addEventListener("click", () => renderMission());
+  $("#start-warmup").addEventListener("click", () => launchLesson("warmup-wizard"));
+  $("#start-technique-lesson").addEventListener("click", () => launchLesson("technique-lab"));
+
+  renderMission();
+}
+
+function getLessonById(id) {
+  return LESSON_LIBRARY.find((lesson) => lesson.id === id) || LESSON_LIBRARY[0];
+}
+
+function renderLesson() {
+  const lesson = getLessonById(lessonState.lessonId);
+  if (!lesson) return;
+  const title = $("#lesson-title");
+  const focus = $("#lesson-focus");
+  const stepsEl = $("#lesson-steps");
+  const progress = $("#lesson-progress-bar");
+  if (title) title.textContent = lesson.title;
+  if (focus) focus.textContent = lesson.focus;
+  if (stepsEl) {
+    stepsEl.innerHTML = "";
+    lesson.steps.forEach((step, index) => {
+      const div = document.createElement("div");
+      div.className = `lesson-step ${index === lessonState.stepIndex ? "active" : ""}`;
+      div.textContent = step.text;
+      stepsEl.appendChild(div);
+    });
+  }
+  const { totalSec, elapsedSec } = computeLessonProgress(lesson);
+  if (progress) {
+    const percent = totalSec ? Math.round((elapsedSec / totalSec) * 100) : 0;
+    progress.style.width = `${percent}%`;
+  }
+  updateLessonTimer();
+}
+
+function computeLessonProgress(lesson) {
+  const totalSec = lesson.steps.reduce((sum, step) => sum + step.minutes * 60, 0);
+  const completed = lesson.steps
+    .slice(0, lessonState.stepIndex)
+    .reduce((sum, step) => sum + step.minutes * 60, 0);
+  const currentTotal = lesson.steps[lessonState.stepIndex]?.minutes * 60 || 0;
+  const elapsedSec = completed + Math.max(0, currentTotal - (lessonState.remainingSec || 0));
+  return { totalSec, elapsedSec };
+}
+
+function startLesson() {
+  const lesson = getLessonById(lessonState.lessonId);
+  if (!lesson) return;
+  lessonState.running = true;
+  if (!lessonState.remainingSec) {
+    const step = lesson.steps[lessonState.stepIndex];
+    lessonState.remainingSec = Math.round(step.minutes * 60);
+  }
+  tickLesson();
+  lessonState.timerId = setInterval(tickLesson, 1000);
+  $("#lesson-status").textContent = "In progress…";
+}
+
+function pauseLesson() {
+  stopLessonTimer();
+  $("#lesson-status").textContent = "Paused.";
+}
+
+function stopLessonTimer() {
+  lessonState.running = false;
+  if (lessonState.timerId) clearInterval(lessonState.timerId);
+  lessonState.timerId = null;
+}
+
+function tickLesson() {
+  if (!lessonState.running) return;
+  if (lessonState.remainingSec > 0) {
+    lessonState.remainingSec -= 1;
+  } else {
+    nextLessonStep(true);
+    return;
+  }
+  lessonState.elapsedSec += 1;
+  renderLesson();
+}
+
+function updateLessonTimer() {
+  const timer = $("#lesson-timer");
+  if (!timer) return;
+  const remaining = lessonState.remainingSec || 0;
+  const minutes = String(Math.floor(remaining / 60)).padStart(2, "0");
+  const seconds = String(remaining % 60).padStart(2, "0");
+  timer.textContent = `${minutes}:${seconds}`;
+}
+
+function nextLessonStep(auto = false) {
+  const lesson = getLessonById(lessonState.lessonId);
+  if (!lesson) return;
+  if (lessonState.stepIndex < lesson.steps.length - 1) {
+    lessonState.stepIndex += 1;
+    lessonState.remainingSec = Math.round(lesson.steps[lessonState.stepIndex].minutes * 60);
+    renderLesson();
+    if (!auto) showToast("Next step!");
+  } else {
+    completeLesson();
+  }
+}
+
+function prevLessonStep() {
+  const lesson = getLessonById(lessonState.lessonId);
+  if (!lesson) return;
+  lessonState.stepIndex = Math.max(0, lessonState.stepIndex - 1);
+  lessonState.remainingSec = Math.round(lesson.steps[lessonState.stepIndex].minutes * 60);
+  renderLesson();
+}
+
+async function completeLesson() {
+  const lesson = getLessonById(lessonState.lessonId);
+  stopLessonTimer();
+  lessonState.stepIndex = 0;
+  lessonState.remainingSec = 0;
+  $("#lesson-status").textContent = "Lesson complete!";
+  renderLesson();
+  const minutes = lesson.steps.reduce((sum, step) => sum + step.minutes, 0);
+  await awardXP(Math.round(minutes * 6), "Lesson completed");
+  await addSession({
+    date: new Date().toISOString(),
+    minutes,
+    mood: "sparkle",
+    focus: 4,
+    rhythm: 3,
+    intonation: 3,
+    tone: 3,
+    notes: `Guided lesson: ${lesson.title}`,
+    accuracy: averageAccuracy(),
+  });
+  await refreshDashboard();
+  showToast("Lesson complete! 🎉");
+}
+
+function openLessonTool() {
+  const lesson = getLessonById(lessonState.lessonId);
+  if (!lesson) return;
+  const step = lesson.steps[lessonState.stepIndex];
+  const target = step?.tool;
+  if (target) {
+    const btn = document.querySelector(`[data-nav="${target}"]`);
+    if (btn) btn.click();
+  } else {
+    showToast("No tool needed for this step.");
+  }
+}
+
+function launchLesson(id) {
+  lessonState.lessonId = id;
+  lessonState.stepIndex = 0;
+  const lesson = getLessonById(id);
+  lessonState.remainingSec = lesson ? Math.round(lesson.steps[0].minutes * 60) : 0;
+  const select = $("#lesson-select");
+  if (select) select.value = id;
+  renderLesson();
+  document.querySelector('[data-nav="coach"]').click();
+  startLesson();
+}
+
+async function renderMission() {
+  const missionTitle = $("#mission-title");
+  const missionSummary = $("#mission-summary");
+  if (!missionTitle || !missionSummary) return;
+  const sessions = await getSessions();
+  const games = await getGameResults();
+  const songLogs = await getSongLogs();
+  const stats = computeStats(sessions, games, []);
+  const profile = computeSkillProfile(sessions, games, songLogs);
+  const focus = pickFocusArea(profile);
+  const lesson = pickLessonForFocus(focus) || LESSON_LIBRARY[0];
+  missionTitle.textContent = `Mission: ${lesson.title}`;
+  missionSummary.textContent = `${lesson.focus} • ${lesson.steps.length} steps`;
+  missionTitle.dataset.lessonId = lesson.id;
+}
+
+function pickLessonForFocus(focus) {
+  if (focus === "intonation") return LESSON_LIBRARY.find((l) => l.id === "intonation-lab");
+  if (focus === "rhythm") return LESSON_LIBRARY.find((l) => l.id === "rhythm-explorer");
+  if (focus === "bow" || focus === "tone") return LESSON_LIBRARY.find((l) => l.id === "tone-builder");
+  return LESSON_LIBRARY.find((l) => l.id === "technique-lab");
+}
+
+function startMission() {
+  const missionTitle = $("#mission-title");
+  const lessonId = missionTitle?.dataset.lessonId;
+  if (lessonId) {
+    launchLesson(lessonId);
   }
 }
 
@@ -3042,6 +3345,7 @@ async function refreshDashboard() {
   await renderDailyPlan(sessions, games, songLogs);
   renderSongOfDay();
   await renderRepertoire();
+  renderMission();
   renderAnalysis();
   renderProgress();
   await renderRecordings();

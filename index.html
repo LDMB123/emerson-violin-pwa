@@ -253,6 +253,43 @@
       </div>
       <div class="grid two">
         <div class="card">
+          <h2>Guided Lesson Studio</h2>
+          <p class="muted">Step-by-step lessons with timers and tool guidance.</p>
+          <label>
+            Choose Lesson
+            <select id="lesson-select"></select>
+          </label>
+          <div class="lesson-panel">
+            <div class="lesson-title" id="lesson-title">Select a lesson to begin.</div>
+            <div class="lesson-focus" id="lesson-focus"></div>
+            <div class="lesson-progress"><div class="lesson-progress-bar" id="lesson-progress-bar"></div></div>
+            <div class="lesson-timer" id="lesson-timer">00:00</div>
+            <div class="lesson-status" id="lesson-status">Ready.</div>
+            <div class="lesson-steps" id="lesson-steps"></div>
+            <div class="row">
+              <button class="ghost" id="lesson-back">Back</button>
+              <button class="primary" id="lesson-start">Start</button>
+              <button class="ghost" id="lesson-pause">Pause</button>
+              <button class="ghost" id="lesson-next">Next</button>
+              <button class="ghost" id="lesson-open-tool">Open Tool</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Coach Mission</h2>
+          <p class="muted">A personalized lesson chosen by your coach.</p>
+          <div class="mission-card" id="mission-card">
+            <div class="mission-title" id="mission-title">Mission: —</div>
+            <div class="muted" id="mission-summary">Complete a lesson to get a new mission.</div>
+          </div>
+          <div class="row">
+            <button class="primary" id="mission-start">Start Mission</button>
+            <button class="ghost" id="mission-refresh">New Mission</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid two">
+        <div class="card">
           <h2>AI Coach Lab</h2>
           <p class="muted">On-device analytics for tone, rhythm, and pitch stability.</p>
           <div class="metric-grid" id="live-metrics">
@@ -319,6 +356,7 @@
             <li><input type="checkbox" /> String crossings G-D-A-E (2 min)</li>
             <li><input type="checkbox" /> Long tone breathing (1 min)</li>
           </ul>
+          <button class="ghost" id="start-technique-lesson">Start Guided Technique</button>
         </div>
         <div class="card">
           <h2>Tone Lab</h2>
@@ -338,6 +376,17 @@
             </div>
             <div class="muted small" id="tone-hint">Start the tuner to see live tone feedback.</div>
           </div>
+        </div>
+        <div class="card">
+          <h2>Warmup Wizard</h2>
+          <p class="muted">A gentle warmup with timers and reminders.</p>
+          <div class="lesson-mini" id="warmup-mini">
+            <div>1. Stretch + breathe</div>
+            <div>2. Open strings</div>
+            <div>3. Bow rainbows</div>
+            <div>4. Finger taps</div>
+          </div>
+          <button class="primary" id="start-warmup">Start Warmup</button>
         </div>
       </div>
       <div class="card full">
