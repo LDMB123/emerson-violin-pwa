@@ -60,6 +60,11 @@ let adaptiveCoachEnabled = true;
 let gameFocus = "auto";
 let earDifficulty = 2;
 let patternLength = 4;
+let storyStep = 0;
+let storyAnswers = {};
+let storySong = null;
+let storyPlaybackNodes = [];
+let storyPlaybackTimeout;
 let songState = {
   selectedId: null,
   tempo: 84,
@@ -524,6 +529,29 @@ const LEARNING_PATH = [
   },
 ];
 
+const STORY_QUESTIONS = [
+  {
+    id: "mood",
+    question: "What kind of song mood do you want?",
+    options: ["Happy", "Calm", "Brave", "Spooky"],
+  },
+  {
+    id: "place",
+    question: "Where does your song adventure happen?",
+    options: ["Forest", "Ocean", "Space", "Castle"],
+  },
+  {
+    id: "friend",
+    question: "Who is your music friend today?",
+    options: ["Red Panda", "Unicorn", "Dragon", "Robot"],
+  },
+  {
+    id: "tempo",
+    question: "How fast should the song go?",
+    options: ["Slow", "Medium", "Fast"],
+  },
+];
+
 const LEVEL_REWARDS = {
   2: "Panda Sparkle Badge",
   3: "Golden Bow Sticker",
@@ -594,10 +622,22 @@ const ACHIEVEMENTS = [
     desc: "Make your first recording.",
     check: (stats) => stats.totalRecordings >= 1,
   },
+  {
+    id: "story-maker",
+    title: "Story Maker",
+    desc: "Create your first story song.",
+    check: (_stats, _sessions, _games, _songLogs, customSongs) => customSongs.length >= 1,
+  },
+  {
+    id: "story-hero",
+    title: "Story Hero",
+    desc: "Create 3 story songs.",
+    check: (_stats, _sessions, _games, _songLogs, customSongs) => customSongs.length >= 3,
+  },
 ];
 
 const DB_NAME = "emerson-violin";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const dbPromise = openDB();
 
 init();
@@ -884,6 +924,7 @@ function setupGames() {
   setupEarTrainer();
   setupRhythmPainter();
   setupGameCoach();
+  setupStorySongGame();
 }
 
 async function setupSongs() {
@@ -1846,6 +1887,292 @@ function setupRhythmPainter() {
   });
 }
 
+async function setupStorySongGame() {
+  const nextBtn = $("#story-next");
+  const backBtn = $("#story-back");
+  const genBtn = $("#story-generate");
+  const playBtn = $("#story-play");
+  const saveBtn = $("#story-save");
+
+  if (nextBtn) nextBtn.addEventListener("click", () => moveStoryStep(1));
+  if (backBtn) backBtn.addEventListener("click", () => moveStoryStep(-1));
+  if (genBtn) genBtn.addEventListener("click", generateStorySong);
+  if (playBtn) playBtn.addEventListener("click", () => playStorySong(storySong));
+  if (saveBtn) saveBtn.addEventListener("click", saveStorySong);
+
+  storyStep = 0;
+  storyAnswers = {};
+  renderStoryQuestion();
+  await renderStoryList();
+}
+
+function moveStoryStep(delta) {
+  storyStep = Math.max(0, Math.min(STORY_QUESTIONS.length - 1, storyStep + delta));
+  renderStoryQuestion();
+}
+
+function renderStoryQuestion() {
+  const questionEl = $("#story-question");
+  const optionsEl = $("#story-options");
+  const nextBtn = $("#story-next");
+  const backBtn = $("#story-back");
+  const genBtn = $("#story-generate");
+
+  if (!questionEl || !optionsEl) return;
+  const current = STORY_QUESTIONS[storyStep];
+  questionEl.textContent = current.question;
+  optionsEl.innerHTML = "";
+  current.options.forEach((opt) => {
+    const btn = document.createElement("button");
+    btn.className = "story-option";
+    btn.textContent = opt;
+    if (storyAnswers[current.id] === opt) btn.classList.add("selected");
+    btn.addEventListener("click", () => {
+      storyAnswers[current.id] = opt;
+      renderStoryQuestion();
+    });
+    optionsEl.appendChild(btn);
+  });
+
+  if (backBtn) backBtn.disabled = storyStep === 0;
+  if (nextBtn) nextBtn.disabled = storyStep >= STORY_QUESTIONS.length - 1;
+  if (genBtn) {
+    const ready = STORY_QUESTIONS.every((q) => storyAnswers[q.id]);
+    genBtn.disabled = !ready;
+  }
+}
+
+async function generateStorySong() {
+  const ready = STORY_QUESTIONS.every((q) => storyAnswers[q.id]);
+  if (!ready) {
+    showToast("Answer all questions first.");
+    return;
+  }
+  const prefs = await getStoryPrefs();
+  const song = buildStorySong(storyAnswers, prefs);
+  storySong = song;
+  const result = $("#story-result");
+  if (result) {
+    result.textContent = `${song.title} • ${song.key} • ${song.tempo} BPM • ${song.story}`;
+  }
+  await updateStoryPrefs(storyAnswers);
+  showToast("Your story song is ready!");
+}
+
+function buildStorySong(answers, prefs) {
+  const mood = answers.mood || "Happy";
+  const tempoChoice = answers.tempo || "Medium";
+  const friend = answers.friend || "Red Panda";
+  const place = answers.place || "Forest";
+
+  const baseTempo = mood === "Calm" ? 72 : mood === "Spooky" ? 80 : mood === "Brave" ? 110 : 96;
+  const tempoAdjust = tempoChoice === "Slow" ? -18 : tempoChoice === "Fast" ? 18 : 0;
+  const fastPref = (prefs.tempo && prefs.tempo.Fast) || 0;
+  const slowPref = (prefs.tempo && prefs.tempo.Slow) || 0;
+  const prefShift = fastPref > slowPref ? 5 : slowPref > fastPref ? -5 : 0;
+  const tempo = clampTempo(baseTempo + tempoAdjust + prefShift);
+
+  const scale = pickScale(mood);
+  const rhythm = generateRhythmPattern(mood);
+  const melody = generateMelody(scale.notes, rhythm.length, mood, prefs);
+
+  const notes = rhythm.map((beats, index) => ({
+    note: melody[index],
+    beats,
+  }));
+
+  return {
+    title: `${friend} ${place} Song`,
+    key: scale.key,
+    tempo,
+    notes,
+    story: `${mood} adventure with ${friend} in the ${place}.`,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function pickScale(mood) {
+  if (mood === "Spooky") {
+    return {
+      key: "D minor",
+      notes: ["D4", "E4", "F4", "G4", "A4", "Bb4", "C5", "D5"],
+    };
+  }
+  if (mood === "Calm") {
+    return {
+      key: "G major",
+      notes: ["G3", "A3", "B3", "C4", "D4", "E4", "F#4", "G4"],
+    };
+  }
+  if (mood === "Brave") {
+    return {
+      key: "A major",
+      notes: ["A3", "B3", "C#4", "D4", "E4", "F#4", "G#4", "A4"],
+    };
+  }
+  return {
+    key: "D major",
+    notes: ["D4", "E4", "F#4", "G4", "A4", "B4", "C#5", "D5"],
+  };
+}
+
+function generateRhythmPattern(mood) {
+  const beats = [];
+  const totalBeats = 16;
+  const choices = mood === "Calm" ? [2, 1, 1] : mood === "Spooky" ? [1, 1, 0.5] : [1, 0.5, 1];
+  const weights = mood === "Calm" ? [0.5, 0.4, 0.1] : mood === "Happy" ? [0.4, 0.5, 0.1] : [0.5, 0.4, 0.1];
+  let sum = 0;
+  while (sum < totalBeats - 0.1) {
+    const pick = weightedPick(choices, weights);
+    if (sum + pick > totalBeats + 0.1) break;
+    beats.push(pick);
+    sum += pick;
+  }
+  if (sum < totalBeats) beats.push(totalBeats - sum);
+  return beats;
+}
+
+function generateMelody(scaleNotes, length, mood, prefs) {
+  const melody = [];
+  let index = Math.floor(scaleNotes.length / 2);
+  const stepBias = mood === "Calm" ? 0.8 : mood === "Brave" ? 0.4 : 0.6;
+  const preferUp = ((prefs.mood && prefs.mood.Happy) || 0) > ((prefs.mood && prefs.mood.Spooky) || 0);
+  for (let i = 0; i < length; i++) {
+    melody.push(scaleNotes[index]);
+    const moveType = Math.random() < stepBias ? "step" : "leap";
+    const direction = preferUp && Math.random() > 0.3 ? 1 : Math.random() > 0.5 ? 1 : -1;
+    const step = moveType === "step" ? 1 : 2;
+    index = clampIndex(index + direction * step, scaleNotes.length);
+  }
+  return melody;
+}
+
+function clampIndex(index, length) {
+  if (index < 0) return 0;
+  if (index >= length) return length - 1;
+  return index;
+}
+
+function clampTempo(value) {
+  return Math.max(60, Math.min(140, Math.round(value)));
+}
+
+function weightedPick(values, weights) {
+  const total = weights.reduce((a, b) => a + b, 0);
+  let roll = Math.random() * total;
+  for (let i = 0; i < values.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) return values[i];
+  }
+  return values[0];
+}
+
+async function getStoryPrefs() {
+  const prefs = await getSetting("storyPrefs", null);
+  if (prefs && typeof prefs === "object") return prefs;
+  return { mood: {}, tempo: {}, friend: {}, place: {} };
+}
+
+async function updateStoryPrefs(answers) {
+  const prefs = await getStoryPrefs();
+  Object.entries(answers).forEach(([key, value]) => {
+    prefs[key] = prefs[key] || {};
+    prefs[key][value] = (prefs[key][value] || 0) + 1;
+  });
+  await setSetting("storyPrefs", prefs);
+}
+
+async function playStorySong(song) {
+  if (!song) {
+    showToast("Create a song first!");
+    return;
+  }
+  await ensureAudioContext();
+  stopStoryPlayback();
+  const secondsPerBeat = 60 / song.tempo;
+  const startTime = audioCtx.currentTime + 0.15;
+  let beatCursor = 0;
+  song.notes.forEach((noteObj) => {
+    const freq = noteToFrequency(noteObj.note);
+    const duration = noteObj.beats * secondsPerBeat * 0.9;
+    const when = startTime + beatCursor * secondsPerBeat;
+    if (freq) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, when);
+      gain.gain.exponentialRampToValueAtTime(0.18, when + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(when);
+      osc.stop(when + duration + 0.05);
+      storyPlaybackNodes.push(osc, gain);
+    }
+    beatCursor += noteObj.beats;
+  });
+  clearTimeout(storyPlaybackTimeout);
+  storyPlaybackTimeout = setTimeout(() => {
+    stopStoryPlayback();
+  }, (beatCursor * secondsPerBeat + 0.3) * 1000);
+  showToast("Story song playing!");
+  await awardXP(8, "Story song");
+}
+
+function stopStoryPlayback() {
+  storyPlaybackNodes.forEach((node) => {
+    try { node.stop(); } catch (err) { /* ignore */ }
+    try { node.disconnect(); } catch (err) { /* ignore */ }
+  });
+  storyPlaybackNodes = [];
+}
+
+async function saveStorySong() {
+  if (!storySong) {
+    showToast("Create a song first!");
+    return;
+  }
+  await addCustomSong(storySong);
+  showToast("Story song saved!");
+  await awardXP(15, "Story song saved");
+  await renderStoryList();
+}
+
+async function renderStoryList() {
+  const list = $("#story-list");
+  if (!list) return;
+  const songs = await getCustomSongs();
+  list.innerHTML = "";
+  if (!songs.length) {
+    list.textContent = "No story songs yet. Make your first one!";
+    return;
+  }
+  songs.slice(-6).reverse().forEach((song) => {
+    const item = document.createElement("div");
+    item.className = "story-item";
+    item.innerHTML = `
+      <div>${song.title}</div>
+      <div class="muted">${song.key} • ${song.tempo} BPM</div>
+      <div class="story-actions">
+        <button class="ghost" data-action="play">Play</button>
+        <button class="ghost" data-action="delete">Delete</button>
+      </div>
+    `;
+    item.querySelector('[data-action="play"]').addEventListener("click", () => {
+      storySong = song;
+      const result = $("#story-result");
+      if (result) result.textContent = `${song.title} • ${song.key} • ${song.tempo} BPM • ${song.story}`;
+      playStorySong(song);
+    });
+    item.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+      await deleteCustomSong(song.id);
+      renderStoryList();
+    });
+    list.appendChild(item);
+  });
+}
+
 async function setupGameCoach() {
   adaptiveCoachEnabled = await getSetting("adaptiveCoach", true);
   gameFocus = await getSetting("gameFocus", "auto");
@@ -2703,6 +3030,7 @@ async function refreshDashboard() {
   const games = await getGameResults();
   const recordings = await getRecordings();
   const songLogs = await getSongLogs();
+  const customSongs = await getCustomSongs();
   const stats = computeStats(sessions, games, recordings);
   $("#streak-count").textContent = `${stats.streak} days`;
   $("#week-minutes").textContent = `${stats.weekMinutes} min`;
@@ -2710,7 +3038,7 @@ async function refreshDashboard() {
   renderStickerShelf(stats);
   await updateGoalProgress(stats);
   await renderLevelPanel();
-  await checkAchievements(stats, sessions, games, songLogs);
+  await checkAchievements(stats, sessions, games, songLogs, customSongs);
   await renderDailyPlan(sessions, games, songLogs);
   renderSongOfDay();
   await renderRepertoire();
@@ -2890,7 +3218,7 @@ async function claimReward() {
   renderLevelPanel(state, computed);
 }
 
-async function renderAchievements(stats, sessions, games, songLogs) {
+async function renderAchievements(stats, sessions, games, songLogs, customSongs) {
   const grid = $("#achievement-grid");
   if (!grid) return;
   const unlocked = new Set(await getSetting("achievementsUnlocked", []));
@@ -2908,11 +3236,11 @@ async function renderAchievements(stats, sessions, games, songLogs) {
   });
 }
 
-async function checkAchievements(stats, sessions, games, songLogs) {
+async function checkAchievements(stats, sessions, games, songLogs, customSongs) {
   const unlocked = new Set(await getSetting("achievementsUnlocked", []));
   let newUnlocked = [];
   ACHIEVEMENTS.forEach((ach) => {
-    if (!unlocked.has(ach.id) && ach.check(stats, sessions, games, songLogs)) {
+    if (!unlocked.has(ach.id) && ach.check(stats, sessions, games, songLogs, customSongs)) {
       unlocked.add(ach.id);
       newUnlocked.push(ach);
     }
@@ -2922,7 +3250,7 @@ async function checkAchievements(stats, sessions, games, songLogs) {
     newUnlocked.forEach((ach) => showToast(`Achievement unlocked: ${ach.title}`));
     if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
   }
-  renderAchievements(stats, sessions, games, songLogs);
+  renderAchievements(stats, sessions, games, songLogs, customSongs);
 }
 
 async function renderDailyPlan(sessions, games, songLogs) {
@@ -3549,8 +3877,9 @@ async function exportData() {
   const games = await getGameResults();
   const recordings = await getRecordings();
   const songLogs = await getSongLogs();
+  const customSongs = await getCustomSongs();
   const settings = await getAllSettings();
-  const payload = { sessions, games, songLogs, recordings: recordings.map((r) => ({ ...r, blob: undefined })), settings };
+  const payload = { sessions, games, songLogs, customSongs, recordings: recordings.map((r) => ({ ...r, blob: undefined })), settings };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const file = new File([blob], "emerson-violin-data.json", { type: "application/json" });
   if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -3576,7 +3905,7 @@ async function importData(event) {
     const text = await file.text();
     const data = JSON.parse(text);
     const db = await dbPromise;
-    const tx = db.transaction(["sessions", "games", "songLogs", "settings"], "readwrite");
+    const tx = db.transaction(["sessions", "games", "songLogs", "customSongs", "settings"], "readwrite");
     if (Array.isArray(data.sessions)) {
       const store = tx.objectStore("sessions");
       data.sessions.forEach((s) => {
@@ -3595,6 +3924,13 @@ async function importData(event) {
       const store = tx.objectStore("songLogs");
       data.songLogs.forEach((log) => {
         const { id, ...rest } = log;
+        store.add(rest);
+      });
+    }
+    if (Array.isArray(data.customSongs)) {
+      const store = tx.objectStore("customSongs");
+      data.customSongs.forEach((song) => {
+        const { id, ...rest } = song;
         store.add(rest);
       });
     }
@@ -3669,6 +4005,9 @@ async function openDB() {
       if (!db.objectStoreNames.contains("songLogs")) {
         db.createObjectStore("songLogs", { keyPath: "id", autoIncrement: true });
       }
+      if (!db.objectStoreNames.contains("customSongs")) {
+        db.createObjectStore("customSongs", { keyPath: "id", autoIncrement: true });
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -3739,6 +4078,39 @@ async function getSongLogs() {
     const store = tx.objectStore("songLogs");
     const request = store.getAll();
     request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function addCustomSong(song) {
+  const db = await dbPromise;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("customSongs", "readwrite");
+    const store = tx.objectStore("customSongs");
+    const request = store.add(song);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getCustomSongs() {
+  const db = await dbPromise;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("customSongs", "readonly");
+    const store = tx.objectStore("customSongs");
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function deleteCustomSong(id) {
+  const db = await dbPromise;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("customSongs", "readwrite");
+    const store = tx.objectStore("customSongs");
+    const request = store.delete(id);
+    request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }
