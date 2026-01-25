@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#d8572a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-touch-fullscreen" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Violin Panda" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="description" content="A local-first violin teacher, coach, trainer, tuner, and progress tracker for Emerson." />
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  
+  <link rel="apple-touch-icon" sizes="120x120" href="./assets/icons/icon-120.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="./assets/icons/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="./assets/icons/icon-167.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/icon-180.png" />
+  <link rel="icon" type="image/png" href="./assets/icons/favicon-32.png" />
+
+  <link rel="preload" href="./assets/fonts/fraunces-vf.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="./assets/fonts/nunito-vf.woff2" as="font" type="font/woff2" crossorigin />
+
+  <title>Emerson’s Violin Studio</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient">
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    <div class="glow glow-3"></div>
+  </div>
+
+  <div class="offline-banner" id="offline-banner">Offline mode: saved locally on this iPad.</div>
+
+  <header class="hero">
+    <div class="hero-content">
+      <div class="hero-tag">Local-first • iPad-ready • Red Panda Magic</div>
+      <h1>Emerson’s Violin Studio</h1>
+      <p class="hero-sub">Teacher, coach, trainer, tuner, and progress tracker — designed for joyful practice and powerful growth.</p>
+      <div class="hero-actions">
+        <button class="primary" id="start-practice">Start Practice</button>
+        <button class="ghost" data-nav="coach">Open Coach</button>
+      </div>
+      <div class="sticker-strip">
+        <img src="./assets/illustrations/sticker-panda.svg" alt="Red panda sticker" />
+        <img src="./assets/illustrations/sticker-violin.svg" alt="Violin sticker" />
+        <img src="./assets/illustrations/sticker-star.svg" alt="Star sticker" />
+        <img src="./assets/illustrations/sticker-bow.svg" alt="Bow sticker" />
+      </div>
+      <div class="hero-stats" id="hero-stats">
+        <div class="stat-card">
+          <div class="stat-title">Practice Streak</div>
+          <div class="stat-value" id="streak-count">0 days</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">This Week</div>
+          <div class="stat-value" id="week-minutes">0 min</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Focus Stars</div>
+          <div class="stat-value" id="focus-stars">0</div>
+        </div>
+        <div class="stat-card goal-card">
+          <div class="stat-title">Daily Goal</div>
+          <div class="stat-value" id="goal-progress-text">0 / 20 min</div>
+          <div class="progress-track">
+            <div class="progress-bar" id="goal-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-art">
+      <div class="sticker-cluster">
+        <img src="./assets/illustrations/sticker-star.svg" alt="" />
+        <img src="./assets/illustrations/sticker-violin.svg" alt="" />
+      </div>
+      <div class="panda-card">
+        <svg viewBox="0 0 240 240" aria-hidden="true">
+          <defs>
+            <linearGradient id="fur" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#f9a36b" />
+              <stop offset="1" stop-color="#d85b2b" />
+            </linearGradient>
+          </defs>
+          <circle cx="120" cy="120" r="112" fill="#ffe9d6" />
+          <circle cx="120" cy="128" r="78" fill="url(#fur)" />
+          <circle cx="60" cy="60" r="28" fill="#b64921" />
+          <circle cx="180" cy="60" r="28" fill="#b64921" />
+          <circle cx="60" cy="60" r="14" fill="#ffe9d6" />
+          <circle cx="180" cy="60" r="14" fill="#ffe9d6" />
+          <circle cx="86" cy="126" r="14" fill="#3c261b" />
+          <circle cx="154" cy="126" r="14" fill="#3c261b" />
+          <circle cx="120" cy="150" r="10" fill="#3c261b" />
+          <path d="M100 164c12 14 28 14 40 0" stroke="#3c261b" stroke-width="6" stroke-linecap="round" fill="none" />
+          <path d="M175 170c0-16 14-30 30-30" stroke="#7a3d21" stroke-width="6" fill="none" stroke-linecap="round" />
+          <path d="M175 170c0 16 14 30 30 30" stroke="#7a3d21" stroke-width="6" fill="none" stroke-linecap="round" />
+          <line x1="200" y1="140" x2="200" y2="200" stroke="#7a3d21" stroke-width="6" stroke-linecap="round" />
+        </svg>
+        <div class="panda-caption">Red Panda Coach</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <nav class="pill-nav" aria-label="Primary">
+      <button data-nav="home" class="pill active">Home</button>
+      <button data-nav="coach" class="pill">Coach</button>
+      <button data-nav="trainer" class="pill">Trainer</button>
+      <button data-nav="games" class="pill">Games</button>
+      <button data-nav="tuner" class="pill">Tuner</button>
+      <button data-nav="analysis" class="pill">Analysis</button>
+      <button data-nav="progress" class="pill">Progress</button>
+      <button data-nav="parent" class="pill">Parent</button>
+    </nav>
+
+    <section class="view active" id="view-home" data-view="home">
+      <div class="card install-tip hidden" id="install-tip">
+        <h2>Install on iPad</h2>
+        <p class="muted">Open in Safari, tap Share, then “Add to Home Screen” for the full app experience.</p>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <h2>Teacher Studio</h2>
+          <p class="muted">A magical practice path tailored for Emerson.</p>
+          <div class="mini-lesson">
+            <strong>Lesson Focus:</strong> Bowing rainbows + bright open strings.
+          </div>
+          <ul class="checklist" id="quest-list">
+            <li><input type="checkbox" /> Warm up with open strings (2 min)</li>
+            <li><input type="checkbox" /> Bowing rainbows on A string (3 min)</li>
+            <li><input type="checkbox" /> Rhythm game: Panda Pizzicato (3 min)</li>
+            <li><input type="checkbox" /> Song of the day (5 min)</li>
+          </ul>
+          <div class="row">
+            <button class="primary" id="log-session">Log Practice</button>
+            <button class="ghost" id="start-record">Record + Analyze</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Practice Journal</h2>
+          <p class="muted">Track feelings, focus, and wins.</p>
+          <div class="journal">
+            <label>
+              Mood
+              <select id="mood-select">
+                <option value="sunny">Sunny</option>
+                <option value="sparkle">Sparkle</option>
+                <option value="calm">Calm</option>
+                <option value="determined">Determined</option>
+                <option value="tired">Tired</option>
+              </select>
+            </label>
+            <label>
+              Focus Level
+              <input type="range" min="1" max="5" value="3" id="focus-range" />
+            </label>
+            <label>
+              Minutes Practiced
+              <input type="number" min="1" max="120" id="minutes-input" placeholder="15" />
+            </label>
+            <label>
+              Notes
+              <textarea id="journal-notes" rows="3" placeholder="What felt great today? What felt tricky?"></textarea>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card highlight">
+        <div>
+          <h2>Coach Spark</h2>
+          <p class="muted">Get instant tips and encouragement from the Red Panda Coach.</p>
+        </div>
+        <div class="spark-actions">
+          <button class="primary" id="coach-speak">Give Me a Tip</button>
+          <button class="ghost" id="toggle-voice">Voice: Off</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-coach" data-view="coach">
+      <div class="grid two">
+        <div class="card">
+          <h2>Live Coach</h2>
+          <p class="muted">Play a note and let the coach guide your intonation.</p>
+          <div class="tuner-panel">
+            <div class="note-display">
+              <div class="note" id="coach-note">—</div>
+              <div class="freq" id="coach-freq">Ready</div>
+            </div>
+            <div class="gauge">
+              <div class="gauge-center"></div>
+              <div class="needle" id="coach-needle"></div>
+            </div>
+            <div class="tuner-controls">
+              <button class="primary" id="coach-start">Start Listening</button>
+              <button class="ghost" id="coach-stop">Stop</button>
+            </div>
+            <div class="tuner-targets">
+              <button class="chip" data-target="G3">G</button>
+              <button class="chip" data-target="D4">D</button>
+              <button class="chip" data-target="A4">A</button>
+              <button class="chip" data-target="E5">E</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Coach Notes</h2>
+          <div class="coach-notes" id="coach-notes"></div>
+          <div class="coach-badges">
+            <div class="badge">Bow Fairy</div>
+            <div class="badge">Intonation Ninja</div>
+            <div class="badge">Rhythm Ranger</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-trainer" data-view="trainer">
+      <div class="grid two">
+        <div class="card">
+          <h2>Metronome Trainer</h2>
+          <p class="muted">Keep steady beats with a gentle panda pulse.</p>
+          <div class="metronome">
+            <label>
+              Tempo (BPM)
+              <input type="range" min="40" max="200" value="92" id="tempo" />
+            </label>
+            <div class="tempo-display" id="tempo-display">92 BPM</div>
+            <div class="pulse" id="metro-pulse"></div>
+            <div class="row">
+              <button class="primary" id="metro-start">Start</button>
+              <button class="ghost" id="metro-stop">Stop</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Technique Lab</h2>
+          <p class="muted">Mini drills for bow, fingers, and posture.</p>
+          <ul class="checklist">
+            <li><input type="checkbox" /> Bow straight lines (1 min)</li>
+            <li><input type="checkbox" /> Left-hand spider taps (2 min)</li>
+            <li><input type="checkbox" /> String crossings G-D-A-E (2 min)</li>
+            <li><input type="checkbox" /> Long tone breathing (1 min)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card full">
+        <h2>Practice Timer</h2>
+        <p class="muted">Start a focused session and log it automatically.</p>
+        <div class="timer-panel">
+          <div class="timer-display" id="practice-timer">00:00</div>
+          <div class="row">
+            <button class="primary" id="timer-start">Start</button>
+            <button class="ghost" id="timer-pause">Pause</button>
+            <button class="ghost" id="timer-reset">Reset</button>
+            <button class="primary" id="timer-save">Save Session</button>
+          </div>
+          <div class="muted" id="timer-status">Ready for practice.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-games" data-view="games">
+      <div class="grid two">
+        <div class="card">
+          <h2>Pitch Quest</h2>
+          <p class="muted">Match the target string and earn panda stars.</p>
+          <div class="game-panel">
+            <div class="game-target" id="pitch-target">Target: A4</div>
+            <div class="game-result" id="pitch-result">Tap start and play your note!</div>
+            <div class="row">
+              <button class="primary" id="pitch-start">Start Pitch Quest</button>
+              <button class="ghost" id="pitch-stop">Stop</button>
+            </div>
+            <div class="tuner-targets">
+              <button class="chip pitch-chip" data-target="G3">G</button>
+              <button class="chip pitch-chip" data-target="D4">D</button>
+              <button class="chip pitch-chip" data-target="A4">A</button>
+              <button class="chip pitch-chip" data-target="E5">E</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Rhythm Dash</h2>
+          <p class="muted">Tap with the beat to collect panda stars.</p>
+          <div class="game-panel">
+            <label>
+              Tempo (BPM)
+              <input type="range" min="60" max="160" value="96" id="rhythm-tempo" />
+            </label>
+            <div class="tempo-display" id="rhythm-tempo-display">96 BPM</div>
+            <div class="row">
+              <button class="primary" id="rhythm-dash-start">Start</button>
+              <button class="ghost" id="rhythm-dash-stop">Stop</button>
+              <button class="ghost" id="rhythm-dash-tap">Tap</button>
+            </div>
+            <div class="beat-indicator" id="rhythm-dash-beat"></div>
+            <div class="score" id="rhythm-dash-score">Score: 0</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <h2>Note Memory</h2>
+          <p class="muted">Listen to the sequence and tap it back.</p>
+          <div class="game-panel">
+            <div class="sequence" id="memory-sequence">Ready for a melody!</div>
+            <div class="row">
+              <button class="primary" id="memory-play">Play Sequence</button>
+              <button class="ghost" id="memory-clear">Clear</button>
+            </div>
+            <div class="tuner-targets">
+              <button class="chip memory-note" data-note="G3">G</button>
+              <button class="chip memory-note" data-note="D4">D</button>
+              <button class="chip memory-note" data-note="A4">A</button>
+              <button class="chip memory-note" data-note="E5">E</button>
+            </div>
+            <div class="score" id="memory-score">Score: 0</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Bow Hold Hero</h2>
+          <p class="muted">Hold steady long bows with a breathing timer.</p>
+          <div class="game-panel">
+            <div class="timer" id="bow-timer">0.0s</div>
+            <div class="pulse long" id="bow-pulse"></div>
+            <div class="row">
+              <button class="primary" id="bow-start">Start Long Bow</button>
+              <button class="ghost" id="bow-stop">Stop</button>
+            </div>
+            <div class="score" id="bow-score">Best: 0s</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Panda Pizzicato</h2>
+        <p class="muted">Tap along with the panda paw prints.</p>
+        <div class="rhythm-game">
+          <div class="lane" id="rhythm-lane"></div>
+          <button class="primary" id="rhythm-start">Start Game</button>
+          <div class="score" id="rhythm-score">Score: 0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-tuner" data-view="tuner">
+      <div class="card full">
+        <h2>Tuner & Pitch Magic</h2>
+        <p class="muted">Perfect tuning for every string.</p>
+        <div class="tuner-full">
+          <div class="note" id="tuner-note">—</div>
+          <div class="freq" id="tuner-freq">Tap start to listen.</div>
+          <div class="gauge large">
+            <div class="gauge-center"></div>
+            <div class="needle" id="tuner-needle"></div>
+          </div>
+          <div class="row">
+            <button class="primary" id="tuner-start">Start Tuner</button>
+            <button class="ghost" id="tuner-stop">Stop</button>
+          </div>
+          <div class="tuner-targets">
+            <button class="chip" data-target="G3">G3 (196Hz)</button>
+            <button class="chip" data-target="D4">D4 (294Hz)</button>
+            <button class="chip" data-target="A4">A4 (440Hz)</button>
+            <button class="chip" data-target="E5">E5 (659Hz)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-analysis" data-view="analysis">
+      <div class="grid two">
+        <div class="card">
+          <h2>Session Analysis</h2>
+          <canvas id="analysis-chart" width="320" height="200"></canvas>
+          <div class="analysis-stats" id="analysis-stats"></div>
+          <div class="analysis-summary" id="analysis-summary"></div>
+        </div>
+        <div class="card">
+          <h2>Recordings</h2>
+          <div class="recordings" id="recordings-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-progress" data-view="progress">
+      <div class="grid two">
+        <div class="card">
+          <h2>Progress Garden</h2>
+          <div class="garden" id="progress-garden"></div>
+        </div>
+        <div class="card">
+          <h2>Weekly Summary</h2>
+          <div class="summary" id="weekly-summary"></div>
+          <div class="summary" id="game-highlights"></div>
+          <button class="ghost" id="export-data">Export Data</button>
+        </div>
+      </div>
+    
+      <div class="card full">
+        <h2>Sticker Shelf</h2>
+        <p class="muted">Collect kawaii badges by practicing and playing games.</p>
+        <div class="sticker-summary" id="sticker-summary"></div>
+        <div class="sticker-shelf">
+          <div class="sticker-item" data-sticker="bow"><img src="./assets/illustrations/sticker-badge-bow.svg" alt="Bow Hero badge" /><span class="sticker-title">Bow Hero</span><span class="sticker-status">Locked</span></div>
+          <div class="sticker-item" data-sticker="rhythm"><img src="./assets/illustrations/sticker-badge-rhythm.svg" alt="Rhythm Pro badge" /><span class="sticker-title">Rhythm Pro</span><span class="sticker-status">Locked</span></div>
+          <div class="sticker-item" data-sticker="focus"><img src="./assets/illustrations/sticker-badge-focus.svg" alt="Focus Star badge" /><span class="sticker-title">Focus Star</span><span class="sticker-status">Locked</span></div>
+          <div class="sticker-item" data-sticker="brave"><img src="./assets/illustrations/sticker-badge-brave.svg" alt="Brave Bow badge" /><span class="sticker-title">Brave Bow</span><span class="sticker-status">Locked</span></div>
+          <div class="sticker-item" data-sticker="violin"><img src="./assets/illustrations/mascot-panda-violin.svg" alt="Panda Violin mascot" /><span class="sticker-title">Panda Violin</span><span class="sticker-status">Locked</span></div>
+          <div class="sticker-item" data-sticker="cheer"><img src="./assets/illustrations/mascot-panda-cheer.svg" alt="Panda Cheer mascot" /><span class="sticker-title">Panda Cheer</span><span class="sticker-status">Locked</span></div>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="view" id="view-parent" data-view="parent">
+      <div class="card">
+        <h2>Parent Access</h2>
+        <p class="muted">Set goals, review progress, and keep the magic safe.</p>
+        <div id="parent-lock" class="parent-lock">
+          <p>Enter Parent PIN</p>
+          <input type="password" inputmode="numeric" id="parent-pin" placeholder="PIN" />
+          <button class="primary" id="unlock-parent">Unlock</button>
+        </div>
+        <div id="parent-dashboard" class="parent-dashboard hidden">
+          <div class="grid two">
+            <label>
+              Daily Goal (minutes)
+              <input type="number" min="5" max="120" id="goal-minutes" value="20" />
+            </label>
+            <label>
+              Practice Time Reminder
+              <input type="time" id="reminder-time" />
+            </label>
+          </div>
+          <label>
+            Parent PIN
+            <input type="password" id="parent-pin-set" placeholder="Set new PIN" />
+          </label>
+          <div class="row">
+            <button class="primary" id="save-parent-settings">Save Settings</button>
+            <button class="ghost" id="lock-parent">Lock</button>
+          </div>
+          <div class="parent-insights" id="parent-insights"></div>
+          <div class="parent-tools">
+            <h3>Data Tools</h3>
+            <div class="row">
+              <button class="ghost" id="share-data">Share Backup</button>
+              <label class="ghost file-button">
+                Import Backup
+                <input type="file" id="import-data" accept="application/json" />
+              </label>
+              <button class="ghost danger" id="clear-data">Clear All Data</button>
+            </div>
+            <p class="muted small">Import merges sessions and games. Recordings are kept on this device.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>Built for Emerson with love, music, and red pandas.</div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="./app.js" type="module"></script>
+</body>
+</html>
