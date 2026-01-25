@@ -46,6 +46,16 @@ let practiceTimerElapsed = 0;
 let practiceTimerStart = 0;
 let questState = { date: "", items: [], checks: [] };
 let wakeLock = null;
+let earTarget = null;
+let earScore = 0;
+let earRound = 0;
+let patternSequence = [];
+let patternIndex = 0;
+let patternScore = 0;
+let patternStartTime = 0;
+let toneHistory = [];
+let lastToneUpdate = 0;
+let liveMetrics = { stability: null, warmth: null, dynamics: null, vibrato: null };
 let songState = {
   selectedId: null,
   tempo: 84,
@@ -105,6 +115,8 @@ const QUEST_POOL = [
   "Pitch Quest accuracy (3 min)",
   "Play along with a new song (4 min)",
   "Slow practice: favorite song (4 min)",
+  "Ear Trainer challenge (3 min)",
+  "Tone Lab long bows (2 min)",
 ];
 
 const SONG_LIBRARY = [
@@ -238,6 +250,45 @@ const SONG_LIBRARY = [
   notes: song.notes.map(([note, beats]) => ({ note, beats })),
 }));
 
+const LEARNING_PATH = [
+  {
+    id: "open-strings",
+    title: "Open Strings Explorer",
+    detail: "G, D, A, E with smooth bows.",
+    requirement: (stats) => stats.totalMinutes >= 30,
+  },
+  {
+    id: "first-fingers",
+    title: "First Finger Hero",
+    detail: "Confident first finger on A + E.",
+    requirement: (stats) => stats.totalSessions >= 5,
+  },
+  {
+    id: "rhythm-spark",
+    title: "Rhythm Spark",
+    detail: "Score 20+ in Rhythm Dash or Panda Pizzicato.",
+    requirement: (stats) => stats.bestRhythm >= 20 || stats.bestPizzicato >= 20,
+  },
+  {
+    id: "song-starter",
+    title: "Song Starter",
+    detail: "Play along with 3 songs.",
+    requirement: (stats, songLogs) => new Set(songLogs.map((s) => s.songId)).size >= 3,
+  },
+  {
+    id: "intonation-star",
+    title: "Intonation Star",
+    detail: "Average accuracy 80%+.",
+    requirement: (stats) => (stats.accuracyAvg || 0) >= 80,
+  },
+  {
+    id: "performance-ready",
+    title: "Performance Ready",
+    detail: "7-day streak + 300 minutes.",
+    requirement: (stats) => stats.streak >= 7 && stats.totalMinutes >= 300,
+  },
+];
+
 const DB_NAME = "emerson-violin";
 const DB_VERSION = 3;
 const dbPromise = openDB();
@@ -318,6 +369,8 @@ function computeStats(sessions, games, recordings) {
   const bestRhythm = Math.max(0, ...(byType.rhythm || []).map((g) => g.score || 0));
   const bestPizzicato = Math.max(0, ...(byType.pizzicato || []).map((g) => g.score || 0));
   const bestMemory = Math.max(0, ...(byType.memory || []).map((g) => g.score || 0));
+  const bestEar = Math.max(0, ...(byType.ear || []).map((g) => g.score || 0));
+  const bestPattern = Math.max(0, ...(byType.pattern || []).map((g) => g.score || 0));
 
   const stars7d = games
     .filter((g) => Date.now() - new Date(g.date).getTime() < 7 * 86400000)
@@ -339,6 +392,8 @@ function computeStats(sessions, games, recordings) {
     bestRhythm,
     bestPizzicato,
     bestMemory,
+    bestEar,
+    bestPattern,
   };
 }
 
@@ -491,6 +546,23 @@ function setupCoach() {
       showToast(`Target set to ${currentTarget}`);
     });
   });
+
+  const chatLog = $("#chat-log");
+  if (chatLog && !chatLog.childElementCount) {
+    addChatBubble("Hi Emerson! Ask me about bowing, rhythm, or a song you love. 🐼", "coach");
+  }
+  const send = $("#chat-send");
+  const input = $("#chat-input");
+  if (send && input) {
+    const handler = () => handleCoachChat();
+    send.addEventListener("click", handler);
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handler();
+      }
+    });
+  }
 }
 
 function setupGames() {
@@ -498,6 +570,8 @@ function setupGames() {
   setupRhythmDash();
   setupMemoryGame();
   setupBowHold();
+  setupEarTrainer();
+  setupRhythmPainter();
 }
 
 async function setupSongs() {
@@ -512,7 +586,7 @@ async function setupSongs() {
   songState.selectedId = savedSong;
   songState.tempo = savedTempo;
 
-  renderSongLibrary();
+  await renderSongLibrary();
   selectSongById(songState.selectedId || SONG_LIBRARY[0]?.id, { silent: true });
 
   const tempoSlider = $("#song-tempo");
@@ -553,6 +627,10 @@ async function setupSongs() {
     songState.loop = event.target.checked;
   });
 
+  $("#song-rate-easy").addEventListener("click", () => rateSelectedSong("easy"));
+  $("#song-rate-ok").addEventListener("click", () => rateSelectedSong("ok"));
+  $("#song-rate-tricky").addEventListener("click", () => rateSelectedSong("tricky"));
+
   $("#browse-songs").addEventListener("click", () => {
     document.querySelector('[data-nav="songs"]').click();
   });
@@ -580,17 +658,20 @@ async function setupSongs() {
   });
 
   renderSongOfDay();
+  await populateAssignedSongOptions();
 }
 
-function renderSongsView() {
-  renderSongLibrary();
-  renderRepertoire();
+async function renderSongsView() {
+  await renderSongLibrary();
+  await renderRepertoire();
   renderSongOfDay();
 }
 
-function renderSongLibrary() {
+async function renderSongLibrary() {
   const list = $("#song-list");
   if (!list) return;
+  const schedule = await getSongSchedule();
+  const now = Date.now();
   const query = $("#song-search").value.trim().toLowerCase();
   const levelFilter = $("#song-level-filter").value;
   const stringFilter = $("#song-string-filter").value;
@@ -612,6 +693,8 @@ function renderSongLibrary() {
     const card = document.createElement("div");
     card.className = "song-card";
     const isFav = favoriteSongIds.has(song.id);
+    const due = schedule[song.id] ? new Date(schedule[song.id].due).getTime() : null;
+    const dueSoon = due !== null && due <= now;
     card.innerHTML = `
       <h3>${song.title}</h3>
       <div class="song-meta">
@@ -621,6 +704,7 @@ function renderSongLibrary() {
         <span class="song-chip">Strings: ${song.strings.join(" ")}</span>
       </div>
       <div class="muted">${song.focus}</div>
+      ${dueSoon ? `<div class="song-due">Due: ${formatDueDate(schedule[song.id].due)}</div>` : ""}
     `;
     const row = document.createElement("div");
     row.className = "row";
@@ -686,6 +770,7 @@ function selectSongById(songId, { silent = false } = {}) {
   renderSongTimeline(song);
   updateSongCoachTip(song);
   setSetting("lastSongId", song.id);
+  renderSongNextDue(song.id);
 }
 
 function renderSongTimeline(song) {
@@ -741,11 +826,99 @@ function renderSongOfDay() {
   if (meta) meta.textContent = song.focus;
 }
 
+async function rateSelectedSong(rating) {
+  const song = getSelectedSong();
+  if (!song) return;
+  const dueDate = await updateSongSchedule(song.id, rating);
+  renderSongNextDue(song.id, dueDate);
+  showToast("Song reflection saved!");
+  await renderSongLibrary();
+  await renderRepertoire();
+}
+
+async function getSongSchedule() {
+  const schedule = await getSetting("songSchedule", {});
+  return schedule && typeof schedule === "object" ? schedule : {};
+}
+
+async function getDueSong() {
+  const schedule = await getSongSchedule();
+  const now = Date.now();
+  let best = null;
+  Object.entries(schedule).forEach(([songId, entry]) => {
+    const due = new Date(entry.due).getTime();
+    if (Number.isNaN(due)) return;
+    if (due <= now) {
+      const song = SONG_LIBRARY.find((s) => s.id === songId);
+      if (song) best = song;
+    }
+  });
+  return best;
+}
+
+async function updateSongSchedule(songId, rating) {
+  const schedule = await getSongSchedule();
+  const now = new Date();
+  const entry = schedule[songId] || { ease: 2.4, interval: 1, due: now.toISOString() };
+  let ease = entry.ease;
+  let interval = entry.interval;
+  if (rating === "easy") {
+    ease = Math.min(3.0, ease + 0.2);
+    interval = Math.max(2, Math.round(interval * 1.7 + 1));
+  } else if (rating === "ok") {
+    interval = Math.max(1, Math.round(interval * 1.4 + 1));
+  } else {
+    ease = Math.max(1.3, ease - 0.2);
+    interval = 1;
+  }
+  const due = new Date(now.getTime() + interval * 86400000).toISOString();
+  schedule[songId] = { ease, interval, due };
+  await setSetting("songSchedule", schedule);
+  return due;
+}
+
+async function renderSongNextDue(songId, dueOverride) {
+  const label = $("#song-next-due");
+  if (!label) return;
+  const schedule = await getSongSchedule();
+  const due = dueOverride || (schedule[songId] ? schedule[songId].due : null);
+  label.textContent = due ? `Next reminder: ${formatDueDate(due)}` : "Next reminder: rate the song to schedule it.";
+}
+
+function formatDueDate(dueIso) {
+  const due = new Date(dueIso);
+  const now = new Date();
+  const days = Math.round((due - now) / 86400000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  return due.toLocaleDateString();
+}
+
+async function populateAssignedSongOptions() {
+  const select = $("#assigned-song");
+  if (!select) return;
+  const current = select.value || "auto";
+  const options = [
+    { value: "auto", label: "Auto (Song of the day)" },
+    ...SONG_LIBRARY.map((song) => ({ value: song.id, label: song.title })),
+  ];
+  select.innerHTML = "";
+  options.forEach((opt) => {
+    const option = document.createElement("option");
+    option.value = opt.value;
+    option.textContent = opt.label;
+    select.appendChild(option);
+  });
+  select.value = current;
+}
+
 async function renderRepertoire() {
   const statsEl = $("#repertoire-stats");
   const grid = $("#repertoire-grid");
   if (!statsEl || !grid) return;
   const logs = await getSongLogs();
+  const schedule = await getSongSchedule();
+  const now = Date.now();
   const totals = logs.reduce((acc, log) => {
     acc.count += 1;
     acc.minutes += (log.durationSec || 0) / 60;
@@ -769,12 +942,15 @@ async function renderRepertoire() {
   SONG_LIBRARY.forEach((song) => {
     const plays = totals.bySong[song.id] || 0;
     if (!plays && !favoriteSongIds.has(song.id)) return;
+    const due = schedule[song.id] ? new Date(schedule[song.id].due).getTime() : null;
+    const dueLabel = due && due <= now ? `Due: ${formatDueDate(schedule[song.id].due)}` : "";
     const card = document.createElement("div");
     card.className = "repertoire-card";
     card.innerHTML = `
       <div>${song.title}</div>
       <div class="muted">${formatLevel(song.level)} • ${song.key}</div>
       <div>Plays: <strong>${plays}</strong></div>
+      ${dueLabel ? `<div class="song-due">${dueLabel}</div>` : ""}
     `;
     grid.appendChild(card);
   });
@@ -1154,6 +1330,116 @@ function setupBowHold() {
   });
 }
 
+function setupEarTrainer() {
+  const prompt = $("#ear-prompt");
+  const scoreEl = $("#ear-score");
+
+  const playTarget = async () => {
+    await ensureAudioContext();
+    if (!earTarget) earTarget = randomNote();
+    const freq = violinTargets[earTarget];
+    if (freq) playTone(freq, audioCtx.currentTime + 0.05, 0.5);
+    if (prompt) prompt.textContent = "Listen carefully... what note is it?";
+  };
+
+  $("#ear-play").addEventListener("click", () => {
+    earTarget = randomNote();
+    playTarget();
+  });
+
+  $("#ear-repeat").addEventListener("click", () => {
+    if (!earTarget) {
+      earTarget = randomNote();
+    }
+    playTarget();
+  });
+
+  $$(".ear-note").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!earTarget) {
+        showToast("Tap play to hear a note first!");
+        return;
+      }
+      const guess = btn.dataset.note;
+      earRound += 1;
+      if (guess === earTarget) {
+        earScore += 5;
+        prompt.textContent = `Yes! That was ${earTarget}.`;
+        showToast("Great listening! ⭐");
+      } else {
+        prompt.textContent = `Nice try! It was ${earTarget}.`;
+      }
+      earTarget = null;
+      scoreEl.textContent = `Score: ${earScore}`;
+      if (earRound % 5 === 0) {
+        const stars = Math.min(5, Math.max(1, Math.round(earScore / 10)));
+        addGameResult({ type: "ear", score: earScore, stars }).then(refreshDashboard);
+      }
+    });
+  });
+}
+
+function setupRhythmPainter() {
+  const patternEl = $("#rhythm-pattern");
+  const scoreEl = $("#pattern-score");
+
+  const displayPattern = () => {
+    if (!patternSequence.length) {
+      patternEl.textContent = "Pattern: —";
+      return;
+    }
+    const symbols = patternSequence.map((beat) => (beat <= 0.5 ? "♪" : "♩")).join(" ");
+    patternEl.textContent = `Pattern: ${symbols}`;
+  };
+
+  $("#pattern-start").addEventListener("click", () => {
+    patternSequence = Array.from({ length: 4 }, () => (Math.random() > 0.4 ? 1 : 0.5));
+    patternIndex = 0;
+    patternScore = 0;
+    patternStartTime = 0;
+    displayPattern();
+    scoreEl.textContent = "Score: 0";
+    showToast("Pattern ready! Tap the beat.");
+  });
+
+  $("#pattern-tap").addEventListener("click", () => {
+    if (!patternSequence.length) {
+      showToast("Tap New Pattern first.");
+      return;
+    }
+    const bpm = 96;
+    const interval = 60000 / bpm;
+    const now = performance.now();
+    if (patternIndex === 0) {
+      patternStartTime = now;
+      patternScore += 2;
+      patternIndex += 1;
+      scoreEl.textContent = `Score: ${patternScore}`;
+      return;
+    }
+    const expected = patternSequence.slice(0, patternIndex).reduce((sum, beat) => sum + beat, 0) * interval;
+    const actual = now - patternStartTime;
+    const error = Math.abs(actual - expected);
+    if (error < 140) {
+      patternScore += 5;
+    } else if (error < 260) {
+      patternScore += 3;
+    } else {
+      patternScore += 1;
+    }
+    patternIndex += 1;
+    scoreEl.textContent = `Score: ${patternScore}`;
+    if (patternIndex > patternSequence.length) {
+      const stars = Math.min(5, Math.max(1, Math.round(patternScore / 8)));
+      addGameResult({ type: "pattern", score: patternScore, stars }).then(refreshDashboard);
+      showToast("Rhythm Painter complete!");
+      patternSequence = [];
+      patternIndex = 0;
+      displayPattern();
+    }
+  });
+}
+
 function randomNote() {
   const keys = Object.keys(violinTargets);
   return keys[Math.floor(Math.random() * keys.length)];
@@ -1233,6 +1519,17 @@ function stopTuner() {
   releaseWakeLock();
   $("#coach-freq").textContent = "Stopped";
   $("#tuner-freq").textContent = "Stopped";
+  toneHistory = [];
+  liveMetrics = { stability: null, warmth: null, dynamics: null, vibrato: null };
+  updateMetricUI("#metric-stability", "#metric-stability-bar", 0);
+  updateMetricUI("#metric-warmth", "#metric-warmth-bar", 0);
+  updateMetricUI("#metric-dynamics", "#metric-dynamics-bar", 0);
+  updateMetricUI("#metric-vibrato", "#metric-vibrato-bar", 0);
+  updateMetricUI(null, "#tone-stability-bar", 0);
+  updateMetricUI(null, "#tone-warmth-bar", 0);
+  updateMetricUI(null, "#tone-dynamics-bar", 0);
+  const hint = $("#tone-hint");
+  if (hint) hint.textContent = "Start the tuner to see live tone feedback.";
 }
 
 function updateTuner() {
@@ -1266,6 +1563,18 @@ function updateTuner() {
     }
 
     updateTunerUI(noteLabel, pitch, cents);
+
+    const now = Date.now();
+    const freqData = new Float32Array(tunerAnalyser.frequencyBinCount);
+    tunerAnalyser.getFloatFrequencyData(freqData);
+    const rms = computeRMS(buffer);
+    const centroid = computeSpectralCentroid(freqData, audioCtx.sampleRate);
+    toneHistory.push({ time: now, rms, centroid, cents, pitch });
+    if (toneHistory.length > 200) toneHistory.shift();
+    if (now - lastToneUpdate > 220) {
+      lastToneUpdate = now;
+      updateLiveCoachMetrics();
+    }
   }
   tunerAnimation = requestAnimationFrame(updateTuner);
 }
@@ -1359,6 +1668,107 @@ function autoCorrelate(buffer, sampleRate) {
   const b = (x3 - x1) / 2;
   if (a) t0 = t0 - b / (2 * a);
   return sampleRate / t0;
+}
+
+function computeRMS(buffer) {
+  let sum = 0;
+  for (let i = 0; i < buffer.length; i++) {
+    sum += buffer[i] * buffer[i];
+  }
+  return Math.sqrt(sum / buffer.length);
+}
+
+function computeSpectralCentroid(freqData, sampleRate) {
+  let weighted = 0;
+  let total = 0;
+  const binCount = freqData.length;
+  for (let i = 0; i < binCount; i++) {
+    const db = freqData[i];
+    const mag = Math.pow(10, db / 20);
+    const freq = (i * sampleRate) / (2 * binCount);
+    weighted += freq * mag;
+    total += mag;
+  }
+  if (!total) return 0;
+  return weighted / total;
+}
+
+function updateLiveCoachMetrics() {
+  if (!toneHistory.length) return;
+  const recent = toneHistory.filter((t) => Date.now() - t.time < 2500);
+  if (!recent.length) return;
+  const cents = recent.map((t) => t.cents);
+  const rmsValues = recent.map((t) => t.rms);
+  const centroids = recent.map((t) => t.centroid).filter((v) => v > 0);
+
+  const stability = scoreFromStdDev(cents, 18);
+  const dynamics = scoreFromRange(rmsValues, 0.06);
+  const warmth = centroids.length ? scoreFromWarmth(centroids) : 0;
+  const vibrato = scoreFromVibrato(recent.map((t) => t.cents), recent.map((t) => t.time));
+
+  liveMetrics = { stability, dynamics, warmth, vibrato };
+
+  updateMetricUI("#metric-stability", "#metric-stability-bar", stability);
+  updateMetricUI("#metric-warmth", "#metric-warmth-bar", warmth);
+  updateMetricUI("#metric-dynamics", "#metric-dynamics-bar", dynamics);
+  updateMetricUI("#metric-vibrato", "#metric-vibrato-bar", vibrato);
+
+  updateMetricUI(null, "#tone-stability-bar", stability);
+  updateMetricUI(null, "#tone-warmth-bar", warmth);
+  updateMetricUI(null, "#tone-dynamics-bar", dynamics);
+
+  const hint = $("#tone-hint");
+  if (hint) {
+    hint.textContent = tunerActive ? "Listening… keep the bow steady." : "Start the tuner to see live tone feedback.";
+  }
+}
+
+function scoreFromStdDev(values, targetStd) {
+  if (!values.length) return 0;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+  const std = Math.sqrt(variance);
+  return clampScore(100 - (std / targetStd) * 100);
+}
+
+function scoreFromRange(values, targetRange) {
+  if (!values.length) return 0;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min;
+  return clampScore((range / targetRange) * 100);
+}
+
+function scoreFromWarmth(centroids) {
+  const avg = centroids.reduce((a, b) => a + b, 0) / centroids.length;
+  const warm = 2000 - avg;
+  return clampScore((warm / 1800) * 100);
+}
+
+function scoreFromVibrato(cents, times) {
+  if (cents.length < 6) return 0;
+  const mean = cents.reduce((a, b) => a + b, 0) / cents.length;
+  let crossings = 0;
+  for (let i = 1; i < cents.length; i++) {
+    const prev = cents[i - 1] - mean;
+    const curr = cents[i] - mean;
+    if (prev === 0) continue;
+    if (prev > 0 && curr < 0) crossings += 1;
+    if (prev < 0 && curr > 0) crossings += 1;
+  }
+  const duration = (times[times.length - 1] - times[0]) / 1000;
+  if (duration <= 0) return 0;
+  const rate = crossings / (2 * duration);
+  return clampScore(((rate - 3) / 5) * 100);
+}
+
+function updateMetricUI(textSel, barSel, value) {
+  const bar = barSel ? document.querySelector(barSel) : null;
+  if (bar) bar.style.width = `${Math.max(0, Math.min(100, value || 0))}%`;
+  if (textSel) {
+    const el = document.querySelector(textSel);
+    if (el) el.textContent = value ? `${value}%` : "—";
+  }
 }
 
 function setupMetronome() {
@@ -1539,6 +1949,10 @@ function setupPracticeLogger() {
       rhythm,
       intonation,
       tone,
+      toneScore: liveMetrics.warmth,
+      stabilityScore: liveMetrics.stability,
+      dynamicsScore: liveMetrics.dynamics,
+      vibratoScore: liveMetrics.vibrato,
       notes,
       accuracy,
     });
@@ -1615,6 +2029,10 @@ function setupPracticeTimer() {
       rhythm,
       intonation,
       tone,
+      toneScore: liveMetrics.warmth,
+      stabilityScore: liveMetrics.stability,
+      dynamicsScore: liveMetrics.dynamics,
+      vibratoScore: liveMetrics.vibrato,
       notes,
       accuracy,
     });
@@ -1752,7 +2170,10 @@ async function renderDailyPlan(sessions, games, songLogs) {
   if (!list) return;
   let goal = await getSetting("goalMinutes", 20);
   if (!goal || Number.isNaN(goal)) goal = 20;
-  const plan = generateDailyPlan(sessions, games, songLogs, goal);
+  const focusPref = await getSetting("focusArea", "auto");
+  const assignedSong = await getSetting("assignedSong", "auto");
+  const dueSong = await getDueSong();
+  const plan = generateDailyPlan(sessions, games, songLogs, goal, focusPref, assignedSong, dueSong);
   list.innerHTML = "";
   plan.forEach((item) => {
     const li = document.createElement("li");
@@ -1761,10 +2182,12 @@ async function renderDailyPlan(sessions, games, songLogs) {
   });
 }
 
-function generateDailyPlan(sessions, games, songLogs, goalMinutes) {
+function generateDailyPlan(sessions, games, songLogs, goalMinutes, focusPref = "auto", assignedSong = "auto", dueSong = null) {
   const profile = computeSkillProfile(sessions, games, songLogs);
-  const focusArea = pickFocusArea(profile);
-  const song = pickSongOfDay();
+  const focusArea = focusPref !== "auto" ? focusPref : pickFocusArea(profile);
+  const song = assignedSong !== "auto"
+    ? SONG_LIBRARY.find((s) => s.id === assignedSong) || pickSongOfDay()
+    : dueSong || pickSongOfDay();
   const game = focusArea === "rhythm"
     ? "Rhythm Dash"
     : focusArea === "intonation"
@@ -1823,6 +2246,11 @@ async function renderSmartCoach(sessions, games, songLogs) {
     <div>Focus Trend: <strong>${quality.trend}</strong></div>
     <div>Best Practice Window: <strong>${window}</strong></div>
   `;
+  if (liveMetrics.stability) {
+    summary.innerHTML += `
+      <div>Live Tone Snapshot: <strong>${liveMetrics.stability}% stability</strong> • ${liveMetrics.warmth}% warmth</div>
+    `;
+  }
 
   const focusArea = pickFocusArea(profile);
   const spotlightTip = buildSpotlightTip(focusArea);
@@ -1861,6 +2289,63 @@ function buildSpotlightTip(area) {
   return "Keep a balanced practice with songs + games.";
 }
 
+function addChatBubble(text, role = "coach") {
+  const log = $("#chat-log");
+  if (!log) return;
+  const bubble = document.createElement("div");
+  bubble.className = `chat-bubble ${role}`;
+  bubble.textContent = text;
+  log.appendChild(bubble);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function handleCoachChat() {
+  const input = $("#chat-input");
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  addChatBubble(text, "user");
+  input.value = "";
+  const response = await generateCoachResponse(text);
+  addChatBubble(response, "coach");
+  if (voiceEnabled) speak(response);
+}
+
+async function generateCoachResponse(text) {
+  const lower = text.toLowerCase();
+  const sessions = await getSessions();
+  const games = await getGameResults();
+  const songLogs = await getSongLogs();
+  const profile = computeSkillProfile(sessions, games, songLogs);
+  const focusArea = pickFocusArea(profile);
+  const assignedFocus = await getSetting("focusArea", "auto");
+  const assignedSong = await getSetting("assignedSong", "auto");
+  const song = assignedSong !== "auto"
+    ? SONG_LIBRARY.find((s) => s.id === assignedSong) || pickSongOfDay()
+    : pickSongOfDay();
+
+  if (lower.includes("bow")) {
+    return "Try bowing in the middle lane with slow, even strokes. Imagine a train track and keep the bow straight.";
+  }
+  if (lower.includes("rhythm") || lower.includes("beat")) {
+    return "Let’s clap the rhythm first, then play with the metronome. Keep your taps light and even.";
+  }
+  if (lower.includes("intonation") || lower.includes("tune")) {
+    return "Play one note for 4 beats and listen for a centered sound. Tiny finger slides help find the sweet spot.";
+  }
+  if (lower.includes("song")) {
+    return `A great pick is “${song.title}.” Start slow, then add sparkle as it feels easy.`;
+  }
+  if (lower.includes("tired") || lower.includes("break")) {
+    return "That’s okay. Take a water break, roll your shoulders, and come back for a 2‑minute glow‑up bow.";
+  }
+  if (lower.includes("practice") || lower.includes("today") || lower.includes("plan")) {
+    const area = assignedFocus !== "auto" ? assignedFocus : focusArea;
+    return `Today’s focus is ${focusAreaLabel(area)}. Warm up, play ${song.title}, then finish with a fun game.`;
+  }
+  return "You’re doing great! Ask me about bowing, rhythm, intonation, or which song to play next.";
+}
+
 function computeSkillProfile(sessions, games, songLogs) {
   const safeSessions = Array.isArray(sessions) ? sessions : [];
   const safeGames = Array.isArray(games) ? games : [];
@@ -1870,6 +2355,9 @@ function computeSkillProfile(sessions, games, songLogs) {
   const rhythmAvg = averageRating(safeSessions, "rhythm");
   const intonationAvg = averageRating(safeSessions, "intonation");
   const toneAvg = averageRating(safeSessions, "tone");
+  const warmthAvg = averageMetric(safeSessions, "toneScore");
+  const stabilityAvg = averageMetric(safeSessions, "stabilityScore");
+  const dynamicsAvg = averageMetric(safeSessions, "dynamicsScore");
 
   const byType = safeGames.reduce((acc, g) => {
     acc[g.type] = acc[g.type] || [];
@@ -1897,11 +2385,14 @@ function computeSkillProfile(sessions, games, songLogs) {
   const bowScore = blendScores([
     scaleScore(bestBow, 30),
     scaleScore((toneAvg || 3) * 20, 100),
+    scaleScore(stabilityAvg || 0, 100),
   ]);
 
   const toneScore = blendScores([
     scaleScore((toneAvg || 3) * 20, 100),
     scaleScore(accuracyAvg, 100),
+    scaleScore(warmthAvg || 0, 100),
+    scaleScore(dynamicsAvg || 0, 100),
   ]);
 
   const streak = calcStreak(safeSessions);
@@ -1921,6 +2412,12 @@ function computeSkillProfile(sessions, games, songLogs) {
 }
 
 function averageRating(sessions, key) {
+  const values = sessions.map((s) => s[key]).filter((v) => typeof v === "number");
+  if (!values.length) return null;
+  return values.reduce((a, b) => a + b, 0) / values.length;
+}
+
+function averageMetric(sessions, key) {
   const values = sessions.map((s) => s[key]).filter((v) => typeof v === "number");
   if (!values.length) return null;
   return values.reduce((a, b) => a + b, 0) / values.length;
@@ -2159,9 +2656,30 @@ async function renderProgress() {
         <div>Best Rhythm Dash: <strong>${stats.bestRhythm || "—"}</strong></div>
         <div>Best Panda Pizzicato: <strong>${stats.bestPizzicato || "—"}</strong></div>
         <div>Best Bow Hold: <strong>${stats.bestBow || "—"}s</strong></div>
+        <div>Best Ear Trainer: <strong>${stats.bestEar || "—"}</strong></div>
+        <div>Best Rhythm Painter: <strong>${stats.bestPattern || "—"}</strong></div>
       `;
     }
   }
+
+  renderLearningPath(stats, songLogs);
+}
+
+function renderLearningPath(stats, songLogs) {
+  const grid = $("#learning-path");
+  if (!grid) return;
+  grid.innerHTML = "";
+  LEARNING_PATH.forEach((step, index) => {
+    const unlocked = step.requirement(stats, songLogs);
+    const card = document.createElement("div");
+    card.className = `path-card ${unlocked ? "unlocked" : "locked"}`;
+    card.innerHTML = `
+      <div class="path-title">${index + 1}. ${step.title}</div>
+      <div class="muted">${step.detail}</div>
+      <div class="path-status">${unlocked ? "Unlocked ✨" : "Locked"}</div>
+    `;
+    grid.appendChild(card);
+  });
 }
 
 function setupReminderTimer() {
@@ -2215,14 +2733,23 @@ async function loadParentSettings() {
   const reminder = await getSetting("reminderTime", "");
   reminderTime = reminder;
   $("#reminder-time").value = reminder;
+  const focusArea = await getSetting("focusArea", "auto");
+  $("#focus-area").value = focusArea;
+  const assignedSong = await getSetting("assignedSong", "auto");
+  await populateAssignedSongOptions();
+  $("#assigned-song").value = assignedSong;
 }
 
 async function saveParentSettings() {
   const goal = parseInt($("#goal-minutes").value, 10);
   const reminder = $("#reminder-time").value;
+  const focusArea = $("#focus-area").value;
+  const assignedSong = $("#assigned-song").value;
   const newPin = $("#parent-pin-set").value.trim();
   await setSetting("goalMinutes", goal);
   await setSetting("reminderTime", reminder);
+  await setSetting("focusArea", focusArea);
+  await setSetting("assignedSong", assignedSong);
   reminderTime = reminder;
   if (newPin) await setSetting("parentPin", newPin);
   if (reminder && "Notification" in window && Notification.permission === "default") {

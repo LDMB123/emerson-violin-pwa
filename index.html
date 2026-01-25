@@ -251,6 +251,45 @@
           </div>
         </div>
       </div>
+      <div class="grid two">
+        <div class="card">
+          <h2>AI Coach Lab</h2>
+          <p class="muted">On-device analytics for tone, rhythm, and pitch stability.</p>
+          <div class="metric-grid" id="live-metrics">
+            <div class="metric-card">
+              <div class="metric-title">Pitch Stability</div>
+              <div class="metric-value" id="metric-stability">—</div>
+              <div class="meter"><span id="metric-stability-bar"></span></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title">Tone Warmth</div>
+              <div class="metric-value" id="metric-warmth">—</div>
+              <div class="meter"><span id="metric-warmth-bar"></span></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title">Dynamic Control</div>
+              <div class="metric-value" id="metric-dynamics">—</div>
+              <div class="meter"><span id="metric-dynamics-bar"></span></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title">Vibrato Flow</div>
+              <div class="metric-value" id="metric-vibrato">—</div>
+              <div class="meter"><span id="metric-vibrato-bar"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Ask the Coach</h2>
+          <p class="muted">Get instant, kid-friendly guidance.</p>
+          <div class="coach-chat">
+            <div class="chat-log" id="chat-log"></div>
+            <div class="chat-input">
+              <input type="text" id="chat-input" placeholder="Ask about bowing, rhythm, or a song…" />
+              <button class="primary" id="chat-send">Ask</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="view" id="view-trainer" data-view="trainer">
@@ -280,6 +319,25 @@
             <li><input type="checkbox" /> String crossings G-D-A-E (2 min)</li>
             <li><input type="checkbox" /> Long tone breathing (1 min)</li>
           </ul>
+        </div>
+        <div class="card">
+          <h2>Tone Lab</h2>
+          <p class="muted">Listen for warm, steady sound.</p>
+          <div class="tone-lab">
+            <div class="tone-meter">
+              <div class="tone-label">Warmth</div>
+              <div class="meter"><span id="tone-warmth-bar"></span></div>
+            </div>
+            <div class="tone-meter">
+              <div class="tone-label">Stability</div>
+              <div class="meter"><span id="tone-stability-bar"></span></div>
+            </div>
+            <div class="tone-meter">
+              <div class="tone-label">Dynamics</div>
+              <div class="meter"><span id="tone-dynamics-bar"></span></div>
+            </div>
+            <div class="muted small" id="tone-hint">Start the tuner to see live tone feedback.</div>
+          </div>
         </div>
       </div>
       <div class="card full">
@@ -346,6 +404,15 @@
           </div>
           <div class="song-timeline" id="song-timeline"></div>
           <div class="song-coach" id="song-coach"></div>
+          <div class="song-reflection">
+            <div class="muted">How did that song feel?</div>
+            <div class="row">
+              <button class="ghost" id="song-rate-easy">Easy</button>
+              <button class="ghost" id="song-rate-ok">Just Right</button>
+              <button class="ghost" id="song-rate-tricky">Tricky</button>
+            </div>
+            <div class="muted small" id="song-next-due">Next reminder: —</div>
+          </div>
         </div>
       </div>
       <div class="card full">
@@ -425,6 +492,38 @@
               <button class="ghost" id="bow-stop">Stop</button>
             </div>
             <div class="score" id="bow-score">Best: 0s</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <h2>Ear Trainer</h2>
+          <p class="muted">Listen and guess the note.</p>
+          <div class="game-panel">
+            <div class="sequence" id="ear-prompt">Tap play to hear a note.</div>
+            <div class="row">
+              <button class="primary" id="ear-play">Play Note</button>
+              <button class="ghost" id="ear-repeat">Repeat</button>
+            </div>
+            <div class="tuner-targets">
+              <button class="chip ear-note" data-note="G3">G</button>
+              <button class="chip ear-note" data-note="D4">D</button>
+              <button class="chip ear-note" data-note="A4">A</button>
+              <button class="chip ear-note" data-note="E5">E</button>
+            </div>
+            <div class="score" id="ear-score">Score: 0</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Rhythm Painter</h2>
+          <p class="muted">Tap patterns to paint a rhythm rainbow.</p>
+          <div class="game-panel">
+            <div class="sequence" id="rhythm-pattern">Pattern: —</div>
+            <div class="row">
+              <button class="primary" id="pattern-start">New Pattern</button>
+              <button class="ghost" id="pattern-tap">Tap Beat</button>
+            </div>
+            <div class="score" id="pattern-score">Score: 0</div>
           </div>
         </div>
       </div>
@@ -521,6 +620,12 @@
         </div>
       </div>
 
+      <div class="card full">
+        <h2>Learning Path</h2>
+        <p class="muted">A step-by-step journey to confident violin playing.</p>
+        <div class="path-grid" id="learning-path"></div>
+      </div>
+
     </section>
 
     <section class="view" id="view-parent" data-view="parent">
@@ -541,6 +646,22 @@
             <label>
               Practice Time Reminder
               <input type="time" id="reminder-time" />
+            </label>
+            <label>
+              Weekly Focus
+              <select id="focus-area">
+                <option value="auto">Auto (Coach decides)</option>
+                <option value="intonation">Intonation</option>
+                <option value="rhythm">Rhythm</option>
+                <option value="bow">Bow Control</option>
+                <option value="tone">Tone Quality</option>
+              </select>
+            </label>
+            <label>
+              Assign Song
+              <select id="assigned-song">
+                <option value="auto">Auto (Song of the day)</option>
+              </select>
             </label>
           </div>
           <label>
