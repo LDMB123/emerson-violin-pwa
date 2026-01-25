@@ -388,6 +388,36 @@
           </div>
           <button class="primary" id="start-warmup">Start Warmup</button>
         </div>
+        <div class="card">
+          <h2>Bowing Coach</h2>
+          <p class="muted">Follow the bow path and switch directions smoothly.</p>
+          <div class="bow-coach">
+            <div class="bow-track"><div class="bow-dot" id="bow-dot"></div></div>
+            <div class="bow-direction" id="bow-direction">Ready</div>
+            <div class="row">
+              <button class="primary" id="bow-coach-start">Start</button>
+              <button class="ghost" id="bow-coach-stop">Stop</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Posture Mirror</h2>
+          <p class="muted">Use the camera to check shoulders and violin angle.</p>
+          <div class="posture-mirror">
+            <video id="posture-video" playsinline muted></video>
+            <div class="posture-overlay"></div>
+          </div>
+          <div class="posture-checklist">
+            <label><input type="checkbox" /> Shoulders relaxed</label>
+            <label><input type="checkbox" /> Violin level</label>
+            <label><input type="checkbox" /> Bow arm floating</label>
+          </div>
+          <div class="row">
+            <button class="primary" id="posture-start">Start Camera</button>
+            <button class="ghost" id="posture-stop">Stop</button>
+          </div>
+          <div class="posture-tip" id="posture-tip">Tip: Tall spine like a balloon string.</div>
+        </div>
       </div>
       <div class="card full">
         <h2>Practice Timer</h2>
@@ -457,6 +487,20 @@
           <div class="song-countdown" id="song-countdown">Ready to play!</div>
           <div class="song-timeline" id="song-timeline"></div>
           <div class="song-coach" id="song-coach"></div>
+          <div class="guided-panel">
+            <label class="toggle"><input type="checkbox" id="guided-toggle" /> Guided Mode</label>
+            <div class="guided-status" id="guided-status">Guided mode helps you practice tiny sections.</div>
+            <div class="guided-checkpoints" id="guided-checkpoints"></div>
+            <div class="row">
+              <button class="primary" id="guided-start">Start Guided Practice</button>
+              <button class="ghost" id="guided-next">Next Section</button>
+            </div>
+            <div class="row">
+              <button class="ghost" id="guided-easy">Easy</button>
+              <button class="ghost" id="guided-ok">Just Right</button>
+              <button class="ghost" id="guided-tricky">Tricky</button>
+            </div>
+          </div>
           <div class="song-reflection">
             <div class="muted">How did that song feel?</div>
             <div class="row">

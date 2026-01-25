@@ -74,6 +74,17 @@ let lessonState = {
   elapsedSec: 0,
   timerId: null,
 };
+let bowCoachActive = false;
+let bowCoachStart = 0;
+let bowCoachAnimation;
+let postureStream = null;
+let postureTipTimer;
+let postureTipIndex = 0;
+let guidedMode = false;
+let guidedActive = false;
+let guidedIndex = 0;
+let guidedSections = [];
+let guidedRatings = [];
 let songState = {
   selectedId: null,
   tempo: 84,
@@ -83,6 +94,7 @@ let songState = {
   loop: false,
   playing: false,
   previewing: false,
+  guidedMode: false,
 };
 let songPlaybackNodes = [];
 let songPlaybackTimeout;
@@ -561,6 +573,14 @@ const STORY_QUESTIONS = [
   },
 ];
 
+const POSTURE_TIPS = [
+  "Tall spine like a balloon string.",
+  "Relax shoulders: melt like ice cream.",
+  "Violin level: like a shelf.",
+  "Bow arm floating like a cloud.",
+  "Chin rest gentle, no squeezing.",
+];
+
 const LESSON_LIBRARY = [
   {
     id: "warmup-wizard",
@@ -730,6 +750,8 @@ async function init() {
   setupLessonStudio();
   setupTuner();
   setupMetronome();
+  setupBowingCoach();
+  setupPostureMirror();
   setupRhythmGame();
   setupPracticeLogger();
   await setupQuest();
@@ -905,12 +927,18 @@ function setupLifecycle() {
     if (document.hidden) {
       stopTuner();
       stopSongPlayback(false);
+      stopStoryPlayback();
+      stopBowingCoach();
+      stopPostureCamera(true);
       releaseWakeLock();
     }
   });
   window.addEventListener("pagehide", () => {
     stopTuner();
     stopSongPlayback(false);
+    stopStoryPlayback();
+    stopBowingCoach();
+    stopPostureCamera(true);
     releaseWakeLock();
   });
 }
@@ -1008,6 +1036,7 @@ function setupLessonStudio() {
   });
   lessonState.lessonId = LESSON_LIBRARY[0]?.id || null;
   lessonState.remainingSec = Math.round(getLessonById(lessonState.lessonId).steps[0].minutes * 60);
+  lessonState.elapsedSec = 0;
   renderLesson();
 
   select.addEventListener("change", () => {
@@ -1015,6 +1044,7 @@ function setupLessonStudio() {
     lessonState.stepIndex = 0;
     const lesson = getLessonById(lessonState.lessonId);
     lessonState.remainingSec = lesson ? Math.round(lesson.steps[0].minutes * 60) : 0;
+    lessonState.elapsedSec = 0;
     stopLessonTimer();
     renderLesson();
   });
@@ -1144,6 +1174,7 @@ async function completeLesson() {
   stopLessonTimer();
   lessonState.stepIndex = 0;
   lessonState.remainingSec = 0;
+  lessonState.elapsedSec = 0;
   $("#lesson-status").textContent = "Lesson complete!";
   renderLesson();
   const minutes = lesson.steps.reduce((sum, step) => sum + step.minutes, 0);
@@ -1181,6 +1212,7 @@ function launchLesson(id) {
   lessonState.stepIndex = 0;
   const lesson = getLessonById(id);
   lessonState.remainingSec = lesson ? Math.round(lesson.steps[0].minutes * 60) : 0;
+  lessonState.elapsedSec = 0;
   const select = $("#lesson-select");
   if (select) select.value = id;
   renderLesson();
@@ -1315,6 +1347,7 @@ async function setupSongs() {
 
   renderSongOfDay();
   await populateAssignedSongOptions();
+  setupGuidedSongPractice();
 }
 
 async function renderSongsView() {
@@ -1427,6 +1460,7 @@ function selectSongById(songId, { silent = false } = {}) {
   updateSongCoachTip(song);
   setSetting("lastSongId", song.id);
   renderSongNextDue(song.id);
+  resetGuidedPractice();
 }
 
 function renderSongTimeline(song) {
@@ -1550,6 +1584,153 @@ function formatDueDate(dueIso) {
   return due.toLocaleDateString();
 }
 
+function setupGuidedSongPractice() {
+  const toggle = $("#guided-toggle");
+  const start = $("#guided-start");
+  const next = $("#guided-next");
+  const easy = $("#guided-easy");
+  const ok = $("#guided-ok");
+  const tricky = $("#guided-tricky");
+  if (!toggle || !start || !next || !easy || !ok || !tricky) return;
+
+  toggle.checked = guidedMode;
+  toggle.addEventListener("change", () => {
+    guidedMode = toggle.checked;
+    updateGuidedStatus(guidedMode ? "Guided mode on. Tap start." : "Guided mode off.");
+  });
+
+  start.addEventListener("click", () => startGuidedPractice());
+  next.addEventListener("click", () => {
+    if (!guidedActive) return;
+    guidedIndex = Math.min(guidedIndex + 1, guidedSections.length);
+    playGuidedSection();
+  });
+  easy.addEventListener("click", () => rateGuidedSection("easy"));
+  ok.addEventListener("click", () => rateGuidedSection("ok"));
+  tricky.addEventListener("click", () => rateGuidedSection("tricky"));
+
+  resetGuidedPractice();
+}
+
+function buildGuidedSections(notes, beatsPerSection = 8) {
+  const sections = [];
+  let current = [];
+  let beats = 0;
+  let startIndex = 0;
+  notes.forEach((note, idx) => {
+    current.push(note);
+    beats += note.beats;
+    if (beats >= beatsPerSection) {
+      sections.push({ startIndex, endIndex: idx, notes: current, beats });
+      current = [];
+      beats = 0;
+      startIndex = idx + 1;
+    }
+  });
+  if (current.length) {
+    sections.push({ startIndex, endIndex: notes.length - 1, notes: current, beats });
+  }
+  return sections;
+}
+
+function renderGuidedCheckpoints() {
+  const checkpoints = $("#guided-checkpoints");
+  if (!checkpoints) return;
+  checkpoints.innerHTML = "";
+  guidedSections.forEach((section, index) => {
+    const chip = document.createElement("div");
+    chip.className = `guided-chip ${index === guidedIndex ? "active" : ""}`;
+    chip.textContent = `Section ${index + 1}`;
+    checkpoints.appendChild(chip);
+  });
+}
+
+function updateGuidedStatus(text) {
+  const status = $("#guided-status");
+  if (status) status.textContent = text;
+}
+
+function setGuidedButtonsEnabled(enabled) {
+  ["guided-easy", "guided-ok", "guided-tricky"].forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = !enabled;
+  });
+}
+
+function resetGuidedPractice() {
+  const song = getSelectedSong();
+  guidedSections = song ? buildGuidedSections(song.notes) : [];
+  guidedIndex = 0;
+  guidedActive = false;
+  guidedRatings = [];
+  renderGuidedCheckpoints();
+  setGuidedButtonsEnabled(false);
+  const nextBtn = $("#guided-next");
+  if (nextBtn) nextBtn.disabled = true;
+  updateGuidedStatus("Guided mode helps you practice tiny sections.");
+}
+
+function startGuidedPractice() {
+  if (!guidedMode) {
+    guidedMode = true;
+    const toggle = $("#guided-toggle");
+    if (toggle) toggle.checked = true;
+  }
+  guidedActive = true;
+  guidedIndex = 0;
+  guidedRatings = [];
+  renderGuidedCheckpoints();
+  playGuidedSection();
+}
+
+function playGuidedSection() {
+  if (!guidedActive) return;
+  if (guidedIndex >= guidedSections.length) {
+    finishGuidedPractice();
+    return;
+  }
+  const section = guidedSections[guidedIndex];
+  updateGuidedStatus(`Section ${guidedIndex + 1} of ${guidedSections.length}`);
+  renderGuidedCheckpoints();
+  setGuidedButtonsEnabled(false);
+  const nextBtn = $("#guided-next");
+  if (nextBtn) nextBtn.disabled = false;
+  startSongPlayback({ customNotes: section.notes, logPlayback: false, guided: true });
+}
+
+function handleGuidedSectionComplete() {
+  updateGuidedStatus("How did that section feel?");
+  setGuidedButtonsEnabled(true);
+}
+
+async function rateGuidedSection(rating) {
+  if (!guidedActive) return;
+  guidedRatings[guidedIndex] = rating;
+  guidedIndex += 1;
+  setGuidedButtonsEnabled(false);
+  if (guidedIndex < guidedSections.length) {
+    playGuidedSection();
+  } else {
+    await finishGuidedPractice();
+  }
+}
+
+async function finishGuidedPractice() {
+  guidedActive = false;
+  renderGuidedCheckpoints();
+  updateGuidedStatus("Guided practice complete! 🎉");
+  const nextBtn = $("#guided-next");
+  if (nextBtn) nextBtn.disabled = true;
+  const song = getSelectedSong();
+  if (song) {
+    const totalBeats = song.notes.reduce((sum, n) => sum + n.beats, 0);
+    const tempo = parseInt($("#song-tempo").value, 10) || song.bpm;
+    const durationSec = Math.round((totalBeats / tempo) * 60);
+    await logSongPractice(Math.max(10, durationSec));
+  }
+  await awardXP(20, "Guided practice");
+}
+
 async function populateAssignedSongOptions() {
   const select = $("#assigned-song");
   if (!select) return;
@@ -1616,7 +1797,7 @@ function getSelectedSong() {
   return SONG_LIBRARY.find((s) => s.id === songState.selectedId) || SONG_LIBRARY[0];
 }
 
-async function startSongPlayback({ preview = false, preserveStart = false } = {}) {
+async function startSongPlayback({ preview = false, preserveStart = false, customNotes = null, logPlayback = true, guided = false } = {}) {
   const song = getSelectedSong();
   if (!song) return;
   await ensureAudioContext();
@@ -1625,11 +1806,12 @@ async function startSongPlayback({ preview = false, preserveStart = false } = {}
   await requestWakeLock();
 
   songState.playing = true;
-  songState.previewing = preview;
+  songState.previewing = preview || !logPlayback;
+  songState.guidedMode = guided;
   const tempo = parseInt($("#song-tempo").value, 10) || song.bpm;
   const secondsPerBeat = 60 / tempo;
   const countInBeats = 2;
-  const noteSequence = preview ? sliceNotesByBeats(song.notes, 8) : song.notes;
+  const noteSequence = customNotes || (preview ? sliceNotesByBeats(song.notes, 8) : song.notes);
   const totalBeats = noteSequence.reduce((sum, n) => sum + n.beats, 0);
   songPlaybackSequence = noteSequence;
   songPlaybackTotalBeats = totalBeats;
@@ -1700,6 +1882,7 @@ function stopSongPlayback(log = true) {
   const wasPreviewing = songState.previewing;
   songState.playing = false;
   songState.previewing = false;
+  songState.guidedMode = false;
   clearTimeout(songPlaybackTimeout);
   if (songHighlightTimer) cancelAnimationFrame(songHighlightTimer);
   songTimeline.forEach((entry) => entry.element && entry.element.classList.remove("active"));
@@ -1714,12 +1897,21 @@ function stopSongPlayback(log = true) {
     const durationSec = Math.max(1, Math.round((Date.now() - songPracticeStart) / 1000));
     logSongPractice(durationSec);
   }
+  if (guidedActive) {
+    guidedActive = false;
+    updateGuidedStatus("Guided practice stopped.");
+    setGuidedButtonsEnabled(false);
+    const nextBtn = $("#guided-next");
+    if (nextBtn) nextBtn.disabled = true;
+  }
   if (log) showToast("Song stopped");
 }
 
 async function finishSongPlayback({ preview = false } = {}) {
+  const wasGuided = songState.guidedMode;
   songState.playing = false;
   songState.previewing = false;
+  songState.guidedMode = false;
   if (songHighlightTimer) cancelAnimationFrame(songHighlightTimer);
   songTimeline.forEach((entry) => entry.element && entry.element.classList.remove("active"));
   const bar = $("#song-progress-bar");
@@ -1728,6 +1920,10 @@ async function finishSongPlayback({ preview = false } = {}) {
   if (countdown) countdown.textContent = preview ? "Preview done!" : "Song complete!";
   stopSongNodes();
   releaseWakeLock();
+  if (wasGuided && guidedActive) {
+    handleGuidedSectionComplete();
+    return;
+  }
   if (!preview) {
     const durationSec = Math.max(1, Math.round((Date.now() - songPracticeStart) / 1000));
     await logSongPractice(durationSec);
@@ -3018,6 +3214,90 @@ function setupMetronome() {
   $("#metro-stop").addEventListener("click", () => {
     clearInterval(intervalId);
   });
+}
+
+function setupBowingCoach() {
+  const startBtn = $("#bow-coach-start");
+  const stopBtn = $("#bow-coach-stop");
+  if (!startBtn || !stopBtn) return;
+  startBtn.addEventListener("click", () => startBowingCoach());
+  stopBtn.addEventListener("click", () => stopBowingCoach());
+}
+
+function startBowingCoach() {
+  bowCoachActive = true;
+  bowCoachStart = performance.now();
+  animateBowing(bowCoachStart);
+  showToast("Bowing coach started");
+}
+
+function stopBowingCoach() {
+  bowCoachActive = false;
+  if (bowCoachAnimation) cancelAnimationFrame(bowCoachAnimation);
+  const dot = $("#bow-dot");
+  const direction = $("#bow-direction");
+  if (dot) dot.style.left = "0%";
+  if (direction) direction.textContent = "Ready";
+}
+
+function animateBowing(now) {
+  if (!bowCoachActive) return;
+  const cycle = 2400;
+  const elapsed = (now - bowCoachStart) % cycle;
+  const progress = elapsed / cycle;
+  const direction = progress < 0.5 ? "Down Bow" : "Up Bow";
+  const phase = progress < 0.5 ? progress / 0.5 : 1 - (progress - 0.5) / 0.5;
+  const dot = $("#bow-dot");
+  const dirLabel = $("#bow-direction");
+  if (dot) dot.style.left = `${Math.round(phase * 100)}%`;
+  if (dirLabel) dirLabel.textContent = direction;
+  bowCoachAnimation = requestAnimationFrame(animateBowing);
+}
+
+function setupPostureMirror() {
+  const startBtn = $("#posture-start");
+  const stopBtn = $("#posture-stop");
+  if (startBtn) startBtn.addEventListener("click", () => startPostureCamera());
+  if (stopBtn) stopBtn.addEventListener("click", () => stopPostureCamera());
+}
+
+async function startPostureCamera() {
+  const video = $("#posture-video");
+  if (!video) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast("Camera not supported on this device.");
+    return;
+  }
+  try {
+    postureStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+    video.srcObject = postureStream;
+    await video.play();
+    rotatePostureTips();
+    if (postureTipTimer) clearInterval(postureTipTimer);
+    postureTipTimer = setInterval(rotatePostureTips, 8000);
+    showToast("Posture mirror on");
+  } catch (err) {
+    console.error(err);
+    showToast("Camera permission needed");
+  }
+}
+
+function stopPostureCamera(silent = false) {
+  const video = $("#posture-video");
+  if (postureStream) {
+    postureStream.getTracks().forEach((track) => track.stop());
+    postureStream = null;
+  }
+  if (video) video.srcObject = null;
+  if (postureTipTimer) clearInterval(postureTipTimer);
+  if (!silent) showToast("Posture mirror off");
+}
+
+function rotatePostureTips() {
+  const tip = $("#posture-tip");
+  if (!tip) return;
+  postureTipIndex = (postureTipIndex + 1) % POSTURE_TIPS.length;
+  tip.textContent = `Tip: ${POSTURE_TIPS[postureTipIndex]}`;
 }
 
 function playClick() {

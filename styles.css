@@ -49,6 +49,7 @@ body {
   min-height: 100vh;
   font-family: "Nunito", "Avenir Next", "Avenir", sans-serif;
   color: var(--ink);
+  font-size: 18px;
   background-image: url("./assets/illustrations/kawaii-pattern.svg"), radial-gradient(circle at top, #fffaf3 0%, #ffe6d1 35%, #ffefe2 75%),
     linear-gradient(135deg, rgba(255, 244, 234, 0.6), rgba(255, 235, 221, 0.8));
   background-size: 280px, cover, cover;
@@ -280,13 +281,14 @@ body {
 
 .pill {
   border: 3px solid var(--stroke);
-  padding: 10px 16px;
+  padding: 12px 18px;
   border-radius: 999px;
   background: #fff;
   font-weight: 800;
   color: var(--stroke);
   cursor: pointer;
   box-shadow: var(--shadow-strong);
+  font-size: 1rem;
 }
 
 .pill.active {
@@ -320,6 +322,12 @@ body {
   padding: 20px;
   border: 3px solid var(--stroke);
   box-shadow: var(--shadow-strong);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-family: "Fraunces", serif;
+  font-size: 1.5rem;
 }
 
 .card.full {
@@ -488,6 +496,113 @@ body {
   gap: 6px;
   font-weight: 800;
   margin-bottom: 10px;
+}
+
+.bow-coach {
+  display: grid;
+  gap: 12px;
+}
+
+.bow-track {
+  position: relative;
+  height: 36px;
+  border-radius: 999px;
+  border: 3px solid var(--stroke);
+  background: #fff7f1;
+  overflow: hidden;
+}
+
+.bow-dot {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ff5c8a;
+  border: 3px solid var(--stroke);
+  box-shadow: var(--shadow-strong);
+  transition: left 0.05s linear;
+}
+
+.bow-direction {
+  font-weight: 800;
+  text-align: center;
+}
+
+.posture-mirror {
+  position: relative;
+  border-radius: 16px;
+  border: 3px solid var(--stroke);
+  overflow: hidden;
+  background: #fff7f0;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+}
+
+#posture-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.posture-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-top: 2px dashed rgba(43, 28, 22, 0.5);
+  border-bottom: 2px dashed rgba(43, 28, 22, 0.5);
+}
+
+.posture-checklist {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  font-weight: 800;
+}
+
+.posture-tip {
+  margin-top: 8px;
+  background: #fff1e4;
+  border-radius: 14px;
+  border: 3px solid var(--stroke);
+  padding: 8px 10px;
+  font-weight: 800;
+}
+
+.guided-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 3px solid var(--stroke);
+  background: #fff7f0;
+  display: grid;
+  gap: 10px;
+}
+
+.guided-status {
+  font-weight: 800;
+}
+
+.guided-checkpoints {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.guided-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--stroke);
+  background: #fff;
+  font-weight: 800;
+}
+
+.guided-chip.active {
+  background: #ffd166;
 }
 
 .level-panel {
@@ -1055,6 +1170,7 @@ input, select, textarea {
   border-radius: 12px;
   border: 3px solid var(--stroke);
   font-family: inherit;
+  min-height: 44px;
 }
 
 textarea {
@@ -1093,6 +1209,7 @@ button.primary {
   font-weight: 900;
   box-shadow: var(--shadow-strong);
   cursor: pointer;
+  min-height: 44px;
 }
 
 button.primary:hover {
@@ -1108,6 +1225,7 @@ button.primary:hover {
   font-weight: 800;
   cursor: pointer;
   box-shadow: var(--shadow-strong);
+  min-height: 44px;
 }
 
 button:disabled {
