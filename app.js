@@ -25,7 +25,6 @@ let lastReminderDay = "";
 let tunerActive = false;
 let pitchGameActive = false;
 let pitchGameSamples = [];
-let pitchGameTimer;
 let pitchGameAutoStop = false;
 let rhythmDashActive = false;
 let rhythmDashInterval;
@@ -40,6 +39,8 @@ let memoryPlaying = false;
 let bowTimerId;
 let bowStart = 0;
 let bowBest = 0;
+let bowMotionWobble = 0;
+let bowMotionListener;
 let practiceTimerId;
 let practiceTimerRunning = false;
 let practiceTimerElapsed = 0;
@@ -116,6 +117,79 @@ let pandaEnabled = true;
 let pandaBubbleTimer;
 let lastPandaMessageAt = 0;
 const PANDA_COOLDOWN_MS = 9000;
+let pitchSession = {
+  active: false,
+  mode: "single",
+  roundDuration: 4,
+  totalRounds: 1,
+  round: 0,
+  streak: 0,
+  combo: 1,
+  score: 0,
+  hits: 0,
+  misses: 0,
+  autoStop: false,
+  timerId: null,
+  roundTimerId: null,
+  ladderIndex: 0,
+};
+let rhythmSession = {
+  active: false,
+  mode: "steady",
+  duration: 30,
+  timerId: null,
+  score: 0,
+  combo: 1,
+  streak: 0,
+  hits: 0,
+  perfect: 0,
+  great: 0,
+  ok: 0,
+  misses: 0,
+};
+let memorySession = {
+  level: 1,
+  lives: 3,
+  streak: 0,
+  hintUsed: false,
+};
+let bowSession = {
+  level: 1,
+  goal: 6,
+  streak: 0,
+  best: 0,
+  breathTimer: null,
+  breathPhase: 0,
+  motionEnabled: false,
+};
+let earSession = {
+  level: 1,
+  lives: 3,
+  streak: 0,
+  round: 0,
+  mode: "single",
+  targetSequence: [],
+  input: [],
+};
+let patternSession = {
+  level: 1,
+  tempo: 96,
+  combo: 1,
+  streak: 0,
+  listening: false,
+};
+let pizzicatoSession = {
+  active: false,
+  level: 1,
+  duration: 18,
+  speed: 1,
+  timerId: null,
+  spawnId: null,
+  score: 0,
+  combo: 1,
+  streak: 0,
+  misses: 0,
+};
 
 const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const NOTE_OFFSETS = {
@@ -144,6 +218,16 @@ const violinTargets = {
   E5: 659.25,
 };
 const FINGER_TARGETS = ["A4", "B4", "C#5", "D5", "E5", "F#5", "G5"];
+const DEFAULT_GAME_PROFILES = {
+  pitch: { level: 1, bestScore: 0, bestStreak: 0 },
+  rhythm: { level: 1, bestScore: 0, bestStreak: 0 },
+  memory: { level: 1, bestScore: 0, bestStreak: 0 },
+  bow: { level: 1, bestScore: 0, bestStreak: 0 },
+  ear: { level: 1, bestScore: 0, bestStreak: 0 },
+  pattern: { level: 1, bestScore: 0, bestStreak: 0 },
+  pizzicato: { level: 1, bestScore: 0, bestStreak: 0 },
+};
+let gameProfiles = { ...DEFAULT_GAME_PROFILES };
 
 const QUEST_POOL = [
   "Warm up with open strings (2 min)",
@@ -813,6 +897,7 @@ async function init() {
   await setupQuest();
   setupPracticeTimer();
   await setupSongs();
+  await loadGameProfiles();
   setupGames();
   setupRewards();
   setupRecording();
@@ -827,6 +912,45 @@ function updatePitchTargetLabel() {
   const targetEl = $("#pitch-target");
   if (targetEl) targetEl.textContent = `Target: ${currentTarget}`;
   highlightPitchChips();
+}
+
+async function loadGameProfiles() {
+  const stored = await getSetting("gameProfiles", null);
+  gameProfiles = {
+    ...DEFAULT_GAME_PROFILES,
+    ...(stored && typeof stored === "object" ? stored : {}),
+  };
+  syncGameProfileUI();
+}
+
+function getGameProfile(id) {
+  return gameProfiles[id] || { level: 1, bestScore: 0, bestStreak: 0 };
+}
+
+function updateGameProfile(id, patch) {
+  const current = getGameProfile(id);
+  gameProfiles[id] = { ...current, ...patch };
+  setSetting("gameProfiles", gameProfiles);
+  updateGameProfileUI(id);
+}
+
+function updateGameProfileUI(id) {
+  const profile = getGameProfile(id);
+  const map = {
+    pitch: "#pitch-level",
+    rhythm: "#rhythm-level",
+    memory: "#memory-level",
+    bow: "#bow-level",
+    ear: "#ear-level",
+    pattern: "#pattern-level",
+    pizzicato: "#pizzicato-level",
+  };
+  const el = map[id] ? document.querySelector(map[id]) : null;
+  if (el) el.textContent = `${profile.level}`;
+}
+
+function syncGameProfileUI() {
+  Object.keys(DEFAULT_GAME_PROFILES).forEach((id) => updateGameProfileUI(id));
 }
 
 function highlightPitchChips() {
@@ -2215,7 +2339,15 @@ function formatLevel(level) {
 
 function setupPitchQuest() {
   const resultEl = $("#pitch-result");
+  const roundEl = $("#pitch-round");
+  const streakEl = $("#pitch-streak");
+  const comboEl = $("#pitch-combo");
+  const timerEl = $("#pitch-timer");
+  const roundSlider = $("#pitch-round-time");
+  const roundDisplay = $("#pitch-round-time-display");
+  const modeSelect = $("#pitch-mode");
   updatePitchTargetLabel();
+
   const pitchAuto = $("#pitch-auto");
   if (pitchAuto) {
     getSetting("pitchAuto", true).then((val) => {
@@ -2223,6 +2355,33 @@ function setupPitchQuest() {
     });
     pitchAuto.addEventListener("change", () => {
       setSetting("pitchAuto", pitchAuto.checked);
+    });
+  }
+
+  if (modeSelect) {
+    getSetting("pitchMode", "single").then((val) => {
+      pitchSession.mode = val || "single";
+      modeSelect.value = pitchSession.mode;
+    });
+    modeSelect.addEventListener("change", () => {
+      pitchSession.mode = modeSelect.value;
+      setSetting("pitchMode", pitchSession.mode);
+    });
+  }
+
+  if (roundSlider && roundDisplay) {
+    getSetting("pitchRoundDuration", 4).then((val) => {
+      const duration = Math.max(2, Math.min(6, parseInt(val, 10) || 4));
+      pitchSession.roundDuration = duration;
+      roundSlider.value = duration;
+      roundDisplay.textContent = `${duration}s per round`;
+      if (timerEl) timerEl.textContent = `${duration}s`;
+    });
+    roundSlider.addEventListener("input", () => {
+      pitchSession.roundDuration = parseInt(roundSlider.value, 10);
+      roundDisplay.textContent = `${roundSlider.value}s per round`;
+      if (timerEl) timerEl.textContent = `${roundSlider.value}s`;
+      setSetting("pitchRoundDuration", pitchSession.roundDuration);
     });
   }
 
@@ -2234,48 +2393,159 @@ function setupPitchQuest() {
     });
   });
 
+  const updatePitchUI = () => {
+    if (roundEl) roundEl.textContent = `${pitchSession.round}/${pitchSession.totalRounds}`;
+    if (streakEl) streakEl.textContent = `${pitchSession.streak}`;
+    if (comboEl) comboEl.textContent = `x${pitchSession.combo}`;
+    if (timerEl && !pitchSession.active) timerEl.textContent = "0s";
+  };
+
   $("#pitch-start").addEventListener("click", async () => {
-    pitchGameSamples = [];
-    pitchGameActive = true;
+    if (pitchSession.active) return;
+    pitchSession.active = true;
+    pitchSession.round = 0;
+    pitchSession.streak = 0;
+    pitchSession.combo = 1;
+    pitchSession.score = 0;
+    pitchSession.hits = 0;
+    pitchSession.misses = 0;
+    pitchSession.ladderIndex = 0;
+    pitchSession.totalRounds = pitchSession.mode === "single" ? 1 : pitchSession.mode === "ladder" ? 5 : 8;
     resultEl.textContent = "Listening... play your note!";
-    pitchGameAutoStop = !tunerActive;
-    if (pitchAuto && pitchAuto.checked && adaptiveCoachEnabled) {
-      const target = await recommendPitchTarget();
-      if (target) {
-        currentTarget = target;
-        updatePitchTargetLabel();
-      }
-    }
-    if (!tunerActive) {
-      await startTuner();
-    }
-    clearTimeout(pitchGameTimer);
-    pitchGameTimer = setTimeout(() => finishPitchQuest(), 4000);
+    updatePitchUI();
+    await runPitchRound();
   });
 
   $("#pitch-stop").addEventListener("click", () => finishPitchQuest(true));
+  updatePitchUI();
+}
+
+async function runPitchRound() {
+  if (!pitchSession.active) return;
+  pitchSession.round += 1;
+  await selectPitchTargetForRound();
+  pitchGameSamples = [];
+  pitchGameActive = true;
+  pitchSession.autoStop = !tunerActive;
+  pitchGameAutoStop = pitchSession.autoStop;
+  if (!tunerActive) await startTuner();
+
+  const durationMs = pitchSession.roundDuration * 1000;
+  const timerEl = $("#pitch-timer");
+  const start = performance.now();
+  if (pitchSession.roundTimerId) clearInterval(pitchSession.roundTimerId);
+  pitchSession.roundTimerId = setInterval(() => {
+    const remaining = Math.max(0, durationMs - (performance.now() - start));
+    if (timerEl) timerEl.textContent = `${Math.ceil(remaining / 1000)}s`;
+  }, 200);
+
+  if (pitchSession.timerId) clearTimeout(pitchSession.timerId);
+  pitchSession.timerId = setTimeout(() => finishPitchQuest(false), durationMs);
+  const roundEl = $("#pitch-round");
+  if (roundEl) roundEl.textContent = `${pitchSession.round}/${pitchSession.totalRounds}`;
+}
+
+async function selectPitchTargetForRound() {
+  const pitchAuto = $("#pitch-auto");
+  const profile = getGameProfile("pitch");
+  const level = profile.level || 1;
+  const available = getPitchTargetsForLevel(level);
+
+  if (pitchSession.mode === "ladder") {
+    const index = pitchSession.ladderIndex % available.length;
+    currentTarget = available[index];
+    pitchSession.ladderIndex += 1;
+  } else if (pitchSession.mode === "lightning") {
+    currentTarget = available[Math.floor(Math.random() * available.length)];
+  } else if (pitchAuto && pitchAuto.checked && adaptiveCoachEnabled) {
+    const target = await recommendPitchTarget();
+    if (target) currentTarget = target;
+  }
+  updatePitchTargetLabel();
+}
+
+function getPitchTargetsForLevel(level) {
+  const base = ["G3", "D4", "A4", "E5"];
+  if (level >= 3) {
+    return [...base, ...FINGER_TARGETS];
+  }
+  return base;
 }
 
 function finishPitchQuest(manual = false) {
-  if (!pitchGameActive && manual) return;
+  if (!pitchSession.active && manual) return;
   pitchGameActive = false;
-  clearTimeout(pitchGameTimer);
+  if (pitchSession.timerId) clearTimeout(pitchSession.timerId);
+  if (pitchSession.roundTimerId) clearInterval(pitchSession.roundTimerId);
+
   const resultEl = $("#pitch-result");
+  const avg = pitchGameSamples.length
+    ? pitchGameSamples.reduce((a, b) => a + b, 0) / pitchGameSamples.length
+    : 0;
+  const accuracy = Math.round(avg * 100);
+  const hit = avg >= 0.72;
+  if (hit) {
+    pitchSession.hits += 1;
+    pitchSession.streak += 1;
+    pitchSession.combo = Math.min(5, pitchSession.combo + 1);
+  } else {
+    pitchSession.misses += 1;
+    pitchSession.streak = 0;
+    pitchSession.combo = 1;
+  }
+  pitchSession.score += Math.round(accuracy * (hit ? pitchSession.combo : 0.5));
+
+  const streakEl = $("#pitch-streak");
+  const comboEl = $("#pitch-combo");
+  if (streakEl) streakEl.textContent = `${pitchSession.streak}`;
+  if (comboEl) comboEl.textContent = `x${pitchSession.combo}`;
+
   if (!pitchGameSamples.length) {
     resultEl.textContent = "No sound detected. Try again with a strong note.";
   } else {
-    const avg = pitchGameSamples.reduce((a, b) => a + b, 0) / pitchGameSamples.length;
-    const score = Math.round(avg * 100);
-    const stars = Math.max(1, Math.round(avg * 5));
-    resultEl.textContent = `Accuracy ${score}% • Stars ${"⭐".repeat(stars)}`;
-    const result = { type: "pitch", score, stars, target: currentTarget };
+    resultEl.textContent = `${hit ? "Hit!" : "Miss"} • ${accuracy}% accuracy`;
+  }
+
+  if (!manual && pitchSession.round < pitchSession.totalRounds) {
+    setTimeout(() => runPitchRound(), 700);
+    return;
+  }
+
+  pitchSession.active = false;
+  const accuracyRatio = pitchSession.totalRounds
+    ? pitchSession.hits / pitchSession.totalRounds
+    : 0;
+  const stars = Math.min(5, Math.max(1, Math.round(accuracyRatio * 5)));
+  const result = {
+    type: "pitch",
+    score: pitchSession.score,
+    stars,
+    target: currentTarget,
+    rounds: pitchSession.totalRounds,
+    hits: pitchSession.hits,
+    streak: pitchSession.streak,
+    mode: pitchSession.mode,
+  };
+  if (pitchSession.totalRounds > 0) {
     addGameResult(result).then(() => {
       refreshDashboard();
       renderGameCoach();
       awardGameXP(result);
     });
   }
+
+  const profile = getGameProfile("pitch");
+  const leveledUp = accuracyRatio >= 0.7 && pitchSession.totalRounds > 1;
+  const nextLevel = leveledUp ? profile.level + 1 : profile.level;
+  updateGameProfile("pitch", {
+    level: nextLevel,
+    bestScore: Math.max(profile.bestScore || 0, pitchSession.score),
+    bestStreak: Math.max(profile.bestStreak || 0, pitchSession.streak),
+  });
+
   if (pitchGameAutoStop) stopTuner();
+  const timerEl = $("#pitch-timer");
+  if (timerEl) timerEl.textContent = "0s";
 }
 
 function setupRhythmDash() {
@@ -2283,6 +2553,13 @@ function setupRhythmDash() {
   const display = $("#rhythm-tempo-display");
   const beat = $("#rhythm-dash-beat");
   const scoreEl = $("#rhythm-dash-score");
+  const feedbackEl = $("#rhythm-feedback");
+  const timerEl = $("#rhythm-timer");
+  const streakEl = $("#rhythm-streak");
+  const comboEl = $("#rhythm-combo");
+  const modeSelect = $("#rhythm-mode");
+  const durationSlider = $("#rhythm-duration");
+  const durationDisplay = $("#rhythm-duration-display");
   const rhythmAuto = $("#rhythm-auto");
 
   if (rhythmAuto) {
@@ -2294,13 +2571,46 @@ function setupRhythmDash() {
     });
   }
 
+  if (modeSelect) {
+    getSetting("rhythmMode", "steady").then((val) => {
+      rhythmSession.mode = val || "steady";
+      modeSelect.value = rhythmSession.mode;
+    });
+    modeSelect.addEventListener("change", () => {
+      rhythmSession.mode = modeSelect.value;
+      setSetting("rhythmMode", rhythmSession.mode);
+    });
+  }
+
+  if (durationSlider && durationDisplay) {
+    getSetting("rhythmDuration", 30).then((val) => {
+      rhythmSession.duration = Math.max(15, Math.min(60, parseInt(val, 10) || 30));
+      durationSlider.value = rhythmSession.duration;
+      durationDisplay.textContent = `${rhythmSession.duration}s round`;
+      if (timerEl) timerEl.textContent = `${rhythmSession.duration}s`;
+    });
+    durationSlider.addEventListener("input", () => {
+      rhythmSession.duration = parseInt(durationSlider.value, 10);
+      durationDisplay.textContent = `${rhythmSession.duration}s round`;
+      if (timerEl) timerEl.textContent = `${rhythmSession.duration}s`;
+      setSetting("rhythmDuration", rhythmSession.duration);
+    });
+  }
+
   tempo.addEventListener("input", () => {
     rhythmDashTempo = parseInt(tempo.value, 10);
     display.textContent = `${tempo.value} BPM`;
   });
 
+  const updateRhythmUI = (label = "") => {
+    if (scoreEl) scoreEl.textContent = `Score: ${rhythmSession.score}`;
+    if (streakEl) streakEl.textContent = `${rhythmSession.streak}`;
+    if (comboEl) comboEl.textContent = `x${rhythmSession.combo}`;
+    if (feedbackEl && label) feedbackEl.textContent = label;
+  };
+
   $("#rhythm-dash-start").addEventListener("click", async () => {
-    if (rhythmDashActive) return;
+    if (rhythmSession.active) return;
     await ensureAudioContext();
     if (rhythmAuto && rhythmAuto.checked && adaptiveCoachEnabled) {
       const recTempo = await recommendRhythmTempo();
@@ -2308,71 +2618,201 @@ function setupRhythmDash() {
       tempo.value = recTempo;
       display.textContent = `${recTempo} BPM`;
     }
-    rhythmDashActive = true;
-    rhythmDashScore = 0;
-    rhythmDashHits = 0;
-    scoreEl.textContent = "Score: 0";
+    rhythmSession.active = true;
+    rhythmSession.score = 0;
+    rhythmSession.combo = 1;
+    rhythmSession.streak = 0;
+    rhythmSession.hits = 0;
+    rhythmSession.perfect = 0;
+    rhythmSession.great = 0;
+    rhythmSession.ok = 0;
+    rhythmSession.misses = 0;
     rhythmDashStartTime = performance.now();
-    const interval = 60000 / rhythmDashTempo;
-    clearInterval(rhythmDashInterval);
-    rhythmDashInterval = setInterval(() => {
-      playClick();
-      beat.classList.add("active");
-      setTimeout(() => beat.classList.remove("active"), 200);
-    }, interval);
+    startRhythmMetronome(beat);
+    updateRhythmUI("Tap with the beat!");
+
+    const start = performance.now();
+    if (rhythmSession.timerId) clearInterval(rhythmSession.timerId);
+    rhythmSession.timerId = setInterval(() => {
+      const elapsed = (performance.now() - start) / 1000;
+      const remaining = Math.max(0, rhythmSession.duration - elapsed);
+      if (timerEl) timerEl.textContent = `${Math.ceil(remaining)}s`;
+      if (remaining <= 0) stopRhythmDash();
+    }, 200);
   });
 
   $("#rhythm-dash-stop").addEventListener("click", () => {
-    if (!rhythmDashActive) return;
-    rhythmDashActive = false;
-    clearInterval(rhythmDashInterval);
-    $("#rhythm-dash-beat").classList.remove("active");
-    const stars = rhythmDashHits ? Math.min(5, Math.ceil(rhythmDashScore / (rhythmDashHits * 5) * 5)) : 1;
-    const result = { type: "rhythm", score: rhythmDashScore, stars, tempo: rhythmDashTempo };
-    addGameResult(result).then(() => {
-      refreshDashboard();
-      renderGameCoach();
-      awardGameXP(result);
-    });
-    showToast("Rhythm Dash complete!");
+    stopRhythmDash(true);
   });
 
   $("#rhythm-dash-tap").addEventListener("click", () => {
-    if (!rhythmDashActive) return;
+    if (!rhythmSession.active) return;
     const interval = 60000 / rhythmDashTempo;
     const now = performance.now();
     const delta = (now - rhythmDashStartTime) % interval;
     const error = Math.min(delta, interval - delta);
     let points = 0;
     let label = "Keep going!";
-    if (error < 80) { points = 5; label = "Perfect!"; }
-    else if (error < 140) { points = 3; label = "Great!"; }
-    else if (error < 220) { points = 1; label = "Nice!"; }
-    rhythmDashScore += points;
-    rhythmDashHits += 1;
-    scoreEl.textContent = `Score: ${rhythmDashScore} • ${label}`;
+    if (error < 70) {
+      points = 6;
+      label = "Perfect!";
+      rhythmSession.perfect += 1;
+      rhythmSession.streak += 1;
+      rhythmSession.combo = Math.min(6, rhythmSession.combo + 1);
+    } else if (error < 130) {
+      points = 4;
+      label = "Great!";
+      rhythmSession.great += 1;
+      rhythmSession.streak += 1;
+      rhythmSession.combo = Math.min(6, rhythmSession.combo + 1);
+    } else if (error < 200) {
+      points = 2;
+      label = "Nice!";
+      rhythmSession.ok += 1;
+      rhythmSession.streak = Math.max(0, rhythmSession.streak - 1);
+      rhythmSession.combo = Math.max(1, rhythmSession.combo - 1);
+    } else {
+      label = "Miss!";
+      rhythmSession.misses += 1;
+      rhythmSession.streak = 0;
+      rhythmSession.combo = 1;
+    }
+    rhythmSession.hits += 1;
+    rhythmSession.score += points * rhythmSession.combo;
+    updateRhythmUI(label);
+
+    if (rhythmSession.mode === "speed" && rhythmSession.hits % 8 === 0) {
+      rhythmDashTempo = Math.min(160, rhythmDashTempo + 4);
+      tempo.value = rhythmDashTempo;
+      display.textContent = `${rhythmDashTempo} BPM`;
+      startRhythmMetronome(beat);
+    }
   });
+
+  updateRhythmUI();
+}
+
+function startRhythmMetronome(beatEl) {
+  const interval = 60000 / rhythmDashTempo;
+  clearInterval(rhythmDashInterval);
+  rhythmDashInterval = setInterval(() => {
+    playClick();
+    if (beatEl) {
+      beatEl.classList.add("active");
+      setTimeout(() => beatEl.classList.remove("active"), 200);
+    }
+  }, interval);
+}
+
+function stopRhythmDash(manual = false) {
+  if (!rhythmSession.active && manual) return;
+  rhythmSession.active = false;
+  clearInterval(rhythmDashInterval);
+  if (rhythmSession.timerId) clearInterval(rhythmSession.timerId);
+  $("#rhythm-dash-beat")?.classList.remove("active");
+  const accuracy = rhythmSession.hits ? (rhythmSession.perfect + rhythmSession.great) / rhythmSession.hits : 0;
+  const stars = Math.min(5, Math.max(1, Math.round(accuracy * 5)));
+  const result = {
+    type: "rhythm",
+    score: rhythmSession.score,
+    stars,
+    tempo: rhythmDashTempo,
+    streak: rhythmSession.streak,
+    mode: rhythmSession.mode,
+  };
+  addGameResult(result).then(() => {
+    refreshDashboard();
+    renderGameCoach();
+    awardGameXP(result);
+  });
+  const profile = getGameProfile("rhythm");
+  const leveledUp = accuracy >= 0.65;
+  updateGameProfile("rhythm", {
+    level: leveledUp ? profile.level + 1 : profile.level,
+    bestScore: Math.max(profile.bestScore || 0, rhythmSession.score),
+    bestStreak: Math.max(profile.bestStreak || 0, rhythmSession.streak),
+  });
+  showToast("Rhythm Dash complete!");
+  const timerEl = $("#rhythm-timer");
+  if (timerEl) timerEl.textContent = "0s";
 }
 
 function setupMemoryGame() {
   const sequenceEl = $("#memory-sequence");
   const scoreEl = $("#memory-score");
+  const livesEl = $("#memory-lives");
+  const streakEl = $("#memory-streak");
+  const feedbackEl = $("#memory-feedback");
+  const hintBtn = $("#memory-hint");
 
-  $("#memory-play").addEventListener("click", () => {
+  memorySession.lives = 3;
+  memorySession.streak = 0;
+
+  const updateMemoryUI = (message = "") => {
+    if (scoreEl) scoreEl.textContent = `Score: ${memoryScore}`;
+    if (livesEl) livesEl.textContent = "❤".repeat(Math.max(0, memorySession.lives));
+    if (streakEl) streakEl.textContent = `${memorySession.streak}`;
+    if (feedbackEl && message) feedbackEl.textContent = message;
+  };
+
+  const startMemoryRound = () => {
     if (memoryPlaying) return;
-    const length = Math.min(5, 3 + Math.floor(memoryScore / 2));
+    const profile = getGameProfile("memory");
+    memorySession.level = profile.level || 1;
+    const length = Math.min(8, 3 + memorySession.level + Math.floor(memoryScore / 2));
     memorySequence = Array.from({ length }, () => randomNote());
     memoryInput = [];
+    memorySession.hintUsed = false;
+    if (hintBtn) hintBtn.disabled = false;
     sequenceEl.textContent = "Listen...";
+    memoryPlaying = true;
     playNoteSequence(memorySequence).then(() => {
+      memoryPlaying = false;
       sequenceEl.textContent = `Your turn! (${length} notes)`;
+      updateMemoryUI("Tap the notes in the same order.");
     });
+  };
+
+  const endMemoryGame = () => {
+    const stars = Math.min(5, Math.max(1, Math.round(memoryScore / 3)));
+    const result = { type: "memory", score: memoryScore, stars, streak: memorySession.streak };
+    addGameResult(result).then(() => {
+      refreshDashboard();
+      renderGameCoach();
+      awardGameXP(result);
+    });
+    const profile = getGameProfile("memory");
+    const leveledUp = memoryScore >= profile.level + 2;
+    updateGameProfile("memory", {
+      level: leveledUp ? profile.level + 1 : profile.level,
+      bestScore: Math.max(profile.bestScore || 0, memoryScore),
+      bestStreak: Math.max(profile.bestStreak || 0, memorySession.streak),
+    });
+    showToast("Note Memory complete!");
+  };
+
+  $("#memory-play").addEventListener("click", () => {
+    startMemoryRound();
   });
 
   $("#memory-clear").addEventListener("click", () => {
     memoryInput = [];
     sequenceEl.textContent = "Ready for a melody!";
+    updateMemoryUI("Tap Play Sequence to start again.");
   });
+
+  if (hintBtn) {
+    hintBtn.addEventListener("click", () => {
+      if (!memorySequence.length || memorySession.hintUsed) return;
+      memorySession.hintUsed = true;
+      hintBtn.disabled = true;
+      sequenceEl.textContent = "Hint replay...";
+      playNoteSequence(memorySequence).then(() => {
+        sequenceEl.textContent = `Your turn! (${memorySequence.length} notes)`;
+        updateMemoryUI("Try again. You’ve got this!");
+      });
+    });
+  }
 
   $$(".memory-note").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -2382,121 +2822,309 @@ function setupMemoryGame() {
       memoryInput.push(note);
       const index = memoryInput.length - 1;
       if (note !== memorySequence[index]) {
-        sequenceEl.textContent = "Oops! Try the sequence again.";
+        memorySession.lives -= 1;
+        memorySession.streak = 0;
         memoryInput = [];
+        if (memorySession.lives <= 0) {
+          sequenceEl.textContent = "Out of lives! Great try!";
+          updateMemoryUI("Game over. Tap Play to try again.");
+          memorySequence = [];
+          memorySession.lives = 3;
+          endMemoryGame();
+          return;
+        }
+        sequenceEl.textContent = "Oops! Try again.";
+        updateMemoryUI("Listen again and tap the sequence.");
         return;
       }
       if (memoryInput.length === memorySequence.length) {
         memoryScore += 1;
-        const stars = Math.min(5, 1 + Math.floor(memoryScore / 2));
-        scoreEl.textContent = `Score: ${memoryScore}`;
-        sequenceEl.textContent = "Brilliant! Ready for the next one.";
-        const result = { type: "memory", score: memoryScore, stars };
-        addGameResult(result).then(() => {
-          refreshDashboard();
-          renderGameCoach();
-          awardGameXP(result);
-        });
+        memorySession.streak += 1;
+        sequenceEl.textContent = "Brilliant! Next round.";
+        updateMemoryUI("You matched the pattern!");
         memorySequence = [];
         memoryInput = [];
+        const profile = getGameProfile("memory");
+        const leveledUp = memorySession.streak >= 2 && memoryScore >= profile.level;
+        if (leveledUp) {
+          updateGameProfile("memory", {
+            level: profile.level + 1,
+            bestScore: Math.max(profile.bestScore || 0, memoryScore),
+            bestStreak: Math.max(profile.bestStreak || 0, memorySession.streak),
+          });
+        }
       }
     });
   });
+
+  updateMemoryUI("Listen closely and tap back the notes.");
 }
 
 function setupBowHold() {
   const timerEl = $("#bow-timer");
   const scoreEl = $("#bow-score");
   const pulse = $("#bow-pulse");
+  const goalEl = $("#bow-goal");
+  const streakEl = $("#bow-streak");
+  const breathEl = $("#bow-breath");
+  const motionToggle = $("#bow-motion");
+
+  const updateBowUI = () => {
+    if (goalEl) goalEl.textContent = `${bowSession.goal}s`;
+    if (streakEl) streakEl.textContent = `${bowSession.streak}`;
+  };
+
+  const applyBowGoalFromProfile = () => {
+    const profile = getGameProfile("bow");
+    bowSession.level = profile.level || 1;
+    bowSession.goal = 6 + Math.max(0, bowSession.level - 1) * 2;
+    updateBowUI();
+  };
+
+  applyBowGoalFromProfile();
+
+  if (motionToggle) {
+    motionToggle.checked = Boolean(bowSession.motionEnabled);
+    motionToggle.addEventListener("change", async () => {
+      if (motionToggle.checked) {
+        if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+          try {
+            const permission = await DeviceMotionEvent.requestPermission();
+            if (permission !== "granted") {
+              motionToggle.checked = false;
+              showToast("Motion permission denied");
+              return;
+            }
+          } catch (err) {
+            motionToggle.checked = false;
+            showToast("Motion permission needed");
+            return;
+          }
+        }
+        bowSession.motionEnabled = true;
+        showToast("Motion check on");
+      } else {
+        bowSession.motionEnabled = false;
+        showToast("Motion check off");
+      }
+    });
+  }
 
   $("#bow-start").addEventListener("click", () => {
     clearInterval(bowTimerId);
     bowStart = performance.now();
+    bowMotionWobble = 0;
+    bowSession.breathPhase = 0;
+    if (breathEl) breathEl.textContent = "Breathe in…";
+    if (bowSession.motionEnabled) {
+      if (bowMotionListener) window.removeEventListener("devicemotion", bowMotionListener);
+      bowMotionListener = (event) => {
+        const acc = event.accelerationIncludingGravity;
+        if (!acc) return;
+        const magnitude = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+        if (magnitude > 14) bowMotionWobble += 1;
+      };
+      window.addEventListener("devicemotion", bowMotionListener);
+    }
     bowTimerId = setInterval(() => {
       const elapsed = (performance.now() - bowStart) / 1000;
       timerEl.textContent = `${elapsed.toFixed(1)}s`;
       pulse.style.transform = `scale(${1 + Math.sin(performance.now() / 400) * 0.05})`;
+      if (breathEl) {
+        bowSession.breathPhase = (bowSession.breathPhase + 1) % 20;
+        breathEl.textContent = bowSession.breathPhase < 10 ? "Breathe in…" : "Breathe out…";
+      }
     }, 100);
   });
 
   $("#bow-stop").addEventListener("click", () => {
     if (!bowStart) return;
     clearInterval(bowTimerId);
+    if (bowMotionListener) {
+      window.removeEventListener("devicemotion", bowMotionListener);
+      bowMotionListener = null;
+    }
     const elapsed = (performance.now() - bowStart) / 1000;
     bowBest = Math.max(bowBest, elapsed);
     scoreEl.textContent = `Best: ${bowBest.toFixed(1)}s`;
     timerEl.textContent = `${elapsed.toFixed(1)}s`;
-    const stars = Math.min(5, Math.max(1, Math.floor(elapsed / 5) + 1));
-    const result = { type: "bow", score: Math.round(elapsed), stars };
+    const wobblePenalty = bowSession.motionEnabled ? Math.min(3, Math.floor(bowMotionWobble / 4)) : 0;
+    const success = elapsed >= bowSession.goal && wobblePenalty < 3;
+    if (success) {
+      bowSession.streak += 1;
+      const profile = getGameProfile("bow");
+      const leveledUp = bowSession.streak >= 2;
+      updateGameProfile("bow", {
+        level: leveledUp ? profile.level + 1 : profile.level,
+        bestScore: Math.max(profile.bestScore || 0, Math.round(elapsed)),
+        bestStreak: Math.max(profile.bestStreak || 0, bowSession.streak),
+      });
+      applyBowGoalFromProfile();
+    } else {
+      bowSession.streak = 0;
+    }
+    updateBowUI();
+    const stars = Math.min(5, Math.max(1, Math.floor(elapsed / bowSession.goal * 5)));
+    const result = {
+      type: "bow",
+      score: Math.round(elapsed),
+      stars,
+      goal: bowSession.goal,
+      streak: bowSession.streak,
+      wobble: bowMotionWobble,
+    };
     addGameResult(result).then(() => {
       refreshDashboard();
       renderGameCoach();
       awardGameXP(result);
     });
     bowStart = 0;
+    if (breathEl) breathEl.textContent = "Breathe in… breathe out…";
   });
 }
 
 function setupEarTrainer() {
   const prompt = $("#ear-prompt");
   const scoreEl = $("#ear-score");
+  const livesEl = $("#ear-lives");
+  const streakEl = $("#ear-streak");
+  const modeSelect = $("#ear-mode");
+  const feedbackEl = $("#ear-feedback");
 
-  const playTarget = async () => {
+  const profile = getGameProfile("ear");
+  earSession.level = profile.level || 1;
+  earSession.lives = 3;
+  earSession.streak = 0;
+
+  if (modeSelect) {
+    getSetting("earMode", "single").then((val) => {
+      earSession.mode = val || "single";
+      modeSelect.value = earSession.mode;
+    });
+    modeSelect.addEventListener("change", () => {
+      earSession.mode = modeSelect.value;
+      setSetting("earMode", earSession.mode);
+    });
+  }
+
+  const updateEarUI = (message = "") => {
+    if (scoreEl) scoreEl.textContent = `Score: ${earScore}`;
+    if (livesEl) livesEl.textContent = "❤".repeat(Math.max(0, earSession.lives));
+    if (streakEl) streakEl.textContent = `${earSession.streak}`;
+    if (feedbackEl && message) feedbackEl.textContent = message;
+  };
+
+  const buildEarSequence = () => {
+    const pool = getEarNotePool();
+    const length = earSession.mode === "melody" ? Math.min(3, 2 + Math.floor(earSession.level / 2)) : 1;
+    earSession.targetSequence = Array.from({ length }, () => pool[Math.floor(Math.random() * pool.length)]);
+    earSession.input = [];
+  };
+
+  const playEarSequence = async () => {
     await ensureAudioContext();
-    if (!earTarget) earTarget = randomEarNote();
-    const freq = violinTargets[earTarget];
-    if (freq) playTone(freq, audioCtx.currentTime + 0.05, 0.5);
-    if (prompt) prompt.textContent = "Listen carefully... what note is it?";
+    const seq = earSession.targetSequence;
+    if (!seq.length) return;
+    let time = audioCtx.currentTime + 0.1;
+    seq.forEach((note) => {
+      const freq = violinTargets[note];
+      if (freq) playTone(freq, time, 0.5);
+      time += 0.6;
+    });
+  };
+
+  const startEarRound = async () => {
+    buildEarSequence();
+    if (prompt) prompt.textContent = earSession.mode === "melody" ? "Listen to the mini melody!" : "Listen carefully... what note is it?";
+    updateEarUI("Listen, then tap the notes in order.");
+    await playEarSequence();
   };
 
   $("#ear-play").addEventListener("click", () => {
-    earTarget = randomEarNote();
-    playTarget();
+    startEarRound();
   });
 
   $("#ear-repeat").addEventListener("click", () => {
-    if (!earTarget) {
-      earTarget = randomEarNote();
+    if (!earSession.targetSequence.length) {
+      startEarRound();
+    } else {
+      playEarSequence();
     }
-    playTarget();
   });
 
   $$(".ear-note").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (btn.disabled) return;
-      if (!earTarget) {
-        showToast("Tap play to hear a note first!");
+      if (!earSession.targetSequence.length) {
+        showToast("Tap play to hear notes first!");
         return;
       }
       const guess = btn.dataset.note;
-      earRound += 1;
-      if (guess === earTarget) {
-        earScore += 5;
-        prompt.textContent = `Yes! That was ${earTarget}.`;
-        showToast("Great listening! ⭐");
+      const expected = earSession.targetSequence[earSession.input.length];
+      if (guess === expected) {
+        earSession.input.push(guess);
+        if (earSession.input.length === earSession.targetSequence.length) {
+          earScore += 6;
+          earSession.streak += 1;
+          earRound += 1;
+          prompt.textContent = "Yes! You nailed it!";
+          updateEarUI("Correct! Tap play for the next round.");
+          earSession.targetSequence = [];
+          earSession.input = [];
+          const profile = getGameProfile("ear");
+          const leveledUp = earSession.streak >= 3;
+          const nextLevel = leveledUp ? profile.level + 1 : profile.level;
+          updateGameProfile("ear", {
+            level: nextLevel,
+            bestScore: Math.max(profile.bestScore || 0, earScore),
+            bestStreak: Math.max(profile.bestStreak || 0, earSession.streak),
+          });
+          earSession.level = nextLevel;
+        } else {
+          prompt.textContent = `Good! ${earSession.input.length}/${earSession.targetSequence.length} notes`;
+          updateEarUI("Keep going!");
+        }
       } else {
-        prompt.textContent = `Nice try! It was ${earTarget}.`;
-      }
-      earTarget = null;
-      scoreEl.textContent = `Score: ${earScore}`;
-      if (earRound % 5 === 0) {
-        const stars = Math.min(5, Math.max(1, Math.round(earScore / 10)));
-        const result = { type: "ear", score: earScore, stars, difficulty: earDifficulty };
-        addGameResult(result).then(() => {
-          refreshDashboard();
-          renderGameCoach();
-          awardGameXP(result);
-        });
+        earSession.lives -= 1;
+        earSession.streak = 0;
+        if (earSession.lives <= 0) {
+          prompt.textContent = `That was ${expected}. Game over!`;
+          updateEarUI("Try again with Play.");
+          const stars = Math.min(5, Math.max(1, Math.round(earScore / 12)));
+          const result = { type: "ear", score: earScore, stars, difficulty: earDifficulty };
+          addGameResult(result).then(() => {
+            refreshDashboard();
+            renderGameCoach();
+            awardGameXP(result);
+          });
+          earScore = 0;
+          earRound = 0;
+          earSession.lives = 3;
+          earSession.targetSequence = [];
+          earSession.input = [];
+          return;
+        }
+        prompt.textContent = `Oops! Try again.`;
+        updateEarUI("Listen again and tap the notes in order.");
+        earSession.targetSequence = [];
+        earSession.input = [];
       }
     });
   });
 
   updateEarOptions();
+  updateEarUI("Listen, then tap the notes in order.");
 }
 
 function setupRhythmPainter() {
   const patternEl = $("#rhythm-pattern");
   const scoreEl = $("#pattern-score");
+  const comboEl = $("#pattern-combo");
+  const streakEl = $("#pattern-streak");
+  const feedbackEl = $("#pattern-feedback");
+  const tempoSlider = $("#pattern-tempo");
+  const tempoDisplay = $("#pattern-tempo-display");
+  const listenBtn = $("#pattern-listen");
 
   const displayPattern = () => {
     if (!patternSequence.length) {
@@ -2507,55 +3135,125 @@ function setupRhythmPainter() {
     patternEl.textContent = `Pattern: ${symbols}`;
   };
 
+  if (tempoSlider && tempoDisplay) {
+    getSetting("patternTempo", 96).then((val) => {
+      patternSession.tempo = Math.max(60, Math.min(140, parseInt(val, 10) || 96));
+      tempoSlider.value = patternSession.tempo;
+      tempoDisplay.textContent = `${patternSession.tempo} BPM`;
+    });
+    tempoSlider.addEventListener("input", () => {
+      patternSession.tempo = parseInt(tempoSlider.value, 10);
+      tempoDisplay.textContent = `${tempoSlider.value} BPM`;
+      setSetting("patternTempo", patternSession.tempo);
+    });
+  }
+
+  const updatePatternUI = (message = "") => {
+    if (scoreEl) scoreEl.textContent = `Score: ${patternScore}`;
+    if (comboEl) comboEl.textContent = `x${patternSession.combo}`;
+    if (streakEl) streakEl.textContent = `${patternSession.streak}`;
+    if (feedbackEl && message) feedbackEl.textContent = message;
+  };
+
+  const playPatternAudio = async () => {
+    if (!patternSequence.length) return;
+    await ensureAudioContext();
+    const interval = 60000 / patternSession.tempo;
+    let offset = 0;
+    patternSequence.forEach((beat) => {
+      setTimeout(() => playClick(), offset);
+      offset += beat * interval;
+    });
+    await new Promise((resolve) => setTimeout(resolve, offset + 200));
+  };
+
   $("#pattern-start").addEventListener("click", () => {
     patternSequence = Array.from({ length: patternLength }, () => (Math.random() > 0.4 ? 1 : 0.5));
     patternIndex = 0;
     patternScore = 0;
     patternStartTime = 0;
+    patternSession.combo = 1;
+    patternSession.streak = 0;
     displayPattern();
-    scoreEl.textContent = "Score: 0";
-    showToast("Pattern ready! Tap the beat.");
+    updatePatternUI("Pattern ready! Tap the beat.");
   });
+
+  if (listenBtn) {
+    listenBtn.addEventListener("click", async () => {
+      if (!patternSequence.length) {
+        showToast("Tap New Pattern first.");
+        return;
+      }
+      patternSession.listening = true;
+      updatePatternUI("Listening to the pattern...");
+      await playPatternAudio();
+      patternSession.listening = false;
+      updatePatternUI("Now tap the rhythm!");
+    });
+  }
 
   $("#pattern-tap").addEventListener("click", () => {
     if (!patternSequence.length) {
       showToast("Tap New Pattern first.");
       return;
     }
-    const bpm = 96;
-    const interval = 60000 / bpm;
+    if (patternSession.listening) return;
+    const interval = 60000 / patternSession.tempo;
     const now = performance.now();
     if (patternIndex === 0) {
       patternStartTime = now;
       patternScore += 2;
       patternIndex += 1;
-      scoreEl.textContent = `Score: ${patternScore}`;
+      updatePatternUI("Nice start!");
       return;
     }
     const expected = patternSequence.slice(0, patternIndex).reduce((sum, beat) => sum + beat, 0) * interval;
     const actual = now - patternStartTime;
     const error = Math.abs(actual - expected);
-    if (error < 140) {
-      patternScore += 5;
-    } else if (error < 260) {
-      patternScore += 3;
+    if (error < 120) {
+      patternScore += 6 * patternSession.combo;
+      patternSession.streak += 1;
+      patternSession.combo = Math.min(6, patternSession.combo + 1);
+      updatePatternUI("Perfect!");
+    } else if (error < 220) {
+      patternScore += 3 * patternSession.combo;
+      patternSession.streak += 1;
+      patternSession.combo = Math.min(6, patternSession.combo + 1);
+      updatePatternUI("Great!");
     } else {
       patternScore += 1;
+      patternSession.streak = 0;
+      patternSession.combo = 1;
+      updatePatternUI("Keep the beat!");
     }
     patternIndex += 1;
-    scoreEl.textContent = `Score: ${patternScore}`;
     if (patternIndex > patternSequence.length) {
-      const stars = Math.min(5, Math.max(1, Math.round(patternScore / 8)));
-      const result = { type: "pattern", score: patternScore, stars, length: patternSequence.length };
+      const stars = Math.min(5, Math.max(1, Math.round(patternScore / 10)));
+      const result = {
+        type: "pattern",
+        score: patternScore,
+        stars,
+        length: patternSequence.length,
+        tempo: patternSession.tempo,
+        streak: patternSession.streak,
+      };
       addGameResult(result).then(() => {
         refreshDashboard();
         renderGameCoach();
         awardGameXP(result);
       });
+      const profile = getGameProfile("pattern");
+      const leveledUp = patternSession.streak >= 3;
+      updateGameProfile("pattern", {
+        level: leveledUp ? profile.level + 1 : profile.level,
+        bestScore: Math.max(profile.bestScore || 0, patternScore),
+        bestStreak: Math.max(profile.bestStreak || 0, patternSession.streak),
+      });
       showToast("Rhythm Painter complete!");
       patternSequence = [];
       patternIndex = 0;
       displayPattern();
+      updatePatternUI("Tap New Pattern to play again.");
     }
   });
 }
@@ -3608,34 +4306,99 @@ function playClick() {
 function setupRhythmGame() {
   const lane = $("#rhythm-lane");
   const scoreEl = $("#rhythm-score");
-  let score = 0;
-  let active = false;
-  let spawnTimer;
+  if (!lane || !scoreEl) return;
+  const timerEl = $("#pizzicato-timer");
+  const streakEl = $("#pizzicato-streak");
+  const comboEl = $("#pizzicato-combo");
+  const speedSlider = $("#pizzicato-speed");
+  const speedDisplay = $("#pizzicato-speed-display");
+  const feedbackEl = $("#pizzicato-feedback");
+
+  const applyPizzicatoLevel = () => {
+    const profile = getGameProfile("pizzicato");
+    pizzicatoSession.level = profile.level || 1;
+    pizzicatoSession.duration = 14 + pizzicatoSession.level * 2;
+    updateGameProfileUI("pizzicato");
+  };
+
+  applyPizzicatoLevel();
+
+  if (speedSlider && speedDisplay) {
+    getSetting("pizzicatoSpeed", 2).then((val) => {
+      pizzicatoSession.speed = Math.max(1, Math.min(4, parseInt(val, 10) || 2));
+      speedSlider.value = pizzicatoSession.speed;
+      speedDisplay.textContent = `Speed ${pizzicatoSession.speed}`;
+    });
+    speedSlider.addEventListener("input", () => {
+      pizzicatoSession.speed = parseInt(speedSlider.value, 10);
+      speedDisplay.textContent = `Speed ${pizzicatoSession.speed}`;
+      setSetting("pizzicatoSpeed", pizzicatoSession.speed);
+    });
+  }
+
+  const updatePizzicatoUI = (message = "") => {
+    if (scoreEl) scoreEl.textContent = `Score: ${pizzicatoSession.score}`;
+    if (streakEl) streakEl.textContent = `${pizzicatoSession.streak}`;
+    if (comboEl) comboEl.textContent = `x${pizzicatoSession.combo}`;
+    if (feedbackEl && message) feedbackEl.textContent = message;
+  };
 
   $("#rhythm-start").addEventListener("click", () => {
-    if (active) return;
-    active = true;
-    score = 0;
-    scoreEl.textContent = "Score: 0";
-    spawnTimer = setInterval(() => spawnPaw(lane, () => {
-      score += 5;
-      scoreEl.textContent = `Score: ${score}`;
-    }), 900);
-    setTimeout(async () => {
-      clearInterval(spawnTimer);
-      active = false;
-      const stars = Math.min(5, Math.max(1, Math.round(score / 20)));
-      const result = { type: "pizzicato", score, stars };
-      await addGameResult(result);
-      showToast("Panda Pizzicato complete!");
-      await refreshDashboard();
-      renderGameCoach();
-      awardGameXP(result);
-    }, 15000);
+    if (pizzicatoSession.active) return;
+    pizzicatoSession.active = true;
+    pizzicatoSession.score = 0;
+    pizzicatoSession.combo = 1;
+    pizzicatoSession.streak = 0;
+    pizzicatoSession.misses = 0;
+    updatePizzicatoUI("Tap the paws before they fall!");
+    const spawnInterval = Math.max(420, 900 - pizzicatoSession.speed * 120 - pizzicatoSession.level * 40);
+    pizzicatoSession.spawnId = setInterval(() => spawnPaw(lane, pizzicatoSession.speed, {
+      onHit: () => {
+        pizzicatoSession.score += 5 * pizzicatoSession.combo;
+        pizzicatoSession.streak += 1;
+        pizzicatoSession.combo = Math.min(6, pizzicatoSession.combo + 1);
+        updatePizzicatoUI("Great catch!");
+      },
+      onMiss: () => {
+        pizzicatoSession.misses += 1;
+        pizzicatoSession.streak = 0;
+        pizzicatoSession.combo = 1;
+        updatePizzicatoUI("Oops! Try the next paw.");
+      },
+    }), spawnInterval);
+
+    const start = performance.now();
+    if (pizzicatoSession.timerId) clearInterval(pizzicatoSession.timerId);
+    pizzicatoSession.timerId = setInterval(async () => {
+      const elapsed = (performance.now() - start) / 1000;
+      const remaining = Math.max(0, pizzicatoSession.duration - elapsed);
+      if (timerEl) timerEl.textContent = `${Math.ceil(remaining)}s`;
+      if (remaining <= 0) {
+        clearInterval(pizzicatoSession.timerId);
+        clearInterval(pizzicatoSession.spawnId);
+        pizzicatoSession.active = false;
+        const stars = Math.min(5, Math.max(1, Math.round(pizzicatoSession.score / 25)));
+        const result = { type: "pizzicato", score: pizzicatoSession.score, stars, streak: pizzicatoSession.streak };
+        await addGameResult(result);
+        showToast("Panda Pizzicato complete!");
+        await refreshDashboard();
+        renderGameCoach();
+        awardGameXP(result);
+        const profile = getGameProfile("pizzicato");
+        const leveledUp = pizzicatoSession.score >= 60 && pizzicatoSession.misses <= 3;
+        updateGameProfile("pizzicato", {
+          level: leveledUp ? profile.level + 1 : profile.level,
+          bestScore: Math.max(profile.bestScore || 0, pizzicatoSession.score),
+          bestStreak: Math.max(profile.bestStreak || 0, pizzicatoSession.streak),
+        });
+        applyPizzicatoLevel();
+        if (timerEl) timerEl.textContent = "0s";
+      }
+    }, 200);
   });
 }
 
-function spawnPaw(lane, onHit) {
+function spawnPaw(lane, speed, { onHit, onMiss }) {
   const paw = document.createElement("div");
   paw.className = "paw";
   paw.textContent = "♪";
@@ -3644,17 +4407,19 @@ function spawnPaw(lane, onHit) {
   lane.appendChild(paw);
 
   let pos = -40;
+  const dropSpeed = 3 + speed;
   const drop = setInterval(() => {
-    pos += 4;
+    pos += dropSpeed;
     paw.style.top = `${pos}px`;
     if (pos > 120) {
       clearInterval(drop);
       paw.remove();
+      if (onMiss) onMiss();
     }
   }, 16);
 
   paw.addEventListener("click", () => {
-    onHit();
+    if (onHit) onHit();
     paw.remove();
   });
 }

@@ -562,6 +562,26 @@
           <div class="game-panel">
             <div class="game-target" id="pitch-target">Target: A4</div>
             <div class="game-result" id="pitch-result">Tap start and play your note!</div>
+            <div class="game-stats">
+              <div class="stat-pill">Level <strong id="pitch-level">1</strong></div>
+              <div class="stat-pill">Round <strong id="pitch-round">0/0</strong></div>
+              <div class="stat-pill">Streak <strong id="pitch-streak">0</strong></div>
+              <div class="stat-pill">Combo <strong id="pitch-combo">x1</strong></div>
+              <div class="stat-pill">Timer <strong id="pitch-timer">0s</strong></div>
+            </div>
+            <label>
+              Mode
+              <select id="pitch-mode">
+                <option value="single">Single Note</option>
+                <option value="ladder">String Ladder</option>
+                <option value="lightning">Lightning Rounds</option>
+              </select>
+            </label>
+            <label>
+              Round Time
+              <input type="range" min="2" max="6" value="4" id="pitch-round-time" />
+            </label>
+            <div class="tempo-display" id="pitch-round-time-display">4s per round</div>
             <label class="toggle"><input type="checkbox" id="pitch-auto" checked /> Auto target (Coach picks)</label>
             <div class="row">
               <button class="primary" id="pitch-start">Start Pitch Quest</button>
@@ -584,6 +604,24 @@
               <input type="range" min="60" max="160" value="96" id="rhythm-tempo" />
             </label>
             <div class="tempo-display" id="rhythm-tempo-display">96 BPM</div>
+            <div class="game-stats">
+              <div class="stat-pill">Level <strong id="rhythm-level">1</strong></div>
+              <div class="stat-pill">Timer <strong id="rhythm-timer">0s</strong></div>
+              <div class="stat-pill">Streak <strong id="rhythm-streak">0</strong></div>
+              <div class="stat-pill">Combo <strong id="rhythm-combo">x1</strong></div>
+            </div>
+            <label>
+              Mode
+              <select id="rhythm-mode">
+                <option value="steady">Steady Beat</option>
+                <option value="speed">Speed Up</option>
+              </select>
+            </label>
+            <label>
+              Round Length
+              <input type="range" min="15" max="60" value="30" id="rhythm-duration" />
+            </label>
+            <div class="tempo-display" id="rhythm-duration-display">30s round</div>
             <label class="toggle"><input type="checkbox" id="rhythm-auto" checked /> Auto tempo (Coach picks)</label>
             <div class="row">
               <button class="primary" id="rhythm-dash-start">Start</button>
@@ -592,6 +630,7 @@
             </div>
             <div class="beat-indicator" id="rhythm-dash-beat"></div>
             <div class="score" id="rhythm-dash-score">Score: 0</div>
+            <div class="score" id="rhythm-feedback">Tap with the beat!</div>
           </div>
         </div>
       </div>
@@ -601,9 +640,15 @@
           <p class="muted">Listen to the sequence and tap it back.</p>
           <div class="game-panel">
             <div class="sequence" id="memory-sequence">Ready for a melody!</div>
+            <div class="game-stats">
+              <div class="stat-pill">Level <strong id="memory-level">1</strong></div>
+              <div class="stat-pill">Lives <strong id="memory-lives">❤❤❤</strong></div>
+              <div class="stat-pill">Streak <strong id="memory-streak">0</strong></div>
+            </div>
             <div class="row">
               <button class="primary" id="memory-play">Play Sequence</button>
               <button class="ghost" id="memory-clear">Clear</button>
+              <button class="ghost" id="memory-hint">Hint</button>
             </div>
             <div class="tuner-targets">
               <button class="chip memory-note" data-note="G3">G</button>
@@ -612,6 +657,7 @@
               <button class="chip memory-note" data-note="E5">E</button>
             </div>
             <div class="score" id="memory-score">Score: 0</div>
+            <div class="score" id="memory-feedback">Listen closely and tap back the notes.</div>
           </div>
         </div>
         <div class="card">
@@ -620,6 +666,13 @@
           <div class="game-panel">
             <div class="timer" id="bow-timer">0.0s</div>
             <div class="pulse long" id="bow-pulse"></div>
+            <div class="game-stats">
+              <div class="stat-pill">Level <strong id="bow-level">1</strong></div>
+              <div class="stat-pill">Goal <strong id="bow-goal">6s</strong></div>
+              <div class="stat-pill">Streak <strong id="bow-streak">0</strong></div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="bow-motion" /> Motion check (optional)</label>
+            <div class="score" id="bow-breath">Breathe in… breathe out…</div>
             <div class="row">
               <button class="primary" id="bow-start">Start Long Bow</button>
               <button class="ghost" id="bow-stop">Stop</button>
@@ -634,6 +687,18 @@
           <p class="muted">Listen and guess the note.</p>
           <div class="game-panel">
             <div class="sequence" id="ear-prompt">Tap play to hear a note.</div>
+            <div class="game-stats">
+              <div class="stat-pill">Level <strong id="ear-level">1</strong></div>
+              <div class="stat-pill">Lives <strong id="ear-lives">❤❤❤</strong></div>
+              <div class="stat-pill">Streak <strong id="ear-streak">0</strong></div>
+            </div>
+            <label>
+              Mode
+              <select id="ear-mode">
+                <option value="single">Single Note</option>
+                <option value="melody">Mini Melody</option>
+              </select>
+            </label>
             <div class="row">
               <button class="primary" id="ear-play">Play Note</button>
               <button class="ghost" id="ear-repeat">Repeat</button>
@@ -645,6 +710,7 @@
               <button class="chip ear-note" data-note="E5">E</button>
             </div>
             <div class="score" id="ear-score">Score: 0</div>
+            <div class="score" id="ear-feedback">Listen, then tap the notes in order.</div>
           </div>
         </div>
         <div class="card">
@@ -652,11 +718,23 @@
           <p class="muted">Tap patterns to paint a rhythm rainbow.</p>
           <div class="game-panel">
             <div class="sequence" id="rhythm-pattern">Pattern: —</div>
+            <div class="game-stats">
+              <div class="stat-pill">Level <strong id="pattern-level">1</strong></div>
+              <div class="stat-pill">Streak <strong id="pattern-streak">0</strong></div>
+              <div class="stat-pill">Combo <strong id="pattern-combo">x1</strong></div>
+            </div>
+            <label>
+              Tempo (BPM)
+              <input type="range" min="60" max="140" value="96" id="pattern-tempo" />
+            </label>
+            <div class="tempo-display" id="pattern-tempo-display">96 BPM</div>
             <div class="row">
               <button class="primary" id="pattern-start">New Pattern</button>
               <button class="ghost" id="pattern-tap">Tap Beat</button>
+              <button class="ghost" id="pattern-listen">Listen</button>
             </div>
             <div class="score" id="pattern-score">Score: 0</div>
+            <div class="score" id="pattern-feedback">Tap the rhythm you see.</div>
           </div>
         </div>
       </div>
@@ -708,9 +786,21 @@
         <h2>Panda Pizzicato</h2>
         <p class="muted">Tap along with the panda paw prints.</p>
         <div class="rhythm-game">
+          <div class="game-stats">
+            <div class="stat-pill">Level <strong id="pizzicato-level">1</strong></div>
+            <div class="stat-pill">Timer <strong id="pizzicato-timer">0s</strong></div>
+            <div class="stat-pill">Streak <strong id="pizzicato-streak">0</strong></div>
+            <div class="stat-pill">Combo <strong id="pizzicato-combo">x1</strong></div>
+          </div>
+          <label>
+            Speed
+            <input type="range" min="1" max="4" value="2" id="pizzicato-speed" />
+          </label>
+          <div class="tempo-display" id="pizzicato-speed-display">Speed 2</div>
           <div class="lane" id="rhythm-lane"></div>
           <button class="primary" id="rhythm-start">Start Game</button>
           <div class="score" id="rhythm-score">Score: 0</div>
+          <div class="score" id="pizzicato-feedback">Tap the paws before they fall!</div>
         </div>
       </div>
     </section>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "violin-pwa-v18";
+const CACHE_NAME = "violin-pwa-v19";
 const CORE_ASSETS = [
   "./",
   "./index.html",
