@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#d8572a" />
+  <meta name="theme-color" content="#ff6b4a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -35,97 +35,71 @@
 
   <div class="offline-banner" id="offline-banner">Offline mode: saved locally on this iPad.</div>
 
-  <header class="hero">
-    <div class="hero-content">
-      <div class="hero-tag">Local-first • iPad-ready • Red Panda Magic</div>
-      <h1>Emerson’s Violin Studio</h1>
-      <p class="hero-sub">Teacher, coach, trainer, tuner, and progress tracker — designed for joyful practice and powerful growth.</p>
-      <div class="hero-actions">
-        <button class="primary" id="start-practice">Start Practice</button>
-        <button class="ghost" data-nav="coach">Open Coach</button>
-      </div>
-      <div class="sticker-strip">
-        <img src="./assets/illustrations/sticker-panda.svg" alt="Red panda sticker" />
-        <img src="./assets/illustrations/sticker-violin.svg" alt="Violin sticker" />
-        <img src="./assets/illustrations/sticker-star.svg" alt="Star sticker" />
-        <img src="./assets/illustrations/sticker-bow.svg" alt="Bow sticker" />
-      </div>
-      <div class="hero-stats" id="hero-stats">
-        <div class="stat-card">
-          <div class="stat-title">Practice Streak</div>
-          <div class="stat-value" id="streak-count">0 days</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">This Week</div>
-          <div class="stat-value" id="week-minutes">0 min</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-title">Focus Stars</div>
-          <div class="stat-value" id="focus-stars">0</div>
-        </div>
-        <div class="stat-card goal-card">
-          <div class="stat-title">Daily Goal</div>
-          <div class="stat-value" id="goal-progress-text">0 / 20 min</div>
-          <div class="progress-track">
-            <div class="progress-bar" id="goal-progress-bar"></div>
-          </div>
-        </div>
+  <header class="app-header">
+    <div class="brand">
+      <img src="./assets/illustrations/sticker-panda.svg" alt="Red panda" class="brand-avatar" />
+      <div class="brand-text">
+        <div class="brand-title">Panda Violin Adventure</div>
+        <div class="brand-sub">Emerson’s iPad mini studio</div>
       </div>
     </div>
-    <div class="hero-art">
-      <div class="sticker-cluster">
-        <img src="./assets/illustrations/sticker-star.svg" alt="" />
-        <img src="./assets/illustrations/sticker-violin.svg" alt="" />
+    <div class="header-actions">
+      <div class="mini-badge">
+        <span>Streak</span>
+        <strong id="streak-count">0 days</strong>
       </div>
-      <div class="panda-card">
-        <svg viewBox="0 0 240 240" aria-hidden="true">
-          <defs>
-            <linearGradient id="fur" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0" stop-color="#f9a36b" />
-              <stop offset="1" stop-color="#d85b2b" />
-            </linearGradient>
-          </defs>
-          <circle cx="120" cy="120" r="112" fill="#ffe9d6" />
-          <circle cx="120" cy="128" r="78" fill="url(#fur)" />
-          <circle cx="60" cy="60" r="28" fill="#b64921" />
-          <circle cx="180" cy="60" r="28" fill="#b64921" />
-          <circle cx="60" cy="60" r="14" fill="#ffe9d6" />
-          <circle cx="180" cy="60" r="14" fill="#ffe9d6" />
-          <circle cx="86" cy="126" r="14" fill="#3c261b" />
-          <circle cx="154" cy="126" r="14" fill="#3c261b" />
-          <circle cx="120" cy="150" r="10" fill="#3c261b" />
-          <path d="M100 164c12 14 28 14 40 0" stroke="#3c261b" stroke-width="6" stroke-linecap="round" fill="none" />
-          <path d="M175 170c0-16 14-30 30-30" stroke="#7a3d21" stroke-width="6" fill="none" stroke-linecap="round" />
-          <path d="M175 170c0 16 14 30 30 30" stroke="#7a3d21" stroke-width="6" fill="none" stroke-linecap="round" />
-          <line x1="200" y1="140" x2="200" y2="200" stroke="#7a3d21" stroke-width="6" stroke-linecap="round" />
-        </svg>
-        <div class="panda-caption">Red Panda Coach</div>
-      </div>
+      <button class="ghost tiny" data-nav="parent">Parent</button>
     </div>
   </header>
 
   <main class="content">
-    <nav class="pill-nav" aria-label="Primary">
-      <button data-nav="home" class="pill active">Home</button>
-      <button data-nav="coach" class="pill">Coach</button>
-      <button data-nav="trainer" class="pill">Trainer</button>
-      <button data-nav="songs" class="pill">Songs</button>
-      <button data-nav="games" class="pill">Games</button>
-      <button data-nav="tuner" class="pill">Tuner</button>
-      <button data-nav="analysis" class="pill">Analysis</button>
-      <button data-nav="progress" class="pill">Progress</button>
-      <button data-nav="parent" class="pill">Parent</button>
-    </nav>
 
     <section class="view active" id="view-home" data-view="home">
       <div class="card install-tip hidden" id="install-tip">
         <h2>Install on iPad</h2>
         <p class="muted">Open in Safari, tap Share, then “Add to Home Screen” for the full app experience.</p>
       </div>
-      <div class="grid two">
-        <div class="card">
-          <h2>Teacher Studio</h2>
-          <p class="muted">A magical practice path tailored for Emerson.</p>
+
+      <div class="home-top">
+        <div class="card welcome-card">
+          <div class="hero-tag">Local-first • iPad mini ready • Red Panda magic</div>
+          <h2>Ready for Music Magic?</h2>
+          <p class="muted">Pick your adventure and tap the giant buttons.</p>
+          <div class="row big">
+            <button class="primary" id="start-practice">Start Practice</button>
+            <button class="ghost" id="start-record">Record + Analyze</button>
+          </div>
+          <div class="quick-launch">
+            <button class="ghost" data-nav="tuner">Tune</button>
+            <button class="ghost" data-nav="songs">Play a Song</button>
+            <button class="ghost" data-nav="games">Play a Game</button>
+            <button class="ghost" data-nav="coach">Ask Coach</button>
+          </div>
+        </div>
+
+        <div class="power-panel" id="hero-stats">
+          <div class="stat-card">
+            <div class="stat-title">This Week</div>
+            <div class="stat-value" id="week-minutes">0 min</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Focus Stars</div>
+            <div class="stat-value" id="focus-stars">0</div>
+          </div>
+          <div class="stat-card goal-card">
+            <div class="stat-title">Daily Goal</div>
+            <div class="stat-value" id="goal-progress-text">0 / 20 min</div>
+            <div class="progress-track">
+              <div class="progress-bar" id="goal-progress-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-grid">
+        <div class="card quest-card">
+          <h2>Today’s Quest</h2>
+          <p class="muted">Tiny steps that build big skills.</p>
           <div class="mini-lesson">
             <strong>Lesson Focus:</strong> Bowing rainbows + bright open strings.
           </div>
@@ -137,9 +111,9 @@
           </ul>
           <div class="row">
             <button class="primary" id="log-session">Log Practice</button>
-            <button class="ghost" id="start-record">Record + Analyze</button>
           </div>
         </div>
+
         <div class="card">
           <h2>Practice Journal</h2>
           <p class="muted">Track feelings, focus, and wins.</p>
@@ -180,20 +154,18 @@
             </label>
           </div>
         </div>
-      </div>
 
-      <div class="card highlight">
-        <div>
-          <h2>Coach Spark</h2>
-          <p class="muted">Get instant tips and encouragement from the Red Panda Coach.</p>
+        <div class="card highlight">
+          <div>
+            <h2>Coach Spark</h2>
+            <p class="muted">Get instant tips and encouragement from the Red Panda Coach.</p>
+          </div>
+          <div class="spark-actions">
+            <button class="primary" id="coach-speak">Give Me a Tip</button>
+            <button class="ghost" id="toggle-voice">Voice: Off</button>
+          </div>
         </div>
-        <div class="spark-actions">
-          <button class="primary" id="coach-speak">Give Me a Tip</button>
-          <button class="ghost" id="toggle-voice">Voice: Off</button>
-        </div>
-      </div>
 
-      <div class="grid two">
         <div class="card">
           <h2>Today’s Plan</h2>
           <p class="muted">Adaptive, kid-friendly steps based on Emerson’s progress.</p>
@@ -203,6 +175,7 @@
             <button class="ghost" id="refresh-daily-plan">Refresh</button>
           </div>
         </div>
+
         <div class="card">
           <h2>Song of the Day</h2>
           <p class="muted" id="song-of-day-meta">A joyful piece chosen by the Panda Coach.</p>
@@ -805,6 +778,35 @@
       </div>
     </section>
 
+    <section class="view" id="view-more" data-view="more">
+      <div class="card full">
+        <h2>More Adventures</h2>
+        <p class="muted">Extra tools for tuning, training, progress, and parent insights.</p>
+        <div class="portal-grid">
+          <button class="portal" data-nav="trainer">
+            <span class="portal-icon">🧰</span>
+            <span>Trainer Lab</span>
+          </button>
+          <button class="portal" data-nav="tuner">
+            <span class="portal-icon">🎯</span>
+            <span>Tuner Magic</span>
+          </button>
+          <button class="portal" data-nav="analysis">
+            <span class="portal-icon">📊</span>
+            <span>Analysis Lab</span>
+          </button>
+          <button class="portal" data-nav="progress">
+            <span class="portal-icon">🌱</span>
+            <span>Progress Garden</span>
+          </button>
+          <button class="portal" data-nav="parent">
+            <span class="portal-icon">🔒</span>
+            <span>Parent Hub</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <section class="view" id="view-tuner" data-view="tuner">
       <div class="card full">
         <h2>Tuner & Pitch Magic</h2>
@@ -962,6 +964,29 @@
       </div>
     </section>
   </main>
+
+  <nav class="tab-bar" aria-label="Primary">
+    <button data-nav="home" class="tab active">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-label">Home</span>
+    </button>
+    <button data-nav="coach" class="tab">
+      <span class="tab-icon">🐼</span>
+      <span class="tab-label">Coach</span>
+    </button>
+    <button data-nav="songs" class="tab">
+      <span class="tab-icon">🎵</span>
+      <span class="tab-label">Songs</span>
+    </button>
+    <button data-nav="games" class="tab">
+      <span class="tab-icon">🎮</span>
+      <span class="tab-label">Games</span>
+    </button>
+    <button data-nav="more" class="tab">
+      <span class="tab-icon">✨</span>
+      <span class="tab-label">More</span>
+    </button>
+  </nav>
 
   <footer class="footer">
     <div>Built for Emerson with love, music, and red pandas.</div>

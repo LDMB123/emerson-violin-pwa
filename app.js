@@ -1139,12 +1139,14 @@ function setupLifecycle() {
 
 function setupNavigation() {
   const buttons = $$("[data-nav]");
+  const tabButtons = $$(".tab-bar [data-nav]");
+  const tabTargets = new Set(tabButtons.map((btn) => btn.dataset.nav));
   const views = $$(".view");
   buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const target = btn.dataset.nav;
-      buttons.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
+      const activeTarget = tabTargets.has(target) ? target : "more";
+      tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.nav === activeTarget));
       views.forEach((v) => v.classList.toggle("active", v.dataset.view === target));
       if (history.replaceState) {
         const url = target === "home" ? "./" : `?view=${target}`;
