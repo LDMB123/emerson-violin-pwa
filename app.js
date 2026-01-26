@@ -11,6 +11,8 @@ const tips = [
   "Aim for a straight bow path, like a train on tracks.",
   "Tiny pauses make big improvements. Celebrate each one!",
 ];
+const COACH_CUE_COOLDOWN_MS = 2600;
+const HAPTIC_COOLDOWN_MS = 160;
 
 let voiceEnabled = false;
 let audioCtx;
@@ -20,6 +22,10 @@ let tunerAnimation;
 let currentTarget = "A4";
 let tunerHistory = [];
 let coachAccuracySamples = [];
+let lastCoachCue = "";
+let lastCoachCueAt = 0;
+let lastHapticAt = 0;
+let tunerPerfect = false;
 let reminderTime = "";
 let lastReminderDay = "";
 let tunerActive = false;
@@ -1171,6 +1177,28 @@ function showToast(message) {
   setTimeout(() => toastEl.classList.remove("show"), 2400);
 }
 
+function haptic(pattern = [16], cooldown = HAPTIC_COOLDOWN_MS) {
+  if (!navigator.vibrate) return;
+  const now = Date.now();
+  if (now - lastHapticAt < cooldown) return;
+  lastHapticAt = now;
+  navigator.vibrate(pattern);
+}
+
+function setCoachCue(message, mood = "encourage", force = false) {
+  if (!message) return;
+  const now = Date.now();
+  if (!force) {
+    if (now - lastCoachCueAt < COACH_CUE_COOLDOWN_MS) return;
+    if (message === lastCoachCue) return;
+  }
+  lastCoachCue = message;
+  lastCoachCueAt = now;
+  const cueText = $("#coach-cue-text");
+  if (cueText) cueText.textContent = message;
+  pandaSay(message, mood);
+}
+
 function setupConnectivity() {
   const banner = $("#offline-banner");
   const update = () => {
@@ -1275,6 +1303,7 @@ function setupCoach() {
   setupPandaCoach();
   setupFingerGuardian();
   setupCoachFocus();
+  setCoachCue("Tap Start Listening to get live coaching.", "encourage", true);
 
   $("#coach-speak").addEventListener("click", () => {
     const tip = tips[Math.floor(Math.random() * tips.length)];
@@ -2869,12 +2898,14 @@ function setupRhythmDash() {
       rhythmSession.perfect += 1;
       rhythmSession.streak += 1;
       rhythmSession.combo = Math.min(6, rhythmSession.combo + 1);
+      haptic([14, 18]);
     } else if (error < 130) {
       points = 4;
       label = "Great!";
       rhythmSession.great += 1;
       rhythmSession.streak += 1;
       rhythmSession.combo = Math.min(6, rhythmSession.combo + 1);
+      haptic([12]);
     } else if (error < 200) {
       points = 2;
       label = "Nice!";
@@ -2886,6 +2917,7 @@ function setupRhythmDash() {
       rhythmSession.misses += 1;
       rhythmSession.streak = 0;
       rhythmSession.combo = 1;
+      haptic([28]);
     }
     rhythmSession.hits += 1;
     rhythmSession.score += points * rhythmSession.combo;
@@ -3309,6 +3341,7 @@ function setupCrossingQuest() {
         crossingSession.score += points * crossingSession.combo;
         crossingSession.index += 1;
         updateCrossingUI(error < 90 ? "Perfect!" : "Great!");
+        haptic(error < 90 ? [16, 20] : [12]);
         if (crossingSession.index >= crossingSession.sequence.length) {
           buildSequence();
         } else {
@@ -3320,6 +3353,7 @@ function setupCrossingQuest() {
         crossingSession.combo = 1;
         crossingSession.misses += 1;
         updateCrossingUI("Oops! Match the highlighted string.");
+        haptic([26]);
       }
     });
   });
@@ -4192,6 +4226,7 @@ async function startTuner() {
     updateTuner();
     showToast("Listening for violin sound");
     pandaSay("I'm listening! Play your note when you're ready.", "focus", true);
+    setCoachCue("Listening now. Hold your note and breathe.", "focus", true);
   } catch (err) {
     console.error(err);
     showToast("Microphone access needed for tuning");
@@ -4232,6 +4267,8 @@ function stopTuner() {
   fingerHoldStart = 0;
   fingerHold = 0;
   fingerHoldRewarded = false;
+  tunerPerfect = false;
+  setCoachCue("Tuner stopped. Tap Start Listening to resume.", "encourage", true);
   pandaSay("Nice listening break! Tap start when you're ready.", "encourage");
 }
 
@@ -4293,7 +4330,14 @@ function updateTunerUI(noteLabel, pitch, cents) {
   updateFingerGuardian(noteLabel, pitch);
 
   const notesEl = $("#coach-notes");
-  if (Math.abs(cents) < 8) {
+  const inTune = Math.abs(cents) < 8;
+  if (inTune && !tunerPerfect) {
+    haptic([18, 22, 18]);
+    tunerPerfect = true;
+  } else if (!inTune) {
+    tunerPerfect = false;
+  }
+  if (inTune) {
     notesEl.textContent = "Perfectly centered! Keep that bow gentle.";
     pandaSay(`Perfect ${noteLabel}!`, "celebrate");
   } else if (cents < 0) {
@@ -4362,6 +4406,7 @@ function updateFingerGuardian(noteLabel, pitch) {
       fingerHoldRewarded = true;
       fingerStreak += 1;
       if (streakEl) streakEl.textContent = `${fingerStreak}`;
+      haptic([20, 30, 20]);
       pandaSay("Great hold! Ready for the next note!", "celebrate");
       showToast("Great hold! ⭐");
       if (fingerAuto) {
@@ -4556,6 +4601,37 @@ function updateLiveCoachMetrics() {
   if (hint) {
     hint.textContent = tunerActive ? "Listening… keep the bow steady." : "Start the tuner to see live tone feedback.";
   }
+
+  updateCoachCueFromMetrics();
+}
+
+function updateCoachCueFromMetrics() {
+  if (!tunerActive) return;
+  const cueText = $("#coach-cue-text");
+  if (!cueText) return;
+  const accuracy = averageAccuracy();
+  if (accuracy && accuracy >= 90) {
+    setCoachCue("Spot-on intonation! Keep it glowing.", "celebrate");
+    return;
+  }
+  const { stability, dynamics, warmth, vibrato } = liveMetrics;
+  if (stability !== null && stability < 55) {
+    setCoachCue("Hold the bow steady like a smooth train.", "focus");
+    return;
+  }
+  if (dynamics !== null && dynamics < 45) {
+    setCoachCue("Try a touch more bow speed for a stronger sound.", "encourage");
+    return;
+  }
+  if (warmth !== null && warmth < 45) {
+    setCoachCue("Move a bit toward the fingerboard for warmth.", "encourage");
+    return;
+  }
+  if (vibrato !== null && vibrato > 70) {
+    setCoachCue("Lovely vibrato! Keep it even.", "celebrate");
+    return;
+  }
+  setCoachCue("Beautiful tone! Breathe and hold the note.", "celebrate");
 }
 
 function scoreFromStdDev(values, targetStd) {
@@ -4791,6 +4867,7 @@ function setupRhythmGame() {
           pizzicatoSession.combo = 1;
           pizzicatoSession.streak = 0;
           updatePizzicatoUI("Boom! Reset and keep going.");
+          haptic([32]);
           return;
         }
         const bonus = type === "gold" ? 10 : 5;
@@ -4798,6 +4875,7 @@ function setupRhythmGame() {
         pizzicatoSession.streak += 1;
         pizzicatoSession.combo = Math.min(6, pizzicatoSession.combo + 1);
         updatePizzicatoUI(type === "gold" ? "Golden paw! ✨" : "Great catch!");
+        haptic(type === "gold" ? [18, 22, 18] : [12]);
       },
       onMiss: (type) => {
         if (type === "bomb") return;
@@ -4805,6 +4883,7 @@ function setupRhythmGame() {
         pizzicatoSession.streak = 0;
         pizzicatoSession.combo = 1;
         updatePizzicatoUI("Oops! Try the next paw.");
+        haptic([26]);
       },
     }), spawnInterval);
 
@@ -4935,7 +5014,7 @@ function renderQuest() {
       await setSetting("questChecks", questState.checks);
       if (questState.checks.every(Boolean)) {
         showToast("Quest complete! 🌈");
-        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+        haptic([40, 60, 40], 0);
       }
     });
     li.appendChild(input);
