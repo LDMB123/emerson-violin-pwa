@@ -327,6 +327,27 @@
           </div>
         </div>
       </div>
+      <div class="card full">
+        <h2>Finger Guardian</h2>
+        <p class="muted">Play the target note. Panda tells if you are high or low.</p>
+        <div class="finger-panel">
+          <div class="finger-targets">
+            <button class="chip finger-chip" data-finger="A4">A4</button>
+            <button class="chip finger-chip" data-finger="B4">B4</button>
+            <button class="chip finger-chip" data-finger="C#5">C#5</button>
+            <button class="chip finger-chip" data-finger="D5">D5</button>
+            <button class="chip finger-chip" data-finger="E5">E5</button>
+            <button class="chip finger-chip" data-finger="F#5">F#5</button>
+            <button class="chip finger-chip" data-finger="G5">G5</button>
+          </div>
+          <label class="toggle"><input type="checkbox" id="finger-auto" checked /> Auto target (Coach picks)</label>
+          <div class="finger-status" id="finger-status">Waiting for sound.</div>
+          <div class="finger-meter">
+            <div class="finger-needle" id="finger-needle"></div>
+          </div>
+          <div class="finger-tip" id="finger-tip">Aim for the center line.</div>
+        </div>
+      </div>
     </section>
 
     <section class="view" id="view-trainer" data-view="trainer">
@@ -857,6 +878,11 @@
   </footer>
 
   <div class="toast" id="toast"></div>
+  <div class="panda-coach" id="panda-coach">
+    <div class="panda-bubble" id="panda-bubble">Hi Emerson! I am your Panda Coach.</div>
+    <img class="panda-avatar" id="panda-avatar" src="./assets/illustrations/sticker-panda.svg" alt="Panda Coach" />
+    <button class="ghost panda-toggle" id="panda-toggle">Panda Coach: On</button>
+  </div>
 
   <script src="./app.js" type="module"></script>
 </body>

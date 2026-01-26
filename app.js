@@ -109,6 +109,13 @@ let songProgressStart = 0;
 let songProgressDuration = 0;
 let songCountInDuration = 0;
 let songCountInBeats = 0;
+let fingerTarget = "A4";
+let fingerAuto = true;
+let fingerTolerance = 18;
+let pandaEnabled = true;
+let pandaBubbleTimer;
+let lastPandaMessageAt = 0;
+const PANDA_COOLDOWN_MS = 9000;
 
 const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const NOTE_OFFSETS = {
@@ -136,6 +143,7 @@ const violinTargets = {
   A4: 440.0,
   E5: 659.25,
 };
+const FINGER_TARGETS = ["A4", "B4", "C#5", "D5", "E5", "F#5", "G5"];
 
 const QUEST_POOL = [
   "Warm up with open strings (2 min)",
@@ -363,6 +371,54 @@ const SONG_LIBRARY = [
       ["G3", 1], ["D4", 1], ["E4", 1], ["E4", 1], ["D4", 1], ["G3", 1],
     ],
     tips: ["Count 1-2-3 in each bar.", "Make the first beat a little stronger."],
+  },
+  {
+    id: "red-panda-parade",
+    title: "Red Panda Parade",
+    level: "beginner",
+    bpm: 96,
+    key: "A major",
+    strings: ["A", "E"],
+    focus: "Happy steps and confident fingers",
+    notes: [
+      ["A4", 1], ["B4", 1], ["C#5", 1], ["D5", 1], ["E5", 2],
+      ["E5", 1], ["D5", 1], ["C#5", 1], ["B4", 1], ["A4", 2],
+      ["A4", 1], ["C#5", 1], ["E5", 1], ["D5", 1], ["C#5", 2],
+      ["B4", 1], ["A4", 1], ["A4", 2],
+    ],
+    tips: ["March the beat with your feet.", "Lift each finger lightly and land softly."],
+  },
+  {
+    id: "starlight-rocket",
+    title: "Starlight Rocket",
+    level: "early",
+    bpm: 100,
+    key: "D major",
+    strings: ["D", "A"],
+    focus: "Rocket rhythms and string confidence",
+    notes: [
+      ["D4", 1], ["E4", 1], ["F#4", 1], ["G4", 1], ["A4", 2],
+      ["A4", 1], ["F#4", 1], ["E4", 1], ["D4", 1], ["D4", 2],
+      ["E4", 1], ["F#4", 1], ["G4", 1], ["A4", 1], ["B4", 1], ["A4", 1], ["F#4", 2],
+      ["D4", 4],
+    ],
+    tips: ["Imagine the rocket lifting off on the long note.", "Keep your bow straight like a rocket path."],
+  },
+  {
+    id: "forest-fireflies",
+    title: "Forest Fireflies",
+    level: "beginner",
+    bpm: 84,
+    key: "G major",
+    strings: ["G", "D"],
+    focus: "Glowy tone and gentle bow",
+    notes: [
+      ["G3", 1], ["B3", 1], ["D4", 2],
+      ["D4", 1], ["E4", 1], ["D4", 2],
+      ["G3", 1], ["A3", 1], ["B3", 2],
+      ["G3", 2], ["D4", 2],
+    ],
+    tips: ["Let the bow glide slowly.", "Listen for a soft shimmer on G and D."],
   },
   {
     id: "rainbow-arpeggio",
@@ -770,6 +826,20 @@ async function init() {
 function updatePitchTargetLabel() {
   const targetEl = $("#pitch-target");
   if (targetEl) targetEl.textContent = `Target: ${currentTarget}`;
+  highlightPitchChips();
+}
+
+function highlightPitchChips() {
+  const chips = [
+    ...$$(".pitch-chip"),
+    ...$$("#view-tuner .chip"),
+    ...$$("#view-coach .chip"),
+  ];
+  chips.forEach((chip) => {
+    const target = chip.dataset.target;
+    if (!target) return;
+    chip.classList.toggle("active", target === currentTarget);
+  });
 }
 
 async function ensureAudioContext() {
@@ -986,6 +1056,9 @@ function setupCoach() {
   const notesEl = $("#coach-notes");
   notesEl.textContent = "Tap Start Listening to get live tuning feedback.";
 
+  setupPandaCoach();
+  setupFingerGuardian();
+
   $("#coach-speak").addEventListener("click", () => {
     const tip = tips[Math.floor(Math.random() * tips.length)];
     notesEl.textContent = tip;
@@ -1022,6 +1095,93 @@ function setupCoach() {
       }
     });
   }
+}
+
+function setupPandaCoach() {
+  const toggle = $("#panda-toggle");
+  const coach = $("#panda-coach");
+  if (!toggle || !coach) return;
+  getSetting("pandaCoachEnabled", true).then((value) => {
+    pandaEnabled = value !== false;
+    updatePandaCoachUI();
+  });
+
+  toggle.addEventListener("click", async () => {
+    pandaEnabled = !pandaEnabled;
+    await setSetting("pandaCoachEnabled", pandaEnabled);
+    updatePandaCoachUI();
+    if (pandaEnabled) {
+      pandaSay("Panda Coach is ready! What shall we practice?", "celebrate", true);
+    } else {
+      const bubble = $("#panda-bubble");
+      if (bubble) bubble.textContent = "Panda Coach is resting. Tap to wake me up!";
+      coach.dataset.mood = "neutral";
+    }
+  });
+}
+
+function updatePandaCoachUI() {
+  const toggle = $("#panda-toggle");
+  const coach = $("#panda-coach");
+  if (!toggle || !coach) return;
+  toggle.textContent = `Panda Coach: ${pandaEnabled ? "On" : "Off"}`;
+  coach.classList.toggle("off", !pandaEnabled);
+}
+
+function pandaSay(message, mood = "encourage", force = false) {
+  if (!pandaEnabled) return;
+  const now = Date.now();
+  if (!force && now - lastPandaMessageAt < PANDA_COOLDOWN_MS) return;
+  lastPandaMessageAt = now;
+  const bubble = $("#panda-bubble");
+  const coach = $("#panda-coach");
+  if (bubble) bubble.textContent = message;
+  if (coach) coach.dataset.mood = mood;
+  if (pandaBubbleTimer) clearTimeout(pandaBubbleTimer);
+  pandaBubbleTimer = setTimeout(() => {
+    if (coach) coach.dataset.mood = "neutral";
+  }, 4200);
+}
+
+function setupFingerGuardian() {
+  const chips = $$(".finger-chip");
+  const autoToggle = $("#finger-auto");
+  if (!chips.length) return;
+
+  getSetting("fingerAuto", true).then((val) => {
+    fingerAuto = val !== false;
+    if (autoToggle) autoToggle.checked = fingerAuto;
+  });
+  getSetting("fingerTarget", fingerTarget).then((val) => {
+    if (val) {
+      fingerTarget = val;
+      setFingerTarget(fingerTarget, { silent: true });
+    }
+  });
+
+  chips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      fingerAuto = false;
+      if (autoToggle) autoToggle.checked = false;
+      setSetting("fingerAuto", false);
+      setFingerTarget(chip.dataset.finger);
+    });
+  });
+
+  if (autoToggle) {
+    autoToggle.addEventListener("change", () => {
+      fingerAuto = autoToggle.checked;
+      setSetting("fingerAuto", fingerAuto);
+      if (fingerAuto) {
+        pandaSay("I will auto-pick the note. Play a note to lock it in!", "focus", true);
+      } else {
+        pandaSay("Pick a note to practice!", "encourage", true);
+      }
+    });
+  }
+
+  setFingerTarget(fingerTarget, { silent: true });
+  updateFingerTolerance({ accuracyAvg: null });
 }
 
 function setupLessonStudio() {
@@ -1114,6 +1274,7 @@ function startLesson() {
   tickLesson();
   lessonState.timerId = setInterval(tickLesson, 1000);
   $("#lesson-status").textContent = "In progress…";
+  pandaSay(`Lesson time! Step ${lessonState.stepIndex + 1} starts now.`, "focus", true);
 }
 
 function pauseLesson() {
@@ -1155,7 +1316,10 @@ function nextLessonStep(auto = false) {
     lessonState.stepIndex += 1;
     lessonState.remainingSec = Math.round(lesson.steps[lessonState.stepIndex].minutes * 60);
     renderLesson();
-    if (!auto) showToast("Next step!");
+    if (!auto) {
+      showToast("Next step!");
+      pandaSay("Nice! On to the next step.", "encourage");
+    }
   } else {
     completeLesson();
   }
@@ -1177,6 +1341,7 @@ async function completeLesson() {
   lessonState.elapsedSec = 0;
   $("#lesson-status").textContent = "Lesson complete!";
   renderLesson();
+  pandaSay("Lesson complete! You did it! 🎉", "celebrate", true);
   const minutes = lesson.steps.reduce((sum, step) => sum + step.minutes, 0);
   await awardXP(Math.round(minutes * 6), "Lesson completed");
   await addSession({
@@ -1681,6 +1846,7 @@ function startGuidedPractice() {
   guidedRatings = [];
   renderGuidedCheckpoints();
   playGuidedSection();
+  pandaSay("Guided practice on! Let's focus on tiny sections.", "focus", true);
 }
 
 function playGuidedSection() {
@@ -1701,6 +1867,7 @@ function playGuidedSection() {
 function handleGuidedSectionComplete() {
   updateGuidedStatus("How did that section feel?");
   setGuidedButtonsEnabled(true);
+  pandaSay("Nice section! Rate how it felt.", "encourage");
 }
 
 async function rateGuidedSection(rating) {
@@ -1721,6 +1888,7 @@ async function finishGuidedPractice() {
   updateGuidedStatus("Guided practice complete! 🎉");
   const nextBtn = $("#guided-next");
   if (nextBtn) nextBtn.disabled = true;
+  pandaSay("Guided practice complete! You’re leveling up!", "celebrate", true);
   const song = getSelectedSong();
   if (song) {
     const totalBeats = song.notes.reduce((sum, n) => sum + n.beats, 0);
@@ -1875,6 +2043,11 @@ async function startSongPlayback({ preview = false, preserveStart = false, custo
   }, (countInBeats + totalBeats) * secondsPerBeat * 1000 + 200);
 
   showToast(preview ? "Previewing song ✨" : "Play along started!");
+  if (preview) {
+    pandaSay("Preview time! Listen for the melody.", "focus");
+  } else {
+    pandaSay("Count-in! Play with the beat.", "focus", true);
+  }
 }
 
 function stopSongPlayback(log = true) {
@@ -1930,6 +2103,7 @@ async function finishSongPlayback({ preview = false } = {}) {
   }
   await renderRepertoire();
   showToast(preview ? "Preview done!" : "Song complete!");
+  if (!preview) pandaSay("Beautiful playing! High five! 🐾", "celebrate", true);
 }
 
 function stopSongNodes() {
@@ -2456,6 +2630,7 @@ async function generateStorySong() {
   }
   await updateStoryPrefs(storyAnswers);
   showToast("Your story song is ready!");
+  pandaSay("Your story song is ready! Let's play it!", "celebrate", true);
 }
 
 function buildStorySong(answers, prefs) {
@@ -2616,6 +2791,7 @@ async function playStorySong(song) {
     stopStoryPlayback();
   }, (beatCursor * secondsPerBeat + 0.3) * 1000);
   showToast("Story song playing!");
+  pandaSay("Story song time! Listen and play along.", "focus");
   await awardXP(8, "Story song");
 }
 
@@ -2634,6 +2810,7 @@ async function saveStorySong() {
   }
   await addCustomSong(storySong);
   showToast("Story song saved!");
+  pandaSay("Song saved! You are a music creator! 🐼", "celebrate", true);
   await awardXP(15, "Story song saved");
   await renderStoryList();
 }
@@ -2905,6 +3082,7 @@ function setupTuner() {
       showToast(`Target set to ${currentTarget}`);
     });
   });
+  updatePitchTargetLabel();
 }
 
 async function startTuner() {
@@ -2919,8 +3097,15 @@ async function startTuner() {
     tunerHistory = [];
     coachAccuracySamples = [];
     tunerActive = true;
+    const fingerStatus = $("#finger-status");
+    if (fingerStatus) {
+      fingerStatus.textContent = "Listening for your note…";
+      fingerStatus.classList.remove("good", "warn");
+      fingerStatus.classList.add("off");
+    }
     updateTuner();
     showToast("Listening for violin sound");
+    pandaSay("I'm listening! Play your note when you're ready.", "focus", true);
   } catch (err) {
     console.error(err);
     showToast("Microphone access needed for tuning");
@@ -2948,6 +3133,15 @@ function stopTuner() {
   updateMetricUI(null, "#tone-dynamics-bar", 0);
   const hint = $("#tone-hint");
   if (hint) hint.textContent = "Start the tuner to see live tone feedback.";
+  const fingerStatus = $("#finger-status");
+  if (fingerStatus) {
+    fingerStatus.textContent = "Tuner off. Tap Start to listen.";
+    fingerStatus.classList.remove("good", "warn");
+    fingerStatus.classList.add("off");
+  }
+  const needle = $("#finger-needle");
+  if (needle) needle.style.left = "50%";
+  pandaSay("Nice listening break! Tap start when you're ready.", "encourage");
 }
 
 function updateTuner() {
@@ -3005,20 +3199,112 @@ function updateTunerUI(noteLabel, pitch, cents) {
   $("#tuner-freq").textContent = `${pitch.toFixed(1)} Hz`;
   $("#coach-needle").style.transform = `rotate(${rotation}deg)`;
   $("#tuner-needle").style.transform = `rotate(${rotation}deg)`;
+  updateFingerGuardian(noteLabel, pitch);
 
   const notesEl = $("#coach-notes");
   if (Math.abs(cents) < 8) {
     notesEl.textContent = "Perfectly centered! Keep that bow gentle.";
+    pandaSay(`Perfect ${noteLabel}!`, "celebrate");
   } else if (cents < 0) {
     notesEl.textContent = "A tiny bit flat. Lightly lift the finger forward.";
+    pandaSay("A little low. Slide forward just a hair.", "encourage");
   } else {
     notesEl.textContent = "A little sharp. Relax and slide back a hair.";
+    pandaSay("A little high. Slide back softly.", "encourage");
   }
+}
+
+function setFingerTarget(target, { silent = false } = {}) {
+  if (!target) return;
+  const previous = fingerTarget;
+  fingerTarget = target;
+  $$(".finger-chip").forEach((chip) => {
+    chip.classList.toggle("active", chip.dataset.finger === target);
+  });
+  if (previous !== fingerTarget) setSetting("fingerTarget", fingerTarget);
+  if (!silent) showToast(`Finger target: ${target}`);
+}
+
+function updateFingerGuardian(noteLabel, pitch) {
+  const statusEl = $("#finger-status");
+  const needle = $("#finger-needle");
+  const tipEl = $("#finger-tip");
+  if (!statusEl || !needle || !tipEl) return;
+  if (!pitch || !Number.isFinite(pitch)) return;
+
+  if (fingerAuto) {
+    const autoPick = pickFingerTargetFromPitch(pitch);
+    if (autoPick.target && autoPick.diff < 65) {
+      setFingerTarget(autoPick.target, { silent: true });
+    }
+  }
+
+  const targetNote = noteNumberFromLabel(fingerTarget);
+  if (!targetNote) return;
+  const diff = centsOffFromPitch(pitch, targetNote);
+  const clamped = Math.max(-50, Math.min(50, diff));
+  needle.style.left = `${50 + clamped}%`;
+
+  statusEl.classList.remove("good", "warn", "off");
+  const abs = Math.abs(diff);
+  if (abs <= fingerTolerance) {
+    statusEl.classList.add("good");
+    statusEl.textContent = `${fingerTarget} • Perfect finger spot!`;
+    tipEl.textContent = `Stay within ±${fingerTolerance}¢. Keep the bow steady.`;
+    pandaSay(`Sweet spot! ${fingerTarget} shines.`, "celebrate");
+  } else if (diff < 0) {
+    statusEl.classList.add("warn");
+    statusEl.textContent = `${fingerTarget} • A bit low`;
+    tipEl.textContent = `Slide forward toward the bridge (±${fingerTolerance}¢ zone).`;
+  } else {
+    statusEl.classList.add("warn");
+    statusEl.textContent = `${fingerTarget} • A bit high`;
+    tipEl.textContent = `Slide back toward the scroll (±${fingerTolerance}¢ zone).`;
+  }
+}
+
+function updateFingerTolerance(stats) {
+  const accuracy = stats && typeof stats.accuracyAvg === "number" ? stats.accuracyAvg : null;
+  if (accuracy !== null && !Number.isNaN(accuracy)) {
+    const raw = Math.round(22 - Math.min(12, accuracy / 8));
+    fingerTolerance = Math.max(10, Math.min(22, raw));
+  } else {
+    fingerTolerance = 18;
+  }
+  const tipEl = $("#finger-tip");
+  if (tipEl) tipEl.textContent = `Aim for the center line (±${fingerTolerance}¢).`;
+}
+
+function pickFingerTargetFromPitch(pitch) {
+  let bestTarget = null;
+  let bestDiff = Infinity;
+  FINGER_TARGETS.forEach((target) => {
+    const noteNum = noteNumberFromLabel(target);
+    if (!noteNum) return;
+    const diff = Math.abs(centsOffFromPitch(pitch, noteNum));
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestTarget = target;
+    }
+  });
+  return { target: bestTarget, diff: bestDiff };
 }
 
 function noteFromPitch(frequency) {
   const noteNum = 12 * (Math.log(frequency / 440) / Math.log(2));
   return Math.round(noteNum) + 69;
+}
+
+function noteNumberFromLabel(label) {
+  if (!label) return null;
+  const match = label.match(/^([A-G])([#b]?)(-?\d)$/);
+  if (!match) return null;
+  const [, letter, accidental, octaveRaw] = match;
+  const key = `${letter}${accidental || ""}`;
+  const semitone = NOTE_OFFSETS[key];
+  if (semitone === undefined) return null;
+  const octave = parseInt(octaveRaw, 10);
+  return (octave + 1) * 12 + semitone;
 }
 
 function centsOffFromPitch(frequency, note) {
@@ -3229,6 +3515,7 @@ function startBowingCoach() {
   bowCoachStart = performance.now();
   animateBowing(bowCoachStart);
   showToast("Bowing coach started");
+  pandaSay("Bow coach on! Follow the panda's bow path.", "focus", true);
 }
 
 function stopBowingCoach() {
@@ -3238,6 +3525,7 @@ function stopBowingCoach() {
   const direction = $("#bow-direction");
   if (dot) dot.style.left = "0%";
   if (direction) direction.textContent = "Ready";
+  pandaSay("Nice bowing! Take a stretch break.", "encourage");
 }
 
 function animateBowing(now) {
@@ -3276,6 +3564,7 @@ async function startPostureCamera() {
     if (postureTipTimer) clearInterval(postureTipTimer);
     postureTipTimer = setInterval(rotatePostureTips, 8000);
     showToast("Posture mirror on");
+    pandaSay("Posture mirror on! Sit tall and relaxed.", "focus", true);
   } catch (err) {
     console.error(err);
     showToast("Camera permission needed");
@@ -3291,6 +3580,7 @@ function stopPostureCamera(silent = false) {
   if (video) video.srcObject = null;
   if (postureTipTimer) clearInterval(postureTipTimer);
   if (!silent) showToast("Posture mirror off");
+  if (!silent) pandaSay("Posture mirror off. You did great!", "encourage");
 }
 
 function rotatePostureTips() {
@@ -3618,6 +3908,7 @@ async function refreshDashboard() {
   $("#streak-count").textContent = `${stats.streak} days`;
   $("#week-minutes").textContent = `${stats.weekMinutes} min`;
   $("#focus-stars").textContent = `${calcFocusStars(sessions)}`;
+  updateFingerTolerance(stats);
   renderStickerShelf(stats);
   await updateGoalProgress(stats);
   await renderLevelPanel();
@@ -3737,6 +4028,11 @@ async function awardGameXP(result) {
   const bonus = (result.stars || 0) * 5;
   const total = Math.max(5, base + bonus);
   await awardXP(total, `${gameName(result.type)} points`);
+  if (result.stars >= 4) {
+    pandaSay(`Amazing ${gameName(result.type)}! ${"⭐".repeat(result.stars)}`, "celebrate");
+  } else {
+    pandaSay(`Nice work in ${gameName(result.type)}! Keep going!`, "encourage");
+  }
 }
 
 function gameName(type) {
