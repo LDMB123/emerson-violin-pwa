@@ -445,6 +445,61 @@ body {
   font-size: 1.8rem;
 }
 
+.spotlight-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.spotlight-item {
+  background: #fff1e4;
+  border-radius: 14px;
+  border: 2px solid var(--stroke);
+  padding: 10px 12px;
+  font-weight: 700;
+}
+
+#crossing-sequence {
+  font-weight: 800;
+}
+
+#crossing-sequence span {
+  display: inline-block;
+  padding: 4px 8px;
+  margin: 0 4px 4px 0;
+  border-radius: 12px;
+  border: 2px solid var(--stroke);
+  background: #fff1e4;
+}
+
+#crossing-sequence span.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.focus-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.focus-card {
+  margin-top: 12px;
+  background: #fff1e4;
+  border-radius: 16px;
+  border: 2px solid var(--stroke);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.focus-title {
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+
 .hidden {
   display: none;
 }
@@ -1624,6 +1679,11 @@ button:disabled {
   box-shadow: var(--shadow-strong);
 }
 
+.focus-chip.active {
+  background: var(--primary);
+  color: #fff;
+}
+
 .chip:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -1699,6 +1759,18 @@ button:disabled {
   place-items: center;
   color: #fff;
   font-weight: 800;
+}
+
+.paw.gold {
+  background: linear-gradient(135deg, #ffd166, #ff9f1c);
+}
+
+.paw.slow {
+  background: #8ac6d1;
+}
+
+.paw.bomb {
+  background: #2b1c16;
 }
 
 .score {

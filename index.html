@@ -226,6 +226,36 @@
       </div>
       <div class="grid two">
         <div class="card">
+          <h2>Coach Spotlight</h2>
+          <p class="muted">Tiny focus steps chosen just for Emerson.</p>
+          <ul class="spotlight-list" id="coach-spotlight"></ul>
+          <div class="row">
+            <button class="primary" id="coach-focus-start">Start Focus</button>
+            <button class="ghost" id="coach-focus-next">New Focus</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Coach Toolkit</h2>
+          <p class="muted">Pick a skill to practice with a mini-drill.</p>
+          <div class="focus-grid" id="coach-focus-grid">
+            <button class="chip focus-chip" data-focus="intonation">Intonation</button>
+            <button class="chip focus-chip" data-focus="rhythm">Rhythm</button>
+            <button class="chip focus-chip" data-focus="tone">Tone</button>
+            <button class="chip focus-chip" data-focus="bow">Bowing</button>
+            <button class="chip focus-chip" data-focus="expression">Expression</button>
+          </div>
+          <div class="focus-card">
+            <div class="focus-title" id="coach-focus-title">Intonation Explorer</div>
+            <div class="muted" id="coach-focus-desc">Find the sweet spot on each finger.</div>
+            <div class="row">
+              <button class="primary" id="coach-focus-go">Start Drill</button>
+              <button class="ghost" id="coach-focus-tool">Open Tool</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid two">
+        <div class="card">
           <h2>Guided Lesson Studio</h2>
           <p class="muted">Step-by-step lessons with timers and tool guidance.</p>
           <label>
@@ -314,6 +344,11 @@
             <button class="chip finger-chip" data-finger="G5">G5</button>
           </div>
           <label class="toggle"><input type="checkbox" id="finger-auto" checked /> Auto target (Coach picks)</label>
+          <div class="game-stats">
+            <div class="stat-pill">Hold <strong id="finger-hold">0.0s</strong></div>
+            <div class="stat-pill">Streak <strong id="finger-streak">0</strong></div>
+            <div class="stat-pill">Goal <strong id="finger-goal">2s</strong></div>
+          </div>
           <div class="finger-status" id="finger-status">Waiting for sound.</div>
           <div class="finger-meter">
             <div class="finger-needle" id="finger-needle"></div>
@@ -653,6 +688,37 @@
             <div class="score" id="bow-score">Best: 0s</div>
           </div>
         </div>
+        <div class="card">
+          <h2>String Crossing Quest</h2>
+          <p class="muted">Follow the string path on the beat.</p>
+          <div class="game-panel">
+            <div class="sequence" id="crossing-sequence">G → D → A → E</div>
+            <div class="beat-indicator" id="crossing-beat"></div>
+            <div class="game-stats">
+              <div class="stat-pill">Level <strong id="crossing-level">1</strong></div>
+              <div class="stat-pill">Timer <strong id="crossing-timer">30s</strong></div>
+              <div class="stat-pill">Streak <strong id="crossing-streak">0</strong></div>
+              <div class="stat-pill">Combo <strong id="crossing-combo">x1</strong></div>
+            </div>
+            <label>
+              Tempo (BPM)
+              <input type="range" min="60" max="140" value="88" id="crossing-tempo" />
+            </label>
+            <div class="tempo-display" id="crossing-tempo-display">88 BPM</div>
+            <div class="row">
+              <button class="primary" id="crossing-start">Start</button>
+              <button class="ghost" id="crossing-stop">Stop</button>
+            </div>
+            <div class="tuner-targets crossing-buttons">
+              <button class="chip crossing-note" data-string="G">G</button>
+              <button class="chip crossing-note" data-string="D">D</button>
+              <button class="chip crossing-note" data-string="A">A</button>
+              <button class="chip crossing-note" data-string="E">E</button>
+            </div>
+            <div class="score" id="crossing-score">Score: 0</div>
+            <div class="score" id="crossing-feedback">Tap the next string on the beat.</div>
+          </div>
+        </div>
       </div>
       <div class="grid two">
         <div class="card">
@@ -744,6 +810,7 @@
               <option value="auto">Auto (Coach decides)</option>
               <option value="pitch">Pitch Quest</option>
               <option value="rhythm">Rhythm Dash</option>
+              <option value="crossing">String Crossing Quest</option>
               <option value="ear">Ear Trainer</option>
               <option value="pattern">Rhythm Painter</option>
             </select>

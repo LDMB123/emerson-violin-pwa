@@ -113,10 +113,16 @@ let songCountInBeats = 0;
 let fingerTarget = "A4";
 let fingerAuto = true;
 let fingerTolerance = 18;
+let fingerHoldStart = 0;
+let fingerHold = 0;
+let fingerStreak = 0;
+let fingerHoldGoal = 2;
+let fingerHoldRewarded = false;
 let pandaEnabled = true;
 let pandaBubbleTimer;
 let lastPandaMessageAt = 0;
 const PANDA_COOLDOWN_MS = 9000;
+let coachFocus = "intonation";
 let pitchSession = {
   active: false,
   mode: "single",
@@ -190,6 +196,21 @@ let pizzicatoSession = {
   streak: 0,
   misses: 0,
 };
+let crossingSession = {
+  active: false,
+  tempo: 88,
+  duration: 30,
+  sequence: [],
+  index: 0,
+  score: 0,
+  streak: 0,
+  combo: 1,
+  misses: 0,
+  beatTimer: null,
+  roundTimer: null,
+  lastBeat: 0,
+  awaiting: false,
+};
 
 const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const NOTE_OFFSETS = {
@@ -226,6 +247,7 @@ const DEFAULT_GAME_PROFILES = {
   ear: { level: 1, bestScore: 0, bestStreak: 0 },
   pattern: { level: 1, bestScore: 0, bestStreak: 0 },
   pizzicato: { level: 1, bestScore: 0, bestStreak: 0 },
+  crossing: { level: 1, bestScore: 0, bestStreak: 0 },
 };
 let gameProfiles = { ...DEFAULT_GAME_PROFILES };
 
@@ -243,6 +265,8 @@ const QUEST_POOL = [
   "Slow practice: favorite song (4 min)",
   "Ear Trainer challenge (3 min)",
   "Tone Lab long bows (2 min)",
+  "Finger Guardian hold (2 min)",
+  "String Crossing Quest (3 min)",
 ];
 
 const SONG_LIBRARY = [
@@ -789,7 +813,68 @@ const LESSON_LIBRARY = [
       { text: "Perform for the panda (1 min)", minutes: 1 },
     ],
   },
+  {
+    id: "posture-pro",
+    title: "Posture Pro",
+    focus: "Strong setup + relaxed shoulders",
+    steps: [
+      { text: "Mirror check: tall spine (1 min)", minutes: 1, tool: "trainer" },
+      { text: "Bow hold check (2 min)", minutes: 2, tool: "games" },
+      { text: "Open strings with calm breath (2 min)", minutes: 2, tool: "tuner" },
+      { text: "Celebrate with panda stretch (1 min)", minutes: 1 },
+    ],
+  },
+  {
+    id: "string-crossing",
+    title: "String Crossing Quest",
+    focus: "Smooth elbow motion + level bow",
+    steps: [
+      { text: "Slow crossings G-D-A-E (2 min)", minutes: 2 },
+      { text: "String Crossing Quest game (3 min)", minutes: 3, tool: "games" },
+      { text: "Lightly Row crossings (3 min)", minutes: 3, tool: "songs" },
+      { text: "Finish with straight bow lanes (1 min)", minutes: 1 },
+    ],
+  },
+  {
+    id: "expression-spark",
+    title: "Expression Spark",
+    focus: "Storytelling + dynamic shape",
+    steps: [
+      { text: "Whisper to loud bows (2 min)", minutes: 2, tool: "trainer" },
+      { text: "Play a song with emotion (3 min)", minutes: 3, tool: "songs" },
+      { text: "Record a tiny performance (2 min)", minutes: 2, tool: "analysis" },
+      { text: "Share your favorite moment (1 min)", minutes: 1 },
+    ],
+  },
 ];
+
+const COACH_FOCUS_OPTIONS = {
+  intonation: {
+    title: "Intonation Explorer",
+    desc: "Find the sweet spot on each finger. Use Finger Guardian and slow bows.",
+    tool: "coach",
+  },
+  rhythm: {
+    title: "Rhythm Ranger",
+    desc: "Clap first, then tap the beat with Rhythm Dash or Crossing Quest.",
+    tool: "games",
+  },
+  tone: {
+    title: "Tone Glow",
+    desc: "Warm, steady sound with slow bows and tall posture.",
+    tool: "trainer",
+  },
+  bow: {
+    title: "Bowing Master",
+    desc: "Keep the bow straight and even. Try Bow Hold Hero + Bowing Coach.",
+    tool: "trainer",
+  },
+  expression: {
+    title: "Song Storyteller",
+    desc: "Shape phrases and add sparkle. Play a song with guided mode.",
+    tool: "songs",
+  },
+};
 
 const LEVEL_REWARDS = {
   2: "Panda Sparkle Badge",
@@ -944,6 +1029,7 @@ function updateGameProfileUI(id) {
     ear: "#ear-level",
     pattern: "#pattern-level",
     pizzicato: "#pizzicato-level",
+    crossing: "#crossing-level",
   };
   const el = map[id] ? document.querySelector(map[id]) : null;
   if (el) el.textContent = `${profile.level}`;
@@ -1015,6 +1101,7 @@ function computeStats(sessions, games, recordings) {
   const bestMemory = Math.max(0, ...(byType.memory || []).map((g) => g.score || 0));
   const bestEar = Math.max(0, ...(byType.ear || []).map((g) => g.score || 0));
   const bestPattern = Math.max(0, ...(byType.pattern || []).map((g) => g.score || 0));
+  const bestCrossing = Math.max(0, ...(byType.crossing || []).map((g) => g.score || 0));
 
   const stars7d = games
     .filter((g) => Date.now() - new Date(g.date).getTime() < 7 * 86400000)
@@ -1038,6 +1125,7 @@ function computeStats(sessions, games, recordings) {
     bestMemory,
     bestEar,
     bestPattern,
+    bestCrossing,
   };
 }
 
@@ -1124,6 +1212,7 @@ function setupLifecycle() {
       stopStoryPlayback();
       stopBowingCoach();
       stopPostureCamera(true);
+      stopActiveGames(true);
       releaseWakeLock();
     }
   });
@@ -1133,6 +1222,7 @@ function setupLifecycle() {
     stopStoryPlayback();
     stopBowingCoach();
     stopPostureCamera(true);
+    stopActiveGames(true);
     releaseWakeLock();
   });
 }
@@ -1184,6 +1274,7 @@ function setupCoach() {
 
   setupPandaCoach();
   setupFingerGuardian();
+  setupCoachFocus();
 
   $("#coach-speak").addEventListener("click", () => {
     const tip = tips[Math.floor(Math.random() * tips.length)];
@@ -1221,6 +1312,116 @@ function setupCoach() {
       }
     });
   }
+}
+
+function setupCoachFocus() {
+  const focusGrid = $("#coach-focus-grid");
+  const startBtn = $("#coach-focus-start");
+  const nextBtn = $("#coach-focus-next");
+  const goBtn = $("#coach-focus-go");
+  const toolBtn = $("#coach-focus-tool");
+  if (focusGrid) {
+    focusGrid.querySelectorAll(".focus-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        setCoachFocus(chip.dataset.focus || "intonation");
+      });
+    });
+  }
+  if (startBtn) startBtn.addEventListener("click", () => startCoachFocus(true));
+  if (nextBtn) nextBtn.addEventListener("click", () => cycleCoachFocus());
+  if (goBtn) goBtn.addEventListener("click", () => startCoachFocus(true));
+  if (toolBtn) toolBtn.addEventListener("click", () => startCoachFocus(false));
+
+  setCoachFocus(coachFocus);
+}
+
+function setCoachFocus(focus) {
+  coachFocus = COACH_FOCUS_OPTIONS[focus] ? focus : "intonation";
+  const data = COACH_FOCUS_OPTIONS[coachFocus];
+  const title = $("#coach-focus-title");
+  const desc = $("#coach-focus-desc");
+  if (title) title.textContent = data.title;
+  if (desc) desc.textContent = data.desc;
+  $$(".focus-chip").forEach((chip) => {
+    chip.classList.toggle("active", chip.dataset.focus === coachFocus);
+  });
+}
+
+function cycleCoachFocus() {
+  const keys = Object.keys(COACH_FOCUS_OPTIONS);
+  const idx = Math.max(0, keys.indexOf(coachFocus));
+  const next = keys[(idx + 1) % keys.length];
+  setCoachFocus(next);
+  pandaSay(`Let’s try ${COACH_FOCUS_OPTIONS[next].title}!`, "encourage", true);
+}
+
+function startCoachFocus(run = true) {
+  const data = COACH_FOCUS_OPTIONS[coachFocus];
+  if (!data) return;
+  navigateToView(data.tool);
+  if (!run) {
+    showToast(`${data.title} opened`);
+    return;
+  }
+  if (coachFocus === "intonation") {
+    startTuner();
+    showToast("Listen and hold the note steady.");
+  } else if (coachFocus === "rhythm") {
+    showToast("Try Rhythm Dash or String Crossing Quest!");
+  } else if (coachFocus === "tone") {
+    showToast("Open Tone Lab and play long bows.");
+  } else if (coachFocus === "bow") {
+    showToast("Start Bowing Coach for straight bow paths.");
+  } else if (coachFocus === "expression") {
+    showToast("Pick a song and play with emotion!");
+  }
+}
+
+function navigateToView(target) {
+  const btn = document.querySelector(`[data-nav="${target}"]`);
+  if (btn) btn.click();
+}
+
+async function renderCoachSpotlight() {
+  const list = $("#coach-spotlight");
+  if (!list) return;
+  const sessions = await getSessions();
+  const games = await getGameResults();
+  const songLogs = await getSongLogs();
+  const stats = computeStats(sessions, games, []);
+  const profile = computeSkillProfile(sessions, games, songLogs);
+  const focus = pickFocusArea(profile);
+  const suggestions = [];
+
+  if ((profile.intonation || 0) < 55) {
+    suggestions.push("Intonation: Play Finger Guardian for 2 minutes.");
+  }
+  if ((profile.rhythm || 0) < 55) {
+    suggestions.push("Rhythm: Tap Rhythm Dash or String Crossing Quest.");
+  }
+  if ((profile.tone || 0) < 55) {
+    suggestions.push("Tone: Long bows in Tone Lab for warm sound.");
+  }
+  if ((profile.bow || 0) < 55) {
+    suggestions.push("Bowing: Bowing Coach + Bow Hold Hero today.");
+  }
+  if (!stats.totalSessions) {
+    suggestions.push("Start with a 5‑minute warmup to earn stars.");
+  }
+
+  const focusPlan = COACH_FOCUS_OPTIONS[focus] || COACH_FOCUS_OPTIONS.intonation;
+  suggestions.unshift(`Focus of the day: ${focusPlan.title}.`);
+  if (suggestions.length > 4) suggestions.length = 4;
+
+  list.innerHTML = "";
+  suggestions.forEach((text) => {
+    const li = document.createElement("li");
+    li.className = "spotlight-item";
+    li.textContent = text;
+    list.appendChild(li);
+  });
+
+  setCoachFocus(focus);
 }
 
 function setupPandaCoach() {
@@ -1547,10 +1748,18 @@ function setupGames() {
   setupRhythmDash();
   setupMemoryGame();
   setupBowHold();
+  setupCrossingQuest();
   setupEarTrainer();
   setupRhythmPainter();
   setupGameCoach();
   setupStorySongGame();
+}
+
+function stopActiveGames(silent = true) {
+  if (pitchSession.active) finishPitchQuest(true, silent);
+  if (rhythmSession.active) stopRhythmDash(true, silent);
+  if (pizzicatoSession.active) stopPizzicatoGame(silent);
+  if (crossingSession.active) stopCrossingQuest(true, silent);
 }
 
 async function setupSongs() {
@@ -2474,7 +2683,7 @@ function getPitchTargetsForLevel(level) {
   return base;
 }
 
-function finishPitchQuest(manual = false) {
+function finishPitchQuest(manual = false, silent = false) {
   if (!pitchSession.active && manual) return;
   pitchGameActive = false;
   if (pitchSession.timerId) clearTimeout(pitchSession.timerId);
@@ -2528,22 +2737,21 @@ function finishPitchQuest(manual = false) {
     streak: pitchSession.streak,
     mode: pitchSession.mode,
   };
-  if (pitchSession.totalRounds > 0) {
+  if (pitchSession.totalRounds > 0 && !silent) {
     addGameResult(result).then(() => {
       refreshDashboard();
       renderGameCoach();
       awardGameXP(result);
     });
+    const profile = getGameProfile("pitch");
+    const leveledUp = accuracyRatio >= 0.7 && pitchSession.totalRounds > 1;
+    const nextLevel = leveledUp ? profile.level + 1 : profile.level;
+    updateGameProfile("pitch", {
+      level: nextLevel,
+      bestScore: Math.max(profile.bestScore || 0, pitchSession.score),
+      bestStreak: Math.max(profile.bestStreak || 0, pitchSession.streak),
+    });
   }
-
-  const profile = getGameProfile("pitch");
-  const leveledUp = accuracyRatio >= 0.7 && pitchSession.totalRounds > 1;
-  const nextLevel = leveledUp ? profile.level + 1 : profile.level;
-  updateGameProfile("pitch", {
-    level: nextLevel,
-    bestScore: Math.max(profile.bestScore || 0, pitchSession.score),
-    bestStreak: Math.max(profile.bestStreak || 0, pitchSession.streak),
-  });
 
   if (pitchGameAutoStop) stopTuner();
   const timerEl = $("#pitch-timer");
@@ -2706,7 +2914,7 @@ function startRhythmMetronome(beatEl) {
   }, interval);
 }
 
-function stopRhythmDash(manual = false) {
+function stopRhythmDash(manual = false, silent = false) {
   if (!rhythmSession.active && manual) return;
   rhythmSession.active = false;
   clearInterval(rhythmDashInterval);
@@ -2722,19 +2930,21 @@ function stopRhythmDash(manual = false) {
     streak: rhythmSession.streak,
     mode: rhythmSession.mode,
   };
-  addGameResult(result).then(() => {
-    refreshDashboard();
-    renderGameCoach();
-    awardGameXP(result);
-  });
-  const profile = getGameProfile("rhythm");
-  const leveledUp = accuracy >= 0.65;
-  updateGameProfile("rhythm", {
-    level: leveledUp ? profile.level + 1 : profile.level,
-    bestScore: Math.max(profile.bestScore || 0, rhythmSession.score),
-    bestStreak: Math.max(profile.bestStreak || 0, rhythmSession.streak),
-  });
-  showToast("Rhythm Dash complete!");
+  if (!silent) {
+    addGameResult(result).then(() => {
+      refreshDashboard();
+      renderGameCoach();
+      awardGameXP(result);
+    });
+    const profile = getGameProfile("rhythm");
+    const leveledUp = accuracy >= 0.65;
+    updateGameProfile("rhythm", {
+      level: leveledUp ? profile.level + 1 : profile.level,
+      bestScore: Math.max(profile.bestScore || 0, rhythmSession.score),
+      bestStreak: Math.max(profile.bestStreak || 0, rhythmSession.streak),
+    });
+    showToast("Rhythm Dash complete!");
+  }
   const timerEl = $("#rhythm-timer");
   if (timerEl) timerEl.textContent = "0s";
 }
@@ -2983,6 +3193,171 @@ function setupBowHold() {
     bowStart = 0;
     if (breathEl) breathEl.textContent = "Breathe in… breathe out…";
   });
+}
+
+function setupCrossingQuest() {
+  const seqEl = $("#crossing-sequence");
+  const scoreEl = $("#crossing-score");
+  const feedbackEl = $("#crossing-feedback");
+  const streakEl = $("#crossing-streak");
+  const comboEl = $("#crossing-combo");
+  const timerEl = $("#crossing-timer");
+  const tempoSlider = $("#crossing-tempo");
+  const tempoDisplay = $("#crossing-tempo-display");
+  const beatEl = $("#crossing-beat");
+  if (!seqEl || !scoreEl || !tempoSlider) return;
+
+  const profile = getGameProfile("crossing");
+  crossingSession.tempo = 88;
+  crossingSession.duration = 30;
+  updateGameProfileUI("crossing");
+  if (timerEl) timerEl.textContent = `${crossingSession.duration}s`;
+
+  getSetting("crossingTempo", 88).then((val) => {
+    crossingSession.tempo = Math.max(60, Math.min(140, parseInt(val, 10) || 88));
+    tempoSlider.value = crossingSession.tempo;
+    if (tempoDisplay) tempoDisplay.textContent = `${crossingSession.tempo} BPM`;
+  });
+
+  tempoSlider.addEventListener("input", () => {
+    crossingSession.tempo = parseInt(tempoSlider.value, 10);
+    if (tempoDisplay) tempoDisplay.textContent = `${tempoSlider.value} BPM`;
+    setSetting("crossingTempo", crossingSession.tempo);
+  });
+
+  const updateCrossingUI = (message = "") => {
+    if (scoreEl) scoreEl.textContent = `Score: ${crossingSession.score}`;
+    if (streakEl) streakEl.textContent = `${crossingSession.streak}`;
+    if (comboEl) comboEl.textContent = `x${crossingSession.combo}`;
+    if (feedbackEl && message) feedbackEl.textContent = message;
+  };
+
+  const buildSequence = () => {
+    const pool = ["G", "D", "A", "E"];
+    const length = Math.min(8, 4 + Math.max(0, getGameProfile("crossing").level - 1));
+    crossingSession.sequence = Array.from({ length }, () => pool[Math.floor(Math.random() * pool.length)]);
+    crossingSession.index = 0;
+    renderCrossingSequence();
+  };
+
+  const renderCrossingSequence = () => {
+    seqEl.innerHTML = "";
+    crossingSession.sequence.forEach((note, idx) => {
+      const span = document.createElement("span");
+      span.textContent = note;
+      if (idx === crossingSession.index) span.classList.add("active");
+      seqEl.appendChild(span);
+    });
+  };
+
+  const handleBeat = () => {
+    const now = performance.now();
+    if (crossingSession.awaiting) {
+      crossingSession.misses += 1;
+      crossingSession.streak = 0;
+      crossingSession.combo = 1;
+      updateCrossingUI("Missed beat! Try the next one.");
+    }
+    crossingSession.lastBeat = now;
+    crossingSession.awaiting = true;
+    if (beatEl) {
+      beatEl.classList.add("active");
+      setTimeout(() => beatEl.classList.remove("active"), 160);
+    }
+  };
+
+  const startCrossing = () => {
+    if (crossingSession.active) return;
+    crossingSession.active = true;
+    crossingSession.score = 0;
+    crossingSession.streak = 0;
+    crossingSession.combo = 1;
+    crossingSession.misses = 0;
+    crossingSession.awaiting = false;
+    buildSequence();
+    updateCrossingUI("Tap the glowing string on the beat!");
+
+    const interval = 60000 / crossingSession.tempo;
+    clearInterval(crossingSession.beatTimer);
+    crossingSession.beatTimer = setInterval(handleBeat, interval);
+
+    const start = performance.now();
+    clearInterval(crossingSession.roundTimer);
+    crossingSession.roundTimer = setInterval(() => {
+      const remaining = Math.max(0, crossingSession.duration - (performance.now() - start) / 1000);
+      if (timerEl) timerEl.textContent = `${Math.ceil(remaining)}s`;
+      if (remaining <= 0) stopCrossingQuest(false);
+    }, 200);
+  };
+
+  $("#crossing-start").addEventListener("click", startCrossing);
+  $("#crossing-stop").addEventListener("click", () => stopCrossingQuest(true));
+
+  $$(".crossing-note").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!crossingSession.active) return;
+      const expected = crossingSession.sequence[crossingSession.index];
+      const guess = btn.dataset.string;
+      const now = performance.now();
+      const error = Math.abs(now - crossingSession.lastBeat);
+      const onBeat = error < 220;
+      if (guess === expected && onBeat) {
+        crossingSession.awaiting = false;
+        crossingSession.streak += 1;
+        crossingSession.combo = Math.min(6, crossingSession.combo + 1);
+        const points = error < 90 ? 6 : error < 150 ? 4 : 2;
+        crossingSession.score += points * crossingSession.combo;
+        crossingSession.index += 1;
+        updateCrossingUI(error < 90 ? "Perfect!" : "Great!");
+        if (crossingSession.index >= crossingSession.sequence.length) {
+          buildSequence();
+        } else {
+          renderCrossingSequence();
+        }
+      } else {
+        crossingSession.awaiting = false;
+        crossingSession.streak = 0;
+        crossingSession.combo = 1;
+        crossingSession.misses += 1;
+        updateCrossingUI("Oops! Match the highlighted string.");
+      }
+    });
+  });
+}
+
+function stopCrossingQuest(manual = false, silent = false) {
+  if (!crossingSession.active && manual) return;
+  crossingSession.active = false;
+  clearInterval(crossingSession.beatTimer);
+  clearInterval(crossingSession.roundTimer);
+  if (manual && silent) return;
+  const accuracy = crossingSession.sequence.length
+    ? Math.max(0, crossingSession.streak / crossingSession.sequence.length)
+    : 0;
+  const stars = Math.min(5, Math.max(1, Math.round((1 - Math.min(1, crossingSession.misses / 6)) * 5)));
+  const result = {
+    type: "crossing",
+    score: crossingSession.score,
+    stars,
+    streak: crossingSession.streak,
+  };
+  if (!silent) {
+    addGameResult(result).then(() => {
+      refreshDashboard();
+      renderGameCoach();
+      awardGameXP(result);
+    });
+    const profile = getGameProfile("crossing");
+    const leveledUp = crossingSession.score >= 80 && crossingSession.misses <= 2;
+    updateGameProfile("crossing", {
+      level: leveledUp ? profile.level + 1 : profile.level,
+      bestScore: Math.max(profile.bestScore || 0, crossingSession.score),
+      bestStreak: Math.max(profile.bestStreak || 0, crossingSession.streak),
+    });
+    showToast("String Crossing Quest complete!");
+  }
+  const timerEl = $("#crossing-timer");
+  if (timerEl) timerEl.textContent = `${crossingSession.duration}s`;
 }
 
 function setupEarTrainer() {
@@ -3602,6 +3977,7 @@ async function renderGameCoach() {
     <div><strong>Focus:</strong> ${focusAreaLabel(focus)}</div>
     <div>Pitch Quest target: <strong>${recs.pitchTarget}</strong></div>
     <div>Rhythm Dash tempo: <strong>${recs.rhythmTempo} BPM</strong></div>
+    <div>String Crossing tempo: <strong>${recs.rhythmTempo} BPM</strong></div>
     <div>Ear Trainer difficulty: <strong>${recs.earDifficulty}</strong></div>
     <div>Rhythm Painter length: <strong>${recs.patternLength}</strong> beats</div>
   `;
@@ -3627,9 +4003,11 @@ function recommendGameFocus(games) {
   const rhythm = averageRecentScore(games, "rhythm");
   const ear = averageRecentScore(games, "ear");
   const pattern = averageRecentScore(games, "pattern");
+  const crossing = averageRecentScore(games, "crossing");
   const scores = [
     { type: "pitch", value: pitch || 50 },
     { type: "rhythm", value: rhythm || 50 },
+    { type: "crossing", value: crossing || 50 },
     { type: "pattern", value: pattern || 50 },
     { type: "ear", value: ear || 50 },
   ];
@@ -3705,6 +4083,14 @@ async function applyGameRecommendations() {
     rhythmTempo.value = recs.rhythmTempo;
     rhythmDashTempo = recs.rhythmTempo;
     if (rhythmDisplay) rhythmDisplay.textContent = `${recs.rhythmTempo} BPM`;
+  }
+
+  const crossingTempo = $("#crossing-tempo");
+  const crossingDisplay = $("#crossing-tempo-display");
+  if (crossingTempo) {
+    crossingTempo.value = recs.rhythmTempo;
+    crossingSession.tempo = recs.rhythmTempo;
+    if (crossingDisplay) crossingDisplay.textContent = `${recs.rhythmTempo} BPM`;
   }
 
   earDifficulty = recs.earDifficulty;
@@ -3841,6 +4227,11 @@ function stopTuner() {
   }
   const needle = $("#finger-needle");
   if (needle) needle.style.left = "50%";
+  const holdEl = $("#finger-hold");
+  if (holdEl) holdEl.textContent = "0.0s";
+  fingerHoldStart = 0;
+  fingerHold = 0;
+  fingerHoldRewarded = false;
   pandaSay("Nice listening break! Tap start when you're ready.", "encourage");
 }
 
@@ -3922,6 +4313,11 @@ function setFingerTarget(target, { silent = false } = {}) {
     chip.classList.toggle("active", chip.dataset.finger === target);
   });
   if (previous !== fingerTarget) setSetting("fingerTarget", fingerTarget);
+  fingerHoldStart = 0;
+  fingerHold = 0;
+  fingerHoldRewarded = false;
+  const holdEl = $("#finger-hold");
+  if (holdEl) holdEl.textContent = "0.0s";
   if (!silent) showToast(`Finger target: ${target}`);
 }
 
@@ -3929,6 +4325,9 @@ function updateFingerGuardian(noteLabel, pitch) {
   const statusEl = $("#finger-status");
   const needle = $("#finger-needle");
   const tipEl = $("#finger-tip");
+  const holdEl = $("#finger-hold");
+  const streakEl = $("#finger-streak");
+  const goalEl = $("#finger-goal");
   if (!statusEl || !needle || !tipEl) return;
   if (!pitch || !Number.isFinite(pitch)) return;
 
@@ -3944,6 +4343,7 @@ function updateFingerGuardian(noteLabel, pitch) {
   const diff = centsOffFromPitch(pitch, targetNote);
   const clamped = Math.max(-50, Math.min(50, diff));
   needle.style.left = `${50 + clamped}%`;
+  if (goalEl) goalEl.textContent = `${fingerHoldGoal}s`;
 
   statusEl.classList.remove("good", "warn", "off");
   const abs = Math.abs(diff);
@@ -3951,15 +4351,44 @@ function updateFingerGuardian(noteLabel, pitch) {
     statusEl.classList.add("good");
     statusEl.textContent = `${fingerTarget} • Perfect finger spot!`;
     tipEl.textContent = `Stay within ±${fingerTolerance}¢. Keep the bow steady.`;
+    if (!fingerHoldStart) {
+      fingerHoldStart = performance.now();
+      fingerHoldRewarded = false;
+    }
+    fingerHold = (performance.now() - fingerHoldStart) / 1000;
+    if (holdEl) holdEl.textContent = `${fingerHold.toFixed(1)}s`;
+    if (streakEl) streakEl.textContent = `${fingerStreak}`;
+    if (fingerHold >= fingerHoldGoal && !fingerHoldRewarded) {
+      fingerHoldRewarded = true;
+      fingerStreak += 1;
+      if (streakEl) streakEl.textContent = `${fingerStreak}`;
+      pandaSay("Great hold! Ready for the next note!", "celebrate");
+      showToast("Great hold! ⭐");
+      if (fingerAuto) {
+        const nextIndex = (FINGER_TARGETS.indexOf(fingerTarget) + 1) % FINGER_TARGETS.length;
+        setFingerTarget(FINGER_TARGETS[nextIndex]);
+        fingerHoldStart = performance.now();
+        fingerHold = 0;
+        fingerHoldRewarded = false;
+      }
+    }
     pandaSay(`Sweet spot! ${fingerTarget} shines.`, "celebrate");
   } else if (diff < 0) {
     statusEl.classList.add("warn");
     statusEl.textContent = `${fingerTarget} • A bit low`;
     tipEl.textContent = `Slide forward toward the bridge (±${fingerTolerance}¢ zone).`;
+    fingerHoldStart = 0;
+    fingerHold = 0;
+    fingerHoldRewarded = false;
+    if (holdEl) holdEl.textContent = "0.0s";
   } else {
     statusEl.classList.add("warn");
     statusEl.textContent = `${fingerTarget} • A bit high`;
     tipEl.textContent = `Slide back toward the scroll (±${fingerTolerance}¢ zone).`;
+    fingerHoldStart = 0;
+    fingerHold = 0;
+    fingerHoldRewarded = false;
+    if (holdEl) holdEl.textContent = "0.0s";
   }
 }
 
@@ -3968,8 +4397,10 @@ function updateFingerTolerance(stats) {
   if (accuracy !== null && !Number.isNaN(accuracy)) {
     const raw = Math.round(22 - Math.min(12, accuracy / 8));
     fingerTolerance = Math.max(10, Math.min(22, raw));
+    fingerHoldGoal = accuracy >= 85 ? 3 : accuracy >= 70 ? 2 : 1.5;
   } else {
     fingerTolerance = 18;
+    fingerHoldGoal = 2;
   }
   const tipEl = $("#finger-tip");
   if (tipEl) tipEl.textContent = `Aim for the center line (±${fingerTolerance}¢).`;
@@ -4305,6 +4736,13 @@ function playClick() {
   osc.stop(audioCtx.currentTime + 0.09);
 }
 
+function applyPizzicatoLevel() {
+  const profile = getGameProfile("pizzicato");
+  pizzicatoSession.level = profile.level || 1;
+  pizzicatoSession.duration = 14 + pizzicatoSession.level * 2;
+  updateGameProfileUI("pizzicato");
+}
+
 function setupRhythmGame() {
   const lane = $("#rhythm-lane");
   const scoreEl = $("#rhythm-score");
@@ -4315,13 +4753,6 @@ function setupRhythmGame() {
   const speedSlider = $("#pizzicato-speed");
   const speedDisplay = $("#pizzicato-speed-display");
   const feedbackEl = $("#pizzicato-feedback");
-
-  const applyPizzicatoLevel = () => {
-    const profile = getGameProfile("pizzicato");
-    pizzicatoSession.level = profile.level || 1;
-    pizzicatoSession.duration = 14 + pizzicatoSession.level * 2;
-    updateGameProfileUI("pizzicato");
-  };
 
   applyPizzicatoLevel();
 
@@ -4355,13 +4786,21 @@ function setupRhythmGame() {
     updatePizzicatoUI("Tap the paws before they fall!");
     const spawnInterval = Math.max(420, 900 - pizzicatoSession.speed * 120 - pizzicatoSession.level * 40);
     pizzicatoSession.spawnId = setInterval(() => spawnPaw(lane, pizzicatoSession.speed, {
-      onHit: () => {
-        pizzicatoSession.score += 5 * pizzicatoSession.combo;
+      onHit: (type) => {
+        if (type === "bomb") {
+          pizzicatoSession.combo = 1;
+          pizzicatoSession.streak = 0;
+          updatePizzicatoUI("Boom! Reset and keep going.");
+          return;
+        }
+        const bonus = type === "gold" ? 10 : 5;
+        pizzicatoSession.score += bonus * pizzicatoSession.combo;
         pizzicatoSession.streak += 1;
         pizzicatoSession.combo = Math.min(6, pizzicatoSession.combo + 1);
-        updatePizzicatoUI("Great catch!");
+        updatePizzicatoUI(type === "gold" ? "Golden paw! ✨" : "Great catch!");
       },
-      onMiss: () => {
+      onMiss: (type) => {
+        if (type === "bomb") return;
         pizzicatoSession.misses += 1;
         pizzicatoSession.streak = 0;
         pizzicatoSession.combo = 1;
@@ -4371,57 +4810,72 @@ function setupRhythmGame() {
 
     const start = performance.now();
     if (pizzicatoSession.timerId) clearInterval(pizzicatoSession.timerId);
-    pizzicatoSession.timerId = setInterval(async () => {
+    pizzicatoSession.timerId = setInterval(() => {
       const elapsed = (performance.now() - start) / 1000;
       const remaining = Math.max(0, pizzicatoSession.duration - elapsed);
       if (timerEl) timerEl.textContent = `${Math.ceil(remaining)}s`;
       if (remaining <= 0) {
-        clearInterval(pizzicatoSession.timerId);
-        clearInterval(pizzicatoSession.spawnId);
-        pizzicatoSession.active = false;
-        const stars = Math.min(5, Math.max(1, Math.round(pizzicatoSession.score / 25)));
-        const result = { type: "pizzicato", score: pizzicatoSession.score, stars, streak: pizzicatoSession.streak };
-        await addGameResult(result);
-        showToast("Panda Pizzicato complete!");
-        await refreshDashboard();
-        renderGameCoach();
-        awardGameXP(result);
-        const profile = getGameProfile("pizzicato");
-        const leveledUp = pizzicatoSession.score >= 60 && pizzicatoSession.misses <= 3;
-        updateGameProfile("pizzicato", {
-          level: leveledUp ? profile.level + 1 : profile.level,
-          bestScore: Math.max(profile.bestScore || 0, pizzicatoSession.score),
-          bestStreak: Math.max(profile.bestStreak || 0, pizzicatoSession.streak),
-        });
-        applyPizzicatoLevel();
-        if (timerEl) timerEl.textContent = "0s";
+        stopPizzicatoGame(false);
       }
     }, 200);
   });
 }
 
+function stopPizzicatoGame(silent = false) {
+  if (!pizzicatoSession.active) return;
+  clearInterval(pizzicatoSession.timerId);
+  clearInterval(pizzicatoSession.spawnId);
+  pizzicatoSession.active = false;
+  if (silent) return;
+  const stars = Math.min(5, Math.max(1, Math.round(pizzicatoSession.score / 25)));
+  const result = { type: "pizzicato", score: pizzicatoSession.score, stars, streak: pizzicatoSession.streak };
+  addGameResult(result).then(() => {
+    refreshDashboard();
+    renderGameCoach();
+    awardGameXP(result);
+  });
+  showToast("Panda Pizzicato complete!");
+  const profile = getGameProfile("pizzicato");
+  const leveledUp = pizzicatoSession.score >= 60 && pizzicatoSession.misses <= 3;
+  updateGameProfile("pizzicato", {
+    level: leveledUp ? profile.level + 1 : profile.level,
+    bestScore: Math.max(profile.bestScore || 0, pizzicatoSession.score),
+    bestStreak: Math.max(profile.bestStreak || 0, pizzicatoSession.streak),
+  });
+  applyPizzicatoLevel();
+  const timerEl = $("#pizzicato-timer");
+  if (timerEl) timerEl.textContent = "0s";
+}
+
 function spawnPaw(lane, speed, { onHit, onMiss }) {
   const paw = document.createElement("div");
   paw.className = "paw";
-  paw.textContent = "♪";
+  const roll = Math.random();
+  let type = "normal";
+  if (roll > 0.9) type = "gold";
+  else if (roll > 0.8) type = "slow";
+  else if (roll > 0.74) type = "bomb";
+  paw.dataset.type = type;
+  paw.classList.add(type);
+  paw.textContent = type === "gold" ? "✨" : type === "bomb" ? "💥" : "♪";
   paw.style.left = `${Math.random() * 80 + 5}%`;
   paw.style.top = "-40px";
   lane.appendChild(paw);
 
   let pos = -40;
-  const dropSpeed = 3 + speed;
+  const dropSpeed = type === "slow" ? Math.max(2, speed) : 3 + speed;
   const drop = setInterval(() => {
     pos += dropSpeed;
     paw.style.top = `${pos}px`;
     if (pos > 120) {
       clearInterval(drop);
       paw.remove();
-      if (onMiss) onMiss();
+      if (onMiss) onMiss(type);
     }
   }, 16);
 
   paw.addEventListener("click", () => {
-    if (onHit) onHit();
+    if (onHit) onHit(type);
     paw.remove();
   });
 }
@@ -4687,6 +5141,7 @@ async function refreshDashboard() {
   renderAnalysis();
   renderProgress();
   await renderRecordings();
+  renderCoachSpotlight();
 }
 
 function calcStreak(sessions) {
@@ -4788,6 +5243,8 @@ async function awardGameXP(result) {
         return Math.round((result.score || 0) * 2);
       case "pattern":
         return Math.round((result.score || 0) * 2);
+      case "crossing":
+        return Math.round((result.score || 0) / 2);
       default:
         return Math.round((result.score || 0) / 2);
     }
@@ -4818,6 +5275,8 @@ function gameName(type) {
       return "Ear Trainer";
     case "pattern":
       return "Rhythm Painter";
+    case "crossing":
+      return "String Crossing Quest";
     default:
       return "Game";
   }
@@ -4923,13 +5382,15 @@ function generateDailyPlan(sessions, games, songLogs, goalMinutes, focusPref = "
   const song = assignedSong !== "auto"
     ? SONG_LIBRARY.find((s) => s.id === assignedSong) || pickSongOfDay()
     : dueSong || pickSongOfDay();
-  const game = focusArea === "rhythm"
-    ? "Rhythm Dash"
-    : focusArea === "intonation"
-      ? "Pitch Quest"
-      : focusArea === "bow"
-        ? "Bow Hold Hero"
-        : "Panda Pizzicato";
+  const game = focusArea === "crossing"
+    ? "String Crossing Quest"
+    : focusArea === "rhythm"
+      ? "Rhythm Dash"
+      : focusArea === "intonation"
+        ? "Pitch Quest"
+        : focusArea === "bow"
+          ? "Bow Hold Hero"
+          : "Panda Pizzicato";
 
   const steps = [
     { label: "Warm-up: open strings + bow rainbows", minutes: 3 },
@@ -4949,6 +5410,7 @@ function focusAreaLabel(area) {
   if (area === "pitch") return "Intonation (in-tune fingers)";
   if (area === "rhythm") return "Rhythm (steady beat)";
   if (area === "pattern") return "Rhythm patterns (steady beat)";
+  if (area === "crossing") return "String crossings (smooth changes)";
   if (area === "bow") return "Bow control (smooth sound)";
   if (area === "tone") return "Tone (beautiful sound)";
   if (area === "ear") return "Ear training (listening)";
@@ -5071,15 +5533,30 @@ async function generateCoachResponse(text) {
   if (lower.includes("intonation") || lower.includes("tune")) {
     return "Play one note for 4 beats and listen for a centered sound. Tiny finger slides help find the sweet spot.";
   }
+  if (lower.includes("posture")) {
+    return "Sit tall like a proud panda, shoulders relaxed. Hold your violin like it’s floating on a pillow.";
+  }
+  if (lower.includes("tone") || lower.includes("sound")) {
+    return "For warm tone: slow bow, steady pressure, and keep the bow halfway between bridge and fingerboard.";
+  }
+  if (lower.includes("vibrato")) {
+    return "Start with gentle arm wiggles on one finger, then slow back and forth like a tiny wave.";
+  }
+  if (lower.includes("string") && lower.includes("cross")) {
+    return "Keep your bow level and move from the elbow. Practice G-D-A-E slowly, then speed up.";
+  }
   if (lower.includes("song")) {
     return `A great pick is “${song.title}.” Start slow, then add sparkle as it feels easy.`;
+  }
+  if (lower.includes("game")) {
+    return "Try Rhythm Dash or String Crossing Quest for beat skills, or Pitch Quest for intonation.";
   }
   if (lower.includes("tired") || lower.includes("break")) {
     return "That’s okay. Take a water break, roll your shoulders, and come back for a 2‑minute glow‑up bow.";
   }
   if (lower.includes("practice") || lower.includes("today") || lower.includes("plan")) {
     const area = assignedFocus !== "auto" ? assignedFocus : focusArea;
-    return `Today’s focus is ${focusAreaLabel(area)}. Warm up, play ${song.title}, then finish with a fun game.`;
+    return `Today’s focus is ${focusAreaLabel(area)}. Try: 1) 2‑min warmup, 2) ${song.title}, 3) a fun game to finish.`;
   }
   return "You’re doing great! Ask me about bowing, rhythm, intonation, or which song to play next.";
 }
@@ -5106,6 +5583,7 @@ function computeSkillProfile(sessions, games, songLogs) {
   const bestPitch = Math.max(0, ...(byType.pitch || []).map((g) => g.score || 0));
   const bestRhythm = Math.max(0, ...(byType.rhythm || []).map((g) => g.score || 0));
   const bestPizzicato = Math.max(0, ...(byType.pizzicato || []).map((g) => g.score || 0));
+  const bestCrossing = Math.max(0, ...(byType.crossing || []).map((g) => g.score || 0));
   const bestBow = Math.max(0, ...(byType.bow || []).map((g) => g.score || 0));
 
   const intonationScore = blendScores([
@@ -5117,6 +5595,7 @@ function computeSkillProfile(sessions, games, songLogs) {
   const rhythmScore = blendScores([
     scaleScore(bestRhythm, 80),
     scaleScore(bestPizzicato, 80),
+    scaleScore(bestCrossing, 80),
     scaleScore((rhythmAvg || 3) * 20, 100),
   ]);
 
@@ -5396,6 +5875,7 @@ async function renderProgress() {
         <div>Best Bow Hold: <strong>${stats.bestBow || "—"}s</strong></div>
         <div>Best Ear Trainer: <strong>${stats.bestEar || "—"}</strong></div>
         <div>Best Rhythm Painter: <strong>${stats.bestPattern || "—"}</strong></div>
+        <div>Best String Crossing: <strong>${stats.bestCrossing || "—"}</strong></div>
       `;
     }
   }
