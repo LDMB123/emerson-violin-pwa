@@ -2,16 +2,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const rootDir = process.cwd();
-const outputs = [
-    path.join(rootDir, 'sw-assets.js'),
-    path.join(rootDir, 'public', 'sw-assets.js'),
-];
+const args = new Set(process.argv.slice(2));
+const distMode = args.has('--dist');
 
-const assets = new Set([
-    './',
-    './index.html',
-    './manifest.webmanifest',
-]);
+const outputs = distMode
+    ? [path.join(rootDir, 'dist', 'sw-assets.js')]
+    : [
+        path.join(rootDir, 'sw-assets.js'),
+        path.join(rootDir, 'public', 'sw-assets.js'),
+    ];
+
+const assets = new Set(['./']);
 
 const toPosix = (value) => value.split(path.sep).join('/');
 
@@ -50,25 +51,34 @@ const addDir = (sourceDir, options) => {
     });
 };
 
-addDir('src', {
-    urlPrefix: 'src',
-    include: /\.(?:js|css|wasm|woff2|json)$/i,
-    exclude: [
-        /\.test\.js$/i,
-        /\.spec\.js$/i,
-        /^modules\/songs\.js$/i,
-        /^modules\/storage\.js$/i,
-        /^data\/songs\.json$/i,
-        /^ml\//i,
-        /^db\.js$/i,
-    ],
-});
+if (distMode) {
+    addDir('dist', {
+        urlPrefix: '',
+        include: /\.(?:html|js|css|json|webmanifest|wasm|woff2|png|jpe?g|svg|webp|gif|mp3|wav)$/i,
+    });
+} else {
+    assets.add('./index.html');
+    assets.add('./manifest.webmanifest');
+    addDir('src', {
+        urlPrefix: 'src',
+        include: /\.(?:js|css|wasm|woff2|json)$/i,
+        exclude: [
+            /\.test\.js$/i,
+            /\.spec\.js$/i,
+            /^modules\/songs\.js$/i,
+            /^modules\/storage\.js$/i,
+            /^data\/songs\.json$/i,
+            /^ml\//i,
+            /^db\.js$/i,
+        ],
+    });
 
-addDir('public/assets', {
-    urlPrefix: 'assets',
-    include: /\.(?:png|jpe?g|svg|webp|gif|mp3|wav)$/i,
-    excludeDirs: ['mockups'],
-});
+    addDir('public/assets', {
+        urlPrefix: 'assets',
+        include: /\.(?:png|jpe?g|svg|webp|gif|mp3|wav)$/i,
+        excludeDirs: ['mockups'],
+    });
+}
 
 const sortedAssets = Array.from(assets).sort();
 const output = `self.__ASSETS__ = ${JSON.stringify(sortedAssets, null, 2)};\n`;
