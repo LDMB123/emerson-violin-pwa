@@ -1,4 +1,4 @@
-const CACHE_NAME = 'panda-violin-local-v57';
+const CACHE_NAME = 'panda-violin-local-v58';
 
 let ASSETS_TO_CACHE = [];
 try {
@@ -17,7 +17,10 @@ if (!ASSETS_TO_CACHE.length) {
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+        (async () => {
+            const cache = await caches.open(CACHE_NAME);
+            await Promise.allSettled(ASSETS_TO_CACHE.map((asset) => cache.add(asset)));
+        })()
     );
     self.skipWaiting();
 });
@@ -94,7 +97,7 @@ self.addEventListener('message', (event) => {
 
 const refreshAssets = async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(ASSETS_TO_CACHE);
+    await Promise.allSettled(ASSETS_TO_CACHE.map((asset) => cache.add(asset)));
 };
 
 self.addEventListener('sync', (event) => {
