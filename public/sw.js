@@ -1,4 +1,4 @@
-const CACHE_NAME = 'panda-violin-local-v58';
+const CACHE_NAME = 'panda-violin-local-v59';
 
 let ASSETS_TO_CACHE = [];
 try {
