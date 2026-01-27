@@ -293,10 +293,10 @@
         z-index: -1;
         overflow: hidden;
         background:
-            radial-gradient(circle at 10% 10%, rgba(255, 197, 143, 0.55), transparent 45%),
-            radial-gradient(circle at 90% 0%, rgba(126, 214, 194, 0.4), transparent 40%),
-            radial-gradient(circle at 50% 90%, rgba(255, 178, 196, 0.35), transparent 48%),
-            linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-alt) 100%);
+            radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.85), transparent 55%),
+            radial-gradient(circle at 12% 10%, rgba(255, 186, 126, 0.65), transparent 48%),
+            radial-gradient(circle at 90% 20%, rgba(255, 210, 170, 0.55), transparent 52%),
+            linear-gradient(180deg, #F7B06E 0%, #F6CEA1 48%, #F8E7D2 100%);
     }
 
     .glow {
@@ -776,11 +776,26 @@
     /* Home View */
     .home-hero {
         display: grid;
-        gap: var(--space-5);
+        gap: var(--space-6);
         margin-bottom: var(--space-6);
         text-align: center;
-        width: min(100%, 1100px);
+        width: min(100%, 520px);
         margin-inline: auto;
+        padding-top: var(--space-5);
+        position: relative;
+        z-index: 0;
+    }
+
+    .home-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: min(72vw, 360px);
+        height: min(72vw, 360px);
+        transform: translateX(-50%);
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 70%);
+        z-index: -1;
     }
 
     .home-brand {
@@ -795,28 +810,33 @@
     }
 
     .home-mascot {
-        width: clamp(140px, 35vw, 190px);
+        width: clamp(170px, 42vw, 230px);
         height: auto;
         object-fit: contain;
         animation: bounce 3s ease-in-out infinite;
-        filter: drop-shadow(0 12px 24px rgba(73, 39, 26, 0.25));
+        filter: drop-shadow(0 14px 26px rgba(73, 39, 26, 0.28));
         will-change: transform;
     }
 
     .home-title {
         font-family: var(--font-display);
-        font-size: clamp(2rem, 6vw, 3rem);
-        letter-spacing: 0.02em;
+        font-size: clamp(2.2rem, 7vw, 3.2rem);
+        letter-spacing: 0.015em;
         margin: 0;
         text-wrap: balance;
         line-height: var(--leading-tight);
+        color: #6A3A2A;
+        text-shadow:
+            0 2px 0 rgba(255, 255, 255, 0.7),
+            0 10px 18px rgba(102, 56, 40, 0.25);
     }
 
     .home-subtitle {
-        color: var(--color-text-muted);
+        color: #7A4A3B;
         font-weight: 700;
         margin: 0;
         line-height: var(--leading-snug);
+        letter-spacing: 0.04em;
     }
 
     @keyframes bounce {
@@ -833,12 +853,12 @@
 
     .home-cards {
         display: grid;
-        grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.9fr);
         gap: var(--space-3);
         align-items: stretch;
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 360px) {
         .home-cards {
             grid-template-columns: 1fr;
         }
@@ -852,20 +872,23 @@
         border-radius: var(--radius-xl);
         text-align: left;
         --goal-progress: 0;
-        background: rgba(255, 255, 255, 0.82);
-        box-shadow: 0 18px 34px rgba(120, 60, 40, 0.18);
+        background: linear-gradient(160deg, rgba(255, 226, 198, 0.95), rgba(255, 246, 234, 0.98));
+        box-shadow: 0 16px 28px rgba(120, 60, 40, 0.16);
         min-height: 132px;
+        border: 1px solid rgba(255, 255, 255, 0.9);
     }
 
     .goal-icon {
-        width: 54px;
-        height: 54px;
+        width: 58px;
+        height: 58px;
         display: grid;
         place-items: center;
         border-radius: 18px;
-        font-size: 1.8rem;
-        background: linear-gradient(145deg, rgba(255, 203, 159, 0.9), rgba(255, 241, 221, 0.95));
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+        font-size: 1.9rem;
+        background: linear-gradient(160deg, #F9D7B8, #FFF1DF);
+        box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.85),
+            0 8px 16px rgba(120, 60, 40, 0.12);
     }
 
     .goal-body {
@@ -877,21 +900,22 @@
     .goal-label {
         font-size: var(--text-sm);
         font-weight: 700;
-        color: var(--color-text-muted);
-        text-transform: uppercase;
-        letter-spacing: var(--tracking-wide);
+        color: #7A4A3B;
+        text-transform: none;
+        letter-spacing: 0.01em;
         line-height: var(--leading-tight);
     }
 
     .goal-time {
-        font-size: var(--text-lg);
+        font-size: clamp(1.1rem, 3.6vw, 1.35rem);
         font-weight: 800;
         line-height: var(--leading-tight);
+        color: #5E3326;
     }
 
     .goal-progress {
-        height: 12px;
-        background: rgba(255, 214, 186, 0.6);
+        height: 10px;
+        background: rgba(247, 208, 176, 0.8);
         border-radius: var(--radius-full);
         overflow: hidden;
     }
@@ -935,9 +959,10 @@
         padding: var(--space-4);
         border-radius: var(--radius-xl);
         text-align: center;
-        background: rgba(255, 255, 255, 0.85);
-        box-shadow: 0 18px 34px rgba(120, 60, 40, 0.16);
+        background: linear-gradient(160deg, rgba(255, 236, 216, 0.96), rgba(255, 248, 236, 0.98));
+        box-shadow: 0 16px 28px rgba(120, 60, 40, 0.14);
         min-height: 132px;
+        border: 1px solid rgba(255, 255, 255, 0.9);
     }
 
     .streak-card .streak-fire {
@@ -945,14 +970,15 @@
     }
 
     .streak-card .streak-count {
-        font-size: var(--text-2xl);
+        font-size: clamp(1.4rem, 4.5vw, 1.7rem);
         font-weight: 800;
         line-height: 1;
+        color: #5E3326;
     }
 
     .streak-card .streak-label {
         font-size: var(--text-sm);
-        color: var(--color-text-muted);
+        color: #7A4A3B;
         font-weight: 700;
         line-height: var(--leading-snug);
     }
@@ -962,7 +988,7 @@
         justify-content: center;
         gap: var(--space-3);
         flex-wrap: wrap;
-        width: min(100%, 900px);
+        width: min(100%, 520px);
         margin-inline: auto;
     }
 
@@ -980,8 +1006,8 @@
     /* Feature Grid */
     .home-grid {
         display: grid;
-        gap: var(--space-4);
-        width: min(100%, 980px);
+        gap: var(--space-3);
+        width: min(100%, 520px);
         margin-inline: auto;
     }
 
@@ -1001,13 +1027,13 @@
         justify-content: center;
         gap: var(--space-2);
         padding: var(--space-4);
-        border-radius: var(--radius-xl);
+        border-radius: 22px;
         text-align: center;
         transition: all var(--duration-normal) var(--ease-out);
         container-type: inline-size;
         aspect-ratio: 1 / 1;
-        box-shadow: 0 16px 30px rgba(89, 45, 30, 0.18);
-        border: 1px solid rgba(255, 255, 255, 0.75);
+        box-shadow: 0 14px 24px rgba(89, 45, 30, 0.18);
+        border: none;
         touch-action: manipulation;
     }
 
@@ -1028,19 +1054,19 @@
     }
 
     .home-primary .feature-card:nth-child(1) {
-        background: linear-gradient(160deg, #57B7E5, #3B7BE2);
+        background: linear-gradient(160deg, #59B7FF, #3D7DEB);
     }
 
     .home-primary .feature-card:nth-child(2) {
-        background: linear-gradient(160deg, #F7C74F, #ECA23D);
+        background: linear-gradient(160deg, #FFD45A, #F0A83B);
     }
 
     .home-primary .feature-card:nth-child(3) {
-        background: linear-gradient(160deg, #56C67A, #34A857);
+        background: linear-gradient(160deg, #63D584, #35A95B);
     }
 
     .home-primary .feature-card:nth-child(4) {
-        background: linear-gradient(160deg, #B87CF5, #8C4EE6);
+        background: linear-gradient(160deg, #C084FF, #8F4FE6);
     }
 
     .feature-secondary {
@@ -1048,14 +1074,16 @@
     }
 
     .feature-icon {
-        font-size: 2.2rem;
+        font-size: 2rem;
+        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.22));
     }
 
     .feature-title {
-        font-size: var(--text-base);
+        font-size: 0.95rem;
         font-weight: 800;
         line-height: var(--leading-snug);
-        letter-spacing: var(--tracking-tight);
+        letter-spacing: 0.01em;
+        text-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
     }
 
     /* Container Query for responsive feature cards */
