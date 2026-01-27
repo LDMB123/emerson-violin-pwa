@@ -4,11 +4,12 @@
   "description": "Local-first violin teacher, coach, trainer, tuner, and progress tracker for Emerson.",
   "categories": ["education", "music", "kids"],
   "lang": "en-US",
-  "start_url": "./",
+  "start_url": "./#view-home",
   "scope": "./",
+  "id": "./",
   "display": "standalone",
-  "background_color": "#fff5e9",
-  "theme_color": "#ff6b4a",
+  "background_color": "#FFF3E6",
+  "theme_color": "#F56B49",
   "icons": [
     {
       "src": "./assets/icons/icon-180.png",
@@ -53,11 +54,25 @@
       "purpose": "maskable"
     }
   ],
+  "screenshots": [
+    {
+      "src": "./assets/mockups/screen_home_1769391215723.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "./assets/mockups/screen_games_menu_1769391385366.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Open Tuner",
       "short_name": "Tuner",
-      "url": "./?view=tuner",
+      "url": "./#view-tuner",
       "icons": [
         {
           "src": "./assets/icons/icon-192.png",
@@ -68,7 +83,7 @@
     {
       "name": "Start Practice",
       "short_name": "Practice",
-      "url": "./?view=coach",
+      "url": "./#view-coach",
       "icons": [
         {
           "src": "./assets/icons/icon-192.png",
@@ -79,7 +94,7 @@
     {
       "name": "Play Songs",
       "short_name": "Songs",
-      "url": "./?view=songs",
+      "url": "./#view-songs",
       "icons": [
         {
           "src": "./assets/icons/icon-192.png",
@@ -90,7 +105,7 @@
     {
       "name": "Play Games",
       "short_name": "Games",
-      "url": "./?view=games",
+      "url": "./#view-games",
       "icons": [
         {
           "src": "./assets/icons/icon-192.png",
@@ -99,9 +114,13 @@
       ]
     }
   ],
-  "orientation": "portrait",
+  "orientation": "any",
   "display_override": [
     "standalone",
-    "fullscreen"
-  ]
+    "fullscreen",
+    "minimal-ui"
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  }
 }

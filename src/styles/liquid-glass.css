@@ -1,0 +1,430 @@
+/**
+ * Liquid Glass Design System - iOS 26 Inspired
+ * 
+ * Apple's "Liquid Glass" aesthetic featuring:
+ * - Translucent glassmorphism surfaces
+ * - Depth and refraction effects
+ * - Vibrant oklch() color gradients
+ * - Smooth 120Hz-ready animations
+ */
+
+/* ========================================
+   DESIGN TOKENS
+   ======================================== */
+
+:root {
+  /* === Primary Colors (oklch for vibrance) === */
+  --color-panda-orange: oklch(0.70 0.18 45);
+  --color-panda-coral: oklch(0.65 0.20 25);
+  --color-panda-peach: oklch(0.88 0.08 60);
+  --color-panda-cream: oklch(0.97 0.02 85);
+  
+  /* === Accent Colors === */
+  --color-accent-mint: oklch(0.75 0.12 165);
+  --color-accent-lavender: oklch(0.72 0.12 290);
+  --color-accent-gold: oklch(0.82 0.15 85);
+  --color-accent-rose: oklch(0.70 0.15 10);
+  
+  /* === Glass Surfaces === */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-bg-light: rgba(255, 255, 255, 0.85);
+  --glass-bg-dark: rgba(255, 245, 233, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px rgba(139, 69, 19, 0.12);
+  --glass-blur: 20px;
+  
+  /* === Aurora Gradients === */
+  --aurora-warm: linear-gradient(
+    135deg,
+    oklch(0.95 0.04 60) 0%,
+    oklch(0.92 0.06 35) 50%,
+    oklch(0.88 0.08 15) 100%
+  );
+  --aurora-sunset: linear-gradient(
+    160deg,
+    oklch(0.90 0.08 45) 0%,
+    oklch(0.82 0.12 25) 40%,
+    oklch(0.75 0.15 320) 100%
+  );
+  --aurora-forest: linear-gradient(
+    145deg,
+    oklch(0.92 0.05 100) 0%,
+    oklch(0.85 0.10 145) 50%,
+    oklch(0.78 0.12 175) 100%
+  );
+  
+  /* === Shadows & Depth === */
+  --shadow-sm: 0 2px 8px rgba(139, 69, 19, 0.08);
+  --shadow-md: 0 4px 16px rgba(139, 69, 19, 0.12);
+  --shadow-lg: 0 8px 32px rgba(139, 69, 19, 0.16);
+  --shadow-xl: 0 16px 48px rgba(139, 69, 19, 0.20);
+  --shadow-inner: inset 0 2px 6px rgba(139, 69, 19, 0.08);
+  
+  /* === Borders === */
+  --border-glass: 1px solid rgba(255, 255, 255, 0.4);
+  --border-strong: 3px solid var(--color-panda-coral);
+  --border-subtle: 1px solid rgba(0, 0, 0, 0.08);
+  
+  /* === Radius === */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+  
+  /* === Typography === */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Nunito", "Avenir Next", sans-serif;
+  
+  /* === Spacing === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  
+  /* === Animation === */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  
+  /* === Safe Areas (iOS) === */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* ========================================
+   GLASSMORPHISM COMPONENTS
+   ======================================== */
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--border-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: 
+    transform var(--duration-normal) var(--ease-spring),
+    box-shadow var(--duration-normal) var(--ease-smooth);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.glass-card:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.glass-card--elevated {
+  background: var(--glass-bg-light);
+  box-shadow: var(--shadow-lg);
+}
+
+.glass-card--sunken {
+  background: var(--glass-bg-dark);
+  box-shadow: var(--shadow-inner);
+}
+
+/* === Glass Surfaces === */
+.glass-surface {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: var(--border-glass);
+}
+
+.glass-header {
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: var(--border-glass);
+  box-shadow: var(--shadow-sm);
+}
+
+.glass-nav {
+  background: var(--glass-bg-light);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: var(--border-glass);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ========================================
+   AURORA BACKGROUNDS
+   ======================================== */
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--aurora-warm);
+  overflow: hidden;
+}
+
+.aurora::before,
+.aurora::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.6;
+  animation: aurora-float 20s ease-in-out infinite;
+}
+
+.aurora::before {
+  width: 60vmax;
+  height: 60vmax;
+  background: radial-gradient(circle, oklch(0.85 0.12 35) 0%, transparent 70%);
+  top: -20%;
+  right: -20%;
+  animation-delay: -5s;
+}
+
+.aurora::after {
+  width: 50vmax;
+  height: 50vmax;
+  background: radial-gradient(circle, oklch(0.80 0.10 290) 0%, transparent 70%);
+  bottom: -15%;
+  left: -15%;
+  animation-delay: -12s;
+}
+
+@keyframes aurora-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(5%, 3%) scale(1.05);
+  }
+  50% {
+    transform: translate(-3%, 5%) scale(0.95);
+  }
+  75% {
+    transform: translate(-5%, -3%) scale(1.02);
+  }
+}
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  transition: 
+    transform var(--duration-fast) var(--ease-spring),
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    background var(--duration-fast) var(--ease-smooth);
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn--primary {
+  background: var(--color-panda-coral);
+  color: white;
+  box-shadow: 
+    var(--shadow-md),
+    0 4px 0 oklch(0.55 0.20 25);
+}
+
+.btn--primary:hover {
+  background: oklch(0.60 0.22 25);
+  box-shadow: 
+    var(--shadow-lg),
+    0 6px 0 oklch(0.50 0.20 25);
+  transform: translateY(-2px);
+}
+
+.btn--primary:active {
+  box-shadow: 
+    var(--shadow-sm),
+    0 2px 0 oklch(0.55 0.20 25);
+  transform: translateY(2px);
+}
+
+.btn--glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: var(--border-glass);
+  color: oklch(0.35 0.05 45);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn--glass:hover {
+  background: var(--glass-bg-light);
+  box-shadow: var(--shadow-md);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-panda-coral);
+  border: 2px solid currentColor;
+}
+
+.btn--ghost:hover {
+  background: var(--color-panda-coral);
+  color: white;
+}
+
+/* ========================================
+   3D EFFECTS
+   ======================================== */
+
+.depth-card {
+  perspective: 1000px;
+}
+
+.depth-card__inner {
+  transform-style: preserve-3d;
+  transition: transform var(--duration-slow) var(--ease-spring);
+}
+
+.depth-card:hover .depth-card__inner {
+  transform: rotateX(2deg) rotateY(-2deg) translateZ(10px);
+}
+
+/* Lift effect on interaction */
+.lift {
+  transition: 
+    transform var(--duration-normal) var(--ease-spring),
+    box-shadow var(--duration-normal) var(--ease-smooth);
+}
+
+.lift:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-xl);
+}
+
+.lift:active {
+  transform: translateY(-1px) scale(0.99);
+  box-shadow: var(--shadow-md);
+}
+
+/* ========================================
+   PROGRESS & METERS
+   ======================================== */
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: var(--glass-bg-dark);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--color-accent-gold) 0%,
+    var(--color-panda-orange) 100%
+  );
+  border-radius: var(--radius-full);
+  transition: width var(--duration-slow) var(--ease-spring);
+  position: relative;
+}
+
+.progress-bar__fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ========================================
+   BADGES & CHIPS
+   ======================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: var(--border-glass);
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.badge--success {
+  background: oklch(0.90 0.10 145 / 0.8);
+  border-color: oklch(0.70 0.15 145);
+}
+
+.badge--warning {
+  background: oklch(0.92 0.10 85 / 0.8);
+  border-color: oklch(0.75 0.15 85);
+}
+
+.badge--accent {
+  background: oklch(0.85 0.12 25 / 0.8);
+  border-color: var(--color-panda-coral);
+}
+
+/* ========================================
+   REDUCED MOTION
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .aurora::before,
+  .aurora::after {
+    animation: none;
+  }
+}
+
+/* ========================================
+   PRMOTION 120Hz OPTIMIZATION
+   ======================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  .glass-card,
+  .btn,
+  .lift,
+  .depth-card__inner {
+    will-change: transform;
+  }
+}
