@@ -202,3 +202,10 @@ Tracking modernization, offline-first, UX, and stability issues. Each entry incl
 | 196 | A11y | Session timer progressbar updates were applied to the wrong element. | Sync `aria-valuenow` on the progress track element for accurate updates. | src/games/game-enhancements.js |
 | 197 | UX | Game reset skipped firing change events when inputs were already default, leaving stale UI in some games. | Force change events during resets and keep default checked state. | src/games/game-enhancements.js |
 | 198 | Offline update | Final polish fixes required cache refresh for offline installs. | Bumped SW cache version after session polish. | public/sw.js, sw.js |
+| 199 | Readability | Base palette leaned too light, lowering contrast on warm surfaces. | Deepened text colors and strengthened surface/glass opacities. | src/styles/app.css |
+| 200 | Readability | White text on primary tiles and nav lacked separation from saturated backgrounds. | Added subtle text shadow for active nav and feature tiles. | src/styles/app.css |
+| 201 | Offline update | Color/contrast polish required cache refresh for offline installs. | Bumped SW cache version after palette refinements. | public/sw.js, sw.js |
+| 202 | Readability | Ambient gradients/glows competed with foreground text on multiple pages. | Softened ambient gradients and glow intensity for calmer backdrops. | src/styles/app.css |
+| 203 | Readability | Some glass surfaces remained too transparent for dense text blocks. | Increased glass opacity and ensured default text color on glass. | src/styles/app.css |
+| 204 | Readability | Song titles used a lighter custom brown, lowering contrast in some cards. | Unified song title color with primary text token. | src/styles/app.css |
+| 205 | Offline update | Final full-page polish required cache refresh for offline installs. | Bumped SW cache version after global readability pass. | public/sw.js, sw.js |
