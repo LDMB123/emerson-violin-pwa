@@ -50,12 +50,16 @@ const shareICS = async () => {
     const file = new File([ics], 'panda-violin-reminder.ics', { type: 'text/calendar' });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-            title: 'Panda Violin Practice Reminder',
-            text: 'Add a daily practice reminder to your calendar.',
-            files: [file],
-        });
-        return true;
+        try {
+            await navigator.share({
+                title: 'Panda Violin Practice Reminder',
+                text: 'Add a daily practice reminder to your calendar.',
+                files: [file],
+            });
+            return true;
+        } catch {
+            // Fall back to download below.
+        }
     }
 
     const url = URL.createObjectURL(file);
@@ -75,7 +79,7 @@ const handleReminderToggle = async () => {
             await shareICS();
             updateReminderStatus('Reminder file ready. Add it to Calendar or Reminders.');
         } catch {
-            updateReminderStatus('Reminder export failed. Use iOS Reminders or Calendar manually.');
+            updateReminderStatus('Reminder export failed. Use iPadOS Reminders or Calendar manually.');
         }
     } else {
         updateReminderStatus('Reminders are off. Remove the Calendar alert if you added one.');
@@ -89,7 +93,14 @@ const showNotification = async () => {
         return;
     }
 
-    const permission = await Notification.requestPermission();
+    let permission = 'default';
+    try {
+        permission = await Notification.requestPermission();
+    } catch {
+        updateNotificationStatus('Notification permission request failed.');
+        if (notificationToggle) notificationToggle.checked = false;
+        return;
+    }
     if (permission !== 'granted') {
         updateNotificationStatus('Notifications are blocked. Enable them in Settings.');
         if (notificationToggle) {

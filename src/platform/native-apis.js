@@ -10,8 +10,82 @@ const shareButton = document.querySelector('[data-share-summary]');
 const shareStatusEl = document.querySelector('[data-share-status]');
 const soundToggle = document.querySelector('#setting-sounds');
 const rootStyle = document.documentElement?.style;
+const root = document.documentElement;
 const installStatusEl = document.querySelector('[data-install-status]');
 const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
+const PERSIST_REQUEST_KEY = 'panda-violin:persist-request-v1';
+
+const loadPersistRequest = () => {
+    try {
+        const raw = localStorage.getItem(PERSIST_REQUEST_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+const savePersistRequest = (state) => {
+    try {
+        localStorage.setItem(PERSIST_REQUEST_KEY, JSON.stringify(state));
+    } catch {
+        // Ignore storage failures
+    }
+};
+
+const setRootDataset = (key, value) => {
+    if (!root) return;
+    if (value === null || value === undefined) {
+        delete root.dataset[key];
+        return;
+    }
+    root.dataset[key] = String(value);
+};
+
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
+    || window.matchMedia('(display-mode: fullscreen)').matches
+    || window.navigator.standalone === true;
+
+const shouldRetryPersist = (state) => {
+    if (!state) return true;
+    if (state.persisted) return false;
+    if (!state.lastAttempt) return true;
+    const week = 7 * 24 * 60 * 60 * 1000;
+    return Date.now() - state.lastAttempt > week;
+};
+
+const requestPersistentStorage = async (reason) => {
+    if (!navigator.storage?.persist) return false;
+    if (document.hidden) return false;
+    const previous = loadPersistRequest();
+    if (!shouldRetryPersist(previous)) return false;
+    const nextState = {
+        lastAttempt: Date.now(),
+        reason,
+        persisted: false,
+    };
+    savePersistRequest(nextState);
+    try {
+        const persisted = await navigator.storage.persist();
+        nextState.persisted = Boolean(persisted);
+        savePersistRequest(nextState);
+        return nextState.persisted;
+    } catch {
+        return false;
+    }
+};
+
+const maybeAutoPersist = async (reason) => {
+    if (!navigator.storage?.persisted) return;
+    const persisted = await navigator.storage.persisted();
+    if (persisted) return;
+    const offlineMode = document.documentElement?.dataset?.offlineMode === 'on';
+    const shouldAttempt = isStandalone() || offlineMode;
+    if (!shouldAttempt) return;
+    const didPersist = await requestPersistentStorage(reason);
+    if (didPersist) {
+        updateStorageStatus();
+    }
+};
 
 const formatBytes = (bytes) => {
     if (!Number.isFinite(bytes)) return '0 MB';
@@ -27,60 +101,106 @@ const formatBytes = (bytes) => {
 };
 
 const updateStorageEstimate = async () => {
-    if (!storageEstimateEl) return;
     if (!navigator.storage?.estimate) {
-        storageEstimateEl.textContent = 'Storage estimate unavailable on this device.';
+        if (storageEstimateEl) {
+            storageEstimateEl.textContent = 'Storage estimate unavailable on this device.';
+        }
+        setRootDataset('storagePressure', null);
         return;
     }
     try {
         const { usage, quota } = await navigator.storage.estimate();
-        if (Number.isFinite(quota)) {
-            storageEstimateEl.textContent = `Storage used: ${formatBytes(usage)} / ${formatBytes(quota)}.`;
+        if (Number.isFinite(quota) && quota > 0) {
+            const ratio = usage / quota;
+            const pressure = ratio > 0.9 ? 'high' : ratio > 0.75 ? 'medium' : 'low';
+            setRootDataset('storagePressure', pressure);
+            if (storageEstimateEl) {
+                const warning = pressure === 'high'
+                    ? ' Storage nearly full — consider exporting recordings.'
+                    : pressure === 'medium'
+                        ? ' Storage starting to fill up.'
+                        : '';
+                storageEstimateEl.textContent = `Storage used: ${formatBytes(usage)} / ${formatBytes(quota)}.${warning}`;
+            }
         } else {
-            storageEstimateEl.textContent = `Storage used: ${formatBytes(usage)}.`;
+            setRootDataset('storagePressure', null);
+            if (storageEstimateEl) {
+                storageEstimateEl.textContent = `Storage used: ${formatBytes(usage)}.`;
+            }
         }
     } catch {
-        storageEstimateEl.textContent = 'Storage estimate unavailable right now.';
+        if (storageEstimateEl) {
+            storageEstimateEl.textContent = 'Storage estimate unavailable right now.';
+        }
     }
 };
 
 const updateStorageStatus = async (request = false) => {
-    if (!storageStatusEl) return;
     if (!navigator.storage?.persisted) {
-        storageStatusEl.textContent = 'Persistent storage is not available on this device.';
+        if (storageStatusEl) {
+            storageStatusEl.textContent = 'Persistent storage is not available on this device.';
+        }
         if (storageRequestButton) storageRequestButton.disabled = true;
-        return;
+        setRootDataset('storagePersisted', 'unsupported');
+        return { supported: false, persisted: false };
     }
     try {
         let persisted = await navigator.storage.persisted();
         if (!persisted && request && navigator.storage.persist) {
             persisted = await navigator.storage.persist();
         }
-        if (persisted) {
-            storageStatusEl.textContent = 'Offline storage is protected.';
-            if (storageRequestButton) storageRequestButton.disabled = true;
-        } else {
-            storageStatusEl.textContent = 'Offline storage may be cleared if the device is low on space.';
+        setRootDataset('storagePersisted', persisted ? 'true' : 'false');
+        if (storageRequestButton) {
+            storageRequestButton.disabled = persisted || !navigator.storage.persist;
         }
+        if (storageStatusEl) {
+            storageStatusEl.textContent = persisted
+                ? 'Offline storage is protected.'
+                : 'Offline storage may be cleared if the device is low on space.';
+        }
+        return { supported: true, persisted };
     } catch {
-        storageStatusEl.textContent = 'Unable to confirm offline storage status.';
+        if (storageStatusEl) {
+            storageStatusEl.textContent = 'Unable to confirm offline storage status.';
+        }
+        return { supported: true, persisted: false };
     }
 };
 
 const bindStorageUI = () => {
-    if (!storageStatusEl && !storageEstimateEl) return;
     updateStorageStatus();
     updateStorageEstimate();
+    maybeAutoPersist('boot');
     if (storageRequestButton) {
         storageRequestButton.addEventListener('click', () => {
             updateStorageStatus(true).then(updateStorageEstimate);
         });
     }
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            updateStorageEstimate();
+            updateStorageStatus();
+            maybeAutoPersist('visible');
+        }
+    });
+    window.addEventListener('online', () => {
+        updateStorageEstimate();
+        updateStorageStatus();
+        maybeAutoPersist('online');
+    }, { passive: true });
+    document.addEventListener('panda:offline-mode-change', () => {
+        maybeAutoPersist('offline-mode');
+    });
 };
 
 const updateNetworkStatus = () => {
     if (!networkStatusEl) return;
     const online = navigator.onLine;
+    const offlineMode = document.documentElement?.dataset?.offlineMode === 'on';
+    if (offlineMode) {
+        networkStatusEl.textContent = 'Network status: Offline mode enabled (cached-only).';
+        return;
+    }
     networkStatusEl.textContent = online
         ? 'Network status: Online (offline mode still available).'
         : 'Network status: Offline (local content is ready).';
@@ -91,6 +211,7 @@ const bindNetworkStatus = () => {
     updateNetworkStatus();
     window.addEventListener('online', updateNetworkStatus, { passive: true });
     window.addEventListener('offline', updateNetworkStatus, { passive: true });
+    document.addEventListener('panda:offline-mode-change', updateNetworkStatus);
 };
 
 let wakeLock = null;
@@ -240,6 +361,7 @@ const bindOrientationLock = () => {
 const buildShareSummary = () => {
     const weekSummary = document.querySelector('[data-parent="week-summary"]')?.textContent?.trim();
     const goalValue = document.querySelector('[data-parent="goal-value"]')?.textContent?.trim();
+    const goalTitle = document.querySelector('[data-parent-goal-title]')?.textContent?.trim();
     const skillLines = Array.from(document.querySelectorAll('.overview-skill')).map((skill) => {
         const name = skill.querySelector('.skill-name')?.textContent?.trim();
         const stars = skill.querySelector('.skill-stars')?.textContent?.trim();
@@ -251,6 +373,7 @@ const buildShareSummary = () => {
         'Panda Violin — Weekly Summary',
         weekSummary || 'Weekly practice summary',
     ];
+    if (goalTitle) lines.push(`Recital focus: ${goalTitle}`);
     if (goalValue) lines.push(`Goal progress: ${goalValue}`);
     if (skillLines.length) {
         lines.push('Skills:');
@@ -401,6 +524,9 @@ const bindAudioFocus = () => {
     window.addEventListener('pagehide', () => {
         pauseOthers(null);
     });
+    window.addEventListener('hashchange', () => {
+        pauseOthers(null);
+    }, { passive: true });
 };
 
 const updateSoundState = () => {
@@ -436,6 +562,10 @@ const updateInstallState = () => {
         installStatusEl.textContent = isStandalone
             ? 'Install status: Installed on Home Screen.'
             : 'Install status: Use Add to Home Screen for the best offline experience.';
+    }
+    if (isStandalone) {
+        updateStorageStatus(true);
+        maybeAutoPersist('installed');
     }
 };
 

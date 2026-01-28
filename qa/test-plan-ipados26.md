@@ -2,7 +2,7 @@
 
 ### Feature: Emerson-Violin PWA (Local-Only, Offline-First)
 **Version**: 2.0.0
-**Environment**: iPadOS 26 / iOS 26 Safari + Home Screen PWA
+**Environment**: iPadOS 26.2 Safari + Home Screen PWA
 **Tester**: QA
 **Date**: 2026-01-27
 
@@ -24,7 +24,7 @@
 
 ### Test Approach
 - **Test types**: Functional, regression, exploratory, usability
-- **Devices/Browsers**: iPadOS 26 Safari + iOS 26 Safari (Home Screen PWA and in-browser)
+- **Devices/Browsers**: iPadOS 26.2 Safari (Home Screen PWA and in-browser)
 - **Test data**: Fresh install, then persist state across reload + offline mode
 
 ---
@@ -36,7 +36,7 @@
 **Type**: Functional
 
 **Preconditions**:
-- Safari on iPadOS 26
+- Safari on iPadOS 26.2
 
 **Steps**:
 1. Open app URL in Safari.
@@ -127,7 +127,7 @@
 **Type**: Functional
 
 **Preconditions**:
-- iOS/iPadOS mic permissions enabled
+- iPadOS mic permissions enabled
 
 **Steps**:
 1. Open Tuner.
@@ -160,7 +160,7 @@
 
 **Steps**:
 1. Interact with checklist labels, nav items, card buttons.
-2. Verify touch targets on iPad and iPhone.
+2. Verify touch targets on iPad.
 
 **Expected Result**:
 - Targets are comfortable; no cramped text.
@@ -168,6 +168,5 @@
 ---
 
 ## Test Matrix (Recommended)
-- iPadOS 26 Safari (PWA): TC-001 → TC-008
-- iOS 26 Safari (PWA): TC-001 → TC-008
-- iPadOS 26 Safari (in-browser): TC-002, TC-003, TC-005
+- iPadOS 26.2 Safari (PWA): TC-001 → TC-008
+- iPadOS 26.2 Safari (in-browser): TC-002, TC-003, TC-005

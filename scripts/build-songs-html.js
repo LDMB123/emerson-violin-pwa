@@ -93,7 +93,7 @@ const songViews = songs.map((song) => {
     const tips = (song.tips || []).map((tip) => `${viewDeep}<li>${escapeHtml(tip)}</li>`).join('\n');
 
     return [
-        `${viewIndent}<section class="view song-view" id="view-song-${id}">`,
+        `${viewIndent}<section class="view song-view" id="view-song-${id}" aria-label="Song: ${title}">`,
         `${viewInner}<input type="checkbox" id="song-play-${id}" class="song-play-toggle" />`,
         `${viewInner}<div class="view-header">`,
         `${viewInner}  <a href="#view-songs" class="back-btn">← Back</a>`,
@@ -109,7 +109,7 @@ const songViews = songs.map((song) => {
         `${viewInner}  <label for="song-play-${id}" class="btn btn-secondary btn-stop">⏹ Stop</label>`,
         `${viewInner}  <a class="btn btn-ghost" href="#view-songs">Library</a>`,
         `${viewInner}</div>`,
-        `${viewInner}<div class="song-sheet glass" style="--song-duration:${durationSeconds.toFixed(2)}s;--song-width:${songWidth}px;--beat-width:${beatWidth}px">`,
+        `${viewInner}<div class="song-sheet glass" aria-hidden="true" style="--song-duration:${durationSeconds.toFixed(2)}s;--song-width:${songWidth}px;--beat-width:${beatWidth}px">`,
         `${viewInner}  <div class="song-staff" role="list" aria-label="Notes">`,
         `${viewInner}    <div class="song-playhead" aria-hidden="true"></div>`,
         notes,

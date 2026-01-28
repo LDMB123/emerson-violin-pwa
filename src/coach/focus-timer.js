@@ -1,3 +1,5 @@
+import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
+
 const focusToggle = document.querySelector('#focus-timer');
 const focusArea = document.querySelector('.practice-focus');
 const durationEl = document.querySelector('.focus-duration');
@@ -8,6 +10,31 @@ let intervalId = null;
 let endTime = null;
 let activeMinutes = 5;
 let isCompleting = false;
+let recommendedMinutes = 10;
+
+const formatDifficulty = (value) => {
+    const label = value || 'medium';
+    return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+const ensureBadge = () => {
+    const header = document.querySelector('.coach-card-header');
+    if (!header) return null;
+    let badge = header.querySelector('.difficulty-badge');
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'difficulty-badge';
+        header.appendChild(badge);
+    }
+    return badge;
+};
+
+const selectMinutes = (minutes) => {
+    const target = durationRadios.find((radio) => radio.id === `focus-${minutes}`);
+    if (target) {
+        target.checked = true;
+    }
+};
 
 const getSelectedMinutes = () => {
     const selected = durationRadios.find((radio) => radio.checked);
@@ -31,6 +58,21 @@ const setFocusDuration = (minutes) => {
     }
     if (durationEl) {
         durationEl.textContent = `${minutes} min focus sprint`;
+    }
+};
+
+const applyTuning = async () => {
+    const tuning = await getGameTuning('coach-focus');
+    recommendedMinutes = tuning.focusMinutes ?? recommendedMinutes;
+    const badge = ensureBadge();
+    if (badge) {
+        badge.dataset.level = tuning.difficulty || 'medium';
+        badge.textContent = `Coach: ${formatDifficulty(tuning.difficulty)}`;
+    }
+    if (focusArea && !focusArea.dataset.userSet) {
+        selectMinutes(recommendedMinutes);
+        setFocusDuration(recommendedMinutes);
+        if (statusEl) statusEl.textContent = `Suggested focus sprint: ${recommendedMinutes} minutes.`;
     }
 };
 
@@ -82,6 +124,10 @@ const finishSession = () => {
     isCompleting = true;
     stopSession(true);
     logFocusMinutes(activeMinutes);
+    if (recommendedMinutes) {
+        const accuracy = Math.min(100, (activeMinutes / recommendedMinutes) * 100);
+        updateGameResult('coach-focus', { accuracy, score: activeMinutes }).catch(() => {});
+    }
     if (focusToggle) focusToggle.checked = false;
     window.setTimeout(() => {
         isCompleting = false;
@@ -112,6 +158,7 @@ if (durationRadios.length) {
     durationRadios.forEach((radio) => {
         radio.addEventListener('change', () => {
             const minutes = getSelectedMinutes();
+            if (focusArea) focusArea.dataset.userSet = 'true';
             setFocusDuration(minutes);
             if (focusToggle?.checked) {
                 startSession();
@@ -124,6 +171,7 @@ if (focusToggle) {
     focusToggle.addEventListener('change', handleToggle);
 }
 
+applyTuning();
 setFocusDuration(getSelectedMinutes());
 
 window.addEventListener('hashchange', stopWhenInactive, { passive: true });
@@ -136,4 +184,15 @@ window.addEventListener('pagehide', stopWhenInactive);
 
 document.addEventListener('panda:persist-applied', () => {
     setFocusDuration(getSelectedMinutes());
+});
+
+document.addEventListener('panda:ml-update', (event) => {
+    if (event.detail?.id === 'coach-focus') {
+        applyTuning();
+    }
+});
+
+document.addEventListener('panda:ml-reset', () => {
+    if (focusArea) delete focusArea.dataset.userSet;
+    applyTuning();
 });

@@ -1,7 +1,10 @@
+import { getLearningRecommendations } from '../ml/recommendations.js';
+
 const bubble = document.querySelector('[data-progress="coach-speech"]');
 const buttons = Array.from(document.querySelectorAll('[data-coach-action]'));
+const voiceToggle = document.querySelector('#setting-voice');
 
-const messages = [
+const baseMessages = [
     'Warm up with open strings and gentle bows.',
     'Play a slow G major scale with steady bow speed.',
     'Tap a steady rhythm, then match it on one note.',
@@ -9,9 +12,11 @@ const messages = [
     'Try a short song and keep your tempo calm.',
 ];
 
+let messages = [...baseMessages];
 let index = 0;
 if (bubble?.textContent?.trim()) {
-    messages.unshift(bubble.textContent.trim());
+    baseMessages.unshift(bubble.textContent.trim());
+    messages = [...baseMessages];
 }
 
 const setMessage = (message) => {
@@ -19,16 +24,63 @@ const setMessage = (message) => {
     bubble.textContent = message;
 };
 
+const canSpeak = () => Boolean(voiceToggle?.checked)
+    && 'speechSynthesis' in window
+    && 'SpeechSynthesisUtterance' in window;
+
+const speakMessage = (message) => {
+    if (!message || !canSpeak()) return;
+    if (document.hidden) return;
+    try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.95;
+        utterance.pitch = 1.1;
+        window.speechSynthesis.speak(utterance);
+    } catch {
+        // Ignore speech failures
+    }
+};
+
+const buildMessages = (recs) => {
+    const next = [...baseMessages];
+    if (recs?.coachMessage) next.unshift(recs.coachMessage);
+    if (recs?.coachCue) next.unshift(recs.coachCue);
+    if (Array.isArray(recs?.lessonSteps)) {
+        recs.lessonSteps.forEach((step) => {
+            if (!step?.label) return;
+            const cue = step.cue ? ` ${step.cue}` : '';
+            next.push(`${step.label}.${cue}`.trim());
+        });
+    }
+    if (recs?.coachActionMessage) next.push(recs.coachActionMessage);
+    return Array.from(new Set(next)).filter(Boolean);
+};
+
+const applyRecommendations = async () => {
+    const recs = await getLearningRecommendations();
+    messages = buildMessages(recs);
+    index = 0;
+    if (bubble && bubble.dataset.coachAuto !== 'false') {
+        setMessage(messages[0] || bubble.textContent);
+    }
+};
+
 const handleAction = (action) => {
     if (!messages.length) return;
     if (action === 'next') {
         index = (index + 1) % messages.length;
-        setMessage(messages[index]);
+        const message = messages[index];
+        setMessage(message);
+        speakMessage(message);
         return;
     }
     if (action === 'retry') {
         const current = messages[index] || messages[0];
-        setMessage(`One more time: ${current}`);
+        const message = `One more time: ${current}`;
+        setMessage(message);
+        speakMessage(message);
     }
 };
 
@@ -37,6 +89,19 @@ if (buttons.length) {
         button.addEventListener('click', () => {
             const action = button.dataset.coachAction;
             handleAction(action);
+            if (bubble) bubble.dataset.coachAuto = 'false';
         });
+    });
+}
+
+applyRecommendations();
+
+document.addEventListener('panda:ml-update', applyRecommendations);
+
+if (voiceToggle && 'speechSynthesis' in window) {
+    voiceToggle.addEventListener('change', () => {
+        if (!voiceToggle.checked) {
+            window.speechSynthesis.cancel();
+        }
     });
 }

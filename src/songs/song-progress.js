@@ -26,7 +26,7 @@ const tierFromAccuracy = (accuracy) => {
 const recordSongEvent = async (songId, accuracy, duration, elapsed) => {
     const events = await loadEvents();
     const rounded = clamp(Math.round(accuracy), 0, 100);
-    events.push({
+    const entry = {
         type: 'song',
         id: songId,
         accuracy: rounded,
@@ -35,8 +35,10 @@ const recordSongEvent = async (songId, accuracy, duration, elapsed) => {
         elapsed,
         day: todayDay(),
         timestamp: Date.now(),
-    });
+    };
+    events.push(entry);
     await saveEvents(events);
+    document.dispatchEvent(new CustomEvent('panda:song-recorded', { detail: entry }));
     updateBestAccuracyUI(events);
 };
 

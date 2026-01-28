@@ -1,6 +1,7 @@
 const DB_NAME = 'panda-violin-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = 'kv';
+const BLOB_STORE = 'blobs';
 
 const hasIndexedDB = typeof indexedDB !== 'undefined';
 let dbPromise = null;
@@ -14,6 +15,9 @@ const openDB = () => {
             const db = request.result;
             if (!db.objectStoreNames.contains(STORE)) {
                 db.createObjectStore(STORE);
+            }
+            if (!db.objectStoreNames.contains(BLOB_STORE)) {
+                db.createObjectStore(BLOB_STORE);
             }
         };
         request.onsuccess = () => resolve(request.result);
@@ -76,6 +80,30 @@ const removeFromDB = async (db, key) => new Promise((resolve, reject) => {
     request.onerror = () => reject(request.error);
 });
 
+const getBlobFromDB = async (db, key) => new Promise((resolve, reject) => {
+    const tx = db.transaction(BLOB_STORE, 'readonly');
+    const store = tx.objectStore(BLOB_STORE);
+    const request = store.get(key);
+    request.onsuccess = () => resolve(request.result ?? null);
+    request.onerror = () => reject(request.error);
+});
+
+const setBlobInDB = async (db, key, blob) => new Promise((resolve, reject) => {
+    const tx = db.transaction(BLOB_STORE, 'readwrite');
+    const store = tx.objectStore(BLOB_STORE);
+    const request = store.put(blob, key);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+});
+
+const removeBlobFromDB = async (db, key) => new Promise((resolve, reject) => {
+    const tx = db.transaction(BLOB_STORE, 'readwrite');
+    const store = tx.objectStore(BLOB_STORE);
+    const request = store.delete(key);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+});
+
 const migrateFallback = async (key, value) => {
     if (value === null || value === undefined) return;
     const db = await openDB();
@@ -126,3 +154,41 @@ export const removeJSON = async (key) => {
     }
     fallbackRemove(key);
 };
+
+export const getBlob = async (key) => {
+    if (!key) return null;
+    const db = await openDB();
+    if (!db) return null;
+    try {
+        return await getBlobFromDB(db, key);
+    } catch (error) {
+        console.warn('[Storage] IndexedDB blob get failed', error);
+        return null;
+    }
+};
+
+export const setBlob = async (key, blob) => {
+    if (!key || !blob) return false;
+    const db = await openDB();
+    if (!db) return false;
+    try {
+        await setBlobInDB(db, key, blob);
+        return true;
+    } catch (error) {
+        console.warn('[Storage] IndexedDB blob set failed', error);
+        return false;
+    }
+};
+
+export const removeBlob = async (key) => {
+    if (!key) return;
+    const db = await openDB();
+    if (!db) return;
+    try {
+        await removeBlobFromDB(db, key);
+    } catch (error) {
+        console.warn('[Storage] IndexedDB blob remove failed', error);
+    }
+};
+
+export const supportsIndexedDB = hasIndexedDB;

@@ -1,10 +1,13 @@
 import initCore, { SkillProfile, SkillCategory } from '../wasm/panda_core.js';
-import { getJSON } from '../persistence/storage.js';
+import { getLearningRecommendations } from '../ml/recommendations.js';
+import { getJSON, getBlob } from '../persistence/storage.js';
+import { createSkillProfileUtils } from '../utils/skill-profile.js';
+import { exportRecording } from '../utils/recording-export.js';
 
 const EVENT_KEY = 'panda-violin:events:v1';
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
 
-const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
+const { clamp, updateSkillProfile } = createSkillProfileUtils(SkillCategory);
 
 const chartLine = document.querySelector('[data-analysis="chart-line"]');
 const chartPoints = document.querySelector('[data-analysis="chart-points"]');
@@ -17,12 +20,37 @@ const recordingEls = Array.from(document.querySelectorAll('[data-analysis="recor
 const skillEls = Array.from(document.querySelectorAll('[data-analysis="skill"]'));
 const playbackAudio = new Audio();
 let soundListenerBound = false;
+let playbackUrl = '';
+let currentRecordings = [];
+
+playbackAudio.preload = 'none';
 
 const todayDay = () => Math.floor(Date.now() / 86400000);
 const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
 
+const updatePlaybackButtons = (enabled) => {
+    recordingEls.forEach((el) => {
+        const button = el.querySelector('.recording-play');
+        if (!button || button.dataset.recordingAvailable !== 'true') return;
+        button.disabled = !enabled;
+    });
+};
+
 const syncPlaybackSound = (enabled = isSoundEnabled()) => {
     playbackAudio.muted = !enabled;
+    updatePlaybackButtons(enabled);
+};
+
+const stopPlayback = () => {
+    if (!playbackAudio) return;
+    if (!playbackAudio.paused) {
+        playbackAudio.pause();
+        playbackAudio.currentTime = 0;
+    }
+    if (playbackUrl) {
+        URL.revokeObjectURL(playbackUrl);
+        playbackUrl = '';
+    }
 };
 
 const loadEvents = async () => {
@@ -35,51 +63,17 @@ const loadRecordings = async () => {
     return Array.isArray(stored) ? stored : [];
 };
 
-const scoreFromMinutes = (minutes, base = 54, step = 8) => {
-    const score = base + minutes * step;
-    return clamp(score);
-};
-
-const updateAllSkills = (profile, score) => {
-    profile.update_skill(SkillCategory.Pitch, score);
-    profile.update_skill(SkillCategory.Rhythm, score);
-    profile.update_skill(SkillCategory.BowControl, score);
-    profile.update_skill(SkillCategory.Posture, score);
-    profile.update_skill(SkillCategory.Reading, score);
-};
-
-const SKILL_RULES = [
-    { test: /^pq-step-/, skill: SkillCategory.Pitch, weight: 1 },
-    { test: /^et-step-/, skill: SkillCategory.Pitch, weight: 0.85 },
-    { test: /^rd-set-/, skill: SkillCategory.Rhythm, weight: 1 },
-    { test: /^rp-pattern-/, skill: SkillCategory.Rhythm, weight: 0.8 },
-    { test: /^pz-step-/, skill: SkillCategory.Rhythm, weight: 0.75 },
-    { test: /^bh-step-/, skill: SkillCategory.BowControl, weight: 1 },
-    { test: /^bow-set-/, skill: SkillCategory.BowControl, weight: 0.9 },
-    { test: /^sq-step-/, skill: SkillCategory.BowControl, weight: 0.85 },
-    { test: /^tt-step-/, skill: SkillCategory.Pitch, weight: 0.9 },
-    { test: /^sp-step-/, skill: SkillCategory.Pitch, weight: 0.95 },
-    { test: /^ss-step-/, skill: SkillCategory.Reading, weight: 0.8 },
-    { test: /^nm-card-/, skill: SkillCategory.Reading, weight: 0.7 },
-    { test: /^mm-step-/, skill: SkillCategory.Reading, weight: 0.75 },
-    { test: /^dc-step-/, skill: SkillCategory.Rhythm, weight: 0.9 },
-];
-
-const updateSkillProfile = (profile, eventId, minutes) => {
-    if (!eventId) return;
-    if (/^(goal-step-|parent-goal-)/.test(eventId) || /^goal-(warmup|scale|song)/.test(eventId)) {
-        updateAllSkills(profile, scoreFromMinutes(minutes, 52, 6));
-        return;
+const resolveRecordingSource = async (recording) => {
+    if (!recording) return null;
+    if (recording.dataUrl) return { url: recording.dataUrl, revoke: false };
+    if (recording.blobKey) {
+        const blob = await getBlob(recording.blobKey);
+        if (!blob) return null;
+        return { url: URL.createObjectURL(blob), revoke: true };
     }
-    for (const rule of SKILL_RULES) {
-        if (rule.test.test(eventId)) {
-            const weighted = scoreFromMinutes(minutes, 58, 9) * rule.weight;
-            profile.update_skill(rule.skill, clamp(weighted));
-            return;
-        }
-    }
-    updateAllSkills(profile, scoreFromMinutes(minutes, 50, 4));
+    return null;
 };
+
 
 const starString = (score) => {
     const stars = clamp(Math.round(score / 20), 1, 5);
@@ -139,20 +133,27 @@ const updateChart = (values) => {
 
 const updateRecordings = (events, songMap, recordings) => {
     const recentRecordings = Array.isArray(recordings) ? recordings.slice(0, 2) : [];
+    currentRecordings = recentRecordings;
     const recent = events.filter((event) => event.type === 'song').slice(-2).reverse();
     recordingEls.forEach((el, index) => {
         const playButton = el.querySelector('.recording-play');
+        const saveButton = el.querySelector('.recording-save');
         const item = recent[index];
         const titleEl = el.querySelector('[data-analysis="recording-title"]');
         const subEl = el.querySelector('[data-analysis="recording-sub"]');
         const recording = recentRecordings[index];
 
-        if (recording?.dataUrl) {
+        if (recording?.dataUrl || recording?.blobKey) {
             if (titleEl) titleEl.textContent = recording.title || `Recording ${index + 1}`;
             if (subEl) subEl.textContent = `Saved clip · ${recording.duration || 0}s`;
             if (playButton) {
-                playButton.disabled = false;
+                playButton.disabled = !isSoundEnabled();
+                playButton.dataset.recordingAvailable = 'true';
                 playButton.dataset.recordingIndex = String(index);
+            }
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.dataset.recordingIndex = String(index);
             }
             return;
         }
@@ -161,36 +162,76 @@ const updateRecordings = (events, songMap, recordings) => {
             if (titleEl) titleEl.textContent = 'Recording';
             if (subEl) subEl.textContent = 'No recent play';
             if (playButton) playButton.disabled = true;
+            if (saveButton) saveButton.disabled = true;
             return;
         }
         const name = songMap.get(item.id) || item.id;
         if (titleEl) titleEl.textContent = 'Recent Play';
         if (subEl) subEl.textContent = `${name} · ${Math.round(item.accuracy || 0)}%`;
-        if (playButton) playButton.disabled = true;
+        if (playButton) {
+            playButton.disabled = true;
+            delete playButton.dataset.recordingAvailable;
+        }
+        if (saveButton) saveButton.disabled = true;
     });
 };
 
-const bindRecordingPlayback = (recordings) => {
-    if (!Array.isArray(recordings) || !recordings.length) return;
+const bindRecordingPlayback = () => {
     syncPlaybackSound();
     if (!soundListenerBound) {
         soundListenerBound = true;
         document.addEventListener('panda:sounds-change', (event) => {
             const enabled = event.detail?.enabled;
             syncPlaybackSound(enabled);
+            if (!enabled) stopPlayback();
         });
     }
     recordingEls.forEach((el, index) => {
         const button = el.querySelector('.recording-play');
         if (!button || button.dataset.bound === 'true') return;
-        const recording = recordings[index];
-        if (!recording?.dataUrl) return;
         button.dataset.bound = 'true';
-        button.addEventListener('click', () => {
+        button.addEventListener('click', async () => {
             if (!isSoundEnabled()) return;
-            playbackAudio.src = recording.dataUrl;
+            const recording = currentRecordings[index];
+            if (!recording?.dataUrl && !recording?.blobKey) return;
+            const source = await resolveRecordingSource(recording);
+            if (!source) return;
+            stopPlayback();
+            playbackAudio.src = source.url;
+            if (source.revoke) {
+                playbackUrl = source.url;
+                playbackAudio.addEventListener('ended', () => stopPlayback(), { once: true });
+            }
             syncPlaybackSound();
             playbackAudio.play().catch(() => {});
+        });
+    });
+};
+
+const bindRecordingExport = () => {
+    recordingEls.forEach((el, index) => {
+        const button = el.querySelector('.recording-save');
+        if (!button || button.dataset.exportBound === 'true') return;
+        button.dataset.exportBound = 'true';
+        button.addEventListener('click', async () => {
+            if (button.disabled) return;
+            const recording = currentRecordings[index];
+            if (!recording?.dataUrl && !recording?.blobKey) return;
+            button.disabled = true;
+            const original = button.textContent;
+            button.textContent = '…';
+            try {
+                const blob = recording.blobKey ? await getBlob(recording.blobKey) : null;
+                await exportRecording(recording, index, blob);
+                button.textContent = '✓';
+            } catch {
+                button.textContent = '!';
+            } finally {
+                setTimeout(() => {
+                    button.textContent = original || '⬇';
+                    button.disabled = false;
+                }, 1200);
+            }
         });
     });
 };
@@ -232,14 +273,22 @@ const initSessionReview = async () => {
     if (recentAccuracies.length) updateChart(recentAccuracies);
 
     updateRecordings(events, songMap, recordings);
-    bindRecordingPlayback(recordings);
+    bindRecordingPlayback();
+    bindRecordingExport();
 
     const refreshRecordings = async () => {
+        stopPlayback();
         const fresh = await loadRecordings();
         updateRecordings(events, songMap, fresh);
-        bindRecordingPlayback(fresh);
+        bindRecordingPlayback();
+        bindRecordingExport();
     };
     window.addEventListener('panda:recordings-updated', refreshRecordings);
+    window.addEventListener('hashchange', stopPlayback, { passive: true });
+    window.addEventListener('pagehide', stopPlayback, { passive: true });
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stopPlayback();
+    });
 
     const today = todayDay();
     const minutes = events.reduce((sum, event) => {
@@ -280,6 +329,14 @@ const initSessionReview = async () => {
     const message = coachMessageFor(weakest);
     if (coachMessageEl) coachMessageEl.textContent = message;
     if (coachAltEl) coachAltEl.textContent = 'Keep your tempo steady and enjoy the melody.';
+
+    const recs = await getLearningRecommendations();
+    if (recs?.coachMessage && coachMessageEl) {
+        coachMessageEl.textContent = recs.coachMessage;
+    }
+    if (recs?.coachActionMessage && coachAltEl) {
+        coachAltEl.textContent = recs.coachActionMessage;
+    }
 };
 
 if (document.readyState === 'loading') {
