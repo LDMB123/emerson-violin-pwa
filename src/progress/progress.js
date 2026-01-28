@@ -6,6 +6,7 @@ import initCore, {
     calculate_streak,
 } from '../wasm/panda_core.js';
 import { getJSON, setJSON, removeJSON } from '../persistence/storage.js';
+import { createSkillProfileUtils } from '../utils/skill-profile.js';
 
 const EVENT_KEY = 'panda-violin:events:v1';
 const PERSIST_KEY = 'panda-violin:ui-state:v1';
@@ -20,8 +21,11 @@ const levelLabelEl = document.querySelector('[data-progress="level-label"]');
 const levelFillEl = document.querySelector('[data-progress="level-fill"]');
 const dailyGoalValueEl = document.querySelector('[data-progress="daily-goal-value"]');
 const dailyGoalFillEl = document.querySelector('[data-progress="daily-goal-fill"]');
+const dailyGoalTrackEl = document.querySelector('[data-progress="daily-goal-track"]');
 const gamesLevelLabelEl = document.querySelector('[data-progress="games-level-label"]');
 const gamesLevelFillEl = document.querySelector('[data-progress="games-level-fill"]');
+const gamesLevelTrackEl = document.querySelector('[data-progress="games-level-track"]');
+const xpTrackEl = document.querySelector('[data-progress="xp-track"]');
 const coachSpeechEl = document.querySelector('[data-progress="coach-speech"]');
 const resetButton = document.querySelector('#reset-progress');
 const parentChartLineEl = document.querySelector('[data-parent="week-line"]');
@@ -29,8 +33,11 @@ const parentChartPointsEl = document.querySelector('[data-parent="week-points"]'
 const parentSummaryEl = document.querySelector('[data-parent="week-summary"]');
 const parentGoalFillEl = document.querySelector('[data-parent="goal-fill"]');
 const parentGoalValueEl = document.querySelector('[data-parent="goal-value"]');
+const parentGoalTrackEl = document.querySelector('[data-parent="goal-track"]');
 const parentSkillStars = Array.from(document.querySelectorAll('[data-parent-skill]'));
 const coachStarsEl = document.querySelector('[data-coach="stars"]');
+const recentGameEls = Array.from(document.querySelectorAll('[data-recent-game]'));
+const recentGamesEmptyEl = document.querySelector('[data-recent-games-empty]');
 
 const achievementEls = Array.from(document.querySelectorAll('[data-achievement]'));
 const radarShapeEl = document.querySelector('[data-radar="shape"]');
@@ -40,8 +47,37 @@ const RADAR_CENTER = 100;
 const RADAR_RADIUS = 80;
 const RADAR_ORDER = ['pitch', 'rhythm', 'bow_control', 'posture', 'reading'];
 const RADAR_ANGLES = RADAR_ORDER.map((_, index) => ((index * 2 * Math.PI) / RADAR_ORDER.length) - Math.PI / 2);
+const GAME_LABELS = {
+    'pitch-quest': 'Pitch Quest',
+    'rhythm-dash': 'Rhythm Dash',
+    'note-memory': 'Note Memory',
+    'ear-trainer': 'Ear Trainer',
+    'bow-hero': 'Bow Hero',
+    'string-quest': 'String Quest',
+    'rhythm-painter': 'Rhythm Painter',
+    'story-song': 'Story Song Lab',
+    pizzicato: 'Pizzicato Pop',
+    'tuning-time': 'Tuning Time',
+    'melody-maker': 'Melody Maker',
+    'scale-practice': 'Scale Practice',
+    'duet-challenge': 'Duet Challenge',
+};
 
 const todayDay = () => Math.floor(Date.now() / 86400000);
+const getDailyGoalTarget = () => {
+    const raw = document.documentElement?.dataset?.dailyGoalTarget
+        || dailyGoalValueEl?.textContent
+        || '15';
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isNaN(parsed) || parsed <= 0 ? 15 : parsed;
+};
+const getWeeklyGoalTarget = () => {
+    const raw = document.documentElement?.dataset?.weeklyGoalTarget
+        || parentGoalValueEl?.textContent?.split('/')?.[1]
+        || '90';
+    const parsed = Number.parseInt(String(raw).trim(), 10);
+    return Number.isNaN(parsed) || parsed <= 0 ? 90 : parsed;
+};
 
 const loadEvents = async () => {
     const stored = await getJSON(EVENT_KEY);
@@ -59,14 +95,23 @@ const minutesForInput = (input) => {
     }
     const id = input?.id || '';
     if (/^(goal-step-|parent-goal-)/.test(id)) return 5;
-    if (/^goal-(warmup|scale|song)/.test(id)) return 5;
+    if (/^goal-(warmup|scale|song|rhythm|ear)/.test(id)) return 5;
     if (/^bow-set-/.test(id)) return 5;
     if (/^(pq-step-|rd-set-|et-step-|bh-step-|sq-step-|rp-pattern-|ss-step-|pz-step-|tt-step-|mm-step-|sp-step-|dc-step-)/.test(id)) return 2;
     if (/^nm-card-/.test(id)) return 1;
     return 1;
 };
 
-const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
+const { clamp, updateSkillProfile } = createSkillProfileUtils(SkillCategory);
+
+const updateProgressTrack = (el, percent, text) => {
+    if (!el) return;
+    const value = clamp(Math.round(percent), 0, 100);
+    el.setAttribute('aria-valuenow', String(value));
+    if (text) {
+        el.setAttribute('aria-valuetext', text);
+    }
+};
 
 const updateAppBadge = async (streak) => {
     if (!('setAppBadge' in navigator)) return;
@@ -84,53 +129,6 @@ const updateAppBadge = async (streak) => {
     }
 };
 
-const scoreFromMinutes = (minutes, base = 54, step = 8) => {
-    const score = base + minutes * step;
-    return clamp(score);
-};
-
-const updateAllSkills = (profile, score) => {
-    profile.update_skill(SkillCategory.Pitch, score);
-    profile.update_skill(SkillCategory.Rhythm, score);
-    profile.update_skill(SkillCategory.BowControl, score);
-    profile.update_skill(SkillCategory.Posture, score);
-    profile.update_skill(SkillCategory.Reading, score);
-};
-
-const SKILL_RULES = [
-    { test: /^pq-step-/, skill: SkillCategory.Pitch, weight: 1 },
-    { test: /^et-step-/, skill: SkillCategory.Pitch, weight: 0.85 },
-    { test: /^rd-set-/, skill: SkillCategory.Rhythm, weight: 1 },
-    { test: /^rp-pattern-/, skill: SkillCategory.Rhythm, weight: 0.8 },
-    { test: /^pz-step-/, skill: SkillCategory.Rhythm, weight: 0.75 },
-    { test: /^bh-step-/, skill: SkillCategory.BowControl, weight: 1 },
-    { test: /^bow-set-/, skill: SkillCategory.BowControl, weight: 0.9 },
-    { test: /^sq-step-/, skill: SkillCategory.BowControl, weight: 0.85 },
-    { test: /^tt-step-/, skill: SkillCategory.Pitch, weight: 0.9 },
-    { test: /^sp-step-/, skill: SkillCategory.Pitch, weight: 0.95 },
-    { test: /^ss-step-/, skill: SkillCategory.Reading, weight: 0.8 },
-    { test: /^nm-card-/, skill: SkillCategory.Reading, weight: 0.7 },
-    { test: /^mm-step-/, skill: SkillCategory.Reading, weight: 0.75 },
-    { test: /^dc-step-/, skill: SkillCategory.Rhythm, weight: 0.9 },
-];
-
-const updateSkillProfile = (profile, eventId, minutes) => {
-    if (!eventId) return;
-    if (/^(goal-step-|parent-goal-)/.test(eventId) || /^goal-(warmup|scale|song)/.test(eventId)) {
-        updateAllSkills(profile, scoreFromMinutes(minutes, 52, 6));
-        return;
-    }
-
-    for (const rule of SKILL_RULES) {
-        if (rule.test.test(eventId)) {
-            const weighted = scoreFromMinutes(minutes, 58, 9) * rule.weight;
-            profile.update_skill(rule.skill, clamp(weighted));
-            return;
-        }
-    }
-
-    updateAllSkills(profile, scoreFromMinutes(minutes, 50, 4));
-};
 
 const buildRadarPoints = (skills) => {
     return RADAR_ORDER.map((key, index) => {
@@ -142,6 +140,20 @@ const buildRadarPoints = (skills) => {
         const y = RADAR_CENTER + radius * Math.sin(angle);
         return { key, x: x.toFixed(1), y: y.toFixed(1) };
     });
+};
+
+const formatRecentScore = (event) => {
+    if (!event) return 'Score 0';
+    if (Number.isFinite(event.accuracy)) {
+        return `${Math.round(event.accuracy)}%`;
+    }
+    if (Number.isFinite(event.stars)) {
+        return `${Math.round(event.stars)}★`;
+    }
+    if (Number.isFinite(event.score)) {
+        return `Score ${Math.round(event.score)}`;
+    }
+    return 'Score 0';
 };
 
 const coachMessageFor = (skill) => {
@@ -263,6 +275,15 @@ const buildProgress = async (events) => {
     }
     if (playedGames.size >= practiceGameRules.length) tracker.unlock('all_games', now);
 
+    const recentGames = gameEvents
+        .slice(-3)
+        .reverse()
+        .map((event) => ({
+            id: event.id,
+            label: GAME_LABELS[event.id] || event.id || 'Game',
+            scoreLabel: formatRecentScore(event),
+        }));
+
     const songEvents = events
         .filter((event) => event.type === 'song')
         .slice()
@@ -309,35 +330,39 @@ const buildProgress = async (events) => {
         dailyMinutes,
         skills,
         weakestSkill: skillProfile.weakest_skill(),
+        recentGames,
     };
 };
 
-const updateUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills, weakestSkill }) => {
+const updateUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills, weakestSkill, recentGames }) => {
     if (levelEl) levelEl.textContent = String(progress.level);
 
     const xpCurrent = progress.xp;
     const xpRemaining = progress.xp_to_next_level();
     const xpTarget = xpRemaining === 0 ? xpCurrent : xpCurrent + xpRemaining;
-    const xpPercent = progress.level_progress();
+    const xpPercent = clamp(progress.level_progress(), 0, 100);
 
     if (xpFillEl) xpFillEl.style.width = `${xpPercent}%`;
     if (xpInfoEl) xpInfoEl.textContent = `${xpCurrent} / ${xpTarget} XP`;
+    updateProgressTrack(xpTrackEl, xpPercent, `${xpCurrent} of ${xpTarget} XP`);
     if (levelFillEl) levelFillEl.style.width = `${xpPercent}%`;
     if (levelLabelEl) levelLabelEl.textContent = `Level ${progress.level}`;
     if (gamesLevelFillEl) gamesLevelFillEl.style.width = `${xpPercent}%`;
     if (gamesLevelLabelEl) gamesLevelLabelEl.textContent = `Level ${progress.level}`;
+    updateProgressTrack(gamesLevelTrackEl, xpPercent, `Level ${progress.level} progress`);
 
     if (streakEl) streakEl.textContent = String(streak);
     if (homeStreakEl) homeStreakEl.textContent = String(streak);
     if (weekMinutesEl) weekMinutesEl.textContent = String(weekMinutes);
     if (coachSpeechEl) coachSpeechEl.textContent = coachMessageFor(weakestSkill);
 
-    if (dailyGoalValueEl) dailyGoalValueEl.textContent = '15';
+    const goalTarget = getDailyGoalTarget();
+    if (dailyGoalValueEl) dailyGoalValueEl.textContent = String(goalTarget);
     if (dailyGoalFillEl && Array.isArray(dailyMinutes)) {
         const todayMinutes = dailyMinutes[dailyMinutes.length - 1] || 0;
-        const goalTarget = 15;
         const percent = clamp(Math.round((todayMinutes / goalTarget) * 100), 0, 100);
         dailyGoalFillEl.style.width = `${percent}%`;
+        updateProgressTrack(dailyGoalTrackEl, percent, `${todayMinutes} of ${goalTarget} minutes`);
     }
 
     if (Array.isArray(dailyMinutes)) {
@@ -362,13 +387,14 @@ const updateUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills
 
         if (parentSummaryEl) parentSummaryEl.textContent = `Total: ${weekMinutes} minutes`;
         if (parentGoalFillEl) {
-            const goalTarget = 15;
-            const todayMinutes = dailyMinutes[dailyMinutes.length - 1] || 0;
-            const percent = clamp(Math.round((todayMinutes / goalTarget) * 100), 0, 100);
+            const weeklyTarget = getWeeklyGoalTarget();
+            const percent = clamp(Math.round((weekMinutes / weeklyTarget) * 100), 0, 100);
             parentGoalFillEl.style.width = `${percent}%`;
+            updateProgressTrack(parentGoalTrackEl, percent, `${weekMinutes} of ${weeklyTarget} minutes`);
         }
         if (parentGoalValueEl) {
-            parentGoalValueEl.textContent = `${dailyMinutes[dailyMinutes.length - 1] || 0} / 15`;
+            const weeklyTarget = getWeeklyGoalTarget();
+            parentGoalValueEl.textContent = `${weekMinutes} / ${weeklyTarget}`;
         }
     }
 
@@ -398,6 +424,23 @@ const updateUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills
         el.classList.toggle('unlocked', unlocked);
         el.classList.toggle('locked', !unlocked);
     });
+
+    if (recentGameEls.length) {
+        const hasGames = Array.isArray(recentGames) && recentGames.length > 0;
+        recentGameEls.forEach((el, index) => {
+            const game = hasGames ? recentGames[index] : null;
+            const titleEl = el.querySelector('[data-recent-game-title]');
+            const scoreEl = el.querySelector('[data-recent-game-score]');
+            if (!game) {
+                el.hidden = true;
+                return;
+            }
+            el.hidden = false;
+            if (titleEl) titleEl.textContent = game.label;
+            if (scoreEl) scoreEl.textContent = game.scoreLabel;
+        });
+        if (recentGamesEmptyEl) recentGamesEmptyEl.hidden = hasGames;
+    }
 
     if (radarShapeEl && skills) {
         const points = buildRadarPoints(skills);
@@ -443,6 +486,7 @@ const recordPracticeEvent = async (input) => {
 
     events.push(entry);
     await saveEvents(events);
+    document.dispatchEvent(new CustomEvent('panda:practice-recorded', { detail: entry }));
 
     const summary = await buildProgress(events);
     updateUI(summary);
@@ -487,18 +531,32 @@ const handleChange = (event) => {
     if (input.id === 'parent-reminder-toggle') return;
     if (input.id === 'focus-timer') return;
     if (input.id.startsWith('song-play-')) return;
+    if (input.dataset.progressIgnore === 'true') return;
 
     recordPracticeEvent(input);
     checkMilestoneAchievements();
 };
 
 const resetProgress = async () => {
+    const ok = window.confirm('Reset all progress and achievements? This cannot be undone.');
+    if (!ok) return;
     await removeJSON(EVENT_KEY);
     await removeJSON(PERSIST_KEY);
     location.reload();
 };
 
 document.addEventListener('change', handleChange);
+document.addEventListener('panda:game-recorded', async () => {
+    const events = await loadEvents();
+    const summary = await buildProgress(events);
+    updateUI(summary);
+});
+
+document.addEventListener('panda:goal-target-change', async () => {
+    const events = await loadEvents();
+    const summary = await buildProgress(events);
+    updateUI(summary);
+});
 if (resetButton) {
     resetButton.addEventListener('click', resetProgress);
 }

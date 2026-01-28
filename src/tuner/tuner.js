@@ -1,3 +1,5 @@
+import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
+
 const livePanel = document.querySelector('#tuner-live');
 const startButton = document.querySelector('#tuner-start');
 const stopButton = document.querySelector('#tuner-stop');
@@ -14,10 +16,48 @@ let audioContext = null;
 let workletNode = null;
 let micStream = null;
 let silenceGain = null;
+let tolerance = 8;
+let inTuneCount = 0;
+let detectCount = 0;
+let startToken = 0;
+let starting = false;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const isTunerView = () => window.location.hash === '#view-tuner';
 const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
+
+const formatDifficulty = (value) => {
+    const label = value || 'medium';
+    return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+const ensureBadge = () => {
+    const header = livePanel?.querySelector('.tuner-card-header');
+    if (!header) return null;
+    let badge = header.querySelector('.difficulty-badge');
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'difficulty-badge';
+        header.appendChild(badge);
+    }
+    return badge;
+};
+
+const applyTuning = async () => {
+    const tuning = await getGameTuning('tuner');
+    tolerance = tuning.tolerance ?? tolerance;
+    const badge = ensureBadge();
+    if (badge) {
+        badge.dataset.level = tuning.difficulty || 'medium';
+        badge.textContent = `Adaptive: ${formatDifficulty(tuning.difficulty)}`;
+    }
+    if (statusEl && !workletNode) {
+        statusEl.textContent = `Tap the mic to start listening (±${tolerance}¢).`;
+    }
+    if (workletNode) {
+        workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
+    }
+};
 
 const resetDisplay = () => {
     if (noteEl) noteEl.textContent = '--';
@@ -32,6 +72,8 @@ const setStatus = (text) => {
 };
 
 const stopTuner = async () => {
+    startToken += 1;
+    starting = false;
     if (workletNode) {
         workletNode.port.onmessage = null;
         workletNode.disconnect();
@@ -60,14 +102,25 @@ const stopTuner = async () => {
     if (stopButton) stopButton.disabled = true;
     if (livePanel) livePanel.classList.remove('is-active');
     resetDisplay();
-    setStatus('Tap Start to use the mic.');
+    setStatus(`Tap Start to use the mic (±${tolerance}¢).`);
+    if (detectCount > 0) {
+        const accuracy = (inTuneCount / detectCount) * 100;
+        await updateGameResult('tuner', { accuracy, score: Math.round(accuracy) });
+    }
+    inTuneCount = 0;
+    detectCount = 0;
 };
 
 const startTuner = async () => {
     if (!startButton || !stopButton || !livePanel) return;
+    if (starting || workletNode) return;
+    const token = startToken + 1;
+    startToken = token;
+    starting = true;
 
     if (!navigator.mediaDevices?.getUserMedia) {
         setStatus('Microphone access is not available on this device.');
+        starting = false;
         return;
     }
 
@@ -76,6 +129,8 @@ const startTuner = async () => {
     stopButton.disabled = false;
     livePanel.classList.add('is-active');
     setStatus('Requesting microphone access…');
+    inTuneCount = 0;
+    detectCount = 0;
 
     try {
         micStream = await navigator.mediaDevices.getUserMedia({
@@ -85,6 +140,10 @@ const startTuner = async () => {
                 autoGainControl: false,
             },
         });
+        if (token !== startToken) {
+            micStream.getTracks().forEach((track) => track.stop());
+            return;
+        }
 
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) {
@@ -94,7 +153,12 @@ const startTuner = async () => {
         if (!audioContext.audioWorklet) {
             throw new Error('AudioWorklet not supported');
         }
-        await audioContext.audioWorklet.addModule('./src/worklets/tuner-processor.js');
+        await audioContext.audioWorklet.addModule(new URL('../worklets/tuner-processor.js', import.meta.url));
+        if (token !== startToken) {
+            await audioContext.close();
+            audioContext = null;
+            return;
+        }
 
         const source = audioContext.createMediaStreamSource(micStream);
         workletNode = new AudioWorkletNode(audioContext, 'tuner-processor');
@@ -103,6 +167,11 @@ const startTuner = async () => {
 
         source.connect(workletNode).connect(silenceGain).connect(audioContext.destination);
         await audioContext.resume();
+        if (token !== startToken) {
+            await stopTuner();
+            return;
+        }
+        workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
 
         workletNode.port.onmessage = (event) => {
             const { frequency, note, cents, volume, inTune, error, ready } = event.data;
@@ -119,7 +188,7 @@ const startTuner = async () => {
 
             if (!frequency || volume < 0.01) {
                 resetDisplay();
-                setStatus('Listening… play a note.');
+                setStatus(`Listening… play a note (±${tolerance}¢).`);
                 return;
             }
 
@@ -132,18 +201,23 @@ const startTuner = async () => {
             const offset = clamp(roundedCents, -50, 50);
             livePanel.style.setProperty('--tuner-offset', offset.toString());
             livePanel.classList.toggle('in-tune', Boolean(inTune));
-            setStatus(inTune ? 'In tune ✨' : 'Adjust to center');
+            detectCount += 1;
+            if (inTune) inTuneCount += 1;
+            setStatus(inTune ? `In tune (±${tolerance}¢) ✨` : 'Adjust to center');
         };
 
-        setStatus('Listening… play a note.');
+        setStatus(`Listening… play a note (±${tolerance}¢).`);
     } catch (error) {
         console.error('[Tuner] Unable to start microphone', error);
         await stopTuner();
         setStatus('Microphone permission denied or unavailable.');
+    } finally {
+        if (token === startToken) starting = false;
     }
 };
 
 if (startButton && stopButton) {
+    applyTuning();
     startButton.addEventListener('click', startTuner);
     stopButton.addEventListener('click', stopTuner);
 
@@ -163,6 +237,16 @@ if (startButton && stopButton) {
         }
     }, { passive: true });
 }
+
+document.addEventListener('panda:ml-update', (event) => {
+    if (event.detail?.id === 'tuner') {
+        applyTuning();
+    }
+});
+
+document.addEventListener('panda:ml-reset', () => {
+    applyTuning();
+});
 
 if (toneButtons.length) {
     toneButtons.forEach((button) => {

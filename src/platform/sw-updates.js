@@ -107,6 +107,12 @@ const init = async () => {
     }
 
     const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+        setStatus('Service worker not ready yet.');
+        setSyncStatus('Background refresh will start once the app is installed.');
+        if (updateButton) updateButton.disabled = true;
+        return;
+    }
     bindUpdateFlow(registration);
     registerBackgroundRefresh(registration);
 

@@ -9,9 +9,20 @@ class TunerProcessor extends AudioWorkletProcessor {
         this.buffer = new Float32Array(this.bufferSize);
         this.bufferIndex = 0;
         this.detector = null;
+        this.tolerance = 8;
+        this.port.onmessage = (event) => {
+            const { type, value } = event.data || {};
+            if (type === 'tolerance') {
+                const next = Math.min(12, Math.max(3, Number(value) || this.tolerance));
+                this.tolerance = next;
+                if (this.detector) {
+                    this.detector.set_tune_tolerance(this.tolerance);
+                }
+            }
+        };
         this.ready = wasmReady.then(() => {
             this.detector = new PitchDetector(sampleRate, this.bufferSize);
-            this.detector.set_tune_tolerance(8);
+            this.detector.set_tune_tolerance(this.tolerance);
             this.detector.set_volume_threshold(0.01);
             this.port.postMessage({ ready: true });
         }).catch((error) => {

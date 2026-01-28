@@ -19,7 +19,7 @@ Preview server starting (HTTP):
 - Local:    http://localhost:$PORT
 - Network:  http://$IP:$PORT
 
-Note: iOS/iPadOS requires HTTPS to install as a PWA.
+Note: iPadOS 26.2 requires HTTPS to install as a PWA.
 Use this for preview, or host on HTTPS to install.
 
 Press Ctrl+C to stop.

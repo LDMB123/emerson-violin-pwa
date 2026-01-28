@@ -58,6 +58,10 @@ if (distMode) {
     });
 } else {
     assets.add('./index.html');
+    if (fs.existsSync(path.join(rootDir, 'offline.html'))
+        || fs.existsSync(path.join(rootDir, 'public', 'offline.html'))) {
+        assets.add('./offline.html');
+    }
     assets.add('./manifest.webmanifest');
     addDir('src', {
         urlPrefix: 'src',
@@ -68,7 +72,6 @@ if (distMode) {
             /^modules\/songs\.js$/i,
             /^modules\/storage\.js$/i,
             /^data\/songs\.json$/i,
-            /^ml\//i,
             /^db\.js$/i,
         ],
     });
@@ -86,6 +89,18 @@ const output = `self.__ASSETS__ = ${JSON.stringify(sortedAssets, null, 2)};\n`;
 for (const target of outputs) {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, output, 'utf8');
+}
+
+if (!distMode) {
+    const publicSw = path.join(rootDir, 'public', 'sw.js');
+    const rootSw = path.join(rootDir, 'sw.js');
+    if (fs.existsSync(publicSw)) {
+        const publicContents = fs.readFileSync(publicSw, 'utf8');
+        const rootContents = fs.existsSync(rootSw) ? fs.readFileSync(rootSw, 'utf8') : '';
+        if (publicContents !== rootContents) {
+            fs.writeFileSync(rootSw, publicContents, 'utf8');
+        }
+    }
 }
 
 console.log(`[sw-assets] Wrote ${sortedAssets.length} entries`);

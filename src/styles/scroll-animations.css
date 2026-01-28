@@ -1,8 +1,8 @@
 /**
- * Scroll-Driven Animations - iOS 26 Optimized
+ * Scroll-Driven Animations - iPadOS 26.2 Optimized
  * 
  * Zero-JavaScript scroll animations using CSS scroll-timeline
- * Targets Chrome 115+, Safari 18.1+
+ * Targets iPadOS 26.2
  */
 
 /* ========================================
@@ -352,6 +352,42 @@
         opacity: 1 !important;
         transform: none !important;
     }
+}
+
+:root:has(#setting-reduce-motion:checked) .scroll-reveal,
+:root:has(#setting-reduce-motion:checked) .scroll-reveal-grid>*,
+:root:has(#setting-reduce-motion:checked) .parallax-slow,
+:root:has(#setting-reduce-motion:checked) .parallax-fast,
+:root:has(#setting-reduce-motion:checked) .hero-mascot,
+:root:has(#setting-reduce-motion:checked) .sticky-header,
+:root:has(#setting-reduce-motion:checked) .song-card-scroll,
+:root:has(#setting-reduce-motion:checked) .carousel-item,
+:root:has(#setting-reduce-motion:checked) .game-card,
+:root:has(#setting-reduce-motion:checked) .achievement-badge,
+:root:has(#setting-reduce-motion:checked) .garden-plant,
+:root:has(#setting-reduce-motion:checked) .aurora-scroll,
+:root:has(#setting-reduce-motion:checked) .scroll-progress {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+:root[data-save-data="on"] .scroll-reveal,
+:root[data-save-data="on"] .scroll-reveal-grid>*,
+:root[data-save-data="on"] .parallax-slow,
+:root[data-save-data="on"] .parallax-fast,
+:root[data-save-data="on"] .hero-mascot,
+:root[data-save-data="on"] .sticky-header,
+:root[data-save-data="on"] .song-card-scroll,
+:root[data-save-data="on"] .carousel-item,
+:root[data-save-data="on"] .game-card,
+:root[data-save-data="on"] .achievement-badge,
+:root[data-save-data="on"] .garden-plant,
+:root[data-save-data="on"] .aurora-scroll,
+:root[data-save-data="on"] .scroll-progress {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
 }
 
 /* ========================================
