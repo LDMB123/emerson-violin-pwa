@@ -106,27 +106,27 @@
         color-scheme: light;
         --keyboard-offset: 0px;
         /* Colors - Warm Panda Palette (Refined) */
-        --color-primary: #F56B49;
+        --color-primary: #E95639;
         --color-primary-light: color-mix(in oklch, var(--color-primary), white 28%);
-        --color-primary-dark: color-mix(in oklch, var(--color-primary), black 12%);
+        --color-primary-dark: color-mix(in oklch, var(--color-primary), black 18%);
 
-        --color-secondary: #FFB357;
-        --color-accent: #6EC9B2;
+        --color-secondary: #F9A93F;
+        --color-accent: #4FB69E;
         --color-success: #31D0A0;
         --color-warning: #F9C74F;
         --color-error: #EF5A5A;
 
         /* Neutrals - Soft Warm */
-        --color-bg: #FFF3E6;
-        --color-bg-alt: #FDE6CF;
+        --color-bg: #FFF9F3;
+        --color-bg-alt: #FFEFE2;
         --color-surface: #FFFFFF;
-        --color-text: #4A2C23;
-        --color-text-muted: #7B5A4B;
+        --color-text: #352019;
+        --color-text-muted: #553628;
 
         /* Liquid Glass - Ultra Premium */
-        --glass-bg: rgba(255, 255, 255, 0.78);
-        --glass-bg-strong: rgba(255, 255, 255, 0.9);
-        --glass-border: rgba(255, 255, 255, 0.7);
+        --glass-bg: rgba(255, 255, 255, 0.92);
+        --glass-bg-strong: rgba(255, 255, 255, 0.97);
+        --glass-border: rgba(255, 255, 255, 0.9);
         --glass-shadow:
             0 18px 40px rgba(86, 40, 23, 0.15),
             0 6px 14px rgba(86, 40, 23, 0.08),
@@ -200,11 +200,11 @@
             --color-bg-alt: #16213E;
             --color-surface: #0F3460;
             --color-text: #F5F5F5;
-            --color-text-muted: color-mix(in oklch, var(--color-text), transparent 40%);
+            --color-text-muted: color-mix(in oklch, var(--color-text), transparent 25%);
 
-            --glass-bg: color-mix(in srgb, #0F3460 60%, transparent);
-            --glass-bg-strong: color-mix(in srgb, #0F3460 80%, transparent);
-            --glass-border: color-mix(in srgb, white 20%, transparent);
+            --glass-bg: color-mix(in srgb, #0F3460 82%, transparent);
+            --glass-bg-strong: color-mix(in srgb, #0F3460 92%, transparent);
+            --glass-border: color-mix(in srgb, white 32%, transparent);
         }
     }
 
@@ -298,24 +298,24 @@
         z-index: -1;
         overflow: hidden;
         background:
-            radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.85), transparent 55%),
-            radial-gradient(circle at 12% 10%, rgba(255, 186, 126, 0.65), transparent 48%),
-            radial-gradient(circle at 90% 20%, rgba(255, 210, 170, 0.55), transparent 52%),
-            linear-gradient(180deg, #F7B06E 0%, #F6CEA1 48%, #F8E7D2 100%);
+            radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.9), transparent 55%),
+            radial-gradient(circle at 12% 10%, rgba(255, 204, 167, 0.45), transparent 52%),
+            radial-gradient(circle at 90% 20%, rgba(255, 224, 200, 0.4), transparent 56%),
+            linear-gradient(180deg, #F8CDA1 0%, #F8E3C8 52%, #FBF2E6 100%);
     }
 
     .glow {
         position: absolute;
         border-radius: 50%;
         filter: blur(80px);
-        opacity: 0.55;
+        opacity: 0.38;
         animation: float 20s ease-in-out infinite;
     }
 
     .glow-1 {
         width: 400px;
         height: 400px;
-        background: color-mix(in srgb, var(--color-primary) 55%, transparent);
+        background: color-mix(in srgb, var(--color-primary) 45%, transparent);
         top: -100px;
         right: -100px;
         animation-delay: 0s;
@@ -324,7 +324,7 @@
     .glow-2 {
         width: 300px;
         height: 300px;
-        background: color-mix(in srgb, var(--color-secondary) 60%, transparent);
+        background: color-mix(in srgb, var(--color-secondary) 48%, transparent);
         bottom: 20%;
         left: -50px;
         animation-delay: -7s;
@@ -333,7 +333,7 @@
     .glow-3 {
         width: 350px;
         height: 350px;
-        background: color-mix(in srgb, var(--color-accent) 55%, transparent);
+        background: color-mix(in srgb, var(--color-accent) 45%, transparent);
         bottom: -100px;
         right: 20%;
         animation-delay: -14s;
@@ -375,6 +375,7 @@
         -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid var(--glass-border);
         box-shadow: var(--glass-shadow);
+        color: var(--color-text);
     }
 
     .glass-subtle {
@@ -1081,6 +1082,7 @@
     .feature-primary {
         color: #fff;
         box-shadow: 0 12px 30px rgba(89, 45, 30, 0.2);
+        text-shadow: 0 2px 6px rgba(65, 32, 20, 0.35);
     }
 
     .home-primary .feature-card:nth-child(1) {
@@ -1305,6 +1307,7 @@
         color: white;
         font-weight: 800;
         transform: translateY(-2px);
+        text-shadow: 0 1px 4px rgba(65, 32, 20, 0.35);
     }
 
     .nav-item.is-active {
@@ -1312,6 +1315,7 @@
         color: white;
         font-weight: 800;
         transform: translateY(-2px);
+        text-shadow: 0 1px 4px rgba(65, 32, 20, 0.35);
     }
 
     .nav-item:active {
@@ -3342,7 +3346,7 @@
         line-height: var(--leading-snug);
         letter-spacing: var(--tracking-tight);
         text-wrap: balance;
-        color: #6A3A2A;
+        color: var(--color-text);
     }
 
     .song-stars {
