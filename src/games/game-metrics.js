@@ -36,6 +36,22 @@ const stopTonePlayer = () => {
     }
 };
 
+const playToneNote = (note, options) => {
+    if (!isSoundEnabled()) return false;
+    const player = getTonePlayer();
+    if (!player) return false;
+    player.playNote(note, options).catch(() => {});
+    return true;
+};
+
+const playToneSequence = (notes, options) => {
+    if (!isSoundEnabled()) return false;
+    const player = getTonePlayer();
+    if (!player) return false;
+    player.playSequence(notes, options).catch(() => {});
+    return true;
+};
+
 const bindTap = (element, handler, { threshold = 160, clickIgnoreWindow = 420 } = {}) => {
     if (!element || typeof handler !== 'function') return;
     let lastTap = 0;
@@ -898,6 +914,7 @@ const bindNoteMemory = () => {
     };
 
     const handleMatch = () => {
+        const matchedNotes = flipped.map(({ note }) => note).filter(Boolean);
         matches += 1;
         matchStreak += 1;
         score += 120 + matchStreak * 10;
@@ -907,6 +924,9 @@ const bindNoteMemory = () => {
         });
         flipped = [];
         lock = false;
+        if (matchedNotes.length) {
+            playToneSequence(matchedNotes, { tempo: 140, gap: 0.1, duration: 0.22, volume: 0.18, type: 'triangle' });
+        }
         if (matches >= totalPairs) {
             ended = true;
             stopTimer();
@@ -948,6 +968,9 @@ const bindNoteMemory = () => {
             if (!timerId) startTimer();
             const note = noteForCard(card);
             flipped.push({ card, input, note });
+            if (note) {
+                playToneNote(note, { duration: 0.24, volume: 0.18, type: 'triangle' });
+            }
             if (flipped.length === 2) {
                 lock = true;
                 if (flipped[0].note && flipped[0].note === flipped[1].note) {
@@ -961,6 +984,12 @@ const bindNoteMemory = () => {
 
     bindTap(resetButton, () => {
         resetGame();
+    });
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopTonePlayer();
+        }
     });
 
     updateHud();
@@ -1026,6 +1055,8 @@ const bindRhythmDash = () => {
     let beatInterval = 60000 / targetBpm;
     let paused = false;
     let pausedByVisibility = false;
+    let metronomeId = null;
+    let metronomeBeat = 0;
 
     if (!tapButton) return;
 
@@ -1063,6 +1094,9 @@ const bindRhythmDash = () => {
         if (!wasRunning) {
             setStatus(`Tap Start to begin the run. Target ${targetBpm} BPM.`);
         }
+        if (runToggle?.checked) {
+            startMetronome();
+        }
     };
 
     const reportResult = attachTuning('rhythm-dash', (tuning) => {
@@ -1098,6 +1132,31 @@ const bindRhythmDash = () => {
         recordGameEvent('rhythm-dash', { accuracy, score });
     };
 
+    const stopMetronome = () => {
+        if (metronomeId) {
+            clearInterval(metronomeId);
+            metronomeId = null;
+        }
+        metronomeBeat = 0;
+    };
+
+    const startMetronome = () => {
+        stopMetronome();
+        if (!isSoundEnabled()) return;
+        const player = getTonePlayer();
+        if (!player) return;
+        const interval = Math.max(240, beatInterval);
+        metronomeId = window.setInterval(() => {
+            const strong = metronomeBeat % 4 === 0;
+            const note = strong ? 'E' : 'A';
+            const volume = strong ? 0.18 : 0.12;
+            player.playNote(note, { duration: 0.08, volume, type: 'square' }).catch(() => {});
+            metronomeBeat += 1;
+        }, interval);
+        player.playNote('E', { duration: 0.1, volume: 0.2, type: 'square' }).catch(() => {});
+        metronomeBeat = 1;
+    };
+
     const updateRunningState = () => {
         const running = runToggle?.checked;
         const wasActive = wasRunning;
@@ -1113,7 +1172,9 @@ const bindRhythmDash = () => {
                 timingScores = [];
                 setRating('--', 'off', 0);
             }
+            startMetronome();
         } else {
+            stopMetronome();
             if (!paused && wasActive && tapCount > 0) {
                 reportSession();
             }
@@ -1142,6 +1203,7 @@ const bindRhythmDash = () => {
         reported = false;
         paused = false;
         pausedByVisibility = false;
+        stopMetronome();
         if (runToggle) runToggle.checked = false;
         wasRunning = false;
         setLiveNumber(scoreEl, 'liveScore', score);
@@ -1284,6 +1346,14 @@ const bindRhythmDash = () => {
         } else if (pausedByVisibility) {
             pausedByVisibility = false;
             setStatus('Run paused. Tap Start to resume.');
+        }
+    });
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopMetronome();
+        } else if (runToggle?.checked) {
+            startMetronome();
         }
     });
 };
@@ -1737,6 +1807,9 @@ const bindStringQuest = () => {
     buttons.forEach((button) => {
         bindTap(button, () => {
             const note = button.dataset.stringBtn;
+            if (note) {
+                playToneNote(note, { duration: 0.28, volume: 0.22, type: 'triangle' });
+            }
             if (note === sequence[seqIndex]) {
                 combo += 1;
                 score += 20 + combo * 3;
@@ -1746,9 +1819,11 @@ const bindStringQuest = () => {
                     markChecklist('sq-step-2');
                 }
                 if (seqIndex === 0) {
+                    const completedSequence = sequence.slice();
                     markChecklist('sq-step-3');
                     reportSession();
                     buildSequence();
+                    playToneSequence(completedSequence, { tempo: 140, gap: 0.1, duration: 0.2, volume: 0.14, type: 'sine' });
                 }
                 lastCorrectNote = note;
                 updateTargets();
@@ -1939,6 +2014,9 @@ const bindPizzicato = () => {
     buttons.forEach((button) => {
         bindTap(button, () => {
             const note = button.dataset.pizzicatoBtn;
+            if (note) {
+                playToneNote(note, { duration: 0.26, volume: 0.2, type: 'triangle' });
+            }
             if (note === sequence[seqIndex]) {
                 combo += 1;
                 score += 18 + combo * 2;
@@ -1946,9 +2024,11 @@ const bindPizzicato = () => {
                 hitNotes.add(note);
                 markChecklistIf(hitNotes.size >= 4, 'pz-step-1');
                 if (seqIndex === 0) {
+                    const completedSequence = sequence.slice();
                     markChecklist('pz-step-2');
                     reportSession();
                     buildSequence();
+                    playToneSequence(completedSequence, { tempo: 150, gap: 0.1, duration: 0.18, volume: 0.14, type: 'sine' });
                 }
                 updateTargets();
             } else {
