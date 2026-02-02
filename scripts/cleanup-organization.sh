@@ -5,8 +5,9 @@
 
 set -e  # Exit on error
 
-PROJECT_ROOT="/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa"
-ARCHIVE_ROOT="/Users/louisherman/ClaudeCodeProjects/_archived"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ARCHIVE_ROOT="$PROJECT_ROOT/_archived"
 
 # Colors for output
 RED='\033[0;31m'
@@ -28,47 +29,25 @@ fi
 
 cd "$PROJECT_ROOT" || exit 1
 
-# Step 0: Create backup
+# Step 0: Optional backup (local archive)
 echo -e "${YELLOW}Creating backup...${NC}"
-BACKUP_FILE="$ARCHIVE_ROOT/emerson-violin-pwa-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+mkdir -p "$ARCHIVE_ROOT/backups"
+BACKUP_FILE="$ARCHIVE_ROOT/backups/emerson-violin-pwa-$(date +%Y%m%d-%H%M%S).tar.gz"
 tar -czf "$BACKUP_FILE" \
   --exclude=node_modules \
   --exclude=.git \
   --exclude=test-results \
   --exclude=playwright-report \
+  --exclude=dist \
+  --exclude=coverage \
   .
-
-if [ -f "$BACKUP_FILE" ]; then
-    echo -e "${GREEN}✓ Backup created: $BACKUP_FILE${NC}"
-else
-    echo -e "${RED}✗ Backup failed! Aborting.${NC}"
-    exit 1
-fi
+echo -e "${GREEN}✓ Backup created: $BACKUP_FILE${NC}"
 
 # Step 1: Remove root build artifacts (P0)
 echo ""
 echo -e "${YELLOW}[P0] Removing root build artifacts...${NC}"
-if [ -f "sw.js" ]; then
-    if diff -q sw.js public/sw.js > /dev/null 2>&1; then
-        rm sw.js
-        echo -e "${GREEN}✓ Removed sw.js (duplicate of public/sw.js)${NC}"
-    else
-        echo -e "${RED}⚠ sw.js differs from public/sw.js - manual review needed${NC}"
-    fi
-else
-    echo "  sw.js not found (already clean)"
-fi
-
-if [ -f "sw-assets.js" ]; then
-    if diff -q sw-assets.js public/sw-assets.js > /dev/null 2>&1; then
-        rm sw-assets.js
-        echo -e "${GREEN}✓ Removed sw-assets.js (duplicate of public/sw-assets.js)${NC}"
-    else
-        echo -e "${RED}⚠ sw-assets.js differs from public/sw-assets.js - manual review needed${NC}"
-    fi
-else
-    echo "  sw-assets.js not found (already clean)"
-fi
+rm -f sw.js sw-assets.js
+echo -e "${GREEN}✓ Removed root sw.js and sw-assets.js if present${NC}"
 
 # Step 2: Archive duplicate mockups (P1)
 echo ""
@@ -87,20 +66,11 @@ else
     echo "  design/mockups/ not found (already clean)"
 fi
 
-# Step 3: Clean test results (P1)
+# Step 3: Clean build/test artifacts (P1)
 echo ""
 echo -e "${YELLOW}[P1] Removing test artifacts...${NC}"
-if [ -d "test-results" ]; then
-    rm -rf test-results/
-    echo -e "${GREEN}✓ Removed test-results/ directory${NC}"
-else
-    echo "  test-results/ not found (already clean)"
-fi
-
-if [ -d "playwright-report" ]; then
-    rm -rf playwright-report/
-    echo -e "${GREEN}✓ Removed playwright-report/ directory${NC}"
-fi
+rm -rf test-results/ playwright-report/ dist/ coverage/
+echo -e "${GREEN}✓ Removed test-results/, playwright-report/, dist/, coverage/${NC}"
 
 # Step 4: Remove empty directories (P1)
 echo ""
@@ -175,15 +145,22 @@ echo -e "${YELLOW}[P2] Archiving legacy code...${NC}"
 if [ -d "design/legacy" ]; then
     LEGACY_COUNT=$(find design/legacy -type f 2>/dev/null | wc -l)
     if [ "$LEGACY_COUNT" -gt 0 ]; then
-        mkdir -p "$ARCHIVE_ROOT/emerson-violin-pwa/legacy"
-        mv design/legacy/* "$ARCHIVE_ROOT/emerson-violin-pwa/legacy/" 2>/dev/null
+        LEGACY_DEST="$ARCHIVE_ROOT/legacy-$(date +%Y-%m-%d)"
+        mkdir -p "$LEGACY_DEST"
+        mv design/legacy/* "$LEGACY_DEST/" 2>/dev/null
         rmdir design/legacy 2>/dev/null || echo "  design/legacy not empty after move"
-        echo -e "${GREEN}✓ Archived $LEGACY_COUNT legacy files (~84K recovered)${NC}"
+        echo -e "${GREEN}✓ Archived $LEGACY_COUNT legacy files to $LEGACY_DEST${NC}"
     else
         echo "  No legacy files found"
     fi
 else
     echo "  design/legacy/ not found (already clean)"
+fi
+
+# Remove empty design folder if present
+if [ -d "design" ] && [ -z "$(ls -A design)" ]; then
+    rmdir design
+    echo -e "${GREEN}✓ Removed empty design/ directory${NC}"
 fi
 
 # Step 7: Clean old logs (P3 - optional)
@@ -205,27 +182,17 @@ fi
 # Step 8: Update .gitignore
 echo ""
 echo -e "${YELLOW}Updating .gitignore...${NC}"
-if ! grep -q "# Organizational cleanup additions" .gitignore 2>/dev/null; then
+if ! grep -q "sw-assets.js" .gitignore 2>/dev/null; then
     cat >> .gitignore << 'EOF'
 
-# Organizational cleanup additions (2026-01-31)
-# Build artifacts
-/sw.js
-/sw-assets.js
-/dist/
-
-# Test artifacts
+# Organizational cleanup additions
+sw.js
+sw-assets.js
+dist/
 test-results/
 playwright-report/
 coverage/
-
-# Logs
-_logs/*.log
 *.log
-
-# OS files
-.DS_Store
-Thumbs.db
 EOF
     echo -e "${GREEN}✓ Updated .gitignore${NC}"
 else
@@ -239,7 +206,7 @@ echo ""
 echo "Summary:"
 echo "  - Build artifacts removed from root"
 echo "  - Duplicate mockups archived (~11M)"
-echo "  - Legacy code archived (~84K)"
+echo "  - Legacy code archived"
 echo "  - Empty directories removed"
 echo "  - QA docs moved to docs/reports/qa/"
 echo "  - .gitignore updated"
