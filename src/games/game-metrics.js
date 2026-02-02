@@ -592,6 +592,11 @@ const bindPitchQuest = () => {
     let hits = 0;
     let reported = false;
 
+    const targetNoteFromInput = (input) => {
+        const raw = input?.id?.split('-').pop();
+        return raw ? raw.toUpperCase() : null;
+    };
+
     const updateTolerance = (value, { user = false } = {}) => {
         const next = clamp(Number(value) || tolerance, 3, 12);
         tolerance = next;
@@ -691,6 +696,10 @@ const bindPitchQuest = () => {
             randomizeOffset();
             updateTargetStatus();
             updateStability(stabilityStreak);
+            const note = targetNoteFromInput(radio);
+            if (note) {
+                playToneNote(note, { duration: 0.3, volume: 0.18, type: 'triangle' });
+            }
         });
     });
 
@@ -701,6 +710,7 @@ const bindPitchQuest = () => {
             return;
         }
         const cents = slider ? setOffset(slider.value) : 0;
+        const targetNote = targetNoteFromInput(activeTarget);
         const matched = Math.abs(cents) <= tolerance;
         attempts += 1;
         if (matched) {
@@ -709,6 +719,9 @@ const bindPitchQuest = () => {
             score += 18 + streak * 3;
             stars = Math.max(stars, Math.min(3, Math.ceil(streak / 2)));
             markNoteChecklist();
+            if (targetNote) {
+                playToneNote(targetNote, { duration: 0.32, volume: 0.2, type: 'triangle' });
+            }
             const now = Date.now();
             if (now - lastMatchAt <= 4000) {
                 stabilityStreak += 1;
@@ -722,6 +735,8 @@ const bindPitchQuest = () => {
             streak = 0;
             stabilityStreak = 0;
             score = Math.max(0, score - 6);
+            const detuneNote = cents > 0 ? 'F#' : 'F';
+            playToneNote(detuneNote, { duration: 0.2, volume: 0.14, type: 'sawtooth' });
         }
         const accuracy = attempts ? (hits / attempts) * 100 : 0;
         setLiveNumber(scoreEl, 'liveScore', score);
@@ -1515,8 +1530,10 @@ const bindEarTrainer = () => {
                 const checklistId = checklistMap[selected];
                 if (checklistId) markChecklist(checklistId);
                 markChecklistIf(correctStreak >= 3, 'et-step-5');
+                playToneNote(selected, { duration: 0.22, volume: 0.18, type: 'triangle' });
             } else {
                 correctStreak = 0;
+                playToneNote('F', { duration: 0.18, volume: 0.14, type: 'sawtooth' });
             }
             currentTone = null;
             currentIndex = Math.min(currentIndex + 1, rounds);
@@ -1564,6 +1581,7 @@ const bindBowHero = () => {
     const statusEl = stage.querySelector('[data-bow="status"]');
     let starCount = 0;
     let strokeCount = 0;
+    let targetTempo = 72;
     let timeLimit = 105;
     let remaining = timeLimit;
     let timerId = null;
@@ -1572,6 +1590,8 @@ const bindBowHero = () => {
     let reported = false;
     let paused = false;
     let pausedAt = 0;
+    let lastStrokeAt = 0;
+    let smoothStreak = 0;
 
     const resetStars = () => {
         starCount = 0;
@@ -1593,6 +1613,7 @@ const bindBowHero = () => {
 
     const reportResult = attachTuning('bow-hero', (tuning) => {
         timeLimit = tuning.timeLimit ?? timeLimit;
+        targetTempo = tuning.targetTempo ?? targetTempo;
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         if (!timerId) {
             remaining = timeLimit;
@@ -1672,6 +1693,8 @@ const bindBowHero = () => {
         runStartedAt = 0;
         paused = false;
         pausedAt = 0;
+        lastStrokeAt = 0;
+        smoothStreak = 0;
         remaining = timeLimit;
         resetStars();
         if (runToggle) runToggle.checked = false;
@@ -1686,7 +1709,24 @@ const bindBowHero = () => {
             star.classList.toggle('is-lit', index < starCount);
         });
         setLiveNumber(starsEl, 'liveStars', starCount);
-        setStatus('Nice stroke! Keep going.');
+        const now = performance.now();
+        if (lastStrokeAt) {
+            const interval = now - lastStrokeAt;
+            const bpm = Math.round(60000 / Math.max(120, interval));
+            const deviation = Math.abs(bpm - targetTempo) / Math.max(targetTempo, 1);
+            if (deviation <= 0.18) {
+                smoothStreak += 1;
+                setStatus(`Smooth strokes! ${bpm} BPM · streak x${smoothStreak}.`);
+            } else {
+                smoothStreak = 0;
+                setStatus(`Aim for ${targetTempo} BPM · current ${bpm} BPM.`);
+            }
+        } else {
+            setStatus('Nice stroke! Keep going.');
+        }
+        lastStrokeAt = now;
+        const strokeNote = strokeCount % 2 === 0 ? 'A' : 'D';
+        playToneNote(strokeNote, { duration: 0.16, volume: 0.12, type: 'triangle' });
         markChecklistIf(strokeCount >= 8, 'bh-step-1');
         markChecklistIf(strokeCount >= 16, 'bh-step-2');
         markChecklistIf(strokeCount >= 24, 'bh-step-3');
@@ -1855,6 +1895,12 @@ const bindRhythmPainter = () => {
     const roundsEl = stage.querySelector('[data-painter="rounds"]');
     const meter = stage.querySelector('.painter-meter');
     const statusEl = stage.querySelector('[data-painter="status"]');
+    const dotNotes = {
+        blue: 'G',
+        green: 'D',
+        yellow: 'A',
+        red: 'E',
+    };
     let score = 0;
     let creativity = 0;
     let tapCount = 0;
@@ -1862,6 +1908,7 @@ const bindRhythmPainter = () => {
     const tappedDots = new Set();
     let creativityTarget = 70;
     let reported = false;
+    let flourishPlayed = false;
 
     const update = () => {
         setLiveNumber(scoreEl, 'liveScore', score);
@@ -1905,6 +1952,7 @@ const bindRhythmPainter = () => {
         rounds = 0;
         tappedDots.clear();
         reported = false;
+        flourishPlayed = false;
         dots.forEach((dot) => dot.classList.remove('is-hit'));
         update();
     };
@@ -1915,6 +1963,10 @@ const bindRhythmPainter = () => {
             creativity = Math.min(100, score > 0 ? creativity + 8 : creativity);
             tapCount += 1;
             rounds = Math.floor(tapCount / 4);
+            const note = dotNotes[dot.dataset.painterDot];
+            if (note) {
+                playToneNote(note, { duration: 0.2, volume: 0.16, type: 'triangle' });
+            }
             tappedDots.add(dot.dataset.painterDot || dot.dataset.painter || dot.className);
             dot.classList.add('is-hit');
             setTimeout(() => dot.classList.remove('is-hit'), 220);
@@ -1924,6 +1976,10 @@ const bindRhythmPainter = () => {
             markChecklistIf(creativity >= 70, 'rp-pattern-3');
             markChecklistIf(rounds >= 3, 'rp-pattern-4');
             if (creativity >= creativityTarget) {
+                if (!flourishPlayed) {
+                    flourishPlayed = true;
+                    playToneSequence(['G', 'D', 'A', 'E'], { tempo: 180, gap: 0.08, duration: 0.16, volume: 0.18, type: 'sine' });
+                }
                 reportSession();
             }
         });
@@ -2279,10 +2335,12 @@ const bindScalePractice = () => {
     const tapButton = stage.querySelector('[data-scale="tap"]');
     const ratingEl = stage.querySelector('[data-scale="rating"]');
     const tempoTags = new Set();
+    const scaleNotes = ['G', 'A', 'B', 'C', 'D', 'E', 'F#', 'G'];
     let targetTempo = 85;
     let reported = false;
     let lastTap = 0;
     let score = 0;
+    let scaleIndex = 0;
     const timingScores = [];
 
     const updateTempo = () => {
@@ -2325,6 +2383,7 @@ const bindScalePractice = () => {
     const resetSession = () => {
         score = 0;
         lastTap = 0;
+        scaleIndex = 0;
         timingScores.length = 0;
         reported = false;
         if (scoreEl) scoreEl.textContent = '0';
@@ -2333,6 +2392,7 @@ const bindScalePractice = () => {
 
     slider?.addEventListener('input', () => {
         if (slider) slider.dataset.userSet = 'true';
+        scaleIndex = 0;
         updateTempo();
     });
     slider?.addEventListener('change', () => {
@@ -2362,6 +2422,13 @@ const bindScalePractice = () => {
             if (timingScore >= 0.75) markChecklist('sp-step-2');
             if (timingScore >= 0.6) markChecklist('sp-step-1');
             if (timingScore >= 0.9) markChecklist('sp-step-4');
+            if (timingScore >= 0.75) {
+                const note = scaleNotes[scaleIndex % scaleNotes.length];
+                playToneNote(note, { duration: 0.22, volume: 0.18, type: 'triangle' });
+                scaleIndex += 1;
+            } else if (timingScore > 0) {
+                playToneNote('F', { duration: 0.18, volume: 0.12, type: 'sawtooth' });
+            }
             const accuracy = clamp((timingScores.reduce((sum, value) => sum + value, 0) / timingScores.length) * 100, 0, 100);
             reportResult({ accuracy, score });
             if (timingScores.length >= 4) {
@@ -2548,6 +2615,9 @@ const bindDuetChallenge = () => {
                 return;
             }
             const note = button.dataset.duetNote;
+            if (note) {
+                playToneNote(note, { duration: 0.2, volume: 0.18, type: 'triangle' });
+            }
             if (note === sequence[seqIndex]) {
                 combo += 1;
                 score += 15 + combo * 2;
@@ -2558,6 +2628,7 @@ const bindDuetChallenge = () => {
                     active = false;
                     if (promptEl) promptEl.textContent = 'Great duet! Play again for a new combo.';
                     markChecklist('dc-step-4');
+                    playToneSequence(sequence, { tempo: 160, gap: 0.1, duration: 0.18, volume: 0.16, type: 'sine' });
                     if (!reported) {
                         reportSession();
                     }
@@ -2570,6 +2641,7 @@ const bindDuetChallenge = () => {
                 mistakes += 1;
                 seqIndex = 0;
                 if (promptEl) promptEl.textContent = 'Try again from the start.';
+                playToneNote('F', { duration: 0.16, volume: 0.12, type: 'sawtooth' });
             }
             updateScoreboard();
         });
@@ -2728,4 +2800,10 @@ if (document.readyState === 'loading') {
 
 document.addEventListener('panda:persist-applied', () => {
     scheduleUpdateAll();
+});
+
+document.addEventListener('panda:sounds-change', (event) => {
+    if (event.detail?.enabled === false) {
+        stopTonePlayer();
+    }
 });
