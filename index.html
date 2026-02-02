@@ -2565,10 +2565,10 @@
               <div class="painter-rounds">Rounds <span data-painter="rounds">0</span></div>
             </div>
             <div class="painter-canvas">
-              <button class="paint-dot dot-blue" data-painter="dot" type="button" aria-label="Blue paint dot"></button>
-              <button class="paint-dot dot-green" data-painter="dot" type="button" aria-label="Green paint dot"></button>
-              <button class="paint-dot dot-yellow" data-painter="dot" type="button" aria-label="Yellow paint dot"></button>
-              <button class="paint-dot dot-red" data-painter="dot" type="button" aria-label="Red paint dot"></button>
+              <button class="paint-dot dot-blue" data-painter="dot" data-painter-dot="blue" type="button" aria-label="Blue paint dot"></button>
+              <button class="paint-dot dot-green" data-painter="dot" data-painter-dot="green" type="button" aria-label="Green paint dot"></button>
+              <button class="paint-dot dot-yellow" data-painter="dot" data-painter-dot="yellow" type="button" aria-label="Yellow paint dot"></button>
+              <button class="paint-dot dot-red" data-painter="dot" data-painter-dot="red" type="button" aria-label="Red paint dot"></button>
             </div>
             <div class="painter-meter" role="progressbar" aria-label="Creativity meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
               <div class="painter-needle" data-painter="needle"></div>
@@ -2613,17 +2613,21 @@
         </div>
         <div class="game-content" id="story-song-content">
           <div class="story-song-stage">
-            <div class="story-banner">Story Song Lab</div>
+            <div class="story-banner">
+              <span data-story="title">Story Song Lab</span>
+              <span class="story-page" data-story="page">Page 1 of 3</span>
+            </div>
             <div class="story-book">
               <div class="story-hero">
-                <div class="story-notes">♪ ♪ ♪</div>
+                <div class="story-notes" data-story="notes">♪ ♪ ♪</div>
                 <div class="story-character">🎻</div>
+                <div class="story-prompt" data-story="prompt">Warm up with your open strings.</div>
               </div>
             </div>
-          <input type="checkbox" id="story-play" class="story-play-toggle" data-persist="false">
-          <label for="story-play" class="btn btn-primary story-play-btn">Play-Along</label>
-          <div class="story-status" data-story="status" aria-live="polite">Press Play-Along to start.</div>
-          <div class="story-staff">
+            <input type="checkbox" id="story-play" class="story-play-toggle" data-persist="false">
+            <label for="story-play" class="btn btn-primary story-play-btn">Play-Along</label>
+            <div class="story-status" data-story="status" aria-live="polite">Press Play-Along to start.</div>
+            <div class="story-staff">
               <span class="story-note" style="--note-delay: 0s;"></span>
               <span class="story-note" style="--note-delay: 1s;"></span>
               <span class="story-note" style="--note-delay: 2s;"></span>
@@ -2820,8 +2824,11 @@
               <button class="btn btn-secondary melody-btn" data-melody-note="D" type="button">D</button>
             </div>
             <div class="melody-actions">
+              <button class="btn btn-secondary" type="button" data-melody="play">Play melody</button>
+              <button class="btn btn-secondary" type="button" data-melody="play-target">Play target</button>
               <button class="btn btn-ghost" type="button" data-melody="clear">Clear melody</button>
             </div>
+            <div class="melody-status" data-melody="status" aria-live="polite">Build a melody, then press Play.</div>
           </div>
           <div class="game-drill glass">
             <p class="game-drill-intro">Create a short melody and check off each goal.</p>
