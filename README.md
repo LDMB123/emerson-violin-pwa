@@ -21,9 +21,9 @@ emerson-violin-pwa/
 ├── scripts/          # Build scripts
 │   ├── build-songs-html.js
 │   └── build-sw-assets.js
-├── qa/               # QA and testing
-├── design/           # Design assets
-├── sw.js             # Service worker
+├── docs/             # Reports and QA notes
+│   └── reports/qa/    # QA plans and issue logs
+├── _archived/         # Legacy assets
 ├── manifest.webmanifest
 └── index.html
 ```

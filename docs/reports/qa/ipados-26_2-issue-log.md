@@ -14,7 +14,7 @@ Tracking modernization, offline-first, UX, and stability issues. Each entry incl
 | 8 | Docs | Non‑iPadOS references in app description. | Updated description to iPadOS 26.2 only. | package.json |
 | 9 | Docs | Preview script referenced other OSes. | Updated copy to iPadOS 26.2 only. | start-preview.sh |
 | 10 | Docs | Install guide referenced non‑iPad devices. | Updated copy to iPadOS 26.2 only. | INSTALL.txt |
-| 11 | QA | Test plan referenced other OSes and iPadOS 26.0. | Updated to iPadOS 26.2 only. | qa/test-plan-ipados26.md |
+| 11 | QA | Test plan referenced other OSes and iPadOS 26.0. | Updated to iPadOS 26.2 only. | docs/reports/qa/test-plan-ipados26.md |
 | 12 | QA | Playwright device profile used phone. | Updated to iPad profile. | playwright.config.js |
 | 13 | UX | Parent recordings played audio even if sound toggle off. | Respected sound toggle before playback. | src/parent/recordings.js |
 | 14 | UX | Clear recordings button active with no recordings. | Disabled button when list empty. | src/parent/recordings.js |

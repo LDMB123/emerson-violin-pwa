@@ -7,10 +7,7 @@ const distMode = args.has('--dist');
 
 const outputs = distMode
     ? [path.join(rootDir, 'dist', 'sw-assets.js')]
-    : [
-        path.join(rootDir, 'sw-assets.js'),
-        path.join(rootDir, 'public', 'sw-assets.js'),
-    ];
+    : [path.join(rootDir, 'public', 'sw-assets.js')];
 
 const assets = new Set(['./']);
 
@@ -89,18 +86,6 @@ const output = `self.__ASSETS__ = ${JSON.stringify(sortedAssets, null, 2)};\n`;
 for (const target of outputs) {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, output, 'utf8');
-}
-
-if (!distMode) {
-    const publicSw = path.join(rootDir, 'public', 'sw.js');
-    const rootSw = path.join(rootDir, 'sw.js');
-    if (fs.existsSync(publicSw)) {
-        const publicContents = fs.readFileSync(publicSw, 'utf8');
-        const rootContents = fs.existsSync(rootSw) ? fs.readFileSync(rootSw, 'utf8') : '';
-        if (publicContents !== rootContents) {
-            fs.writeFileSync(rootSw, publicContents, 'utf8');
-        }
-    }
 }
 
 console.log(`[sw-assets] Wrote ${sortedAssets.length} entries`);
