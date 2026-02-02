@@ -19,6 +19,7 @@ test.describe('Panda Violin PWA', () => {
         await page.click('a[href="#view-coach"]');
 
         // Check URL hash
+        await page.waitForURL('**/#view-coach');
         expect(page.url()).toContain('#view-coach');
 
         // Check view visibility
@@ -34,6 +35,7 @@ test.describe('Panda Violin PWA', () => {
     test('should navigate to Games view and show game list', async ({ page }) => {
         await page.click('a[href="#view-games"]');
 
+        await page.waitForURL('**/#view-games');
         expect(page.url()).toContain('#view-games');
         const gamesView = page.locator('#view-games');
         await expect(gamesView).toBeVisible();
@@ -44,16 +46,15 @@ test.describe('Panda Violin PWA', () => {
     });
 
     test('should verify tuner view functionality', async ({ page }) => {
-        // Navigate via More menu for reliability in small viewports or Home card
-        await page.goto('/#view-home');
-        await page.click('a[href="#view-tuner"]');
+        // Navigate directly to avoid hidden/viewport-dependent launcher buttons
+        await page.goto('/#view-tuner');
 
         await expect(page).toHaveURL(/.*#view-tuner/);
         await expect(page.locator('#view-tuner')).toBeVisible();
 
         // Check reference tones
         await expect(page.locator('#view-tuner .tuner-reference')).toBeVisible();
-        await expect(page.locator('#view-tuner audio')).toHaveCount(4);
+        await expect(page.locator('#view-tuner .tuner-reference audio')).toHaveCount(4);
     });
 
     test('should launch tools and interact', async ({ page }) => {
@@ -96,7 +97,7 @@ test.describe('Panda Violin PWA', () => {
         // For now, let's just ensure the component code doesn't crash the page.
         const banner = page.locator('.install-banner');
         // It's hidden by default if not strictly installable criteria met or already installed
-        // forcing it might be tricky without mocking. 
+        // forcing it might be tricky without mocking.
         // We'll skip asserting visibility for now, but ensure no console errors.
     });
 });
