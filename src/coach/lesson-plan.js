@@ -1,0 +1,288 @@
+import { getLearningRecommendations } from '../ml/recommendations.js';
+
+const planPanel = document.querySelector('[data-lesson-plan="coach"]');
+if (!planPanel) {
+    // No coach lesson plan available in this view.
+} else {
+    const stepsList = planPanel.querySelector('[data-lesson-steps]');
+    const planCta = planPanel.querySelector('[data-lesson="cta"]');
+
+    const runner = document.createElement('div');
+    runner.className = 'lesson-runner';
+    runner.dataset.lessonRunner = 'true';
+    runner.innerHTML = `
+        <div class="lesson-runner-header">
+            <span class="lesson-runner-title">Guided Lesson</span>
+            <span class="lesson-runner-status" data-lesson-runner-status>Ready</span>
+        </div>
+        <div class="lesson-runner-body">
+            <div class="lesson-runner-step" data-lesson-runner-step>Step 1 of 1</div>
+            <div class="lesson-runner-cue" data-lesson-runner-cue>Tap Start to begin the first step.</div>
+        </div>
+        <div class="lesson-runner-timer" data-lesson-runner-timer>00:00</div>
+        <div class="lesson-runner-progress" data-lesson-runner-track role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span class="lesson-runner-fill" data-lesson-runner-fill style="width:0%"></span>
+        </div>
+        <div class="lesson-runner-actions">
+            <button class="btn btn-primary" type="button" data-lesson-runner-start>Start</button>
+            <button class="btn btn-secondary" type="button" data-lesson-runner-next disabled>Next step</button>
+            <a class="btn btn-ghost" data-lesson-runner-cta href="#view-games">Open activity</a>
+        </div>
+    `;
+
+    if (planCta) {
+        planPanel.insertBefore(runner, planCta);
+    } else {
+        planPanel.appendChild(runner);
+    }
+
+    const statusEl = runner.querySelector('[data-lesson-runner-status]');
+    const stepEl = runner.querySelector('[data-lesson-runner-step]');
+    const cueEl = runner.querySelector('[data-lesson-runner-cue]');
+    const timerEl = runner.querySelector('[data-lesson-runner-timer]');
+    const trackEl = runner.querySelector('[data-lesson-runner-track]');
+    const fillEl = runner.querySelector('[data-lesson-runner-fill]');
+    const startButton = runner.querySelector('[data-lesson-runner-start]');
+    const nextButton = runner.querySelector('[data-lesson-runner-next]');
+    const ctaButton = runner.querySelector('[data-lesson-runner-cta]');
+
+    const formatTime = (seconds) => {
+        const total = Math.max(0, Math.ceil(seconds));
+        const minutes = Math.floor(total / 60);
+        const remaining = total % 60;
+        return `${minutes.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
+    };
+
+    const toLessonLink = (id) => {
+        if (!id) return '#view-games';
+        if (id.startsWith('view-')) return `#${id}`;
+        return `#view-game-${id}`;
+    };
+
+    let steps = [];
+    let currentIndex = 0;
+    let completedSteps = 0;
+    let remainingSeconds = 0;
+    let timerId = null;
+    let recommendedGameId = 'view-games';
+
+    const stopTimer = () => {
+        if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+        }
+    };
+
+    const updateProgress = () => {
+        if (!steps.length) return;
+        const step = steps[currentIndex];
+        const duration = Math.max(30, Math.round((step?.minutes || 1) * 60));
+        const stepProgress = timerId ? (duration - remainingSeconds) / duration : 0;
+        const overall = Math.min(1, (completedSteps + stepProgress) / steps.length);
+        const percent = Math.round(overall * 100);
+        if (fillEl) fillEl.style.width = `${percent}%`;
+        if (trackEl) trackEl.setAttribute('aria-valuenow', String(percent));
+    };
+
+    const syncStepList = () => {
+        if (!stepsList) return;
+        const items = Array.from(stepsList.querySelectorAll('.lesson-step'));
+        items.forEach((item, index) => {
+            item.classList.toggle('is-complete', index < completedSteps);
+            item.classList.toggle('is-active', index === currentIndex && completedSteps < steps.length);
+            if (index === currentIndex && completedSteps < steps.length) {
+                item.setAttribute('aria-current', 'step');
+            } else {
+                item.removeAttribute('aria-current');
+            }
+        });
+    };
+
+    const dispatchLessonEvent = (state, step) => {
+        document.dispatchEvent(new CustomEvent('panda:lesson-step', {
+            detail: {
+                state,
+                step,
+                index: currentIndex,
+                total: steps.length,
+            },
+        }));
+    };
+
+    const setStatus = (message) => {
+        if (statusEl) statusEl.textContent = message;
+    };
+
+    const updateStepDetails = () => {
+        if (!steps.length) {
+            if (stepEl) stepEl.textContent = 'No lesson plan yet';
+            if (cueEl) cueEl.textContent = 'Practice a game to unlock a custom plan.';
+            if (timerEl) timerEl.textContent = '00:00';
+            if (ctaButton) ctaButton.setAttribute('href', '#view-games');
+            if (startButton) startButton.disabled = true;
+            if (nextButton) nextButton.disabled = true;
+            return;
+        }
+        const step = steps[currentIndex];
+        if (stepEl) {
+            stepEl.textContent = `Step ${Math.min(currentIndex + 1, steps.length)} of ${steps.length}`;
+        }
+        if (cueEl) {
+            cueEl.textContent = step?.label ? `${step.label}${step.cue ? ` · ${step.cue}` : ''}` : 'Tap Start to begin.';
+        }
+        if (ctaButton) {
+            const ctaTarget = step?.cta || recommendedGameId;
+            ctaButton.setAttribute('href', toLessonLink(ctaTarget));
+            ctaButton.textContent = step?.ctaLabel || 'Open activity';
+        }
+        if (timerEl) {
+            const duration = Math.max(30, Math.round((step?.minutes || 1) * 60));
+            timerEl.textContent = formatTime(remainingSeconds || duration);
+        }
+        if (startButton) startButton.disabled = false;
+        if (nextButton) nextButton.disabled = completedSteps >= steps.length;
+        syncStepList();
+        updateProgress();
+    };
+
+    const markGoalComplete = (step) => {
+        if (!step?.id) return;
+        const input = document.getElementById(step.id);
+        if (!input || input.checked) return;
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    const completeStep = ({ auto = false } = {}) => {
+        if (!steps.length) return;
+        const step = steps[currentIndex];
+        stopTimer();
+        remainingSeconds = 0;
+        markGoalComplete(step);
+        dispatchLessonEvent('complete', step);
+        completedSteps = Math.min(steps.length, completedSteps + 1);
+        if (completedSteps >= steps.length) {
+            setStatus('Lesson complete! Awesome work.');
+            if (startButton) startButton.textContent = 'Restart';
+            if (nextButton) nextButton.disabled = true;
+            if (ctaButton) ctaButton.setAttribute('href', '#view-games');
+            document.dispatchEvent(new CustomEvent('panda:lesson-complete'));
+        } else {
+            currentIndex = completedSteps;
+            setStatus(auto ? 'Step complete. Ready for the next one.' : 'Step marked complete. Tap Next to continue.');
+            if (startButton) startButton.textContent = 'Start';
+            if (nextButton) nextButton.disabled = false;
+        }
+        updateStepDetails();
+    };
+
+    const tick = () => {
+        if (remainingSeconds <= 0) {
+            completeStep({ auto: true });
+            return;
+        }
+        remainingSeconds -= 1;
+        if (timerEl) timerEl.textContent = formatTime(remainingSeconds);
+        updateProgress();
+    };
+
+    const startStep = () => {
+        if (!steps.length) return;
+        if (completedSteps >= steps.length) {
+            completedSteps = 0;
+            currentIndex = 0;
+        }
+        const step = steps[currentIndex];
+        const duration = Math.max(30, Math.round((step?.minutes || 1) * 60));
+        if (!remainingSeconds || remainingSeconds > duration) {
+            remainingSeconds = duration;
+        }
+        stopTimer();
+        setStatus('Step in progress.');
+        if (startButton) startButton.textContent = 'Pause';
+        if (nextButton) nextButton.disabled = false;
+        dispatchLessonEvent('start', step);
+        timerId = window.setInterval(tick, 1000);
+        if (timerEl) timerEl.textContent = formatTime(remainingSeconds);
+        updateProgress();
+    };
+
+    const pauseStep = () => {
+        if (!timerId) return;
+        stopTimer();
+        setStatus('Paused. Tap Resume when ready.');
+        if (startButton) startButton.textContent = 'Resume';
+        if (nextButton) nextButton.disabled = false;
+        dispatchLessonEvent('pause', steps[currentIndex]);
+    };
+
+    const handleStartClick = () => {
+        if (!steps.length) return;
+        if (completedSteps >= steps.length) {
+            completedSteps = 0;
+            currentIndex = 0;
+            remainingSeconds = 0;
+            setStatus('Lesson restarted.');
+            updateStepDetails();
+            startStep();
+            return;
+        }
+        if (timerId) {
+            pauseStep();
+        } else {
+            startStep();
+        }
+    };
+
+    const handleNextClick = () => {
+        if (!steps.length) return;
+        if (timerId) {
+            completeStep({ auto: false });
+            return;
+        }
+        if (completedSteps >= steps.length) return;
+        startStep();
+    };
+
+    if (startButton) startButton.addEventListener('click', handleStartClick);
+    if (nextButton) nextButton.addEventListener('click', handleNextClick);
+
+    const refreshPlan = async () => {
+        const recs = await getLearningRecommendations();
+        steps = Array.isArray(recs?.lessonSteps) ? recs.lessonSteps : [];
+        recommendedGameId = recs?.recommendedGameId || recs?.recommendedGame || 'view-games';
+        if (!steps.length) {
+            completedSteps = 0;
+            currentIndex = 0;
+        } else if (currentIndex >= steps.length) {
+            currentIndex = 0;
+        }
+        updateStepDetails();
+    };
+
+    refreshPlan();
+
+    document.addEventListener('panda:ml-update', refreshPlan);
+    document.addEventListener('panda:ml-reset', refreshPlan);
+    document.addEventListener('panda:ml-recs', refreshPlan);
+
+    if (stepsList) {
+        const observer = new MutationObserver(() => {
+            syncStepList();
+        });
+        observer.observe(stepsList, { childList: true, subtree: false });
+    }
+
+    window.addEventListener('hashchange', () => {
+        if (window.location.hash !== '#view-coach') {
+            stopTimer();
+            if (startButton) startButton.textContent = 'Start';
+        }
+    }, { passive: true });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            pauseStep();
+        }
+    });
+}

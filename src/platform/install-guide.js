@@ -11,6 +11,8 @@ const isStandalone = () => window.matchMedia('(display-mode: standalone)').match
     || window.matchMedia('(display-mode: fullscreen)').matches
     || window.navigator.standalone === true;
 
+const isAutomated = () => Boolean(navigator.webdriver);
+
 const markDismissed = async () => {
     await setJSON(DISMISS_KEY, { dismissed: true, timestamp: Date.now() });
 };
@@ -97,6 +99,7 @@ const buildGuide = () => {
 };
 
 const showGuide = async (force = false) => {
+    if (isAutomated()) return;
     if (!isIPadOS()) {
         if (helpButton) helpButton.hidden = true;
         return;
@@ -120,6 +123,10 @@ const showGuide = async (force = false) => {
 };
 
 const init = () => {
+    if (isAutomated()) {
+        if (helpButton) helpButton.hidden = true;
+        return;
+    }
     if (!isIPadOS()) {
         if (helpButton) helpButton.hidden = true;
         return;

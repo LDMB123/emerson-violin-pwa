@@ -84,6 +84,36 @@ const handleAction = (action) => {
     }
 };
 
+const handleLessonStep = (event) => {
+    if (!bubble) return;
+    const detail = event.detail || {};
+    const step = detail.step;
+    if (!step) return;
+    const index = Number.isFinite(detail.index) ? detail.index : 0;
+    const total = Number.isFinite(detail.total) ? detail.total : 1;
+    let message = '';
+    if (detail.state === 'start') {
+        message = `Step ${index + 1} of ${total}: ${step.label || 'Practice step'}. ${step.cue || ''}`.trim();
+    } else if (detail.state === 'complete') {
+        message = `Nice work! Step ${index + 1} complete.`;
+    } else if (detail.state === 'pause') {
+        message = `Paused on step ${index + 1}. Resume when you're ready.`;
+    }
+    if (message) {
+        bubble.dataset.coachAuto = 'false';
+        setMessage(message);
+        speakMessage(message);
+    }
+};
+
+const handleLessonComplete = () => {
+    if (!bubble) return;
+    const message = 'Lesson complete! Take a breath, then choose a new plan.';
+    bubble.dataset.coachAuto = 'false';
+    setMessage(message);
+    speakMessage(message);
+};
+
 if (buttons.length) {
     buttons.forEach((button) => {
         button.addEventListener('click', () => {
@@ -97,6 +127,8 @@ if (buttons.length) {
 applyRecommendations();
 
 document.addEventListener('panda:ml-update', applyRecommendations);
+document.addEventListener('panda:lesson-step', handleLessonStep);
+document.addEventListener('panda:lesson-complete', handleLessonComplete);
 
 if (voiceToggle && 'speechSynthesis' in window) {
     voiceToggle.addEventListener('change', () => {
