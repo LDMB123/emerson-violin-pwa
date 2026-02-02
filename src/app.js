@@ -17,6 +17,7 @@ const moduleLoaders = {
     sessionReview: () => import('./analysis/session-review.js'),
     coachActions: () => import('./coach/coach-actions.js'),
     focusTimer: () => import('./coach/focus-timer.js'),
+    lessonPlan: () => import('./coach/lesson-plan.js'),
     reminders: () => import('./notifications/reminders.js'),
     backupExport: () => import('./backup/export.js'),
     gameMetrics: () => import('./games/game-metrics.js'),
@@ -92,6 +93,7 @@ const loadForView = (viewId) => {
     if (viewId === 'view-coach') {
         loadModule('coachActions');
         loadModule('focusTimer');
+        loadModule('lessonPlan');
         loadModule('recommendationsUi');
     }
 

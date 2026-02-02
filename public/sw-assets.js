@@ -36,6 +36,7 @@ self.__ASSETS__ = [
   "./src/backup/export.js",
   "./src/coach/coach-actions.js",
   "./src/coach/focus-timer.js",
+  "./src/coach/lesson-plan.js",
   "./src/games/game-enhancements.js",
   "./src/games/game-metrics.js",
   "./src/ml/accelerator.js",
