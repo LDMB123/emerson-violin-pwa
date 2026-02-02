@@ -1,4 +1,5 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
+import { createTonePlayer } from '../audio/tone-player.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 
 const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
@@ -18,6 +19,21 @@ const soundToggle = document.querySelector('#setting-sounds');
 const isSoundEnabled = () => {
     if (!soundToggle) return true;
     return soundToggle.checked;
+};
+
+let tonePlayer = null;
+const getTonePlayer = () => {
+    if (tonePlayer) return tonePlayer;
+    const created = createTonePlayer();
+    if (!created) return null;
+    tonePlayer = created;
+    return tonePlayer;
+};
+
+const stopTonePlayer = () => {
+    if (tonePlayer) {
+        tonePlayer.stopAll();
+    }
 };
 
 const bindTap = (element, handler, { threshold = 160, clickIgnoreWindow = 420 } = {}) => {
@@ -236,9 +252,9 @@ const updateStorySong = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-story-song input[id^="ss-step-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
-    const banner = document.querySelector('#view-game-story-song .story-banner');
-    if (banner) {
-        banner.textContent = checked === inputs.length ? 'Story Song Lab · Complete!' : 'Story Song Lab';
+    const titleEl = document.querySelector('#view-game-story-song [data-story="title"]');
+    if (titleEl) {
+        titleEl.textContent = checked === inputs.length ? 'Story Song Lab · Complete!' : 'Story Song Lab';
     }
 };
 
@@ -247,78 +263,183 @@ const bindStorySong = () => {
     if (!stage) return;
     const toggle = stage.querySelector('#story-play');
     const statusEl = stage.querySelector('[data-story="status"]');
-    const steps = Array.from(stage.querySelectorAll('input[id^="ss-step-"]'));
-    let playTimer = null;
-    let pageTimer = null;
+    const titleEl = stage.querySelector('[data-story="title"]');
+    const pageEl = stage.querySelector('[data-story="page"]');
+    const notesEl = stage.querySelector('[data-story="notes"]');
+    const promptEl = stage.querySelector('[data-story="prompt"]');
+    const storyPages = [
+        {
+            title: 'Open String Overture',
+            prompt: 'Warm up with your open strings.',
+            notes: ['G', 'D', 'A', 'E'],
+        },
+        {
+            title: 'Fingerboard Sparkle',
+            prompt: 'Climb gently with first-finger steps.',
+            notes: ['G', 'A', 'B', 'C'],
+        },
+        {
+            title: 'Finale Glow',
+            prompt: 'Resolve with a soft descent.',
+            notes: ['D', 'C', 'B', 'A'],
+        },
+    ];
     let stageSeconds = 4;
+    let tempo = 92;
     let reported = false;
     let wasPlaying = false;
+    let pageIndex = 0;
+    let completedNotes = 0;
+    let completedPages = 0;
+    let playToken = 0;
 
-    const updateStatus = () => {
+    const updateStatus = (message) => {
         if (!statusEl) return;
-        if (toggle?.checked) {
-            statusEl.textContent = 'Play-along running — follow the notes.';
-        } else {
-            statusEl.textContent = 'Press Play-Along to start.';
+        if (message) {
+            statusEl.textContent = message;
+            return;
+        }
+        statusEl.textContent = toggle?.checked
+            ? 'Play-along running — follow the notes.'
+            : 'Press Play-Along to start.';
+    };
+
+    const updatePage = (index = pageIndex) => {
+        const page = storyPages[index];
+        if (titleEl) {
+            titleEl.textContent = page ? `Story Song Lab · ${page.title}` : 'Story Song Lab';
+        }
+        if (pageEl) {
+            pageEl.textContent = page ? `Page ${index + 1} of ${storyPages.length}` : '';
+        }
+        if (notesEl) {
+            notesEl.textContent = page ? page.notes.join(' · ') : '♪ ♪ ♪';
+        }
+        if (promptEl) {
+            promptEl.textContent = page ? page.prompt : 'Warm up with your open strings.';
         }
     };
 
-    const stopTimer = () => {
-        if (playTimer) {
-            clearTimeout(playTimer);
-            playTimer = null;
+    const stopPlayback = ({ keepToggle = false, message } = {}) => {
+        playToken += 1;
+        stopTonePlayer();
+        if (!keepToggle && toggle) {
+            toggle.checked = false;
         }
-        if (pageTimer) {
-            clearTimeout(pageTimer);
-            pageTimer = null;
+        if (message) {
+            updateStatus(message);
         }
     };
 
     const reportResult = attachTuning('story-song', (tuning) => {
         stageSeconds = tuning.stageSeconds ?? stageSeconds;
+        tempo = tuning.tempo ?? tuning.storyTempo ?? tempo;
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        updatePage();
     });
 
     const reportSession = () => {
         if (reported) return;
-        const completed = steps.filter((input) => input.checked).length;
-        if (!completed) return;
+        if (completedPages === 0) return;
         reported = true;
-        const accuracy = steps.length ? (completed / steps.length) * 100 : 0;
-        const score = completed * 25;
+        const accuracy = storyPages.length ? (completedPages / storyPages.length) * 100 : 0;
+        const score = completedNotes * 12 + completedPages * 40;
         reportResult({ accuracy, score });
         recordGameEvent('story-song', { accuracy, score });
     };
 
-    toggle?.addEventListener('change', () => {
-        updateStatus();
-        if (toggle.checked) {
+    const resetStory = () => {
+        pageIndex = 0;
+        completedNotes = 0;
+        completedPages = 0;
+        reported = false;
+        updatePage();
+        updateStatus('Press Play-Along to start.');
+    };
+
+    const playStory = async () => {
+        if (!toggle || !toggle.checked) return;
+        if (!isSoundEnabled()) {
+            stopPlayback({ message: 'Sounds are off. Enable Sounds to play along.' });
+            return;
+        }
+        const player = getTonePlayer();
+        if (!player) {
+            stopPlayback({ message: 'Audio is unavailable on this device.' });
+            return;
+        }
+        if (pageIndex >= storyPages.length || reported) {
+            pageIndex = 0;
+            completedNotes = 0;
+            completedPages = 0;
             reported = false;
-            markChecklist('ss-step-1');
-            stopTimer();
-            playTimer = window.setTimeout(() => {
-                markChecklist('ss-step-2');
-            }, stageSeconds * 1000);
-            pageTimer = window.setTimeout(() => {
-                if (toggle.checked) markChecklist('ss-step-3');
-            }, stageSeconds * 2 * 1000);
+        }
+        const token = ++playToken;
+        markChecklist('ss-step-1');
+        updateStatus('Play-along running — follow the notes.');
+
+        while (pageIndex < storyPages.length) {
+            if (token !== playToken || !toggle.checked) break;
+            const page = storyPages[pageIndex];
+            updatePage(pageIndex);
+            const played = await player.playSequence(page.notes, {
+                tempo: page.tempo ?? tempo,
+                gap: 0.12,
+                duration: 0.4,
+                volume: 0.2,
+                type: 'triangle',
+            });
+            if (!played || token !== playToken || !toggle.checked) break;
+            completedNotes += page.notes.length;
+            completedPages = Math.max(completedPages, pageIndex + 1);
+            markChecklistIf(page.notes.length >= 4, 'ss-step-2');
+            markChecklist('ss-step-3');
+            pageIndex += 1;
+            if (pageIndex < storyPages.length) {
+                await new Promise((resolve) => setTimeout(resolve, Math.max(400, stageSeconds * 250)));
+            }
+        }
+
+        if (token !== playToken) return;
+        if (pageIndex >= storyPages.length) {
+            updateStatus('Story complete! Tap Play-Along to replay.');
+            if (toggle) toggle.checked = false;
+            reportSession();
+        } else if (!toggle.checked) {
+            updateStatus('Play-along paused. Tap Play-Along to resume.');
+        } else {
+            updateStatus('Play-along ready. Tap Play-Along to continue.');
+        }
+    };
+
+    toggle?.addEventListener('change', () => {
+        if (toggle.checked) {
+            if (completedPages === 0) {
+                resetStory();
+            }
+            playStory();
         } else {
             markChecklist('ss-step-4');
-            stopTimer();
+            stopPlayback({ keepToggle: true, message: 'Play-along paused. Tap Play-Along to resume.' });
             reportSession();
         }
     });
+    updatePage();
     updateStatus();
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopPlayback({ message: 'Sounds are off. Enable Sounds to play along.' });
+        } else if (event.detail?.enabled === true) {
+            updateStatus('Sounds on. Tap Play-Along to start.');
+        }
+    });
 
     document.addEventListener('visibilitychange', () => {
         if (!toggle) return;
         if (document.hidden) {
             wasPlaying = toggle.checked;
-            stopTimer();
-            if (toggle.checked) {
-                toggle.checked = false;
-            }
-            updateStatus();
+            stopPlayback({ message: 'Play-along paused.' });
         } else if (wasPlaying) {
             wasPlaying = false;
             if (statusEl) {
@@ -329,15 +450,11 @@ const bindStorySong = () => {
 
     window.addEventListener('hashchange', () => {
         if (window.location.hash === '#view-game-story-song') {
-            reported = false;
+            resetStory();
             return;
         }
-        stopTimer();
+        stopPlayback();
         reportSession();
-        if (toggle) {
-            toggle.checked = false;
-        }
-        updateStatus();
     }, { passive: true });
 };
 
@@ -1723,7 +1840,7 @@ const bindRhythmPainter = () => {
             creativity = Math.min(100, score > 0 ? creativity + 8 : creativity);
             tapCount += 1;
             rounds = Math.floor(tapCount / 4);
-            tappedDots.add(dot.className);
+            tappedDots.add(dot.dataset.painterDot || dot.dataset.painter || dot.className);
             dot.classList.add('is-hit');
             setTimeout(() => dot.classList.remove('is-hit'), 220);
             update();
@@ -1860,6 +1977,9 @@ const bindMelodyMaker = () => {
     const trackEl = stage.querySelector('[data-melody="track"]');
     const scoreEl = stage.querySelector('[data-melody="score"]');
     const targetEl = stage.querySelector('[data-melody="target"]');
+    const statusEl = stage.querySelector('[data-melody="status"]');
+    const playButton = stage.querySelector('[data-melody="play"]');
+    const playTargetButton = stage.querySelector('[data-melody="play-target"]');
     const clearButton = stage.querySelector('[data-melody="clear"]');
     const track = [];
     let score = 0;
@@ -1867,10 +1987,18 @@ const bindMelodyMaker = () => {
     let repeatMarked = false;
     const uniqueNotes = new Set();
     let lengthTarget = 4;
+    let maxTrack = 6;
+    let tempo = 92;
     let reported = false;
     let targetMotif = ['G', 'A', 'B', 'C'];
     let matchCount = 0;
+    let isPlaying = false;
+    let playToken = 0;
     const notePool = buttons.map((button) => button.dataset.melodyNote).filter(Boolean);
+
+    const setStatus = (message) => {
+        if (statusEl) statusEl.textContent = message;
+    };
 
     const updateTrack = () => {
         if (trackEl) trackEl.textContent = track.length ? track.join(' · ') : 'Tap notes to build a melody.';
@@ -1897,10 +2025,60 @@ const bindMelodyMaker = () => {
         updateTarget();
     };
 
+    const stopPlayback = (message) => {
+        playToken += 1;
+        isPlaying = false;
+        stopTonePlayer();
+        if (message) setStatus(message);
+    };
+
+    const playSequence = async (notes, message) => {
+        if (!notes.length) {
+            setStatus('Add notes to hear your melody.');
+            return;
+        }
+        if (!isSoundEnabled()) {
+            setStatus('Sounds are off. Enable Sounds to play.');
+            return;
+        }
+        const player = getTonePlayer();
+        if (!player) {
+            setStatus('Audio is unavailable on this device.');
+            return;
+        }
+        const token = ++playToken;
+        isPlaying = true;
+        setStatus(message);
+        const played = await player.playSequence(notes, {
+            tempo,
+            gap: 0.12,
+            duration: 0.4,
+            volume: 0.22,
+            type: 'triangle',
+        });
+        if (token !== playToken || !played) return;
+        isPlaying = false;
+        setStatus('Nice! Try a new variation or hit Play again.');
+        markChecklist('mm-step-4');
+        reportSession();
+    };
+
+    const updateSoundState = () => {
+        const enabled = isSoundEnabled();
+        if (playButton) playButton.disabled = !enabled;
+        if (playTargetButton) playTargetButton.disabled = !enabled;
+        if (!enabled) {
+            setStatus('Sounds are off. You can still build melodies, but enable Sounds to hear them.');
+        }
+    };
+
     const reportResult = attachTuning('melody-maker', (tuning) => {
         lengthTarget = tuning.lengthTarget ?? lengthTarget;
+        tempo = tuning.tempo ?? tuning.melodyTempo ?? tempo;
+        maxTrack = Math.max(lengthTarget + 2, 6);
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         buildTarget();
+        updateSoundState();
     });
 
     const reportSession = () => {
@@ -1919,20 +2097,30 @@ const bindMelodyMaker = () => {
         uniqueNotes.clear();
         reported = false;
         matchCount = 0;
+        stopPlayback();
         updateTrack();
         updateScore();
         buildTarget();
-        if (trackEl) trackEl.textContent = message;
+        setStatus(message);
     };
 
     buttons.forEach((button) => {
         bindTap(button, () => {
             const note = button.dataset.melodyNote;
             if (!note) return;
+            if (isPlaying) {
+                stopPlayback('Editing melody. Tap Play to hear it.');
+            }
             track.push(note);
-            if (track.length > 5) track.shift();
+            if (track.length > maxTrack) track.shift();
             score += 20;
             uniqueNotes.add(note);
+            if (isSoundEnabled()) {
+                const player = getTonePlayer();
+                if (player) {
+                    player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => {});
+                }
+            }
             updateTrack();
             updateScore();
             if (track.length >= lengthTarget) {
@@ -1945,7 +2133,6 @@ const bindMelodyMaker = () => {
                 lastSequence = currentSequence;
             }
             markChecklistIf(uniqueNotes.size >= 3, 'mm-step-3');
-            markChecklistIf(score >= 100, 'mm-step-4');
 
             if (track.length >= targetMotif.length) {
                 const attempt = track.slice(-targetMotif.length).join('');
@@ -1954,6 +2141,7 @@ const bindMelodyMaker = () => {
                     matchCount += 1;
                     score += 50;
                     updateScore();
+                    setStatus(`Target hit! ${matchCount} in a row.`);
                     if (matchCount >= 1) markChecklist('mm-step-1');
                     if (matchCount >= 2) markChecklist('mm-step-2');
                     if (matchCount >= 3) reportSession();
@@ -1968,17 +2156,37 @@ const bindMelodyMaker = () => {
         resetSession('Melody cleared. Tap notes to build a new one.');
     });
 
+    bindTap(playButton, () => {
+        playSequence(track, 'Playing your melody…');
+    });
+
+    bindTap(playTargetButton, () => {
+        playSequence(targetMotif, 'Playing target motif…');
+    });
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopPlayback('Sounds are off. Enable Sounds to play your melody.');
+        } else if (event.detail?.enabled === true) {
+            setStatus('Sounds on. Tap Play to hear your melody.');
+        }
+        updateSoundState();
+    });
+
     window.addEventListener('hashchange', () => {
         if (window.location.hash === '#view-game-melody-maker') {
             resetSession();
             return;
         }
+        stopPlayback();
         reportSession();
     }, { passive: true });
 
     updateTrack();
     updateScore();
     buildTarget();
+    updateSoundState();
+    setStatus('Build a melody, then press Play.');
 };
 
 const bindScalePractice = () => {

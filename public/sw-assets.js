@@ -32,6 +32,7 @@ self.__ASSETS__ = [
   "./src/app.js",
   "./src/assets/fonts/fraunces-vf.woff2",
   "./src/assets/fonts/nunito-vf.woff2",
+  "./src/audio/tone-player.js",
   "./src/backup/export.js",
   "./src/coach/coach-actions.js",
   "./src/coach/focus-timer.js",
