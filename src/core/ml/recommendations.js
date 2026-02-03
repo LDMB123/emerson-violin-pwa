@@ -12,6 +12,14 @@ let workerCounter = 0;
 const workerRequests = new Map();
 
 const isWorkerSupported = () => typeof Worker !== 'undefined';
+const shouldUseWasmSeed = () => {
+    if (typeof WebAssembly === 'undefined') return false;
+    const mem = navigator.deviceMemory || 4;
+    const cores = navigator.hardwareConcurrency || 4;
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (connection?.saveData) return false;
+    return mem >= 4 && cores >= 4;
+};
 
 const ensureWorker = () => {
     if (!isWorkerSupported()) return null;
@@ -103,7 +111,12 @@ export const refreshRecommendationsCacheInWorker = async () => {
         getAdaptiveLog(),
         getGameTuning('trainer-metronome').catch(() => ({ targetBpm: 90 })),
     ]);
-    const recommendations = await runWorker({ events, adaptiveLog, metronomeTuning });
+    const recommendations = await runWorker({
+        events,
+        adaptiveLog,
+        metronomeTuning,
+        allowWasmSeed: shouldUseWasmSeed(),
+    });
     const payload = {
         updatedAt: Date.now(),
         recommendations,
