@@ -25,6 +25,7 @@ const scheduleTask = (task) => {
 
 const scheduleRefresh = (reason) => {
     const now = Date.now();
+    if (document.hidden && reason !== 'visible') return;
     if (pending) return;
     const minInterval = getMinInterval();
     if (!Number.isFinite(minInterval)) return;
