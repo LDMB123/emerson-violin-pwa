@@ -3,6 +3,8 @@ import { getJSON, setJSON } from '../persistence/storage.js';
 const METRICS_KEY = 'panda-violin:perf:metrics-v1';
 const MAX_SAMPLES = 20;
 const FLUSH_DELAY = 15000;
+const AUTO_BASELINE_MS = 5 * 60 * 1000;
+const TUNER_BASELINE_MS = 60 * 1000;
 
 const baselineEl = document.querySelector('[data-perf-baseline]');
 const ttiEl = document.querySelector('[data-perf-tti]');
@@ -43,6 +45,8 @@ let flushed = false;
 let flushTimer = null;
 const observers = [];
 let memoryTimer = null;
+let autoSnapshotTimer = null;
+let tunerSnapshotTimer = null;
 
 const supported = PerformanceObserver?.supportedEntryTypes || [];
 
@@ -153,6 +157,13 @@ const bindTunerPerf = () => {
         const detail = event.detail || {};
         if (!Number.isFinite(detail.elapsedMs)) return;
         state.tunerStartMs = Math.round(detail.elapsedMs);
+        if (!tunerSnapshotTimer) {
+            tunerSnapshotTimer = window.setTimeout(() => {
+                tunerSnapshotTimer = null;
+                if (flushed) return;
+                snapshot('tuner-60s');
+            }, TUNER_BASELINE_MS);
+        }
     });
 };
 
@@ -206,6 +217,14 @@ const disconnectObservers = () => {
     if (memoryTimer) {
         clearInterval(memoryTimer);
         memoryTimer = null;
+    }
+    if (autoSnapshotTimer) {
+        clearTimeout(autoSnapshotTimer);
+        autoSnapshotTimer = null;
+    }
+    if (tunerSnapshotTimer) {
+        clearTimeout(tunerSnapshotTimer);
+        tunerSnapshotTimer = null;
     }
 };
 
@@ -432,6 +451,14 @@ const init = () => {
     bindFrameSampler();
     bindMemorySampler();
     updateBaselineUI();
+    if (!autoSnapshotTimer) {
+        autoSnapshotTimer = window.setTimeout(() => {
+            autoSnapshotTimer = null;
+            if (flushed) return;
+            if (document.visibilityState !== 'visible') return;
+            snapshot('5m');
+        }, AUTO_BASELINE_MS);
+    }
     if (snapshotButton) {
         snapshotButton.addEventListener('click', () => {
             snapshot('manual');
