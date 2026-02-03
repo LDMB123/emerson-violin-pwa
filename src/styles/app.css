@@ -1812,6 +1812,13 @@
         line-height: 1.2;
     }
 
+    .tuner-demo {
+        font-size: var(--text-sm);
+        font-weight: 700;
+        color: #805042;
+        line-height: 1.2;
+    }
+
     .tuner-note-buttons {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));

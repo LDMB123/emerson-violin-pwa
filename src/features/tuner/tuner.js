@@ -11,6 +11,7 @@ const noteEl = document.querySelector('#tuner-note');
 const centsEl = document.querySelector('#tuner-cents');
 const freqEl = document.querySelector('#tuner-frequency');
 const statusEl = document.querySelector('#tuner-status');
+const demoEl = document.querySelector('[data-tuner-demo]');
 const toneButtons = Array.from(document.querySelectorAll('[data-tone]'));
 const toneSamples = new Map(
     Array.from(document.querySelectorAll('[data-tone-audio]')).map((audio) => [audio.dataset.toneAudio, audio])
@@ -85,6 +86,7 @@ const resetDisplay = () => {
     if (noteEl) noteEl.textContent = '--';
     if (centsEl) centsEl.textContent = '±0 cents';
     if (freqEl) freqEl.textContent = '0 Hz';
+    if (demoEl) demoEl.textContent = 'Live input: --';
     if (livePanel) delete livePanel.dataset.inTune;
     if (livePanel) livePanel.style.setProperty('--tuner-offset', '0');
 };
@@ -246,6 +248,9 @@ const handlePitchResult = ({
     const centsLabel = `${displayCents > 0 ? '+' : ''}${displayCents}¢`;
     centsEl.textContent = `${formatCentsHint(displayCents)} · ${centsLabel}`;
     freqEl.textContent = `${roundedFreq} Hz`;
+    if (demoEl) {
+        demoEl.textContent = `Live input: ${displayNote || '--'} · ${roundedFreq} Hz`;
+    }
 
     const offset = clamp(displayCents, -50, 50);
     livePanel.style.setProperty('--tuner-offset', offset.toString());
