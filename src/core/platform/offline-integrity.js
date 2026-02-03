@@ -11,6 +11,7 @@ const checkButton = document.querySelector('[data-offline-check]');
 const selfTestButton = document.querySelector('[data-offline-selftest]');
 const selfTestStatusEl = document.querySelector('[data-offline-selftest-status]');
 const repairButton = document.querySelector('[data-offline-repair]');
+let autoRepairPending = false;
 
 const defaultMetrics = () => ({
     cachedAssets: 0,
@@ -138,6 +139,17 @@ const requestSelfTest = async () => {
     navigator.serviceWorker.controller.postMessage({ type: 'OFFLINE_SELFTEST' });
 };
 
+const maybeAutoRepair = (metrics) => {
+    if (!navigator.onLine) return;
+    if (autoRepairPending) return;
+    if (!metrics?.expectedTotal) return;
+    if (metrics.expectedCached >= metrics.expectedTotal) return;
+    autoRepairPending = true;
+    triggerRepair().finally(() => {
+        autoRepairPending = false;
+    });
+};
+
 const triggerRepair = async () => {
     if (!('serviceWorker' in navigator)) return;
     const registration = await navigator.serviceWorker.getRegistration();
@@ -193,6 +205,7 @@ const handleMessage = async (event) => {
         metrics.lastCheck = event.data.timestamp || Date.now();
         await saveMetrics(metrics);
         updateUI(metrics);
+        maybeAutoRepair(metrics);
     }
 
     if (event.data.type === 'OFFLINE_SELFTEST_RESULT') {
@@ -217,6 +230,13 @@ const init = async () => {
     const metrics = await loadMetrics();
     updateUI(metrics);
     setButtonsEnabled('serviceWorker' in navigator);
+
+    if (metrics.cachedAssets > 0 && !metrics.selfTestTotal && navigator.onLine) {
+        if (selfTestStatusEl) {
+            selfTestStatusEl.textContent = 'Offline self-test: running…';
+        }
+        requestSelfTest();
+    }
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', handleMessage);
