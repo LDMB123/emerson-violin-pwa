@@ -2,97 +2,103 @@
 
 ## Option A - PWA-Only (Maximize Safari)
 
-- System diagram
-- `UI (HTML/CSS) -> Navigation API/hash -> View modules`
-- `View modules -> Core services (platform, persistence, offline, ML)`
-- `Core services -> IndexedDB + Cache Storage`
-- `Audio UI -> AudioWorklet -> WASM pitch engine`
-- `Service Worker -> App shell + lesson packs + offline self-test`
+**System Diagram**
+```text
+Home Screen PWA
+  -> App Shell (index.html, CSS)
+  -> Navigation API / hash fallback
+  -> View Modules (features/*)
+  -> Core Services (platform, persistence, offline, ML)
+  -> IndexedDB + Cache Storage
+  -> Audio: Mic -> AudioContext -> AudioWorklet -> WASM -> UI
+  -> Service Worker: precache, pack cache, self-test, auto-repair
+```
 
-- Module boundaries
-- `src/app.js` boot + view routing + lazy module loading
-- `src/core/platform/*` install, offline, perf, capabilities
-- `src/core/persistence/*` IndexedDB KV + blobs
-- `src/core/worklets/*` DSP scheduling
-- `src/core/wasm/*` generated bindings
-- `src/features/*` UI modules by view
+**Module Boundaries**
+- `src/app.js` boot, routing, lazy feature loading.
+- `src/core/platform/*` install, offline, perf, capability gating.
+- `src/core/persistence/*` IndexedDB KV + blobs + integrity checks.
+- `src/core/audio/*` audio budget monitor + utilities.
+- `src/core/worklets/*` DSP processing and scheduling.
+- `src/core/wasm/*` generated bindings from `wasm-src`.
+- `src/core/ml/*` recommendations + feature store.
+- `src/features/*` view modules per screen.
 
-- Data storage approach
-- IndexedDB DB `panda-violin-db`
-- Store `kv`: settings, progress, streaks, lesson state
-- Store `blobs`: recordings, lesson pack bundles
-- Cache Storage: app shell, fonts, icons, audio samples
-- Storage protection: `navigator.storage.persist` gated to Home Screen or offline mode
+**Data Storage**
+- IndexedDB `panda-violin-db` with `kv` + `blobs` stores.
+- Integrity keys prefixed `__integrity__:` for JSON values.
+- Cache Storage for app shell and lesson pack assets.
+- Lesson pack manifest cached in `__pack-manifests__`.
+- Storage persistence request in Settings when offline packs are enabled.
 
-- Caching plan
-- Precache app shell + core assets
-- Cache-first for static assets, stale-while-revalidate for non-critical JSON
-- Range request support for audio blobs
-- Lesson pack prefetch with explicit user action + progress UI
-- Update strategy: SW notify, apply on next launch, avoid surprise UI changes
+**Caching Plan**
+- Precache app shell and critical assets.
+- Cache-first for static assets and fonts.
+- Stale-while-revalidate for JSON and noncritical data.
+- Range requests supported for audio.
+- Pack auto-repair on activate and refresh.
 
-- Audio pipeline
-- Mic -> AudioContext -> AudioWorkletNode
-- AudioWorklet -> WASM pitch detection
-- Worklet -> main thread UI updates
-- JS fallback for no AudioWorklet/WASM
-- Audio policy: user gesture + resume on visibility
+**Audio Pipeline**
+- User gesture -> AudioContext resume.
+- Mic stream -> AudioWorkletNode.
+- Worklet -> WASM pitch detection.
+- UI updates on main thread with throttled events.
+- JS fallback when Worklet/WASM unavailable.
 
-- Build pipeline
-- Vite 6 ESM build
-- wasm-pack build via `npm run wasm:prepare`
-- SW asset manifest generation pre/post build
-- Perf budget checks in build (later phase)
+**Build Pipeline**
+- Vite 6 ESM build.
+- wasm-pack build + copy via `npm run wasm:prepare`.
+- SW asset manifest pre/post build.
+- Perf budgets enforced in postbuild.
+- Worker format set to ESM for Safari.
 
-- JS reduction strategy
-- Navigation API + hash fallback
-- Native popover/dialog with `command` + `commandfor`
-- CSS `field-sizing`, `content-visibility`, `contain-intrinsic-size`
-- `startViewTransition` only where safe
-- Lazy-load view modules only on navigation
+**JS Reduction Strategy**
+- Navigation API for routing with hash fallback.
+- `command/commandfor` for dialogs and popovers.
+- CSS `field-sizing`, `content-visibility`, container queries.
+- Lazy-load view modules and noncritical features.
 
-- Risks + mitigations
-- Safari storage eviction
-- Mitigation: storage persist request + offline self-test
-- Audio policy restrictions
-- Mitigation: user gesture gating + resume on visibility
-- Large DOM at boot
-- Mitigation: content-visibility + view-specific lazy init
-- Service worker update drift
-- Mitigation: prompt + apply on next launch
+**Risks + Mitigations**
+- Risk: Safari storage eviction.
+- Mitigation: request persistent storage, self-test, auto-repair.
+- Risk: Audio policy restrictions.
+- Mitigation: user gesture gating and resume on visibility.
+- Risk: Boot-time JS creep.
+- Mitigation: budget gates, lazy loading, view-level init.
 
 ## Option B - PWA + Wrapper Path (Escape Hatch)
 
-- System diagram
-- `PWA core -> shared JS/WASM engine`
-- `Wrapper (future) -> native shell -> WebView + native audio APIs`
-- `Native shell -> offline storage bridge (later)`
+**System Diagram**
+```text
+PWA Core (same as Option A)
+  -> Shared JS/WASM engine
+  -> Optional Native Wrapper (future)
+  -> Native audio + storage bridges
+```
 
-- Module boundaries
-- Same as Option A
-- Add `src/core/bridge/*` for native messaging (future)
-- Keep JS/WASM engine portable and side-effect free
+**Module Boundaries**
+- Same as Option A.
+- Add `src/core/bridge/*` for optional native messaging.
+- Keep core engine side-effect free for reuse.
 
-- Data storage approach
-- Same as Option A initially
-- Future: optional native storage adapter with sync bridge
+**Data Storage**
+- IndexedDB + Cache Storage initially.
+- Optional native storage adapter later with sync bridge.
 
-- Audio pipeline
-- Same as Option A
-- Future: native audio capture + shared WASM DSP
+**Audio Pipeline**
+- Same as Option A by default.
+- Future: native capture feeding shared WASM DSP.
 
-- Build pipeline
-- Same as Option A
-- Future: wrapper build (Capacitor/Tauri) outside core repo
+**Build Pipeline**
+- Same as Option A.
+- Wrapper build outside this repo with a strict bridge contract.
 
-- JS reduction strategy
-- Same as Option A
-- Keep UI frameworkless to ease WebView perf
+**JS Reduction Strategy**
+- Same as Option A.
+- Avoid heavy UI frameworks to keep WebView fast.
 
-- Risks + mitigations
-- Wrapper adds complexity
-- Mitigation: keep core PWA standalone, wrapper optional
-- Native API divergence
-- Mitigation: strict bridge interface + feature flags
-- Store duplication
-- Mitigation: single-source-of-truth adapter layer
+**Risks + Mitigations**
+- Risk: wrapper adds complexity.
+- Mitigation: keep PWA standalone and optional.
+- Risk: API divergence.
+- Mitigation: single bridge interface and feature flags.

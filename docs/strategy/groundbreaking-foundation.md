@@ -34,6 +34,7 @@ Focus: deterministic offline behavior, low-latency audio, and a modular architec
 - Convert boot to a feature registry (data-driven loading + prefetch). (Implemented)
 - Version lesson packs with a cached manifest + stale detection. (Implemented)
 - Auto-verify cached lesson packs during refresh/activate. (Implemented)
+- Auto-repair cached lesson packs during refresh/activate. (Implemented)
 - Add audio worklet health watchdogs with fallback gating. (Implemented)
 - Add audio budget breach detection + automatic fallback. (Implemented)
 - Add storage integrity checksums for IndexedDB values. (Implemented)
@@ -43,8 +44,8 @@ Focus: deterministic offline behavior, low-latency audio, and a modular architec
 ## Next Wave (Short-Term)
 - Add prefetch policies per view and device capability tier.
 - Add offline mutation queue + retry backoff for storage writes. (Implemented)
-- Add perf snapshot export to QA report bundle.
-- Move ML recommendations compute to a worker for main-thread relief.
+- Add perf snapshot export to QA report bundle. (Implemented)
+- Move ML recommendations compute to a worker for main-thread relief. (Implemented)
 
 ## Horizon (Medium-Term)
 - Consolidate ML feature extraction into WASM.

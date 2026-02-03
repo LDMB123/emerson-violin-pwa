@@ -10,3 +10,6 @@
 - `0008-ui-kid-first.md`
 - `0009-build-budgets.md`
 - `0010-storage-write-queue.md`
+- `0011-storage-integrity-checks.md`
+- `0012-audio-budget-monitor.md`
+- `0013-lesson-pack-auto-repair.md`

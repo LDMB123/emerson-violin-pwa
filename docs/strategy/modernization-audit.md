@@ -20,16 +20,19 @@
 **Offline Core**
 - Files: `public/sw.js`, `src/core/platform/offline-integrity.js`, `src/core/platform/offline-mode.js`
 - Native-first targets: Cache-first for static assets, offline self-test, navigation preload, clean cache trim rules, persistent storage request.
+- Auto-repair cached lesson packs on refresh/activate.
 - Risks: Cache eviction by WebKit, cold-start offline misses.
 
 **Persistence & Storage**
 - Files: `src/core/persistence/storage.js`, `src/core/ml/feature-store.js`
 - Native-first targets: IndexedDB-first for user data, storage persist requests, local-first sync queues.
+- Integrity checksums for JSON values with repair signals.
 - Risks: Large data (audio clips) could pressure storage limits.
 
 **Audio + Worklets**
 - Files: `src/core/worklets/tuner-processor.js`, `src/features/tuner/tuner.js`, `src/features/recordings/recordings.js`
 - Native-first targets: AudioWorklet for low-latency analysis, avoid main-thread DSP, handle suspended contexts.
+- Audio budget monitor to detect sustained overload and trigger fallback.
 - Risks: Audio pipeline regressions if feature detection is incomplete.
 
 **Games Hub & Metrics**
@@ -84,3 +87,6 @@
 - Added WASM GameTimer wrapper and wired Rhythm Dash to use it with JS fallback.
 - Ported skill-profile rules into Rust (`apply_practice_event`) with JS fallback.
 - Rebuilt wasm artifacts and added a smoke test for the new export.
+- Added audio budget monitor for tuner fallback gating.
+- Added storage integrity checksums for IndexedDB values.
+- Added auto-repair for cached lesson packs in the service worker.
