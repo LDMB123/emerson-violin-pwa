@@ -659,12 +659,12 @@
         font-size: var(--text-base);
         transition: all var(--duration-fast) var(--ease-out);
         touch-action: manipulation;
-        min-height: 44px;
+        min-height: 52px;
     }
 
     .btn-hero {
         font-size: var(--text-lg);
-        min-height: 58px;
+        min-height: 64px;
         padding-inline: var(--space-6);
         letter-spacing: 0.02em;
     }
@@ -1934,8 +1934,8 @@
     }
 
     .daily-step-icon {
-        width: 46px;
-        height: 46px;
+        width: 52px;
+        height: 52px;
         border-radius: 16px;
         display: grid;
         place-items: center;
@@ -1962,7 +1962,7 @@
     }
 
     .daily-step .btn {
-        min-height: 48px;
+        min-height: 52px;
         padding-inline: var(--space-4);
     }
 
@@ -5180,8 +5180,8 @@
     .toggle {
         position: relative;
         display: inline-block;
-        width: 50px;
-        height: 28px;
+        width: 60px;
+        height: 34px;
     }
 
     .toggle input {
@@ -5204,8 +5204,8 @@
         position: absolute;
         left: 3px;
         top: 3px;
-        width: 22px;
-        height: 22px;
+        width: 28px;
+        height: 28px;
         background: white;
         border-radius: var(--radius-full);
         transition: all var(--duration-fast);
@@ -5225,7 +5225,7 @@
     }
 
     .toggle input:checked+.toggle-slider::before {
-        transform: translateX(22px);
+        transform: translateX(26px);
     }
 }
 
@@ -5823,8 +5823,8 @@
     }
 
     .icon-btn {
-        width: 44px;
-        height: 44px;
+        width: 52px;
+        height: 52px;
         border-radius: 50%;
         border: none;
         background: rgba(255, 255, 255, 0.7);
