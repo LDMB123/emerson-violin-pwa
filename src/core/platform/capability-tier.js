@@ -1,3 +1,5 @@
+import { isIPadOS } from './ipados.js';
+
 const getNavigator = () => (typeof navigator !== 'undefined' ? navigator : {});
 const getConnection = (nav) => nav.connection || nav.mozConnection || nav.webkitConnection;
 
@@ -11,13 +13,28 @@ export const getCapabilityProfile = () => {
         : null;
 
     let tier = 'low';
+    let isIPad = false;
+    try {
+        isIPad = isIPadOS();
+    } catch {
+        isIPad = false;
+    }
     if (!saveData) {
         if (deviceMemory !== null && hardwareConcurrency !== null) {
-            tier = deviceMemory >= 4 && hardwareConcurrency >= 4 ? 'high' : (deviceMemory >= 4 || hardwareConcurrency >= 4 ? 'balanced' : 'low');
+            tier = deviceMemory >= 4 && hardwareConcurrency >= 4
+                ? 'high'
+                : (deviceMemory >= 4 || hardwareConcurrency >= 4 ? 'balanced' : 'low');
         } else if (deviceMemory !== null || hardwareConcurrency !== null) {
             const memReady = deviceMemory !== null && deviceMemory >= 4;
             const cpuReady = hardwareConcurrency !== null && hardwareConcurrency >= 4;
-            tier = memReady || cpuReady ? 'balanced' : 'low';
+            const cpuHigh = hardwareConcurrency !== null && hardwareConcurrency >= 6;
+            if (isIPad && deviceMemory === null && cpuHigh) {
+                tier = 'high';
+            } else {
+                tier = memReady || cpuReady ? 'balanced' : 'low';
+            }
+        } else if (isIPad) {
+            tier = 'balanced';
         }
     }
 

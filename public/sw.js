@@ -334,7 +334,11 @@ const respondWithRange = async (request) => {
     }
     if (!Number.isFinite(byteLength) || byteLength <= 0) return cached;
     const range = parseRange(rangeHeader, byteLength);
-    if (!range) return cached;
+    if (!range) {
+        const headers = new Headers(cached.headers);
+        headers.set('Content-Range', `bytes */${byteLength}`);
+        return new Response(null, { status: 416, statusText: 'Range Not Satisfiable', headers });
+    }
     if (range.start === 0 && range.end === byteLength - 1) {
         return cached;
     }
