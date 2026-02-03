@@ -555,6 +555,18 @@ mod tests {
     }
 
     #[test]
+    fn test_detects_violin_string_frequencies() {
+        let mut detector = PitchDetector::new(48000.0, 2048);
+        for (freq, note) in VIOLIN_STRINGS {
+            let tone = generate_tone_buffer(freq, 48000.0, 200);
+            let slice = &tone[..2048];
+            let result = detector.detect(slice);
+            assert_eq!(result.note, note);
+            assert!((result.frequency - freq).abs() < 8.0);
+        }
+    }
+
+    #[test]
     fn test_stable_note_tracking() {
         let mut detector = PitchDetector::new(48000.0, 2048);
         detector.set_stability_threshold(3);
