@@ -1,45 +1,15 @@
 import { getViewId as getCurrentViewId, onViewChange } from './core/utils/view-events.js';
-
-const moduleLoaders = {
-    platform: () => import('./core/platform/native-apis.js'),
-    installGuide: () => import('./core/platform/install-guide.js'),
-    ipadosCapabilities: () => import('./core/platform/ipados-capabilities.js'),
-    capabilityRegistry: () => import('./core/platform/capability-registry.js'),
-    performanceMode: () => import('./core/platform/performance-mode.js'),
-    perfTelemetry: () => import('./core/platform/perf-telemetry.js'),
-    mlScheduler: () => import('./core/ml/offline-scheduler.js'),
-    mlBackend: () => import('./core/ml/backend-manager.js'),
-    mlInference: () => import('./core/ml/inference.js'),
-    offlineIntegrity: () => import('./core/platform/offline-integrity.js'),
-    offlineMode: () => import('./core/platform/offline-mode.js'),
-    lessonPacks: () => import('./core/platform/lesson-packs.js'),
-    progress: () => import('./features/progress/progress.js'),
-    persist: () => import('./core/persistence/persist.js'),
-    tuner: () => import('./features/tuner/tuner.js'),
-    songSearch: () => import('./features/songs/song-search.js'),
-    songProgress: () => import('./features/songs/song-progress.js'),
-    sessionReview: () => import('./features/analysis/session-review.js'),
-    coachActions: () => import('./features/coach/coach-actions.js'),
-    focusTimer: () => import('./features/coach/focus-timer.js'),
-    lessonPlan: () => import('./features/coach/lesson-plan.js'),
-    coachInsights: () => import('./features/coach/coach-insights.js'),
-    reminders: () => import('./features/notifications/reminders.js'),
-    backupExport: () => import('./features/backup/export.js'),
-    gameMetrics: () => import('./features/games/game-metrics.js'),
-    gameEnhancements: () => import('./features/games/game-enhancements.js'),
-    gameHub: () => import('./features/games/game-hub.js'),
-    trainerTools: () => import('./features/trainer/tools.js'),
-    recordings: () => import('./features/recordings/recordings.js'),
-    parentPin: () => import('./features/parent/pin.js'),
-    parentRecordings: () => import('./features/parent/recordings.js'),
-    parentGoals: () => import('./features/parent/goals.js'),
-    swUpdates: () => import('./core/platform/sw-updates.js'),
-    adaptiveUi: () => import('./core/ml/adaptive-ui.js'),
-    recommendationsUi: () => import('./core/ml/recommendations-ui.js'),
-};
+import {
+    PRIMARY_VIEWS,
+    getEagerFeatureIds,
+    getFeature,
+    getFeaturesForView,
+    getIdleFeatureIds,
+    getPrefetchTargetsForView,
+} from './core/app/feature-registry.js';
 
 const loaded = new Map();
-const PRIMARY_VIEWS = new Set(['view-home', 'view-coach', 'view-games', 'view-tuner']);
+const preloaded = new Set();
 const getPerformanceMode = () => document.documentElement?.dataset?.perfMode || 'balanced';
 
 const scheduleIdle = (task) => {
@@ -61,19 +31,53 @@ const scheduleIdle = (task) => {
     window.setTimeout(() => task({ timeRemaining: () => 0, didTimeout: true }), prefersFast ? 200 : 600);
 };
 
-const loadModule = (key) => {
-    const loader = moduleLoaders[key];
-    if (!loader) return Promise.resolve();
-    if (loaded.has(key)) return loaded.get(key);
-    const promise = loader().catch((error) => {
-        console.warn(`[App] Failed to load ${key}`, error);
-    });
-    loaded.set(key, promise);
+const loadModule = (featureId) => {
+    const feature = getFeature(featureId);
+    if (!feature?.loader) return Promise.resolve();
+    if (loaded.has(featureId)) return loaded.get(featureId);
+    const start = performance?.now ? performance.now() : null;
+    const promise = feature.loader()
+        .then((module) => {
+            if (start !== null && performance?.now) {
+                const durationMs = Math.round(performance.now() - start);
+                document.dispatchEvent(new CustomEvent('panda:feature-load', {
+                    detail: { featureId, durationMs },
+                }));
+            }
+            return module;
+        })
+        .catch((error) => {
+            console.warn(`[App] Failed to load ${featureId}`, error);
+        });
+    loaded.set(featureId, promise);
     return promise;
 };
 
-const loadIdle = (key) => {
-    scheduleIdle(() => loadModule(key));
+const loadIdle = (featureId) => {
+    scheduleIdle(() => loadModule(featureId));
+};
+
+const canPrefetch = () => {
+    if (document.prerendering) return false;
+    const perfMode = getPerformanceMode();
+    const deviceMemory = navigator.deviceMemory || 4;
+    const cores = navigator.hardwareConcurrency || 4;
+    const lowTier = deviceMemory <= 2 || cores <= 4;
+    if (lowTier && perfMode !== 'high') return false;
+    const connection = navigator.connection;
+    if (!connection) return true;
+    if (connection.saveData) return false;
+    if (typeof connection.effectiveType === 'string') {
+        return !connection.effectiveType.includes('2g');
+    }
+    return true;
+};
+
+const prefetchModule = (featureId) => {
+    if (!canPrefetch()) return;
+    if (loaded.has(featureId) || preloaded.has(featureId)) return;
+    preloaded.add(featureId);
+    scheduleIdle(() => loadModule(featureId));
 };
 
 const getViewIdFromUrl = (url) => {
@@ -84,62 +88,12 @@ const getViewIdFromUrl = (url) => {
 
 const loadForView = (viewId) => {
     if (!viewId) return;
+    getFeaturesForView(viewId).forEach((featureId) => loadModule(featureId));
+};
 
-    if (viewId === 'view-tuner') {
-        loadModule('tuner');
-    }
-
-    if (viewId === 'view-session-review' || viewId === 'view-analysis') {
-        loadModule('sessionReview');
-        loadModule('recordings');
-    }
-
-    if (viewId === 'view-songs' || viewId.startsWith('view-song-')) {
-        loadModule('songProgress');
-        loadModule('songSearch');
-        loadModule('recordings');
-    }
-
-    if (viewId === 'view-coach') {
-        loadModule('coachActions');
-        loadModule('focusTimer');
-        loadModule('lessonPlan');
-        loadModule('recommendationsUi');
-        loadModule('coachInsights');
-    }
-
-    if (viewId === 'view-trainer' || viewId === 'view-bowing' || viewId === 'view-posture') {
-        loadModule('trainerTools');
-    }
-
-    if (viewId === 'view-settings') {
-        loadModule('swUpdates');
-        loadModule('adaptiveUi');
-        loadModule('offlineMode');
-        loadModule('lessonPacks');
-        loadModule('reminders');
-    }
-
-    if (viewId === 'view-backup') {
-        loadModule('backupExport');
-    }
-
-    if (viewId === 'view-parent') {
-        loadModule('parentPin');
-        loadModule('parentGoals');
-        loadModule('parentRecordings');
-        loadModule('reminders');
-    }
-
-    if (viewId === 'view-games' || viewId.startsWith('view-game-')) {
-        loadModule('gameMetrics');
-        loadModule('gameEnhancements');
-        loadModule('gameHub');
-    }
-
-    if (viewId === 'view-progress') {
-        loadModule('recommendationsUi');
-    }
+const prefetchForView = (viewId) => {
+    if (!viewId) return;
+    getPrefetchTargetsForView(viewId).forEach((featureId) => prefetchModule(featureId));
 };
 
 const registerServiceWorker = () => {
@@ -154,23 +108,8 @@ const boot = () => {
         document.addEventListener('prerenderingchange', boot, { once: true });
         return;
     }
-    loadModule('platform');
-    loadModule('ipadosCapabilities');
-    loadIdle('capabilityRegistry');
-    loadModule('performanceMode');
-    loadModule('perfTelemetry');
-    loadModule('progress');
-    loadModule('persist');
-    loadModule('parentPin');
-    loadIdle('installGuide');
-    loadIdle('swUpdates');
-    loadIdle('mlScheduler');
-    loadIdle('mlBackend');
-    loadIdle('mlInference');
-    loadIdle('offlineIntegrity');
-    loadIdle('offlineMode');
-    loadIdle('lessonPacks');
-    loadIdle('reminders');
+    getEagerFeatureIds().forEach((featureId) => loadModule(featureId));
+    getIdleFeatureIds().forEach((featureId) => loadIdle(featureId));
     registerServiceWorker();
 
     const reduceMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -179,6 +118,11 @@ const boot = () => {
     const navItems = Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]'));
     const mainContent = document.querySelector('.main-content');
     const supportsNavigation = () => 'navigation' in window && typeof window.navigation?.addEventListener === 'function';
+    const prefetchFromHref = (href) => {
+        if (!href) return;
+        const viewId = href.replace('#', '').trim();
+        if (viewId) prefetchForView(viewId);
+    };
 
     const resetViewScroll = () => {
         if (!mainContent) return;
@@ -186,6 +130,7 @@ const boot = () => {
     };
     const applyViewState = (viewId) => {
         loadForView(viewId);
+        prefetchForView(viewId);
         updateNavState(viewId);
         resetViewScroll();
         document.dispatchEvent(new CustomEvent('panda:view-change', { detail: { viewId } }));
@@ -252,6 +197,13 @@ const boot = () => {
             }
         });
     };
+
+    navItems.forEach((item) => {
+        const href = item.getAttribute('href');
+        if (!href) return;
+        item.addEventListener('pointerenter', () => prefetchFromHref(href), { passive: true });
+        item.addEventListener('focus', () => prefetchFromHref(href));
+    });
 
     if (supportsNavigation()) {
         window.navigation.addEventListener('navigate', (event) => {
