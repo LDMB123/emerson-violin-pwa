@@ -7,7 +7,7 @@ const perfToggle = document.querySelector('#setting-performance');
 const statusEl = document.querySelector('[data-performance-status]');
 const metricsEl = document.querySelector('[data-performance-metrics]');
 const capabilitiesEl = document.querySelector('[data-performance-capabilities]');
-const diagnosticsEl = document.querySelector('.performance-diagnostics');
+const diagnosticsPanels = Array.from(document.querySelectorAll('.performance-diagnostics'));
 const root = document.documentElement;
 
 let monitorId = null;
@@ -188,7 +188,8 @@ const stopMonitoring = () => {
 const isSettingsActive = (explicit) => getViewId(explicit) === 'view-settings';
 
 const updateMonitoringState = (viewIdOverride = null) => {
-    const shouldMonitor = Boolean(diagnosticsEl?.open) && isSettingsActive(viewIdOverride) && !document.hidden;
+    const diagnosticsOpen = diagnosticsPanels.some((panel) => panel.open && (panel.offsetParent !== null || panel.getClientRects().length));
+    const shouldMonitor = diagnosticsOpen && isSettingsActive(viewIdOverride) && !document.hidden;
     if (shouldMonitor) startMonitoring();
     else stopMonitoring();
 };
@@ -203,8 +204,10 @@ const init = async () => {
             applyMode(perfToggle.checked ? 'high' : 'balanced', true);
         });
     }
-    if (diagnosticsEl) {
-        diagnosticsEl.addEventListener('toggle', updateMonitoringState);
+    if (diagnosticsPanels.length) {
+        diagnosticsPanels.forEach((panel) => {
+            panel.addEventListener('toggle', updateMonitoringState);
+        });
     }
     onViewChange((viewId) => updateMonitoringState(viewId));
     window.addEventListener('resize', setCapabilities, { passive: true });
