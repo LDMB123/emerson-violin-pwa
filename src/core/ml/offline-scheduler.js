@@ -1,4 +1,4 @@
-import { refreshRecommendationsCache } from './recommendations.js';
+import { refreshRecommendationsCacheInWorker } from './recommendations.js';
 
 const deviceMemory = navigator.deviceMemory || 4;
 const MIN_INTERVAL = deviceMemory <= 4 ? 4 * 60 * 1000 : 2 * 60 * 1000;
@@ -24,7 +24,7 @@ const scheduleRefresh = (reason) => {
     pending = true;
     scheduleTask(async () => {
         try {
-            await refreshRecommendationsCache();
+            await refreshRecommendationsCacheInWorker();
             document.dispatchEvent(new CustomEvent('panda:ml-recs', { detail: { reason } }));
         } catch {
             // Ignore ML cache failures

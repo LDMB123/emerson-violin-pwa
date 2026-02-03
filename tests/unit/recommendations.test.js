@@ -23,6 +23,11 @@ vi.mock('@core/ml/adaptive-engine.js', () => ({
     getGameTuning: vi.fn(async () => ({ targetBpm: 88 })),
 }));
 
+vi.mock('@core/wasm/panda_core.js', () => ({
+    default: vi.fn(async () => {}),
+    compute_recommendation_seed: vi.fn(() => null),
+}));
+
 import { getLearningRecommendations } from '@core/ml/recommendations.js';
 
 describe('learning recommendations', () => {
