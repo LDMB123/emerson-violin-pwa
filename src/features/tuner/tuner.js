@@ -3,6 +3,7 @@ import { ensureDifficultyBadge } from '@core/utils/templates.js';
 import { appendFeatureFrame } from '@core/ml/feature-store.js';
 import { onViewChange } from '@core/utils/view-events.js';
 import initAudioWasm, { PitchDetector } from '@core/wasm/panda_audio.js';
+import { createBudgetMonitor } from '@core/audio/audio-budget.js';
 
 const livePanel = document.querySelector('#tuner-live');
 const tunerToggle = document.querySelector('#tuner-active');
@@ -41,7 +42,10 @@ const BUDGET_RATIO = 0.9;
 const MAX_BUDGET_BREACHES = 6;
 let workletWatchdog = null;
 let lastWorkletAt = 0;
-let budgetBreaches = 0;
+const budgetMonitor = createBudgetMonitor({
+    ratio: BUDGET_RATIO,
+    maxBreaches: MAX_BUDGET_BREACHES,
+});
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
@@ -124,7 +128,7 @@ const clearWorkletWatchdog = () => {
 };
 
 const resetBudgetBreaches = () => {
-    budgetBreaches = 0;
+    budgetMonitor.reset();
 };
 
 const touchWorklet = () => {
@@ -411,13 +415,12 @@ const startTuner = async () => {
                     },
                 }));
                 if (Number.isFinite(bufferSize) && Number.isFinite(sampleRate)) {
-                    const budgetMs = (bufferSize / sampleRate) * 1000 * BUDGET_RATIO;
-                    if (processMs > budgetMs) {
-                        budgetBreaches += 1;
-                    } else {
-                        budgetBreaches = Math.max(0, budgetBreaches - 1);
-                    }
-                    if (budgetBreaches >= MAX_BUDGET_BREACHES) {
+                    const budgetState = budgetMonitor.update({
+                        processMs,
+                        bufferSize,
+                        sampleRate,
+                    });
+                    if (budgetState.tripped) {
                         setStatus('Audio workload high. Switching to fallback…');
                         resetBudgetBreaches();
                         clearWorkletWatchdog();
