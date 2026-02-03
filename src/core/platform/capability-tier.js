@@ -1,11 +1,13 @@
-const getConnection = () => navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+const getNavigator = () => (typeof navigator !== 'undefined' ? navigator : {});
+const getConnection = (nav) => nav.connection || nav.mozConnection || nav.webkitConnection;
 
 export const getCapabilityProfile = () => {
-    const connection = getConnection();
+    const nav = getNavigator();
+    const connection = getConnection(nav);
     const saveData = Boolean(connection?.saveData);
-    const deviceMemory = Number.isFinite(navigator.deviceMemory) ? navigator.deviceMemory : null;
-    const hardwareConcurrency = Number.isFinite(navigator.hardwareConcurrency)
-        ? navigator.hardwareConcurrency
+    const deviceMemory = Number.isFinite(nav.deviceMemory) ? nav.deviceMemory : null;
+    const hardwareConcurrency = Number.isFinite(nav.hardwareConcurrency)
+        ? nav.hardwareConcurrency
         : null;
 
     let tier = 'low';
