@@ -6,6 +6,7 @@ const statusEl = document.querySelector('[data-offline-status]');
 const assetsEl = document.querySelector('[data-offline-assets]');
 const missesEl = document.querySelector('[data-offline-misses]');
 const lastEl = document.querySelector('[data-offline-last]');
+const storageIntegrityEl = document.querySelector('[data-storage-integrity]');
 const readyEl = document.querySelector('[data-offline-ready]');
 const checkButton = document.querySelector('[data-offline-check]');
 const selfTestButton = document.querySelector('[data-offline-selftest]');
@@ -25,6 +26,9 @@ const defaultMetrics = () => ({
     selfTestTotal: 0,
     selfTestAt: 0,
     selfTestMissing: [],
+    integrityAt: 0,
+    integrityStatus: null,
+    integrityKey: null,
 });
 
 const formatTimestamp = (value) => {
@@ -63,6 +67,19 @@ const updateUI = (metrics) => {
                 ? ` Missing: ${metrics.selfTestMissing.map((url) => url.split('/').pop()).join(', ')}.`
                 : '';
             selfTestStatusEl.textContent = `Offline self-test: ${metrics.selfTestPass}/${metrics.selfTestTotal} (${status}).${missingList}`;
+        }
+    }
+    if (storageIntegrityEl) {
+        if (!metrics.integrityAt) {
+            storageIntegrityEl.textContent = 'Storage integrity: monitoring…';
+        } else {
+            const status = metrics.integrityStatus === 'corrupt'
+                ? 'Cleared corrupt entry'
+                : metrics.integrityStatus === 'missing'
+                    ? 'Repaired missing checksum'
+                    : 'Updated';
+            const keyLabel = metrics.integrityKey ? ` · ${metrics.integrityKey}` : '';
+            storageIntegrityEl.textContent = `Storage integrity: ${status}${keyLabel} (${formatTimestamp(metrics.integrityAt)}).`;
         }
     }
     if (statusEl) {
@@ -245,6 +262,16 @@ const init = async () => {
     document.addEventListener('panda:storage-persist', async () => {
         const latest = await loadMetrics();
         updateReadyBadge(latest);
+    });
+
+    document.addEventListener('panda:storage-integrity', async (event) => {
+        const detail = event?.detail || {};
+        const latest = await loadMetrics();
+        latest.integrityAt = Date.now();
+        latest.integrityStatus = detail.status || 'updated';
+        latest.integrityKey = detail.key || null;
+        await saveMetrics(latest);
+        updateUI(latest);
     });
 
     window.addEventListener('online', () => requestSummary(), { passive: true });
