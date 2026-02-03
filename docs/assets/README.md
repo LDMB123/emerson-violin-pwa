@@ -6,3 +6,5 @@ Examples:
 - Screenshots for QA reports
 
 Runtime assets belong in `public/assets/` instead.
+
+Mockup archives live under `docs/assets/mockups/YYYY-MM-DD/`.

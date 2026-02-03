@@ -25,9 +25,11 @@ npm run dev
 - `src/data/songs.json` song data source
 - `public/assets/` images, audio, icons, mockups, badges, illustrations
 - `docs/` reports + AI context pack
+- `docs/strategy/` architecture + modernization plans
 
 ## AI Context
 
+- `docs/ai/FAST_PATH.md`
 - `docs/ai/PROJECT_CONTEXT.md`
 - `docs/ai/FILE_MAP.md`
 - `docs/ai/IGNORE.md`
