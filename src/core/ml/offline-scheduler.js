@@ -1,7 +1,13 @@
 import { refreshRecommendationsCacheInWorker } from './recommendations.js';
+import { getCapabilityProfile } from '../platform/capability-tier.js';
 
-const deviceMemory = navigator.deviceMemory || 4;
-const MIN_INTERVAL = deviceMemory <= 4 ? 4 * 60 * 1000 : 2 * 60 * 1000;
+const getMinInterval = () => {
+    const profile = getCapabilityProfile();
+    if (profile.saveData) return Number.POSITIVE_INFINITY;
+    if (profile.tier === 'high') return 2 * 60 * 1000;
+    if (profile.tier === 'balanced') return 4 * 60 * 1000;
+    return 8 * 60 * 1000;
+};
 let lastRun = 0;
 let pending = false;
 
@@ -20,7 +26,9 @@ const scheduleTask = (task) => {
 const scheduleRefresh = (reason) => {
     const now = Date.now();
     if (pending) return;
-    if (now - lastRun < MIN_INTERVAL) return;
+    const minInterval = getMinInterval();
+    if (!Number.isFinite(minInterval)) return;
+    if (now - lastRun < minInterval) return;
     pending = true;
     scheduleTask(async () => {
         try {
