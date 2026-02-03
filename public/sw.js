@@ -343,10 +343,13 @@ const respondWithRange = async (request) => {
     }
     const headers = new Headers(cached.headers);
     headers.set('Content-Range', `bytes ${range.start}-${range.end}/${byteLength}`);
-    headers.set('Content-Length', String(slicedBody.size ?? slicedBody.byteLength));
+    headers.set('Content-Length', String(range.end - range.start + 1));
     headers.set('Accept-Ranges', 'bytes');
     if (!headers.get('Content-Type')) {
         headers.set('Content-Type', 'application/octet-stream');
+    }
+    if (slicedBody && typeof slicedBody.stream === 'function') {
+        return new Response(slicedBody.stream(), { status: 206, statusText: 'Partial Content', headers });
     }
     return new Response(slicedBody, { status: 206, statusText: 'Partial Content', headers });
 };
