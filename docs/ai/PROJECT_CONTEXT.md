@@ -5,6 +5,7 @@
 - Entry points: `index.html`, `src/app.js`
 - Feature loading: `src/core/app/feature-registry.js` drives lazy load + prefetch
 - Storage: IndexedDB KV + blob store in `src/core/persistence/storage.js`
+- Storage queue: write retry queue in `src/core/persistence/storage.js` for resiliency
 - Service worker: `public/sw-assets.js` (dev) and `dist/sw-assets.js` (build), `sw.js` registered in `src/app.js`
 - Lesson packs: versioned in `src/core/platform/lesson-packs.js`, cached/verified in `public/sw.js`
 - Styles: design tokens in `src/styles/tokens.css`, main styles in `src/styles/app.css`

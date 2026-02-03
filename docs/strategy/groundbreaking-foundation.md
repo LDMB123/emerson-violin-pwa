@@ -40,7 +40,7 @@ Focus: deterministic offline behavior, low-latency audio, and a modular architec
 
 ## Next Wave (Short-Term)
 - Add prefetch policies per view and device capability tier.
-- Add offline mutation queue + retry backoff for storage writes.
+- Add offline mutation queue + retry backoff for storage writes. (Implemented)
 - Add perf snapshot export to QA report bundle.
 - Move ML recommendations compute to a worker for main-thread relief.
 
