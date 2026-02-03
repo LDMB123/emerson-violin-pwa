@@ -321,18 +321,34 @@ const respondWithRange = async (request) => {
     const match = await matchFromCaches(request.url, { ignoreSearch: true });
     const cached = match.cached;
     if (!cached) return null;
-    const buffer = await cached.arrayBuffer();
-    const range = parseRange(rangeHeader, buffer.byteLength);
+    let byteLength = Number(cached.headers.get('Content-Length'));
+    if (!Number.isFinite(byteLength) || byteLength <= 0) {
+        try {
+            const buffer = await cached.arrayBuffer();
+            byteLength = buffer.byteLength;
+        } catch {
+            byteLength = 0;
+        }
+    }
+    if (!byteLength) return cached;
+    const range = parseRange(rangeHeader, byteLength);
     if (!range) return cached;
-    const sliced = buffer.slice(range.start, range.end + 1);
+    let slicedBody = null;
+    try {
+        const blob = await cached.blob();
+        slicedBody = blob.slice(range.start, range.end + 1);
+    } catch {
+        const buffer = await cached.arrayBuffer();
+        slicedBody = buffer.slice(range.start, range.end + 1);
+    }
     const headers = new Headers(cached.headers);
-    headers.set('Content-Range', `bytes ${range.start}-${range.end}/${buffer.byteLength}`);
-    headers.set('Content-Length', String(sliced.byteLength));
+    headers.set('Content-Range', `bytes ${range.start}-${range.end}/${byteLength}`);
+    headers.set('Content-Length', String(slicedBody.size ?? slicedBody.byteLength));
     headers.set('Accept-Ranges', 'bytes');
     if (!headers.get('Content-Type')) {
         headers.set('Content-Type', 'application/octet-stream');
     }
-    return new Response(sliced, { status: 206, statusText: 'Partial Content', headers });
+    return new Response(slicedBody, { status: 206, statusText: 'Partial Content', headers });
 };
 
 const cacheFirst = async (request) => {
