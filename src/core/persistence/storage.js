@@ -1,7 +1,10 @@
+import { computeIntegrityChecksum } from './integrity.js';
+
 const DB_NAME = 'panda-violin-db';
 const DB_VERSION = 2;
 const STORE = 'kv';
 const BLOB_STORE = 'blobs';
+const INTEGRITY_PREFIX = '__integrity__:';
 
 const hasIndexedDB = typeof indexedDB !== 'undefined';
 let dbPromise = null;
@@ -12,11 +15,19 @@ const writeQueue = [];
 let flushTimer = null;
 let flushing = false;
 
+const getIntegrityKey = (key) => `${INTEGRITY_PREFIX}${key}`;
+const isIntegrityKey = (key) => typeof key === 'string' && key.startsWith(INTEGRITY_PREFIX);
+
 const notifyQueue = (reason) => {
     if (typeof document === 'undefined') return;
     document.dispatchEvent(new CustomEvent('panda:storage-queue', {
         detail: { pending: writeQueue.length, reason },
     }));
+};
+
+const notifyIntegrity = (detail) => {
+    if (typeof document === 'undefined') return;
+    document.dispatchEvent(new CustomEvent('panda:storage-integrity', { detail }));
 };
 
 const scheduleFlush = (reason) => {
@@ -170,11 +181,34 @@ const removeBlobFromDB = async (db, key) => new Promise((resolve, reject) => {
 });
 
 export const getJSON = async (key) => {
+    if (!key) return null;
     const db = await openDB();
     if (!db) return null;
     try {
         const value = await getFromDB(db, key);
-        return value !== null && value !== undefined ? value : null;
+        if (value === null || value === undefined) return null;
+        if (isIntegrityKey(key)) return value;
+        const checksum = computeIntegrityChecksum(value);
+        let stored = null;
+        try {
+            stored = await getFromDB(db, getIntegrityKey(key));
+        } catch {
+            stored = null;
+        }
+        if (!stored) {
+            setInDB(db, getIntegrityKey(key), checksum).catch(() => {});
+            notifyIntegrity({ key, status: 'missing', checksum });
+            return value;
+        }
+        if (stored !== checksum) {
+            await Promise.allSettled([
+                removeFromDB(db, key),
+                removeFromDB(db, getIntegrityKey(key)),
+            ]);
+            notifyIntegrity({ key, status: 'corrupt', checksum, stored });
+            return null;
+        }
+        return value;
     } catch (error) {
         console.warn('[Storage] IndexedDB get failed', error);
         return null;
@@ -182,30 +216,69 @@ export const getJSON = async (key) => {
 };
 
 export const setJSON = async (key, value) => {
+    if (!key) return;
+    if (isIntegrityKey(key)) {
+        const db = await openDB();
+        if (!db) {
+            enqueueWrite({ type: 'set', store: STORE, key, value, attempt: 0 });
+            return;
+        }
+        try {
+            await setInDB(db, key, value);
+        } catch (error) {
+            console.warn('[Storage] IndexedDB set failed', error);
+            enqueueWrite({ type: 'set', store: STORE, key, value, attempt: 0 });
+        }
+        return;
+    }
     const db = await openDB();
+    const checksum = computeIntegrityChecksum(value);
     if (!db) {
         enqueueWrite({ type: 'set', store: STORE, key, value, attempt: 0 });
+        enqueueWrite({ type: 'set', store: STORE, key: getIntegrityKey(key), value: checksum, attempt: 0 });
         return;
     }
     try {
         await setInDB(db, key, value);
+        await setInDB(db, getIntegrityKey(key), checksum);
     } catch (error) {
         console.warn('[Storage] IndexedDB set failed', error);
         enqueueWrite({ type: 'set', store: STORE, key, value, attempt: 0 });
+        enqueueWrite({ type: 'set', store: STORE, key: getIntegrityKey(key), value: checksum, attempt: 0 });
     }
 };
 
 export const removeJSON = async (key) => {
+    if (!key) return;
+    if (isIntegrityKey(key)) {
+        const db = await openDB();
+        if (!db) {
+            enqueueWrite({ type: 'remove', store: STORE, key, attempt: 0 });
+            return;
+        }
+        try {
+            await removeFromDB(db, key);
+        } catch (error) {
+            console.warn('[Storage] IndexedDB remove failed', error);
+            enqueueWrite({ type: 'remove', store: STORE, key, attempt: 0 });
+        }
+        return;
+    }
     const db = await openDB();
     if (!db) {
         enqueueWrite({ type: 'remove', store: STORE, key, attempt: 0 });
+        enqueueWrite({ type: 'remove', store: STORE, key: getIntegrityKey(key), attempt: 0 });
         return;
     }
     try {
-        await removeFromDB(db, key);
+        await Promise.all([
+            removeFromDB(db, key),
+            removeFromDB(db, getIntegrityKey(key)),
+        ]);
     } catch (error) {
         console.warn('[Storage] IndexedDB remove failed', error);
         enqueueWrite({ type: 'remove', store: STORE, key, attempt: 0 });
+        enqueueWrite({ type: 'remove', store: STORE, key: getIntegrityKey(key), attempt: 0 });
     }
 };
 
