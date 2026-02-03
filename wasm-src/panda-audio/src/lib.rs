@@ -45,6 +45,12 @@ pub struct PitchResult {
     confidence: f32,
     /// Whether the pitch is considered "in tune"
     in_tune: bool,
+    /// Stable note name after smoothing
+    stable_note: String,
+    /// Stable cents offset when a note is locked
+    stable_cents: i32,
+    /// Stability ratio (0.0 to 1.0)
+    stability: f32,
 }
 
 #[wasm_bindgen]
@@ -78,6 +84,21 @@ impl PitchResult {
     pub fn in_tune(&self) -> bool {
         self.in_tune
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn stable_note(&self) -> String {
+        self.stable_note.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn stable_cents(&self) -> i32 {
+        self.stable_cents
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn stability(&self) -> f32 {
+        self.stability
+    }
 }
 
 /// Pitch detector using autocorrelation algorithm
@@ -95,6 +116,16 @@ pub struct PitchDetector {
     tune_tolerance: i32,
     /// Previous valid frequency for smoothing
     prev_frequency: f32,
+    /// Last detected note for stability tracking
+    last_note: String,
+    /// Stable note after threshold
+    stable_note: String,
+    /// Stable cents offset
+    stable_cents: i32,
+    /// How many consistent detections to lock the note
+    stability_threshold: u32,
+    /// Running count of stable detections
+    note_streak: u32,
     /// Reusable buffers to avoid allocations
     downsampled: Vec<f32>,
     nsdf: Vec<f32>,
@@ -123,6 +154,11 @@ impl PitchDetector {
             volume_threshold: 0.01,
             tune_tolerance: 10,
             prev_frequency: 0.0,
+            last_note: String::new(),
+            stable_note: String::new(),
+            stable_cents: 0,
+            stability_threshold: 3,
+            note_streak: 0,
             downsampled: vec![0.0; downsampled_size],
             nsdf: vec![0.0; nsdf_size],
         }
@@ -142,6 +178,8 @@ impl PitchDetector {
 
         // If volume is too low, return no pitch
         if volume < self.volume_threshold {
+            self.note_streak = 0;
+            self.last_note.clear();
             return PitchResult {
                 frequency: 0.0,
                 note: String::new(),
@@ -149,6 +187,9 @@ impl PitchDetector {
                 volume,
                 confidence: 0.0,
                 in_tune: false,
+                stable_note: String::new(),
+                stable_cents: 0,
+                stability: 0.0,
             };
         }
 
@@ -157,6 +198,8 @@ impl PitchDetector {
 
         // If no valid pitch found
         if frequency < self.min_freq || frequency > self.max_freq || confidence < 0.75 { // Slightly lower threshold for downsampled
+            self.note_streak = 0;
+            self.last_note.clear();
             return PitchResult {
                 frequency: 0.0,
                 note: String::new(),
@@ -164,6 +207,9 @@ impl PitchDetector {
                 volume,
                 confidence,
                 in_tune: false,
+                stable_note: String::new(),
+                stable_cents: 0,
+                stability: 0.0,
             };
         }
 
@@ -178,6 +224,25 @@ impl PitchDetector {
         // Convert frequency to note name and cents
         let (note, cents) = self.frequency_to_note(smoothed_freq);
         let in_tune = cents.abs() <= self.tune_tolerance;
+        let mut stability = 0.0;
+        let mut stable_note = String::new();
+        let mut stable_cents = 0;
+
+        if !note.is_empty() {
+            if note == self.last_note {
+                self.note_streak = self.note_streak.saturating_add(1);
+            } else {
+                self.note_streak = 1;
+                self.last_note = note.clone();
+            }
+            stability = (self.note_streak as f32 / self.stability_threshold as f32).min(1.0);
+            if self.note_streak >= self.stability_threshold {
+                self.stable_note = note.clone();
+                self.stable_cents = cents;
+                stable_note = self.stable_note.clone();
+                stable_cents = self.stable_cents;
+            }
+        }
 
         PitchResult {
             frequency: smoothed_freq,
@@ -186,6 +251,9 @@ impl PitchDetector {
             volume,
             confidence,
             in_tune,
+            stable_note,
+            stable_cents,
+            stability,
         }
     }
 
@@ -402,6 +470,15 @@ impl PitchDetector {
     pub fn set_tune_tolerance(&mut self, cents: i32) {
         self.tune_tolerance = cents.clamp(1, 50);
     }
+
+    /// Set stability threshold for note locking
+    #[wasm_bindgen]
+    pub fn set_stability_threshold(&mut self, threshold: u32) {
+        self.stability_threshold = threshold.clamp(1, 8);
+        if self.note_streak > self.stability_threshold {
+            self.note_streak = self.stability_threshold;
+        }
+    }
 }
 
 /// Generate a reference tone at a specific frequency
@@ -465,5 +542,30 @@ mod tests {
         // Test with constant signal
         let constant = vec![0.5f32; 1024];
         assert!((detector.calculate_rms(&constant) - 0.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_detects_a4_frequency() {
+        let mut detector = PitchDetector::new(48000.0, 2048);
+        let tone = generate_tone_buffer(440.0, 48000.0, 200);
+        let slice = &tone[..2048];
+        let result = detector.detect(slice);
+        assert_eq!(result.note, "A4");
+        assert!((result.frequency - 440.0).abs() < 6.0);
+    }
+
+    #[test]
+    fn test_stable_note_tracking() {
+        let mut detector = PitchDetector::new(48000.0, 2048);
+        detector.set_stability_threshold(3);
+        let tone = generate_tone_buffer(440.0, 48000.0, 200);
+        let slice = &tone[..2048];
+        let result1 = detector.detect(slice);
+        assert!(result1.stable_note.is_empty());
+        let result2 = detector.detect(slice);
+        assert!(result2.stable_note.is_empty());
+        let result3 = detector.detect(slice);
+        assert_eq!(result3.stable_note, "A4");
+        assert!(result3.stability >= 1.0);
     }
 }

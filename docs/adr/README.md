@@ -6,3 +6,4 @@
 - `0004-routing-navigation-api.md`
 - `0005-lesson-packs-cache.md`
 - `0006-sw-update-strategy.md`
+- `0007-audio-engine-stability.md`

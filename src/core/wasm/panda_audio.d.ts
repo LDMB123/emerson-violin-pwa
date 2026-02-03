@@ -30,6 +30,10 @@ export class PitchDetector {
      */
     constructor(sample_rate: number, buffer_size: number);
     /**
+     * Set stability threshold for note locking
+     */
+    set_stability_threshold(threshold: number): void;
+    /**
      * Set tune tolerance in cents
      */
     set_tune_tolerance(cents: number): void;
@@ -51,6 +55,9 @@ export class PitchResult {
     readonly frequency: number;
     readonly in_tune: boolean;
     readonly note: string;
+    readonly stability: number;
+    readonly stable_cents: number;
+    readonly stable_note: string;
     readonly volume: number;
 }
 
@@ -76,6 +83,7 @@ export interface InitOutput {
     readonly pitchdetector_detect: (a: number, b: number, c: number) => number;
     readonly pitchdetector_get_nearest_string: (a: number, b: number) => [number, number];
     readonly pitchdetector_new: (a: number, b: number) => number;
+    readonly pitchdetector_set_stability_threshold: (a: number, b: number) => void;
     readonly pitchdetector_set_tune_tolerance: (a: number, b: number) => void;
     readonly pitchdetector_set_volume_threshold: (a: number, b: number) => void;
     readonly pitchresult_cents: (a: number) => number;
@@ -83,6 +91,9 @@ export interface InitOutput {
     readonly pitchresult_frequency: (a: number) => number;
     readonly pitchresult_in_tune: (a: number) => number;
     readonly pitchresult_note: (a: number) => [number, number];
+    readonly pitchresult_stability: (a: number) => number;
+    readonly pitchresult_stable_cents: (a: number) => number;
+    readonly pitchresult_stable_note: (a: number) => [number, number];
     readonly pitchresult_volume: (a: number) => number;
     readonly string_frequency: (a: number, b: number) => number;
     readonly init: () => void;
