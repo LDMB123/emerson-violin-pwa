@@ -10,6 +10,7 @@
 - Progress bars include `aria-label`.
 - Offline and storage status messages use `aria-live="polite"`.
 - Dialogs and popovers include `aria-label` and `aria-controls`.
+- "More" popover now uses `aria-haspopup="dialog"` to match its dialog role.
 - Tuner live direction uses text (“Higher/Lower/Perfect”) in addition to color.
 - Tuner demo live region set to `aria-live="off"` to avoid excessive announcements.
 
