@@ -64,6 +64,13 @@ export class PitchDetector {
         return this;
     }
     /**
+     * Set stability threshold for note locking
+     * @param {number} threshold
+     */
+    set_stability_threshold(threshold) {
+        wasm.pitchdetector_set_stability_threshold(this.__wbg_ptr, threshold);
+    }
+    /**
      * Set tune tolerance in cents
      * @param {number} cents
      */
@@ -137,6 +144,35 @@ export class PitchResult {
         let deferred1_1;
         try {
             const ret = wasm.pitchresult_note(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * @returns {number}
+     */
+    get stability() {
+        const ret = wasm.pitchresult_stability(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get stable_cents() {
+        const ret = wasm.pitchresult_stable_cents(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {string}
+     */
+    get stable_note() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.pitchresult_stable_note(this.__wbg_ptr);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
