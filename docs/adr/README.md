@@ -7,3 +7,4 @@
 - `0005-lesson-packs-cache.md`
 - `0006-sw-update-strategy.md`
 - `0007-audio-engine-stability.md`
+- `0008-ui-kid-first.md`

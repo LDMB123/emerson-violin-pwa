@@ -662,6 +662,13 @@
         min-height: 44px;
     }
 
+    .btn-hero {
+        font-size: var(--text-lg);
+        min-height: 58px;
+        padding-inline: var(--space-6);
+        letter-spacing: 0.02em;
+    }
+
     .btn:active {
         transform: scale(0.97);
     }
@@ -1606,7 +1613,7 @@
     :root:has(#view-home:target) .nav-item[href="#view-home"],
     :root:has(#view-coach:target) .nav-item[href="#view-coach"],
     :root:has(#view-games:target) .nav-item[href="#view-games"],
-    :root:has(#view-progress:target) .nav-item[href="#view-progress"],
+    :root:has(#view-tuner:target) .nav-item[href="#view-tuner"],
     :root:has(.song-view:target) .nav-item[href="#view-songs"],
     :root:not(:has(.view:target)) .nav-item[href="#view-home"] {
         background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
@@ -1880,6 +1887,115 @@
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: var(--space-3);
         margin-top: var(--space-2);
+    }
+
+    /* Daily Practice View */
+    .daily-layout {
+        display: grid;
+        gap: var(--space-4);
+        width: min(100%, 720px);
+        margin-inline: auto;
+    }
+
+    .daily-card {
+        padding: clamp(1.2rem, 3.4vw, 1.9rem);
+        border-radius: 28px;
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(255, 244, 231, 0.96));
+        box-shadow: 0 16px 28px rgba(120, 60, 40, 0.14);
+        display: grid;
+        gap: var(--space-3);
+    }
+
+    .daily-kicker {
+        font-size: var(--text-sm);
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #7A4A3B;
+    }
+
+    .daily-steps {
+        display: grid;
+        gap: var(--space-3);
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+
+    .daily-step {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.88);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    }
+
+    .daily-step-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        font-size: 1.4rem;
+        background: linear-gradient(135deg, #ffd5a8, #ffe8cf);
+        box-shadow: 0 6px 12px rgba(120, 60, 40, 0.12);
+    }
+
+    .daily-step-body {
+        display: grid;
+        gap: 2px;
+    }
+
+    .daily-step-title {
+        font-weight: 800;
+        font-size: clamp(1rem, 3.6vw, 1.2rem);
+        color: #5E3326;
+    }
+
+    .daily-step-time {
+        font-size: var(--text-sm);
+        font-weight: 700;
+        color: #7A4A3B;
+    }
+
+    .daily-step .btn {
+        min-height: 48px;
+        padding-inline: var(--space-4);
+    }
+
+    .daily-actions {
+        display: flex;
+        gap: var(--space-3);
+        flex-wrap: wrap;
+    }
+
+    .daily-reward {
+        background: linear-gradient(160deg, rgba(255, 249, 238, 0.98), rgba(255, 229, 200, 0.95));
+        text-align: center;
+    }
+
+    .daily-reward-text {
+        margin: 0;
+        font-weight: 700;
+        color: #6A3A2A;
+    }
+
+    @media (max-width: 520px) {
+        .daily-step {
+            grid-template-columns: auto 1fr;
+        }
+
+        .daily-step .btn {
+            grid-column: 1 / -1;
+            width: 100%;
+        }
+
+        .daily-actions .btn {
+            width: 100%;
+        }
     }
 
     /* Coach View */
@@ -2473,6 +2589,14 @@
         color: var(--color-text-muted);
         font-size: var(--text-sm);
         line-height: 1.35;
+    }
+
+    .parent-gate-note {
+        display: none;
+    }
+
+    .parent-gate-note[data-visible="true"] {
+        display: block;
     }
 
     .more-toggle {

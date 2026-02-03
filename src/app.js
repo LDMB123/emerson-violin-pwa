@@ -39,7 +39,7 @@ const moduleLoaders = {
 };
 
 const loaded = new Map();
-const PRIMARY_VIEWS = new Set(['view-home', 'view-coach', 'view-games', 'view-progress']);
+const PRIMARY_VIEWS = new Set(['view-home', 'view-coach', 'view-games', 'view-tuner']);
 const getPerformanceMode = () => document.documentElement?.dataset?.perfMode || 'balanced';
 
 const scheduleIdle = (task) => {
@@ -161,6 +161,7 @@ const boot = () => {
     loadModule('perfTelemetry');
     loadModule('progress');
     loadModule('persist');
+    loadModule('parentPin');
     loadIdle('installGuide');
     loadIdle('swUpdates');
     loadIdle('mlScheduler');

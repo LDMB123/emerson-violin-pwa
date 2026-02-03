@@ -8,12 +8,20 @@ const pinDisplayEl = document.querySelector('[data-parent-pin-display]');
 const pinInputEl = document.querySelector('[data-parent-pin-input]');
 const pinSaveButton = document.querySelector('[data-parent-pin-save]');
 const pinStatusEl = document.querySelector('[data-parent-pin-status]');
+const parentEntryEl = document.querySelector('[data-parent-entry]');
+const parentGateStatusEl = document.querySelector('[data-parent-gate-status]');
 
 const PIN_KEY = 'panda-violin:parent-pin-v1';
 const UNLOCK_KEY = 'panda-violin:parent-unlocked';
 const UNLOCK_TTL = 2 * 60 * 60 * 1000;
+const HOLD_MS = 900;
+const HINT_MS = 2400;
 let cachedPin = '1001';
 let pinReady = null;
+let holdTimer = null;
+let hintTimer = null;
+let holdTriggered = false;
+let holdResetTimer = null;
 
 const normalizePin = (value) => (value || '').replace(/\D/g, '').slice(0, 4);
 
@@ -45,6 +53,17 @@ const getPin = async () => {
 
 const setPinStatus = (message) => {
     if (pinStatusEl) pinStatusEl.textContent = message;
+};
+
+const showParentGateHint = (message) => {
+    if (!parentGateStatusEl) return;
+    parentGateStatusEl.textContent = message;
+    parentGateStatusEl.dataset.visible = 'true';
+    if (hintTimer) window.clearTimeout(hintTimer);
+    hintTimer = window.setTimeout(() => {
+        parentGateStatusEl.textContent = '';
+        parentGateStatusEl.dataset.visible = 'false';
+    }, HINT_MS);
 };
 
 const isUnlocked = async () => {
@@ -137,6 +156,49 @@ if (pinInputEl) {
 
 if (pinSaveButton) {
     pinSaveButton.addEventListener('click', savePin);
+}
+
+if (parentEntryEl) {
+    parentEntryEl.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        holdTriggered = false;
+        if (holdTimer) window.clearTimeout(holdTimer);
+        holdTimer = window.setTimeout(() => {
+            holdTriggered = true;
+            if (holdResetTimer) window.clearTimeout(holdResetTimer);
+            holdResetTimer = window.setTimeout(() => {
+                holdTriggered = false;
+            }, 3000);
+            showParentGateHint('Opening Parent Zone...');
+        }, HOLD_MS);
+    });
+
+    const cancelHold = () => {
+        if (holdTimer) window.clearTimeout(holdTimer);
+        holdTimer = null;
+    };
+
+    parentEntryEl.addEventListener('pointerup', cancelHold);
+    parentEntryEl.addEventListener('pointercancel', cancelHold);
+    parentEntryEl.addEventListener('pointerleave', cancelHold);
+    parentEntryEl.addEventListener('contextmenu', (event) => event.preventDefault());
+
+    parentEntryEl.addEventListener('click', (event) => {
+        if (!holdTriggered) {
+            event.preventDefault();
+            event.stopPropagation();
+            showParentGateHint('Hold to open Parent Zone.');
+            return;
+        }
+        holdTriggered = false;
+        if (holdResetTimer) window.clearTimeout(holdResetTimer);
+    });
+
+    parentEntryEl.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            holdTriggered = true;
+        }
+    });
 }
 
 onViewChange((viewId) => {
