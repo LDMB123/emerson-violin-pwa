@@ -61,6 +61,8 @@ let metronomeReported = false;
 let metronomeTouched = false;
 let metronomeTick = 0;
 let countInRemaining = 0;
+let clickBuffers = null;
+let clickBufferRate = 0;
 let postureCount = 0;
 let postureTarget = 2;
 let postureReported = false;
@@ -222,25 +224,34 @@ const playClick = ({ accent = false, subdivision: isSubdivision = false } = {}) 
     if (!isSoundEnabled()) return;
     const ctx = ensureAudioContext();
     if (!ctx) return;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    if (accent) {
-        osc.frequency.value = 980;
-        gain.gain.setValueAtTime(0.24, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-    } else if (isSubdivision) {
-        osc.frequency.value = 640;
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-    } else {
-        osc.frequency.value = 820;
-        gain.gain.setValueAtTime(0.17, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-    }
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.09);
+    const ensureClickBuffers = () => {
+        if (clickBuffers && clickBufferRate === ctx.sampleRate) return;
+        clickBufferRate = ctx.sampleRate;
+        const makeBuffer = ({ frequency, duration, gain }) => {
+            const length = Math.max(1, Math.floor(ctx.sampleRate * duration));
+            const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < length; i += 1) {
+                const t = i / ctx.sampleRate;
+                const envelope = Math.exp(-12 * (i / length));
+                data[i] = Math.sin(2 * Math.PI * frequency * t) * gain * envelope;
+            }
+            return buffer;
+        };
+        clickBuffers = {
+            accent: makeBuffer({ frequency: 980, duration: 0.09, gain: 0.24 }),
+            main: makeBuffer({ frequency: 820, duration: 0.08, gain: 0.17 }),
+            subdivision: makeBuffer({ frequency: 640, duration: 0.05, gain: 0.1 }),
+        };
+    };
+    ensureClickBuffers();
+    const buffer = accent
+        ? clickBuffers.accent
+        : (isSubdivision ? clickBuffers.subdivision : clickBuffers.main);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start();
 };
 
 const stopMetronome = ({ silent = false } = {}) => {

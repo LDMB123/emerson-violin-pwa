@@ -48,6 +48,7 @@ let memoryTimer = null;
 let autoSnapshotTimer = null;
 let tunerSnapshotTimer = null;
 let frameSamplerControl = null;
+let memorySamplerControl = null;
 
 const supported = PerformanceObserver?.supportedEntryTypes || [];
 
@@ -218,9 +219,18 @@ const bindMemorySampler = () => {
             // Ignore memory sampling failures.
         }
     };
-
-    measure();
-    memoryTimer = window.setInterval(measure, 10000);
+    const start = () => {
+        if (memoryTimer) return;
+        measure();
+        memoryTimer = window.setInterval(measure, 10000);
+    };
+    const stop = () => {
+        if (!memoryTimer) return;
+        clearInterval(memoryTimer);
+        memoryTimer = null;
+    };
+    start();
+    return { start, stop };
 };
 
 const disconnectObservers = () => {
@@ -235,6 +245,10 @@ const disconnectObservers = () => {
     if (memoryTimer) {
         clearInterval(memoryTimer);
         memoryTimer = null;
+    }
+    if (memorySamplerControl) {
+        memorySamplerControl.stop();
+        memorySamplerControl = null;
     }
     if (frameSamplerControl) {
         frameSamplerControl.stop();
@@ -443,13 +457,16 @@ const bindLifecycle = () => {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
             frameSamplerControl?.stop();
+            memorySamplerControl?.stop();
             scheduleFlush('hidden');
         } else if (flushTimer) {
             clearTimeout(flushTimer);
             flushTimer = null;
             frameSamplerControl?.start();
+            memorySamplerControl?.start();
         } else {
             frameSamplerControl?.start();
+            memorySamplerControl?.start();
         }
     });
     window.addEventListener('pagehide', () => {
@@ -475,7 +492,7 @@ const init = () => {
     bindFeaturePerf();
     bindTunerPerf();
     frameSamplerControl = bindFrameSampler();
-    bindMemorySampler();
+    memorySamplerControl = bindMemorySampler();
     updateBaselineUI();
     if (!autoSnapshotTimer) {
         autoSnapshotTimer = window.setTimeout(() => {
