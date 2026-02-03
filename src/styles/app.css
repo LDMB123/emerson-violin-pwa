@@ -348,6 +348,21 @@
         transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out);
     }
 
+    @supports (content-visibility: auto) {
+        .view {
+            content-visibility: auto;
+            contain-intrinsic-size: 1000px 1200px;
+        }
+
+        .view:target {
+            content-visibility: visible;
+        }
+
+        :root:not(:has(.view:target)) #view-home {
+            content-visibility: visible;
+        }
+    }
+
     /* Target-based visibility */
     .view:target {
         display: block;

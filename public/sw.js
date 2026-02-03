@@ -1,5 +1,6 @@
 const CACHE_VERSION = 'v110';
 const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
+const MEDIA_CACHE_NAME = `panda-violin-media-${CACHE_VERSION}`;
 const PACK_CACHE_NAME = `panda-violin-pack-${CACHE_VERSION}`;
 const PACK_CACHE_PREFIX = 'panda-violin-pack-';
 const PACK_MANIFEST_PREFIX = './__pack-manifests__/';
@@ -36,6 +37,7 @@ const PRECACHE_URLS = buildPrecacheList();
 const EXPECTED_URLS = new Set(buildExpectedUrls());
 const STATIC_DESTINATIONS = new Set(['style', 'script', 'font', 'image', 'audio', 'wasm']);
 const MAX_RUNTIME_ENTRIES = 60;
+const MAX_MEDIA_ENTRIES = 30;
 let offlineMode = false;
 
 const cacheAsset = async (cache, asset) => {
@@ -64,30 +66,30 @@ const shouldCacheResponse = (response) => {
     return true;
 };
 
-const trimRuntimeCache = async (cache) => {
+const trimRuntimeCache = async (cache, maxEntries = MAX_RUNTIME_ENTRIES) => {
     try {
         const requests = await cache.keys();
         const runtimeRequests = requests.filter((request) => !EXPECTED_URLS.has(request.url));
-        if (runtimeRequests.length <= MAX_RUNTIME_ENTRIES) return;
-        const excess = runtimeRequests.length - MAX_RUNTIME_ENTRIES;
+        if (runtimeRequests.length <= maxEntries) return;
+        const excess = runtimeRequests.length - maxEntries;
         await Promise.all(runtimeRequests.slice(0, excess).map((request) => cache.delete(request)));
     } catch {
         // Ignore cache trim failures
     }
 };
 
-const cacheResponse = async (cache, request, response) => {
+const cacheResponse = async (cache, request, response, { maxEntries } = {}) => {
     if (!shouldCacheResponse(response)) return;
     try {
         await cache.put(request, response.clone());
-        await trimRuntimeCache(cache);
+        await trimRuntimeCache(cache, maxEntries);
     } catch {
         // Ignore cache write failures
     }
 };
 
-const matchFromCaches = async (request, options) => {
-    const cache = await caches.open(CACHE_NAME);
+const matchFromCaches = async (request, options, cacheName = CACHE_NAME) => {
+    const cache = await caches.open(cacheName);
     const cached = await cache.match(request, options);
     if (cached) return { cached, cache };
     const packCache = await caches.open(PACK_CACHE_NAME);
@@ -95,6 +97,14 @@ const matchFromCaches = async (request, options) => {
     if (packCached) return { cached: packCached, cache: packCache };
     return { cached: null, cache };
 };
+
+const getRuntimeCacheName = (request) => {
+    const destination = request?.destination;
+    if (destination === 'audio' || destination === 'wasm') return MEDIA_CACHE_NAME;
+    return CACHE_NAME;
+};
+
+const getRuntimeLimit = (cacheName) => (cacheName === MEDIA_CACHE_NAME ? MAX_MEDIA_ENTRIES : MAX_RUNTIME_ENTRIES);
 
 const summarizePackWithCaches = async (assets = [], cache, packCache) => {
     let cached = 0;
@@ -275,13 +285,15 @@ self.addEventListener('activate', (event) => {
         (async () => {
             await Promise.all(
                 (await caches.keys()).map((key) => {
-                    if (key === CACHE_NAME || key === PACK_CACHE_NAME) return null;
+                    if (key === CACHE_NAME || key === MEDIA_CACHE_NAME || key === PACK_CACHE_NAME) return null;
                     if (key.startsWith(PACK_CACHE_PREFIX)) return caches.delete(key);
                     return caches.delete(key);
                 })
             );
             const cache = await caches.open(CACHE_NAME);
-            await trimRuntimeCache(cache);
+            await trimRuntimeCache(cache, MAX_RUNTIME_ENTRIES);
+            const mediaCache = await caches.open(MEDIA_CACHE_NAME);
+            await trimRuntimeCache(mediaCache, MAX_MEDIA_ENTRIES);
             try {
                 await verifyCachedPacks();
             } catch {
@@ -318,7 +330,8 @@ const parseRange = (rangeHeader, size) => {
 const respondWithRange = async (request) => {
     const rangeHeader = request.headers.get('range');
     if (!rangeHeader) return null;
-    const match = await matchFromCaches(request.url, { ignoreSearch: true });
+    const cacheName = getRuntimeCacheName(request);
+    const match = await matchFromCaches(request, { ignoreSearch: true }, cacheName);
     const cached = match.cached;
     if (!cached) return null;
     let slicedBody = null;
@@ -361,14 +374,14 @@ const respondWithRange = async (request) => {
     return new Response(slicedBody, { status: 206, statusText: 'Partial Content', headers });
 };
 
-const cacheFirst = async (request) => {
-    const match = await matchFromCaches(request);
+const cacheFirst = async (request, cacheName = CACHE_NAME) => {
+    const match = await matchFromCaches(request, undefined, cacheName);
     const cache = match.cache;
     const cached = match.cached;
     if (cached) return cached;
     try {
         const response = await fetch(request);
-        await cacheResponse(cache, request, response);
+        await cacheResponse(cache, request, response, { maxEntries: getRuntimeLimit(cacheName) });
         return response;
     } catch {
         await notifyOfflineMiss(request, 'cache-first');
@@ -376,11 +389,11 @@ const cacheFirst = async (request) => {
     }
 };
 
-const staleWhileRevalidate = async (request, event) => {
-    const cache = await caches.open(CACHE_NAME);
+const staleWhileRevalidate = async (request, event, cacheName = CACHE_NAME) => {
+    const cache = await caches.open(cacheName);
     const cached = await cache.match(request);
     const fetchPromise = fetch(request).then((response) => {
-        cacheResponse(cache, request, response);
+        cacheResponse(cache, request, response, { maxEntries: getRuntimeLimit(cacheName) });
         return response;
     });
     if (cached) {
@@ -408,7 +421,8 @@ const notifyClients = async (payload) => {
 
 const getCacheSummary = async () => {
     const cache = await caches.open(CACHE_NAME);
-    const requests = await cache.keys();
+    const mediaCache = await caches.open(MEDIA_CACHE_NAME);
+    const [requests, mediaRequests] = await Promise.all([cache.keys(), mediaCache.keys()]);
     const cachedUrls = new Set(requests.map((request) => request.url));
     const expected = Array.from(EXPECTED_URLS);
     let expectedCached = 0;
@@ -416,7 +430,7 @@ const getCacheSummary = async () => {
         if (cachedUrls.has(url)) expectedCached += 1;
     });
     return {
-        cachedAssets: requests.length,
+        cachedAssets: requests.length + mediaRequests.length,
         expectedTotal: expected.length,
         expectedCached,
     };
@@ -490,8 +504,8 @@ const handleNavigation = async (event) => {
     }
 };
 
-const cacheOnly = async (request) => {
-    const match = await matchFromCaches(request, { ignoreSearch: true });
+const cacheOnly = async (request, cacheName = CACHE_NAME) => {
+    const match = await matchFromCaches(request, { ignoreSearch: true }, cacheName);
     const cached = match.cached;
     if (cached) return cached;
     await notifyOfflineMiss(request, 'cache-only');
@@ -527,12 +541,12 @@ self.addEventListener('fetch', (event) => {
                 (async () => {
                     const ranged = await respondWithRange(request);
                     if (ranged) return ranged;
-                    return cacheOnly(request);
+                    return cacheOnly(request, getRuntimeCacheName(request));
                 })()
             );
             return;
         }
-        event.respondWith(cacheOnly(request));
+        event.respondWith(cacheOnly(request, getRuntimeCacheName(request)));
         return;
     }
 
@@ -558,11 +572,12 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (STATIC_DESTINATIONS.has(request.destination)) {
-        event.respondWith(cacheFirst(request));
+        const cacheName = getRuntimeCacheName(request);
+        event.respondWith(cacheFirst(request, cacheName));
         return;
     }
 
-    event.respondWith(staleWhileRevalidate(request, event));
+    event.respondWith(staleWhileRevalidate(request, event, CACHE_NAME));
 });
 
 self.addEventListener('message', (event) => {

@@ -645,3 +645,7 @@ document.addEventListener('panda:persist-applied', () => {
     requestWakeLock();
     requestOrientationLock();
 });
+
+document.addEventListener('panda:pack-ready', () => {
+    maybeAutoPersist('pack-ready');
+});

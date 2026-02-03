@@ -230,6 +230,9 @@ const handleMessage = (event) => {
             total,
             message,
         });
+        if (status === 'ready') {
+            document.dispatchEvent(new CustomEvent('panda:pack-ready', { detail: { packId: data.packId } }));
+        }
         return;
     }
     if (data.type === 'PACK_CLEAR_DONE') {
