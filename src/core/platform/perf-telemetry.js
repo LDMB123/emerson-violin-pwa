@@ -221,6 +221,45 @@ const formatBytes = (value) => {
     return `${mb.toFixed(1)} MB`;
 };
 
+const formatConnection = (connection) => {
+    if (!connection) return null;
+    return {
+        effectiveType: connection.effectiveType,
+        saveData: connection.saveData,
+        downlink: connection.downlink,
+        rtt: connection.rtt,
+    };
+};
+
+const collectEnvironment = async () => {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    let storage = null;
+    if (navigator.storage?.estimate) {
+        try {
+            storage = await navigator.storage.estimate();
+        } catch {
+            storage = null;
+        }
+    }
+    return {
+        userAgent: navigator.userAgent || null,
+        platform: navigator.platform || null,
+        languages: navigator.languages || (navigator.language ? [navigator.language] : []),
+        deviceMemory: navigator.deviceMemory || null,
+        hardwareConcurrency: navigator.hardwareConcurrency || null,
+        devicePixelRatio: window.devicePixelRatio || null,
+        screen: {
+            width: window.screen?.width || null,
+            height: window.screen?.height || null,
+            availWidth: window.screen?.availWidth || null,
+            availHeight: window.screen?.availHeight || null,
+            colorDepth: window.screen?.colorDepth || null,
+        },
+        connection: formatConnection(connection),
+        storage: storage ? { quota: storage.quota, usage: storage.usage } : null,
+    };
+};
+
 const buildSample = (reason) => {
     const eventAvg = state.eventCount ? state.eventTotal / state.eventCount : 0;
     const longTaskAvg = state.longTaskCount ? state.longTaskTotal / state.longTaskCount : 0;
@@ -310,8 +349,10 @@ const clearHistory = async () => {
 
 const exportHistory = async () => {
     const stored = await getJSON(METRICS_KEY);
+    const env = await collectEnvironment();
     const payload = {
         exportedAt: Date.now(),
+        env,
         samples: Array.isArray(stored) ? stored : [],
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
