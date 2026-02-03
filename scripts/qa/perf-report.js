@@ -1,19 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-
-const args = process.argv.slice(2);
-const getArg = (flag) => {
-    const idx = args.indexOf(flag);
-    return idx !== -1 ? args[idx + 1] : null;
-};
-
-const inputPath = getArg('--input');
-if (!inputPath) {
-    console.error('Usage: node scripts/qa/perf-report.js --input <perf-json> [--output <md>]);');
-    process.exit(1);
-}
-
-const outputPath = getArg('--output');
+import { pathToFileURL } from 'url';
 
 const formatMs = (value) => (Number.isFinite(value) ? `${Math.round(value)} ms` : '—');
 const formatPct = (value) => (Number.isFinite(value) ? `${Math.round(value)}%` : '—');
@@ -41,7 +28,7 @@ const formatStorage = (storage) => {
     return `${usage} used / ${quota} quota`;
 };
 
-const buildReport = (payload) => {
+export const buildReport = (payload) => {
     const samples = Array.isArray(payload.samples) ? payload.samples : [];
     const latest = samples[0] || {};
     const env = payload.env || {};
@@ -86,10 +73,26 @@ const buildReport = (payload) => {
     return lines.join('\n');
 };
 
-const main = async () => {
+export const loadPerfPayload = async (inputPath) => {
     const input = path.resolve(inputPath);
     const raw = await fs.readFile(input, 'utf8');
-    const payload = JSON.parse(raw);
+    return JSON.parse(raw);
+};
+
+const runCli = async () => {
+    const args = process.argv.slice(2);
+    const getArg = (flag) => {
+        const idx = args.indexOf(flag);
+        return idx !== -1 ? args[idx + 1] : null;
+    };
+
+    const inputPath = getArg('--input');
+    if (!inputPath) {
+        console.error('Usage: node scripts/qa/perf-report.js --input <perf-json> [--output <md>]);');
+        process.exit(1);
+    }
+    const outputPath = getArg('--output');
+    const payload = await loadPerfPayload(inputPath);
     const report = buildReport(payload);
 
     if (outputPath) {
@@ -102,7 +105,9 @@ const main = async () => {
     console.log(report);
 };
 
-main().catch((error) => {
-    console.error('[perf-report] Failed', error);
-    process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+    runCli().catch((error) => {
+        console.error('[perf-report] Failed', error);
+        process.exit(1);
+    });
+}

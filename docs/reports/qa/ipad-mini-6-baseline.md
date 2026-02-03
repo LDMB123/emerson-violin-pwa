@@ -9,10 +9,10 @@
 
 ## Build Output (Local, 2026-02-03)
 - Initial JS (gzip): 4.9 KB
-- Total JS (gzip): 105.6 KB
+- Total JS (gzip): 111.4 KB
 - Total CSS (gzip): 24.2 KB
 - Total WASM (gzip): 67.4 KB
-- Largest assets: `panda_core_bg.wasm` 45.0 KB (gzip), `panda_audio_bg.wasm` 22.4 KB (gzip), `game-metrics` 15.0 KB (gzip)
+- Largest assets: `panda_core_bg.wasm` 45.0 KB (gzip), `panda_audio_bg.wasm` 22.4 KB (gzip), `game-metrics` 15.1 KB (gzip)
 
 Note: These are local build outputs, not device runtime measurements.
 
@@ -23,6 +23,7 @@ Note: These are local build outputs, not device runtime measurements.
 - Open Settings -> Performance -> Baseline metrics
 - Tap `Record baseline snapshot`
 - Tap `Export baseline JSON` (attach to issue log)
+- Bundle export via `docs/reports/qa/ipad-mini-6-capture.md`
 - Record `TTI proxy`, `LCP`, `Input max`, `Long task max`, `Frame max`, `Memory`
 
 ## Memory After 5 Minutes

@@ -8,4 +8,6 @@
 - `build/budgets.json` perf budget thresholds
 - `dev/start-preview.sh` start simple HTTP preview server
 - `qa/qa-screenshots.mjs` capture QA screenshots into `docs/reports/qa/screenshots/`
+- `qa/perf-report.js` convert perf JSON into a markdown report
+- `qa/perf-bundle.js` bundle perf JSON + report + build meta + screenshots
 - `maintenance/cleanup-organization.sh` repo cleanup + archive helpers

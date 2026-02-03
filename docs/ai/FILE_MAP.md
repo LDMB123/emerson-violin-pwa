@@ -17,11 +17,13 @@
 - `src/core/app/feature-registry.js` feature loading registry + prefetch map
 - `src/core/platform/` PWA + iPadOS platform helpers, install guide, offline mode, SW updates
 - `src/core/persistence/` IndexedDB KV + blob storage
+- `src/core/persistence/integrity.js` storage checksums
 - `src/core/ml/` recommendations, adaptive tuning, offline scheduler
 - `src/core/ml/recommendations-engine.js` pure recommendation engine
 - `src/core/ml/recommendations-worker.js` background worker for recommendations
 - `src/core/utils/` shared helpers (skill profile, recording export)
 - `src/core/audio/` tone playback utilities
+- `src/core/audio/audio-budget.js` audio budget monitor
 - `src/core/worklets/` AudioWorklet processor
 - `src/core/wasm/` generated WASM bindings
 - `src/core/wasm/README.md` generated output notes
@@ -63,6 +65,7 @@
 **Reports**
 - `docs/reports/README.md` reports index
 - `docs/reports/qa/README.md` QA reports index
+- `docs/reports/qa/ipad-mini-6-capture.md` iPad capture workflow + bundle script
 
 **Configs**
 - `vite.config.js` build tooling
@@ -81,6 +84,8 @@
 - `scripts/README.md` script index
 - `scripts/dev/` local preview helpers
 - `scripts/qa/` QA tooling
+- `scripts/qa/perf-report.js` perf JSON to markdown report
+- `scripts/qa/perf-bundle.js` perf bundle generator
 - `scripts/maintenance/` cleanup helpers
 
 **Tests**
