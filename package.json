@@ -8,7 +8,7 @@
         "dev": "vite",
         "prebuild": "node scripts/build/build-songs-html.js && node scripts/build/build-sw-assets.js",
         "build": "vite build",
-        "postbuild": "node scripts/build/build-sw-assets.js --dist",
+        "postbuild": "node scripts/build/build-sw-assets.js --dist && node scripts/build/check-budgets.js",
         "preview": "vite preview",
         "test": "vitest run",
         "test:watch": "vitest",
