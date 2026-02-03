@@ -52,6 +52,9 @@ const clearButton = document.querySelector('[data-pack-clear]');
 const state = new Map();
 const nodes = new Map();
 const autoVerify = new Set();
+const prefersReducedData = () => window.matchMedia?.('(prefers-reduced-data: reduce)').matches;
+const isSaveDataEnabled = () => Boolean(navigator.connection?.saveData);
+const canAutoFetch = () => navigator.onLine && !prefersReducedData() && !isSaveDataEnabled();
 
 const setSummary = (text) => {
     if (summaryEl) summaryEl.textContent = text;
@@ -186,7 +189,7 @@ const sendToServiceWorker = async (payload) => {
 };
 
 const queueAutoVerify = (packId) => {
-    if (!navigator.onLine) return;
+    if (!canAutoFetch()) return;
     const pack = PACK_INDEX.get(packId);
     if (!pack) return;
     if (autoVerify.has(packId)) return;

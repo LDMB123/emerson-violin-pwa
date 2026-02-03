@@ -4,6 +4,7 @@ import { appendFeatureFrame } from '@core/ml/feature-store.js';
 import { onViewChange } from '@core/utils/view-events.js';
 import initAudioWasm, { PitchDetector } from '@core/wasm/panda_audio.js';
 import { createBudgetMonitor } from '@core/audio/audio-budget.js';
+import { createAudioContext } from '@core/audio/context.js';
 
 const livePanel = document.querySelector('#tuner-live');
 const tunerToggle = document.querySelector('#tuner-active');
@@ -419,11 +420,10 @@ const startTuner = async () => {
             return;
         }
 
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) {
+        audioContext = createAudioContext();
+        if (!audioContext) {
             throw new Error('AudioContext not supported');
         }
-        audioContext = new AudioCtx({ latencyHint: 'interactive' });
         audioContext.addEventListener('statechange', () => {
             if (!audioContext) return;
             if (audioContext.state === 'suspended' && tunerToggle?.checked) {
