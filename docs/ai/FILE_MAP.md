@@ -57,6 +57,7 @@
 - `docs/strategy/README.md` planning index
 - `docs/strategy/groundbreaking-foundation.md` foundation plan + pillars
 - `docs/strategy/architecture-options.md` architecture paths + tradeoffs
+- `docs/strategy/device-capability-matrix.md` device tiers + feature gating
 - `docs/strategy/modernization-plan.md` modernization phases
 - `docs/strategy/modernization-audit.md` audit map + targets
 - `docs/strategy/wasm-rust-modernization.md` WASM/Rust roadmap
