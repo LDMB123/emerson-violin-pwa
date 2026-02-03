@@ -63,6 +63,10 @@ let metronomeTick = 0;
 let countInRemaining = 0;
 let clickBuffers = null;
 let clickBufferRate = 0;
+let metronomeSchedulerTimer = null;
+let nextTickTime = 0;
+const METRONOME_LOOKAHEAD = 0.025;
+const METRONOME_SCHEDULE_AHEAD = 0.12;
 let postureCount = 0;
 let postureTarget = 2;
 let postureReported = false;
@@ -70,7 +74,7 @@ let bowingTarget = 3;
 let bowingReported = false;
 let bowingLastReported = 0;
 
-const isMetronomeRunning = () => Boolean(metronomeTimer || metronomeUsingWorklet);
+const isMetronomeRunning = () => Boolean(metronomeTimer || metronomeSchedulerTimer || metronomeUsingWorklet);
 
 const formatDifficulty = (value) => {
     const label = value || 'medium';
@@ -220,38 +224,36 @@ const ensureMetronomeWorklet = async (ctx) => {
     return metronomeNode;
 };
 
-const playClick = ({ accent = false, subdivision: isSubdivision = false } = {}) => {
-    if (!isSoundEnabled()) return;
-    const ctx = ensureAudioContext();
-    if (!ctx) return;
-    const ensureClickBuffers = () => {
-        if (clickBuffers && clickBufferRate === ctx.sampleRate) return;
-        clickBufferRate = ctx.sampleRate;
-        const makeBuffer = ({ frequency, duration, gain }) => {
-            const length = Math.max(1, Math.floor(ctx.sampleRate * duration));
-            const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < length; i += 1) {
-                const t = i / ctx.sampleRate;
-                const envelope = Math.exp(-12 * (i / length));
-                data[i] = Math.sin(2 * Math.PI * frequency * t) * gain * envelope;
-            }
-            return buffer;
-        };
-        clickBuffers = {
-            accent: makeBuffer({ frequency: 980, duration: 0.09, gain: 0.24 }),
-            main: makeBuffer({ frequency: 820, duration: 0.08, gain: 0.17 }),
-            subdivision: makeBuffer({ frequency: 640, duration: 0.05, gain: 0.1 }),
-        };
+const ensureClickBuffers = (ctx) => {
+    if (clickBuffers && clickBufferRate === ctx.sampleRate) return;
+    clickBufferRate = ctx.sampleRate;
+    const makeBuffer = ({ frequency, duration, gain }) => {
+        const length = Math.max(1, Math.floor(ctx.sampleRate * duration));
+        const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i += 1) {
+            const t = i / ctx.sampleRate;
+            const envelope = Math.exp(-12 * (i / length));
+            data[i] = Math.sin(2 * Math.PI * frequency * t) * gain * envelope;
+        }
+        return buffer;
     };
-    ensureClickBuffers();
+    clickBuffers = {
+        accent: makeBuffer({ frequency: 980, duration: 0.09, gain: 0.24 }),
+        main: makeBuffer({ frequency: 820, duration: 0.08, gain: 0.17 }),
+        subdivision: makeBuffer({ frequency: 640, duration: 0.05, gain: 0.1 }),
+    };
+};
+
+const playClickAt = (ctx, when, { accent = false, subdivision: isSubdivision = false } = {}) => {
+    ensureClickBuffers(ctx);
     const buffer = accent
         ? clickBuffers.accent
         : (isSubdivision ? clickBuffers.subdivision : clickBuffers.main);
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(ctx.destination);
-    source.start();
+    source.start(when);
 };
 
 const stopMetronome = ({ silent = false } = {}) => {
@@ -261,6 +263,10 @@ const stopMetronome = ({ silent = false } = {}) => {
     if (metronomeTimer) {
         clearInterval(metronomeTimer);
         metronomeTimer = null;
+    }
+    if (metronomeSchedulerTimer) {
+        clearTimeout(metronomeSchedulerTimer);
+        metronomeSchedulerTimer = null;
     }
     if (metronomeNode && metronomeUsingWorklet) {
         metronomeNode.port.postMessage({ type: 'stop' });
@@ -309,14 +315,15 @@ const startMetronome = async ({ skipCountIn = false } = {}) => {
         metronomeUsingWorklet = false;
     }
 
-    const runTick = () => {
+    const tickInterval = 60 / (metronomeBpm * Math.max(1, subdivision));
+    const scheduleTick = (time) => {
         const subIndex = metronomeTick % Math.max(1, subdivision);
         const beatIndex = Math.floor(metronomeTick / Math.max(1, subdivision)) % Math.max(1, beatsPerMeasure);
         const isMainBeat = subIndex === 0;
 
         if (countInRemaining > 0) {
             if (isMainBeat) {
-                playClick({ accent: true });
+                playClickAt(ctx, time, { accent: true });
                 countInRemaining -= 1;
                 if (countInRemaining > 0) {
                     setMetronomeStatus(`Count-in: ${countInRemaining}...`);
@@ -329,14 +336,23 @@ const startMetronome = async ({ skipCountIn = false } = {}) => {
         }
 
         const shouldAccent = accentEnabled && isMainBeat && beatIndex === 0;
-        playClick({ accent: shouldAccent, subdivision: !isMainBeat });
+        playClickAt(ctx, time, { accent: shouldAccent, subdivision: !isMainBeat });
         metronomeTick += 1;
     };
 
+    const schedulerLoop = () => {
+        if (!audioContext) return;
+        const now = audioContext.currentTime;
+        while (nextTickTime < now + METRONOME_SCHEDULE_AHEAD) {
+            scheduleTick(nextTickTime);
+            nextTickTime += tickInterval;
+        }
+        metronomeSchedulerTimer = window.setTimeout(schedulerLoop, METRONOME_LOOKAHEAD * 1000);
+    };
+
     if (!startedWorklet) {
-        const interval = Math.round(60000 / (metronomeBpm * Math.max(1, subdivision)));
-        runTick();
-        metronomeTimer = window.setInterval(runTick, interval);
+        nextTickTime = ctx.currentTime + 0.05;
+        schedulerLoop();
     }
     if (metronomeToggle) metronomeToggle.checked = true;
     if (!countInRemaining) {
@@ -354,7 +370,7 @@ const refreshMetronome = () => {
         setMetronomeStatus(getMetronomeStatusText());
         return;
     }
-    if (metronomeTimer) {
+    if (metronomeTimer || metronomeSchedulerTimer) {
         stopMetronome({ silent: true });
         startMetronome({ skipCountIn: true });
         return;

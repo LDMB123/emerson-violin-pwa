@@ -12,6 +12,7 @@ const audioEl = document.querySelector('[data-perf-audio]');
 const snapshotButton = document.querySelector('[data-perf-snapshot]');
 const exportButton = document.querySelector('[data-perf-export]');
 const clearButton = document.querySelector('[data-perf-clear]');
+const diagnosticsPanels = Array.from(document.querySelectorAll('.performance-diagnostics'));
 
 const state = {
     lcp: null,
@@ -49,6 +50,7 @@ let autoSnapshotTimer = null;
 let tunerSnapshotTimer = null;
 let frameSamplerControl = null;
 let memorySamplerControl = null;
+let memorySamplingReady = false;
 
 const supported = PerformanceObserver?.supportedEntryTypes || [];
 
@@ -233,6 +235,23 @@ const bindMemorySampler = () => {
     return { start, stop };
 };
 
+const sampleMemoryOnce = async () => {
+    try {
+        if (typeof performance?.measureUserAgentSpecificMemory === 'function') {
+            const result = await performance.measureUserAgentSpecificMemory();
+            if (Number.isFinite(result?.bytes)) {
+                state.memoryBytes = Math.round(result.bytes);
+            }
+            return;
+        }
+        if (performance?.memory?.usedJSHeapSize) {
+            state.memoryBytes = Math.round(performance.memory.usedJSHeapSize);
+        }
+    } catch {
+        // Ignore memory sampling failures.
+    }
+};
+
 const disconnectObservers = () => {
     observers.forEach((observer) => {
         try {
@@ -250,6 +269,7 @@ const disconnectObservers = () => {
         memorySamplerControl.stop();
         memorySamplerControl = null;
     }
+    memorySamplingReady = false;
     if (frameSamplerControl) {
         frameSamplerControl.stop();
         frameSamplerControl = null;
@@ -396,6 +416,9 @@ const updateBaselineUI = async (sampleOverride = null) => {
 };
 
 const snapshot = async (reason) => {
+    if (typeof sampleMemoryOnce === 'function') {
+        await sampleMemoryOnce();
+    }
     const sample = buildSample(reason);
     await persistSample(sample);
     await updateBaselineUI(sample);
@@ -454,6 +477,19 @@ const scheduleFlush = (reason) => {
 };
 
 const bindLifecycle = () => {
+    const updateMemorySampling = () => {
+        if (!memorySamplerControl) return;
+        if (document.visibilityState === 'hidden') {
+            memorySamplerControl.stop();
+            return;
+        }
+        const diagnosticsOpen = diagnosticsPanels.some((panel) => panel.open && (panel.offsetParent !== null || panel.getClientRects().length));
+        if (diagnosticsOpen) {
+            memorySamplerControl.start();
+        } else {
+            memorySamplerControl.stop();
+        }
+    };
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
             frameSamplerControl?.stop();
@@ -463,15 +499,24 @@ const bindLifecycle = () => {
             clearTimeout(flushTimer);
             flushTimer = null;
             frameSamplerControl?.start();
-            memorySamplerControl?.start();
+            updateMemorySampling();
         } else {
             frameSamplerControl?.start();
-            memorySamplerControl?.start();
+            updateMemorySampling();
         }
     });
+    if (diagnosticsPanels.length) {
+        diagnosticsPanels.forEach((panel) => {
+            panel.addEventListener('toggle', updateMemorySampling);
+        });
+    }
     window.addEventListener('pagehide', () => {
         flush('pagehide');
     }, { once: true });
+    if (!memorySamplingReady) {
+        memorySamplingReady = true;
+        updateMemorySampling();
+    }
 };
 
 const init = () => {
