@@ -15,3 +15,4 @@ node_modules/
 docs/reports/qa/screenshots/**
 !docs/reports/qa/screenshots/**/
 !docs/reports/qa/screenshots/**/README.md
+.worktrees/
