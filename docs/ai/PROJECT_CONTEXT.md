@@ -10,6 +10,7 @@
 - Service worker: `public/sw-assets.js` (dev) and `dist/sw-assets.js` (build), `sw.js` registered in `src/app.js`
 - Lesson packs: versioned in `src/core/platform/lesson-packs.js`, cached/verified/auto-repaired in `public/sw.js`
 - Styles: design tokens in `src/styles/tokens.css`, main styles in `src/styles/app.css`
+- Capability tiers: `src/core/platform/capability-tier.js` for device gating
 - ML worker: `src/core/ml/recommendations-worker.js` (optional WASM seed gated by device)
 - Song data: `src/data/songs.json` → `scripts/build/build-songs-html.js` injects song views into `index.html`
 - Core layout: `src/core/` platform/persistence/ml/utils/audio/worklets/wasm, `src/features/` coach/games/trainer/tuner/songs/progress/analysis/parent/backup/notifications/recordings
