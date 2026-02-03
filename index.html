@@ -3345,6 +3345,17 @@
           </div>
 
           <div class="settings-card glass">
+            <h3>Lesson Packs</h3>
+            <p class="setting-note">Download extra practice assets so everything is ready offline.</p>
+            <div class="lesson-pack-list" data-pack-list></div>
+            <p class="setting-note" data-pack-summary aria-live="polite">Lesson packs: checking…</p>
+            <div class="setting-actions">
+              <button class="btn btn-secondary" type="button" data-pack-refresh>Refresh pack status</button>
+              <button class="btn btn-ghost" type="button" data-pack-clear>Clear all packs</button>
+            </div>
+          </div>
+
+          <div class="settings-card glass">
             <h3>App Updates</h3>
             <p class="setting-note" data-sw-status aria-live="polite">Checking for updates…</p>
             <p class="setting-note" data-sync-status aria-live="polite">Background refresh status: checking…</p>
@@ -3509,6 +3520,7 @@
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav glass" aria-label="Primary">
+      <div class="offline-indicator" data-offline-indicator aria-live="polite">Online</div>
       <a href="#view-home" class="nav-item">
         <span class="nav-icon">🏠</span>
         <span class="nav-label">Home</span>
@@ -3762,6 +3774,24 @@
 
   <template id="download-link-template">
     <a class="download-link" aria-hidden="true" tabindex="-1"></a>
+  </template>
+
+  <template id="lesson-pack-template">
+    <div class="lesson-pack" data-pack>
+      <div class="lesson-pack-header">
+        <div>
+          <div class="lesson-pack-title" data-pack-title></div>
+          <p class="lesson-pack-desc" data-pack-desc></p>
+        </div>
+        <span class="lesson-pack-size" data-pack-size></span>
+      </div>
+      <progress class="lesson-pack-progress" data-pack-progress max="1" value="0" aria-label="Lesson pack download progress"></progress>
+      <p class="setting-note" data-pack-status>Not downloaded yet.</p>
+      <div class="lesson-pack-actions">
+        <button class="btn btn-secondary" type="button" data-pack-download>Download</button>
+        <button class="btn btn-ghost" type="button" data-pack-remove>Remove</button>
+      </div>
+    </div>
   </template>
 
   <template id="game-card-meta-template">

@@ -12,6 +12,7 @@ const moduleLoaders = {
     mlInference: () => import('./core/ml/inference.js'),
     offlineIntegrity: () => import('./core/platform/offline-integrity.js'),
     offlineMode: () => import('./core/platform/offline-mode.js'),
+    lessonPacks: () => import('./core/platform/lesson-packs.js'),
     progress: () => import('./features/progress/progress.js'),
     persist: () => import('./core/persistence/persist.js'),
     tuner: () => import('./features/tuner/tuner.js'),
@@ -115,6 +116,7 @@ const loadForView = (viewId) => {
         loadModule('swUpdates');
         loadModule('adaptiveUi');
         loadModule('offlineMode');
+        loadModule('lessonPacks');
         loadModule('reminders');
     }
 
@@ -166,6 +168,7 @@ const boot = () => {
     loadIdle('mlInference');
     loadIdle('offlineIntegrity');
     loadIdle('offlineMode');
+    loadIdle('lessonPacks');
     loadIdle('reminders');
     registerServiceWorker();
 

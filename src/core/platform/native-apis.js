@@ -14,6 +14,7 @@ const shareButton = document.querySelector('[data-share-summary]');
 const shareStatusEl = document.querySelector('[data-share-status]');
 const soundToggle = document.querySelector('#setting-sounds');
 const offlineToggle = document.querySelector('#setting-offline-mode');
+const offlineIndicator = document.querySelector('[data-offline-indicator]');
 const rootStyle = document.documentElement?.style;
 const rootEl = document.documentElement;
 const installStatusEl = document.querySelector('[data-install-status]');
@@ -190,11 +191,19 @@ const updateNetworkStatus = () => {
     const offlineMode = Boolean(offlineToggle?.checked);
     if (offlineMode) {
         networkStatusEl.textContent = 'Network status: Offline mode enabled (cached-only).';
+        if (offlineIndicator) {
+            offlineIndicator.textContent = 'Offline mode';
+            offlineIndicator.dataset.state = 'offline-mode';
+        }
         return;
     }
     networkStatusEl.textContent = online
         ? 'Network status: Online (offline mode still available).'
         : 'Network status: Offline (local content is ready).';
+    if (offlineIndicator) {
+        offlineIndicator.textContent = online ? 'Online' : 'Offline';
+        offlineIndicator.dataset.state = online ? 'online' : 'offline';
+    }
 };
 
 const bindNetworkStatus = () => {
