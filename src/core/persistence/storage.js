@@ -5,6 +5,97 @@ const BLOB_STORE = 'blobs';
 
 const hasIndexedDB = typeof indexedDB !== 'undefined';
 let dbPromise = null;
+const WRITE_QUEUE_LIMIT = 200;
+const WRITE_RETRY_LIMIT = 5;
+const WRITE_BASE_DELAY = 400;
+const writeQueue = [];
+let flushTimer = null;
+let flushing = false;
+
+const notifyQueue = (reason) => {
+    if (typeof document === 'undefined') return;
+    document.dispatchEvent(new CustomEvent('panda:storage-queue', {
+        detail: { pending: writeQueue.length, reason },
+    }));
+};
+
+const scheduleFlush = (reason) => {
+    if (flushTimer || typeof window === 'undefined') return;
+    const delay = Math.min(5000, WRITE_BASE_DELAY * (2 ** (writeQueue[0]?.attempt || 0)));
+    flushTimer = window.setTimeout(() => {
+        flushTimer = null;
+        flushQueue(reason);
+    }, delay);
+};
+
+const coalesceEntry = (entry) => {
+    for (let i = writeQueue.length - 1; i >= 0; i -= 1) {
+        const queued = writeQueue[i];
+        if (queued.store !== entry.store || queued.key !== entry.key) continue;
+        if (entry.type === 'remove') {
+            writeQueue.splice(i, 1);
+        } else if (entry.type === queued.type) {
+            queued.value = entry.value;
+            queued.attempt = 0;
+            return true;
+        }
+    }
+    return false;
+};
+
+const enqueueWrite = (entry) => {
+    if (coalesceEntry(entry)) {
+        notifyQueue('coalesce');
+        scheduleFlush('coalesce');
+        return;
+    }
+    writeQueue.push(entry);
+    if (writeQueue.length > WRITE_QUEUE_LIMIT) {
+        writeQueue.shift();
+    }
+    notifyQueue('enqueue');
+    scheduleFlush('enqueue');
+};
+
+const flushQueue = async (reason = 'flush') => {
+    if (flushing || !writeQueue.length) return;
+    flushing = true;
+    const db = await openDB();
+    if (!db) {
+        flushing = false;
+        scheduleFlush('db-unavailable');
+        return;
+    }
+    while (writeQueue.length) {
+        const entry = writeQueue[0];
+        try {
+            if (entry.type === 'set') {
+                await setInDB(db, entry.key, entry.value);
+            } else if (entry.type === 'remove') {
+                await removeFromDB(db, entry.key);
+            }
+            writeQueue.shift();
+            notifyQueue(reason);
+        } catch {
+            entry.attempt += 1;
+            if (entry.attempt >= WRITE_RETRY_LIMIT) {
+                writeQueue.shift();
+            }
+            break;
+        }
+    }
+    flushing = false;
+    if (writeQueue.length) {
+        scheduleFlush('retry');
+    }
+};
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => scheduleFlush('online'), { passive: true });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') scheduleFlush('visible');
+    });
+}
 
 const openDB = () => {
     if (!hasIndexedDB) return Promise.resolve(null);
@@ -92,21 +183,29 @@ export const getJSON = async (key) => {
 
 export const setJSON = async (key, value) => {
     const db = await openDB();
-    if (!db) return;
+    if (!db) {
+        enqueueWrite({ type: 'set', store: STORE, key, value, attempt: 0 });
+        return;
+    }
     try {
         await setInDB(db, key, value);
     } catch (error) {
         console.warn('[Storage] IndexedDB set failed', error);
+        enqueueWrite({ type: 'set', store: STORE, key, value, attempt: 0 });
     }
 };
 
 export const removeJSON = async (key) => {
     const db = await openDB();
-    if (!db) return;
+    if (!db) {
+        enqueueWrite({ type: 'remove', store: STORE, key, attempt: 0 });
+        return;
+    }
     try {
         await removeFromDB(db, key);
     } catch (error) {
         console.warn('[Storage] IndexedDB remove failed', error);
+        enqueueWrite({ type: 'remove', store: STORE, key, attempt: 0 });
     }
 };
 

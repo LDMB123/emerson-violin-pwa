@@ -9,3 +9,4 @@
 - `0007-audio-engine-stability.md`
 - `0008-ui-kid-first.md`
 - `0009-build-budgets.md`
+- `0010-storage-write-queue.md`
