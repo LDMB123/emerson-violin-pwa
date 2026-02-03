@@ -87,10 +87,10 @@
 
           <div class="home-spotlight glass" data-lesson-plan="home" aria-live="polite">
             <div class="home-spotlight-header">
-              <span class="home-spotlight-kicker">Next Up</span>
+              <span class="home-spotlight-kicker">Daily Path</span>
               <span class="home-spotlight-skill" data-lesson="skill">Pitch</span>
             </div>
-            <p class="home-spotlight-intro">A quick plan built from your latest practice.</p>
+            <p class="home-spotlight-intro">3–7 minutes. Tap Start to begin.</p>
             <div class="home-spotlight-title" data-lesson="game">Pitch Quest</div>
             <div class="home-spotlight-meta">
               <span class="home-spotlight-chip" data-lesson="bpm">90 BPM</span>
@@ -98,9 +98,9 @@
             </div>
             <ul class="home-spotlight-steps lesson-steps" data-lesson-steps aria-label="Today’s plan steps"></ul>
             <div class="home-spotlight-actions">
-              <a class="btn btn-primary" data-lesson="cta" href="#view-games">Start today</a>
-              <a class="btn btn-secondary" href="#view-coach">Coach</a>
-              <a class="btn btn-ghost" data-lesson-metronome data-metronome-bpm="90" data-scroll-target="metronome-loops" href="#view-trainer">Metronome</a>
+              <a class="btn btn-primary btn-hero" data-lesson="cta" href="#view-daily">Start Practice</a>
+              <a class="btn btn-secondary btn-hero" href="#view-trainer" data-scroll-target="metronome-loops">Metronome</a>
+              <a class="btn btn-ghost" href="#view-tuner">Tuner</a>
             </div>
           </div>
         </div>
@@ -133,12 +133,61 @@
             <div class="feature-title">Games</div>
           </a>
 
-          <a href="#view-progress" class="feature-card feature-primary">
-            <div class="feature-icon">📈</div>
-            <div class="feature-title">Progress</div>
+          <a href="#view-trainer" class="feature-card feature-primary">
+            <div class="feature-icon">⏱️</div>
+            <div class="feature-title">Metronome</div>
           </a>
         </div>
 
+      </section>
+
+      <!-- DAILY PRACTICE VIEW -->
+      <section class="view" id="view-daily" aria-label="Daily Practice">
+        <div class="view-header">
+          <a href="#view-home" class="back-btn">← Back</a>
+          <h2>Daily Practice</h2>
+        </div>
+        <p class="view-subtitle">3–7 minutes. Tap each step to start.</p>
+        <div class="daily-layout">
+          <div class="daily-card glass">
+            <div class="daily-kicker">Today’s Path</div>
+            <ol class="daily-steps">
+              <li class="daily-step">
+                <span class="daily-step-icon">🎧</span>
+                <div class="daily-step-body">
+                  <span class="daily-step-title">Tune</span>
+                  <span class="daily-step-time">1 min</span>
+                </div>
+                <a class="btn btn-secondary" href="#view-tuner">Start</a>
+              </li>
+              <li class="daily-step">
+                <span class="daily-step-icon">⏱️</span>
+                <div class="daily-step-body">
+                  <span class="daily-step-title">Rhythm</span>
+                  <span class="daily-step-time">2 min</span>
+                </div>
+                <a class="btn btn-secondary" href="#view-trainer" data-scroll-target="metronome-loops">Start</a>
+              </li>
+              <li class="daily-step">
+                <span class="daily-step-icon">🎵</span>
+                <div class="daily-step-body">
+                  <span class="daily-step-title">Song</span>
+                  <span class="daily-step-time">3 min</span>
+                </div>
+                <a class="btn btn-secondary" href="#view-songs">Start</a>
+              </li>
+            </ol>
+            <div class="daily-actions">
+              <a class="btn btn-primary btn-hero" href="#view-coach">Coach Tips</a>
+              <a class="btn btn-ghost" href="#view-games">Play a game</a>
+            </div>
+          </div>
+          <div class="daily-card glass daily-reward">
+            <div class="daily-kicker">Reward</div>
+            <p class="daily-reward-text">Finish all 3 steps to earn a sticker.</p>
+            <a class="btn btn-secondary" href="#view-progress">See rewards</a>
+          </div>
+        </div>
       </section>
 
       <!-- COACH VIEW -->
@@ -187,7 +236,7 @@
             <div class="coach-actions">
               <button class="btn btn-secondary" type="button" data-coach-action="retry">Try Again</button>
               <button class="btn btn-primary" type="button" data-coach-action="next">Next Exercise</button>
-              <a class="btn btn-ghost" href="#view-progress">Progress</a>
+              <a class="btn btn-ghost" href="#view-progress">Rewards</a>
             </div>
           </div>
 
@@ -1481,17 +1530,17 @@
         <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="corner-mascot" loading="lazy" decoding="async" />
       </section>
 
-      <!-- PROGRESS VIEW -->
-      <section class="view" id="view-progress" aria-label="Progress">
+      <!-- REWARDS VIEW -->
+      <section class="view" id="view-progress" aria-label="Rewards">
         <div class="view-header">
           <a href="#view-home" class="back-btn">← Back</a>
-          <h2>My Progress</h2>
-          <button class="icon-btn info-btn" type="button" aria-label="Progress help" popovertarget="progress-help" aria-haspopup="dialog" aria-controls="progress-help" aria-expanded="false">ⓘ</button>
+          <h2>Rewards</h2>
+          <button class="icon-btn info-btn" type="button" aria-label="Rewards help" popovertarget="progress-help" aria-haspopup="dialog" aria-controls="progress-help" aria-expanded="false">ⓘ</button>
         </div>
-        <p class="view-subtitle">Track streaks, skill growth, and your recommended focus.</p>
-        <div id="progress-help" popover="auto" class="info-popover glass" role="dialog" aria-label="Progress help">
-          <h3>Progress overview</h3>
-          <p>Streaks and XP update after every session. Follow the next lesson plan to keep leveling up.</p>
+        <p class="view-subtitle">Stickers, streaks, and badges you earn.</p>
+        <div id="progress-help" popover="auto" class="info-popover glass" role="dialog" aria-label="Rewards help">
+          <h3>Rewards overview</h3>
+          <p>Streaks and XP update after every session. Finish a daily path to earn a sticker.</p>
         </div>
 
         <div class="progress-layout">
@@ -1505,7 +1554,7 @@
           </div>
 
           <div class="skill-radar glass">
-            <h3>Skill Mastery</h3>
+            <h3>Skill Stars</h3>
             <div class="radar-chart">
               <svg class="radar-svg" viewBox="0 0 200 200" width="200" height="200" aria-hidden="true">
                 <g class="radar-grid">
@@ -1565,7 +1614,7 @@
           </div>
 
           <div class="achievements-panel glass">
-            <h3>Achievement Badges</h3>
+            <h3>Stickers &amp; Badges</h3>
             <div class="badges-grid">
               <div class="badge-item" data-achievement="first_note" data-locked="true">
                 <div class="badge-art">
@@ -1646,7 +1695,7 @@
           </div>
 
           <div class="xp-panel glass">
-            <h3>XP Progress</h3>
+            <h3>XP Meter</h3>
             <div class="xp-display">
               <div class="xp-current">Level <strong data-progress="level">0</strong></div>
               <progress class="xp-bar-large" data-progress="xp-track" aria-label="XP progress" max="100" value="0"></progress>
@@ -3414,9 +3463,9 @@
           </div>
 
           <div class="settings-card glass">
-            <h3>Progress</h3>
-            <p class="setting-note">Reset practice stats and achievements saved on this device.</p>
-            <button class="btn btn-secondary" id="reset-progress" type="button">Reset progress</button>
+            <h3>Rewards</h3>
+            <p class="setting-note">Reset rewards and practice stats saved on this device.</p>
+            <button class="btn btn-secondary" id="reset-progress" type="button">Reset rewards</button>
           </div>
 
           <div class="settings-card glass">
@@ -3521,9 +3570,9 @@
         <span class="nav-icon">🎮</span>
         <span class="nav-label">Games</span>
       </a>
-      <a href="#view-progress" class="nav-item">
-        <span class="nav-icon">📊</span>
-        <span class="nav-label">Progress</span>
+      <a href="#view-tuner" class="nav-item">
+        <span class="nav-icon">🎧</span>
+        <span class="nav-label">Tuner</span>
       </a>
       <!-- Popover Trigger -->
       <button class="nav-item" type="button" popovertarget="more-menu" aria-haspopup="menu" aria-controls="more-menu" aria-expanded="false" style="anchor-name: --more-btn">
@@ -3553,16 +3602,17 @@
           <span>About</span>
         </a>
         <a href="#view-progress" class="more-item" role="menuitem">
-          <span class="more-icon">⭐</span>
-          <span>Achievements</span>
+          <span class="more-icon">🏆</span>
+          <span>Rewards</span>
         </a>
         <a href="#view-trainer" class="more-item" role="menuitem">
           <span class="more-icon">🧰</span>
           <span>Practice Tools</span>
         </a>
-        <a href="#view-parent" class="more-item" role="menuitem">
+        <a href="#view-parent" class="more-item" role="menuitem" data-parent-entry aria-describedby="parent-gate-hint">
           <span class="more-icon">👨‍👩‍👧</span>
           <span>Parent Zone</span>
+          <span id="parent-gate-hint" class="sr-only">Hold to open Parent Zone.</span>
         </a>
         <a href="#view-backup" class="more-item" role="menuitem">
           <span class="more-icon">☁️</span>
@@ -3586,6 +3636,7 @@
         </label>
       </div>
       <p class="more-note" data-notification-status aria-live="polite">Notifications are off.</p>
+      <p class="more-note parent-gate-note" data-parent-gate-status data-visible="false" aria-live="polite"></p>
       <img src="./assets/illustrations/mascot-happy.png" alt="" class="more-mascot" loading="lazy" decoding="async" />
       <div class="more-version">Version 2.0.0</div>
     </div>
