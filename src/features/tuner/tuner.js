@@ -37,8 +37,11 @@ const FALLBACK_BUFFER_SIZE = 2048;
 const FALLBACK_INTERVAL = 80;
 const STABILITY_THRESHOLD = 3;
 const WORKLET_STALL_MS = 1600;
+const BUDGET_RATIO = 0.9;
+const MAX_BUDGET_BREACHES = 6;
 let workletWatchdog = null;
 let lastWorkletAt = 0;
+let budgetBreaches = 0;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
@@ -111,6 +114,39 @@ const stopFallback = () => {
     }
     fallbackDetector = null;
     fallbackBuffer = null;
+};
+
+const clearWorkletWatchdog = () => {
+    if (workletWatchdog) {
+        clearInterval(workletWatchdog);
+        workletWatchdog = null;
+    }
+};
+
+const resetBudgetBreaches = () => {
+    budgetBreaches = 0;
+};
+
+const touchWorklet = () => {
+    lastWorkletAt = Date.now();
+};
+
+const startWorkletWatchdog = () => {
+    clearWorkletWatchdog();
+    touchWorklet();
+    workletWatchdog = window.setInterval(() => {
+        if (!workletNode || fallbackActive || document.hidden) return;
+        const idleFor = Date.now() - lastWorkletAt;
+        if (idleFor < WORKLET_STALL_MS) return;
+        setStatus('Audio worklet stalled. Switching to fallback…');
+        if (workletNode) {
+            workletNode.port.onmessage = null;
+            workletNode.disconnect();
+            workletNode = null;
+        }
+        clearWorkletWatchdog();
+        startFallback(audioContext, micStream);
+    }, WORKLET_STALL_MS);
 };
 
 const startFallback = async (context, stream) => {
@@ -228,6 +264,8 @@ const stopTuner = async () => {
     lastFeatureAt = 0;
     firstNoteSent = false;
     tunerStartAt = null;
+    resetBudgetBreaches();
+    clearWorkletWatchdog();
     stopFallback();
     if (workletNode) {
         workletNode.port.onmessage = null;
@@ -269,6 +307,7 @@ const startTuner = async () => {
     starting = true;
     firstNoteSent = false;
     tunerStartAt = performance.now();
+    resetBudgetBreaches();
 
     if (!navigator.mediaDevices?.getUserMedia) {
         setStatus('Microphone access is not available on this device.');
@@ -299,6 +338,12 @@ const startTuner = async () => {
             throw new Error('AudioContext not supported');
         }
         audioContext = new AudioCtx({ latencyHint: 'interactive' });
+        audioContext.addEventListener('statechange', () => {
+            if (!audioContext) return;
+            if (audioContext.state === 'suspended' && tunerToggle?.checked) {
+                audioContext.resume().catch(() => {});
+            }
+        });
         featureSessionId = `tuner-${Date.now()}`;
         lastFeatureAt = 0;
         if (!audioContext.audioWorklet) {
@@ -336,8 +381,10 @@ const startTuner = async () => {
         }
         workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
         workletNode.port.postMessage({ type: 'stability', value: STABILITY_THRESHOLD });
+        startWorkletWatchdog();
 
         workletNode.port.onmessage = (event) => {
+            touchWorklet();
             const {
                 frequency,
                 note,
@@ -363,10 +410,31 @@ const startTuner = async () => {
                         sampleRate,
                     },
                 }));
+                if (Number.isFinite(bufferSize) && Number.isFinite(sampleRate)) {
+                    const budgetMs = (bufferSize / sampleRate) * 1000 * BUDGET_RATIO;
+                    if (processMs > budgetMs) {
+                        budgetBreaches += 1;
+                    } else {
+                        budgetBreaches = Math.max(0, budgetBreaches - 1);
+                    }
+                    if (budgetBreaches >= MAX_BUDGET_BREACHES) {
+                        setStatus('Audio workload high. Switching to fallback…');
+                        resetBudgetBreaches();
+                        clearWorkletWatchdog();
+                        if (workletNode) {
+                            workletNode.port.onmessage = null;
+                            workletNode.disconnect();
+                            workletNode = null;
+                        }
+                        startFallback(audioContext, micStream);
+                        return;
+                    }
+                }
             }
 
             if (error) {
                 setStatus('WASM unavailable. Switching to fallback…');
+                clearWorkletWatchdog();
                 if (workletNode) {
                     workletNode.port.onmessage = null;
                     workletNode.disconnect();
