@@ -1806,6 +1806,51 @@
         background: var(--color-success);
     }
 
+    .tuner-direction {
+        font-size: clamp(1.1rem, 3.8vw, 1.4rem);
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        padding: var(--space-2) var(--space-4);
+        border-radius: var(--radius-full);
+        background: rgba(255, 255, 255, 0.85);
+        color: #6d4334;
+        box-shadow: 0 12px 20px rgba(120, 60, 40, 0.12);
+    }
+
+    #tuner-live[data-tune-state="high"] .tuner-direction {
+        background: rgba(255, 217, 210, 0.9);
+        color: #b1492e;
+    }
+
+    #tuner-live[data-tune-state="low"] .tuner-direction {
+        background: rgba(206, 226, 255, 0.9);
+        color: #2e4ea8;
+    }
+
+    #tuner-live[data-tune-state="in"] .tuner-direction {
+        background: rgba(215, 249, 226, 0.95);
+        color: #1f7a45;
+    }
+
+    #tuner-live[data-tune-state="silent"] .tuner-direction {
+        color: #8a6b5d;
+    }
+
+    #tuner-live[data-tune-state="high"] .tuner-meter-track {
+        border-color: rgba(255, 158, 130, 0.6);
+        box-shadow: 0 0 24px rgba(255, 178, 160, 0.35);
+    }
+
+    #tuner-live[data-tune-state="low"] .tuner-meter-track {
+        border-color: rgba(138, 185, 255, 0.6);
+        box-shadow: 0 0 24px rgba(138, 185, 255, 0.35);
+    }
+
+    #tuner-live[data-tune-state="in"] .tuner-meter-track {
+        border-color: rgba(124, 218, 160, 0.7);
+        box-shadow: 0 0 24px rgba(124, 218, 160, 0.4);
+    }
+
     .tuner-cents {
         font-size: var(--text-base);
         font-weight: 700;
