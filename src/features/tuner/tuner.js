@@ -11,6 +11,7 @@ const noteEl = document.querySelector('#tuner-note');
 const centsEl = document.querySelector('#tuner-cents');
 const freqEl = document.querySelector('#tuner-frequency');
 const statusEl = document.querySelector('#tuner-status');
+const demoEl = document.querySelector('[data-tuner-demo]');
 const toneButtons = Array.from(document.querySelectorAll('[data-tone]'));
 const toneSamples = new Map(
     Array.from(document.querySelectorAll('[data-tone-audio]')).map((audio) => [audio.dataset.toneAudio, audio])
@@ -56,6 +57,11 @@ const formatDifficulty = (value) => {
 };
 
 const ensureBadge = () => ensureDifficultyBadge(livePanel?.querySelector('.tuner-card-header'));
+const formatCentsHint = (cents) => {
+    if (!Number.isFinite(cents)) return 'Center it';
+    if (Math.abs(cents) <= tolerance) return 'Great job';
+    return cents > 0 ? 'Too high' : 'Too low';
+};
 
 const applyTuning = async () => {
     const tuning = await getGameTuning('tuner');
@@ -66,7 +72,7 @@ const applyTuning = async () => {
         badge.textContent = `Adaptive: ${formatDifficulty(tuning.difficulty)}`;
     }
     if (statusEl && !workletNode) {
-        statusEl.textContent = `Tap the mic to start listening (±${tolerance}¢).`;
+        statusEl.textContent = 'Tap the mic, then play a string.';
     }
     if (workletNode) {
         workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
@@ -80,6 +86,7 @@ const resetDisplay = () => {
     if (noteEl) noteEl.textContent = '--';
     if (centsEl) centsEl.textContent = '±0 cents';
     if (freqEl) freqEl.textContent = '0 Hz';
+    if (demoEl) demoEl.textContent = 'Live input: --';
     if (livePanel) delete livePanel.dataset.inTune;
     if (livePanel) livePanel.style.setProperty('--tuner-offset', '0');
 };
@@ -206,7 +213,7 @@ const handlePitchResult = ({
 } = {}) => {
     if (!frequency || volume < 0.01) {
         resetDisplay();
-        setStatus(`Listening… play a note (±${tolerance}¢).`);
+        setStatus('Listening… play a string.');
         return;
     }
 
@@ -238,8 +245,12 @@ const handlePitchResult = ({
         }).catch(() => {});
     }
     noteEl.textContent = displayNote || '--';
-    centsEl.textContent = `${displayCents > 0 ? '+' : ''}${displayCents} cents`;
+    const centsLabel = `${displayCents > 0 ? '+' : ''}${displayCents}¢`;
+    centsEl.textContent = `${formatCentsHint(displayCents)} · ${centsLabel}`;
     freqEl.textContent = `${roundedFreq} Hz`;
+    if (demoEl) {
+        demoEl.textContent = `Live input: ${displayNote || '--'} · ${roundedFreq} Hz`;
+    }
 
     const offset = clamp(displayCents, -50, 50);
     livePanel.style.setProperty('--tuner-offset', offset.toString());
@@ -251,14 +262,14 @@ const handlePitchResult = ({
     detectCount += 1;
     if (inTune) inTuneCount += 1;
     if (fallback) {
-        setStatus(inTune ? `In tune (fallback) ✨` : 'Adjust to center');
+        setStatus(inTune ? 'Perfect! ✨' : formatCentsHint(displayCents));
         return;
     }
     if (Number.isFinite(stability) && stability >= 1) {
-        setStatus(inTune ? `In tune (stable) ✨` : 'Adjust to center');
+        setStatus(inTune ? 'Perfect! ✨' : formatCentsHint(displayCents));
         return;
     }
-    setStatus(inTune ? `In tune (±${tolerance}¢) ✨` : 'Adjust to center');
+    setStatus(inTune ? 'Perfect! ✨' : formatCentsHint(displayCents));
 };
 
 const stopTuner = async () => {
@@ -294,7 +305,7 @@ const stopTuner = async () => {
 
     if (tunerToggle) tunerToggle.checked = false;
     resetDisplay();
-    setStatus(`Tap the mic to use the tuner (±${tolerance}¢).`);
+    setStatus('Tap the mic to start tuning.');
     if (detectCount > 0) {
         const accuracy = (inTuneCount / detectCount) * 100;
         await updateGameResult('tuner', { accuracy, score: Math.round(accuracy) });
