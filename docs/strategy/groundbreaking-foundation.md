@@ -31,12 +31,14 @@ Focus: deterministic offline behavior, low-latency audio, and a modular architec
    - Build budgets enforced in CI and local builds.
 
 ## Immediate Technical Actions (Now)
-- Convert boot to a feature registry (data-driven loading + prefetch).
-- Version lesson packs with a cached manifest + stale detection.
-- Add audio worklet health watchdogs with fallback gating.
-- Add audio budget breach detection + automatic fallback.
-- Add a 60-second AI fast path doc for onboarding.
-- Add planning index in `docs/strategy/`.
+- Convert boot to a feature registry (data-driven loading + prefetch). (Implemented)
+- Version lesson packs with a cached manifest + stale detection. (Implemented)
+- Auto-verify cached lesson packs during refresh/activate. (Implemented)
+- Add audio worklet health watchdogs with fallback gating. (Implemented)
+- Add audio budget breach detection + automatic fallback. (Implemented)
+- Add storage integrity checksums for IndexedDB values. (Implemented)
+- Add a 60-second AI fast path doc for onboarding. (Implemented)
+- Add planning index in `docs/strategy/`. (Implemented)
 
 ## Next Wave (Short-Term)
 - Add prefetch policies per view and device capability tier.

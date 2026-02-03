@@ -5,5 +5,5 @@
 - `ipad-mini-6-baseline.md` baseline perf checklist
 - `ipad-mini-6-capture.md` on-device capture workflow + perf bundle script
 - `build-budgets.md` bundle size budgets enforced in postbuild
-- `perf/` exported perf bundles
+- `perf/` exported perf bundles (see `perf/README.md`)
 - `screenshots/` generated QA screenshots (dated subfolders)

@@ -6,12 +6,14 @@
 - Feature loading: `src/core/app/feature-registry.js` drives lazy load + prefetch
 - Storage: IndexedDB KV + blob store in `src/core/persistence/storage.js`
 - Storage queue: write retry queue in `src/core/persistence/storage.js` for resiliency
+- Storage integrity: checksums in `src/core/persistence/integrity.js`
 - Service worker: `public/sw-assets.js` (dev) and `dist/sw-assets.js` (build), `sw.js` registered in `src/app.js`
 - Lesson packs: versioned in `src/core/platform/lesson-packs.js`, cached/verified in `public/sw.js`
 - Styles: design tokens in `src/styles/tokens.css`, main styles in `src/styles/app.css`
 - ML worker: `src/core/ml/recommendations-worker.js` (optional WASM seed gated by device)
 - Song data: `src/data/songs.json` → `scripts/build/build-songs-html.js` injects song views into `index.html`
 - Core layout: `src/core/` platform/persistence/ml/utils/audio/worklets/wasm, `src/features/` coach/games/trainer/tuner/songs/progress/analysis/parent/backup/notifications/recordings
+- Audio budget: `src/core/audio/audio-budget.js` drives fallback gating in tuner
 - ML compute: `src/core/ml/recommendations-engine.js` (pure), `src/core/ml/recommendations-worker.js` (background)
 - WASM sources: `wasm-src/` Rust crates for `panda-core` + `panda-audio`
 - Commands: `npm run dev`, `npm run build`, `npm run preview`, `npm test`, `npm run lint`
