@@ -1,0 +1,161 @@
+export const GAME_META = {
+    'pitch-quest': {
+        skill: 'Pitch',
+        goal: 'Match target notes with a centered tone.',
+        targetMinutes: 6,
+        steps: [
+            { minutes: 1, label: 'Listen to the target tone', cue: 'Hear the ring before you play.' },
+            { minutes: 3, label: 'Match each target note', cue: 'Slide slowly until it locks in.' },
+            { minutes: 2, label: 'Hold steady intonation', cue: 'Keep the bow speed even.' },
+        ],
+        tip: 'Use slow bows and relaxed fingers to keep the pitch steady.',
+    },
+    'rhythm-dash': {
+        skill: 'Rhythm',
+        goal: 'Lock in the beat and build a steady combo.',
+        targetMinutes: 7,
+        steps: [
+            { minutes: 1, label: 'Clap the beat', cue: 'Count out loud: 1-2-3-4.' },
+            { minutes: 3, label: 'Tap to the lane pulse', cue: 'Aim for clean hits in the zone.' },
+            { minutes: 3, label: 'Hold a combo streak', cue: 'Stay relaxed and consistent.' },
+        ],
+        tip: 'If timing slips, pause and restart the pulse before playing again.',
+    },
+    'note-memory': {
+        skill: 'Reading',
+        goal: 'Match notes quickly and remember their places.',
+        targetMinutes: 6,
+        steps: [
+            { minutes: 2, label: 'Name the notes out loud', cue: 'Say the note before you tap.' },
+            { minutes: 2, label: 'Match pairs calmly', cue: 'Focus on two at a time.' },
+            { minutes: 2, label: 'Replay faster', cue: 'Try to beat your time.' },
+        ],
+        tip: 'Eyes up on the staff, then drop fingers with confidence.',
+    },
+    'ear-trainer': {
+        skill: 'Pitch',
+        goal: 'Identify open strings by ear.',
+        targetMinutes: 5,
+        steps: [
+            { minutes: 1, label: 'Listen to a reference tone', cue: 'Hum the pitch.' },
+            { minutes: 2, label: 'Pick the matching string', cue: 'Trust your ear first.' },
+            { minutes: 2, label: 'Confirm by playing', cue: 'Adjust the finger if needed.' },
+        ],
+        tip: 'Close your eyes to strengthen listening.',
+    },
+    'bow-hero': {
+        skill: 'Bowing',
+        goal: 'Keep the bow straight and controlled.',
+        targetMinutes: 7,
+        steps: [
+            { minutes: 2, label: 'Set bow lane', cue: 'Parallel to the bridge.' },
+            { minutes: 3, label: 'Follow the hero path', cue: 'Smooth bow changes.' },
+            { minutes: 2, label: 'Finish with long bows', cue: 'Use full length strokes.' },
+        ],
+        tip: 'Lead from the elbow and keep the wrist soft.',
+    },
+    'string-quest': {
+        skill: 'Bowing',
+        goal: 'Travel through strings with clean crossings.',
+        targetMinutes: 6,
+        steps: [
+            { minutes: 2, label: 'Map the string path', cue: 'G-D-A-E order.' },
+            { minutes: 2, label: 'Play crossings slowly', cue: 'Move from the arm.' },
+            { minutes: 2, label: 'Build a combo', cue: 'Keep the bow angle steady.' },
+        ],
+        tip: 'Prepare the next string before the crossing.',
+    },
+    'rhythm-painter': {
+        skill: 'Rhythm',
+        goal: 'Paint rhythmic patterns with precision.',
+        targetMinutes: 6,
+        steps: [
+            { minutes: 2, label: 'Trace the pattern', cue: 'Tap on the beat grid.' },
+            { minutes: 2, label: 'Layer a second rhythm', cue: 'Keep tempo steady.' },
+            { minutes: 2, label: 'Play with a metronome', cue: 'Feel the pulse in your feet.' },
+        ],
+        tip: 'If the rhythm feels rushed, slow down and reset.',
+    },
+    'story-song': {
+        skill: 'Reading',
+        goal: 'Tell the story with expressive dynamics.',
+        targetMinutes: 8,
+        steps: [
+            { minutes: 2, label: 'Read the story cues', cue: 'Circle the dynamic words.' },
+            { minutes: 3, label: 'Play the melody slowly', cue: 'Shape the phrase.' },
+            { minutes: 3, label: 'Add expression', cue: 'Use show-and-tell bowing.' },
+        ],
+        tip: 'Imagine the story scene as you play.',
+    },
+    pizzicato: {
+        skill: 'Rhythm',
+        goal: 'Pop the strings cleanly and keep time.',
+        targetMinutes: 5,
+        steps: [
+            { minutes: 1, label: 'Set right-hand pizzicato', cue: 'Finger pulls across the string.' },
+            { minutes: 2, label: 'Tap rhythm pattern', cue: 'Stay relaxed.' },
+            { minutes: 2, label: 'Add dynamic pops', cue: 'Soft then loud.' },
+        ],
+        tip: 'Keep the wrist loose and let the finger do the work.',
+    },
+    'tuning-time': {
+        skill: 'Pitch',
+        goal: 'Center each string with calm listening.',
+        targetMinutes: 6,
+        steps: [
+            { minutes: 2, label: 'Tune each open string', cue: 'Listen for the beats to disappear.' },
+            { minutes: 2, label: 'Check with tuner', cue: 'Aim for the center line.' },
+            { minutes: 2, label: 'Play slow double stops', cue: 'Listen for resonance.' },
+        ],
+        tip: 'Breathe out as the pitch locks in.',
+    },
+    'melody-maker': {
+        skill: 'Reading',
+        goal: 'Build a melody with strong note choices.',
+        targetMinutes: 7,
+        steps: [
+            { minutes: 2, label: 'Pick a starting note', cue: 'Start on an open string.' },
+            { minutes: 3, label: 'Add 4-6 notes', cue: 'Keep stepwise motion.' },
+            { minutes: 2, label: 'Play it back smoothly', cue: 'Keep a steady bow.' },
+        ],
+        tip: 'Sing the melody before you play it.',
+    },
+    'scale-practice': {
+        skill: 'Pitch',
+        goal: 'Play the scale with even tone and tempo.',
+        targetMinutes: 8,
+        steps: [
+            { minutes: 2, label: 'Finger map the scale', cue: 'Name the notes.' },
+            { minutes: 3, label: 'Play with metronome', cue: 'One bow per note.' },
+            { minutes: 3, label: 'Repeat with dynamics', cue: 'Crescendo then decrescendo.' },
+        ],
+        tip: 'Aim for consistent bow speed on each note.',
+    },
+    'duet-challenge': {
+        skill: 'Rhythm',
+        goal: 'Play in sync with the duet partner.',
+        targetMinutes: 7,
+        steps: [
+            { minutes: 2, label: 'Listen to the partner line', cue: 'Clap the rhythm first.' },
+            { minutes: 3, label: 'Play your line slowly', cue: 'Stay with the pulse.' },
+            { minutes: 2, label: 'Combine both parts', cue: 'Balance your volume.' },
+        ],
+        tip: 'Keep eyes on the beat grid to stay together.',
+    },
+};
+
+export const GAME_LABELS = {
+    'pitch-quest': 'Pitch Quest',
+    'rhythm-dash': 'Rhythm Dash',
+    'note-memory': 'Note Memory',
+    'ear-trainer': 'Ear Trainer',
+    'bow-hero': 'Bow Hero',
+    'string-quest': 'String Quest',
+    'rhythm-painter': 'Rhythm Painter',
+    'story-song': 'Story Song Lab',
+    pizzicato: 'Panda Pizzicato',
+    'tuning-time': 'Tuning Time',
+    'melody-maker': 'Melody Maker',
+    'scale-practice': 'Scale Practice',
+    'duet-challenge': 'Duet Challenge',
+};

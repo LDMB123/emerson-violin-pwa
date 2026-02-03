@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-daily-goal-target="15" data-weekly-goal-target="90">
 
 <head>
   <meta charset="utf-8" />
@@ -37,6 +37,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon-32.png" />
 
   <title>Panda Violin | Violin Practice Companion</title>
+  <link rel="stylesheet" href="./src/styles/tokens.css" />
   <link rel="stylesheet" href="./src/styles/app.css" />
   <link rel="stylesheet" href="./src/styles/scroll-animations.css" />
 </head>
@@ -73,9 +74,7 @@
               <div class="goal-body">
                 <span class="goal-label">Today's Goal</span>
                 <div class="goal-time"><span data-progress="daily-goal-value">15</span> minutes</div>
-                <div class="goal-progress" data-progress="daily-goal-track" role="progressbar" aria-label="Daily goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                  <div class="goal-fill" data-progress="daily-goal-fill"></div>
-                </div>
+                <progress class="goal-progress" data-progress="daily-goal-track" aria-label="Daily goal progress" max="100" value="0"></progress>
               </div>
             </div>
 
@@ -84,6 +83,37 @@
               <span class="streak-count" data-progress="home-streak">0</span>
               <span class="streak-label">day streak</span>
             </div>
+          </div>
+
+          <div class="home-spotlight glass" data-lesson-plan="home" aria-live="polite">
+            <div class="home-spotlight-header">
+              <span class="home-spotlight-kicker">Next Up</span>
+              <span class="home-spotlight-skill" data-lesson="skill">Pitch</span>
+            </div>
+            <p class="home-spotlight-intro">A quick plan built from your latest practice.</p>
+            <div class="home-spotlight-title" data-lesson="game">Pitch Quest</div>
+            <div class="home-spotlight-meta">
+              <span class="home-spotlight-chip" data-lesson="bpm">90 BPM</span>
+              <span class="home-spotlight-chip" data-lesson="total">15 min</span>
+            </div>
+            <ul class="home-spotlight-steps lesson-steps" data-lesson-steps aria-label="Today’s plan steps"></ul>
+            <div class="home-spotlight-actions">
+              <a class="btn btn-primary" data-lesson="cta" href="#view-games">Start today</a>
+              <a class="btn btn-secondary" href="#view-coach">Coach</a>
+              <a class="btn btn-ghost" data-lesson-metronome data-metronome-bpm="90" data-scroll-target="metronome-loops" href="#view-trainer">Metronome</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-weekly glass">
+          <div class="home-weekly-header">
+            <h3>Weekly Momentum</h3>
+            <span class="home-weekly-value"><span data-progress="week-minutes">0</span> / <span data-progress="week-target">90</span> min</span>
+          </div>
+          <progress class="home-weekly-track" data-progress="week-track" aria-label="Weekly goal progress" max="100" value="0"></progress>
+          <div class="home-weekly-meta">
+            <span class="home-weekly-chip" data-progress="level-label">Level 1</span>
+            <span class="home-weekly-chip">Keep the streak going today.</span>
           </div>
         </div>
 
@@ -109,10 +139,6 @@
           </a>
         </div>
 
-        <div class="home-mini">
-          <span class="home-mini-chip"><span data-progress="week-minutes">0</span> min this week</span>
-          <span class="home-mini-chip" data-progress="level-label">Level 1</span>
-        </div>
       </section>
 
       <!-- COACH VIEW -->
@@ -120,6 +146,12 @@
         <div class="view-header">
           <a href="#view-home" class="back-btn">← Back</a>
           <h2>Practice Coach</h2>
+          <button class="icon-btn info-btn" type="button" aria-label="Coach help" popovertarget="coach-help" aria-haspopup="dialog" aria-controls="coach-help" aria-expanded="false">ⓘ</button>
+        </div>
+        <p class="view-subtitle">Personalized coaching, focus timers, and today’s best next steps.</p>
+        <div id="coach-help" popover="auto" class="info-popover glass" role="dialog" aria-label="Practice Coach help">
+          <h3>Coach quick guide</h3>
+          <p>Follow the suggested focus sprint, then tap Next Exercise for a fresh drill. Your plan and tips update as you practice.</p>
         </div>
 
         <div class="coach-layout">
@@ -182,6 +214,27 @@
               </div>
               <ul class="lesson-steps" data-lesson-steps aria-label="Lesson steps"></ul>
               <a class="btn btn-secondary" data-lesson="cta" href="#view-games">Start this plan</a>
+            </div>
+
+            <div class="coach-insights glass" data-coach-insights>
+              <div class="coach-insights-header">
+                <h3>Coach Insights</h3>
+                <span class="coach-insights-pill" data-coach-insight-skill>Pitch</span>
+              </div>
+              <div class="coach-insights-row">
+                <span class="coach-insights-label">Weekly goal</span>
+                <strong class="coach-insights-value"><span data-coach-week-minutes>0</span> / <span data-coach-week-target>90</span> min</strong>
+              </div>
+              <progress class="coach-insights-track" data-coach-week-track aria-label="Weekly goal progress" max="100" value="0"></progress>
+              <div class="coach-insights-row">
+                <span class="coach-insights-label">Next up</span>
+                <span class="coach-insights-next" data-coach-insight-next>Pitch Quest · 90 BPM</span>
+              </div>
+              <div class="coach-insights-actions">
+                <a class="btn btn-secondary" data-coach-metronome data-metronome-bpm="90" data-scroll-target="metronome-loops" href="#view-trainer">Set metronome</a>
+                <a class="btn btn-primary" data-coach-game href="#view-games">Play recommended</a>
+              </div>
+              <p class="coach-insights-tip" data-coach-insight-tip>You’re 90 minutes from the weekly goal. Keep building your rhythm today.</p>
             </div>
 
             <div class="practice-focus glass">
@@ -263,8 +316,10 @@
           <a href="#view-home" class="back-btn">← Back</a>
           <h2>Tuner</h2>
         </div>
+        <p class="view-subtitle">Tap the mic, center the needle, then match open strings by ear.</p>
 
         <div class="tuner-layout">
+          <input type="checkbox" id="tuner-active" class="state-checkbox" />
           <div class="tuner-card glass" id="tuner-live">
             <img src="./assets/illustrations/mascot-encourage.png" alt="Panda tuning" class="tuner-card-mascot" loading="lazy" decoding="async" />
             <div class="tuner-card-header">
@@ -272,7 +327,7 @@
                 <div class="tuner-note" id="tuner-note">--</div>
                 <div class="tuner-frequency" id="tuner-frequency">0 Hz</div>
               </div>
-              <button class="tuner-mic" id="tuner-start" type="button" aria-label="Start tuner">🎤</button>
+              <label class="tuner-mic" id="tuner-start" for="tuner-active" aria-label="Start tuner">🎤</label>
             </div>
             <div class="tuner-meter" aria-hidden="true">
               <div class="tuner-meter-track"></div>
@@ -288,7 +343,7 @@
               <button class="tuner-note-btn" type="button" data-tone="E">E</button>
             </div>
             <div class="tuner-controls">
-              <button class="btn btn-secondary" id="tuner-stop" type="button" disabled>Stop</button>
+              <label class="btn btn-secondary btn-stop" id="tuner-stop" for="tuner-active">Stop</label>
             </div>
           </div>
 
@@ -323,6 +378,7 @@
           <a href="#view-home" class="back-btn">← Back</a>
           <h2>Song Library</h2>
         </div>
+        <p class="view-subtitle">Search by level and tap a song to start a guided playhead.</p>
 
         <div class="songs-search glass">
           <span class="songs-search-icon">🔍</span>
@@ -457,7 +513,7 @@
           </a>
           <!-- SONGS_GRID_END -->
         </div>
-        <p class="songs-empty" data-songs-empty role="status" aria-live="polite" hidden>
+        <p class="songs-empty" data-songs-empty role="status" aria-live="polite">
           No songs match that search yet. Try another title or switch levels.
         </p>
 
@@ -1284,57 +1340,113 @@
           <h2>Games</h2>
           <div class="games-level">
             <span class="level-star">⭐</span>
-            <div class="level-track" data-progress="games-level-track" role="progressbar" aria-label="Games level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <div class="level-fill" data-progress="games-level-fill" style="width: 20%"></div>
-            </div>
+            <progress class="level-track" data-progress="games-level-track" aria-label="Games level progress" max="100" value="20"></progress>
             <span class="level-text" data-progress="games-level-label">Level 1</span>
           </div>
         </div>
+        <p class="view-subtitle">Pick a skill, hit a quick quest, and earn focused wins.</p>
+
+        <div class="games-hub glass" data-games-hub>
+          <div class="games-hub-header">
+            <h3>Game HQ</h3>
+            <div class="games-hub-header-actions">
+              <span class="games-hub-pill" data-games-focus-skill>Pitch</span>
+              <button class="icon-btn info-btn" type="button" aria-label="Game HQ help" popovertarget="games-help" aria-haspopup="dialog" aria-controls="games-help" aria-expanded="false">ⓘ</button>
+            </div>
+          </div>
+          <div class="games-hub-row">
+            <span class="games-hub-label">Weekly game minutes</span>
+            <strong class="games-hub-value"><span data-games-week-minutes>0</span> / <span data-games-week-target>60</span> min</strong>
+          </div>
+          <progress class="games-hub-track" data-games-week-track aria-label="Weekly goal progress" max="100" value="0"></progress>
+          <div class="games-hub-row">
+            <span class="games-hub-label">Recommended</span>
+            <span class="games-hub-next" data-games-recommended>Pitch Quest · 6 min</span>
+          </div>
+          <ul class="games-hub-quests" data-games-quests aria-label="Quest steps"></ul>
+          <div class="games-hub-actions">
+            <a class="btn btn-primary" data-games-start href="#view-game-pitch-quest">Start Pitch Quest</a>
+            <a class="btn btn-secondary" data-games-metronome data-metronome-bpm="90" data-scroll-target="metronome-loops" href="#view-trainer">Set tempo</a>
+          </div>
+          <div class="games-hub-recent">
+            <h4>Recent wins</h4>
+            <ul class="games-recent-list" data-games-recent></ul>
+            <p class="games-recent-empty" data-games-recent-empty>No game results yet. Play a round to start tracking.</p>
+          </div>
+        </div>
+        <div id="games-help" popover="auto" class="info-popover glass" role="dialog" aria-label="Game HQ help">
+          <h3>Game HQ tips</h3>
+          <p>Pick a quick quest, lock a tempo, and track your weekly minutes here. Completing a round updates your progress immediately.</p>
+        </div>
+
+        <fieldset class="games-filters" data-games-filters>
+          <legend class="sr-only">Filter games</legend>
+          <label class="filter-label">
+            <input type="radio" name="game-filter" value="all" class="filter-input" checked>
+            <span class="filter-chip">All</span>
+          </label>
+          <label class="filter-label">
+            <input type="radio" name="game-filter" value="pitch" class="filter-input">
+            <span class="filter-chip">Pitch</span>
+          </label>
+          <label class="filter-label">
+            <input type="radio" name="game-filter" value="rhythm" class="filter-input">
+            <span class="filter-chip">Rhythm</span>
+          </label>
+          <label class="filter-label">
+            <input type="radio" name="game-filter" value="bow_control" class="filter-input">
+            <span class="filter-chip">Bowing</span>
+          </label>
+          <label class="filter-label">
+            <input type="radio" name="game-filter" value="reading" class="filter-input">
+            <span class="filter-chip">Reading</span>
+          </label>
+        </fieldset>
 
         <div class="games-section">
           <h3 class="section-title">Core Games</h3>
           <div class="games-grid">
-            <a href="#view-game-pitch-quest" class="game-card glass">
+            <a href="#view-game-pitch-quest" class="game-card glass" data-game-id="pitch-quest" data-game-skill="pitch">
               <div class="game-icon">🎯</div>
               <div class="game-title">Pitch Quest</div>
             </a>
 
-            <a href="#view-game-rhythm-dash" class="game-card glass">
+            <a href="#view-game-rhythm-dash" class="game-card glass" data-game-id="rhythm-dash" data-game-skill="rhythm">
               <div class="game-icon">🎵</div>
               <div class="game-title">Rhythm Dash</div>
             </a>
 
-            <a href="#view-game-note-memory" class="game-card glass">
+            <a href="#view-game-note-memory" class="game-card glass" data-game-id="note-memory" data-game-skill="reading">
               <div class="game-icon">🧠</div>
               <div class="game-title">Note Memory</div>
             </a>
 
-            <a href="#view-game-ear-trainer" class="game-card glass">
+            <a href="#view-game-ear-trainer" class="game-card glass" data-game-id="ear-trainer" data-game-skill="pitch">
               <div class="game-icon">👂</div>
               <div class="game-title">Ear Trainer</div>
             </a>
 
-            <a href="#view-game-bow-hero" class="game-card glass">
+            <a href="#view-game-bow-hero" class="game-card glass" data-game-id="bow-hero" data-game-skill="bow_control">
               <div class="game-icon">🏹</div>
               <div class="game-title">Bow Hero</div>
             </a>
 
-            <a href="#view-game-tuning-time" class="game-card glass">
+            <a href="#view-game-tuning-time" class="game-card glass" data-game-id="tuning-time" data-game-skill="pitch">
               <div class="game-icon">🎛️</div>
               <div class="game-title">Tuning Time</div>
             </a>
 
-            <a href="#view-game-melody-maker" class="game-card glass">
+            <a href="#view-game-melody-maker" class="game-card glass" data-game-id="melody-maker" data-game-skill="reading">
               <div class="game-icon">🎤</div>
               <div class="game-title">Melody Maker</div>
             </a>
 
-            <a href="#view-game-scale-practice" class="game-card glass">
+            <a href="#view-game-scale-practice" class="game-card glass" data-game-id="scale-practice" data-game-skill="pitch">
               <div class="game-icon">📜</div>
               <div class="game-title">Scale Practice</div>
             </a>
 
-            <a href="#view-game-duet-challenge" class="game-card glass">
+            <a href="#view-game-duet-challenge" class="game-card glass" data-game-id="duet-challenge" data-game-skill="rhythm">
               <div class="game-icon">🎻</div>
               <div class="game-title">Duet Challenge</div>
             </a>
@@ -1344,22 +1456,22 @@
         <div class="games-section">
           <h3 class="section-title">Story &amp; Creativity</h3>
           <div class="games-grid games-grid--secondary">
-            <a href="#view-game-string-quest" class="game-card glass">
+            <a href="#view-game-string-quest" class="game-card glass" data-game-id="string-quest" data-game-skill="bow_control">
               <div class="game-icon">🎻</div>
               <div class="game-title">String Quest</div>
             </a>
 
-            <a href="#view-game-rhythm-painter" class="game-card glass">
+            <a href="#view-game-rhythm-painter" class="game-card glass" data-game-id="rhythm-painter" data-game-skill="rhythm">
               <div class="game-icon">🎨</div>
               <div class="game-title">Rhythm Painter</div>
             </a>
 
-            <a href="#view-game-story-song" class="game-card glass">
+            <a href="#view-game-story-song" class="game-card glass" data-game-id="story-song" data-game-skill="reading">
               <div class="game-icon">📖</div>
               <div class="game-title">Story Song Lab</div>
             </a>
 
-            <a href="#view-game-pizzicato" class="game-card glass">
+            <a href="#view-game-pizzicato" class="game-card glass" data-game-id="pizzicato" data-game-skill="rhythm">
               <div class="game-icon">🐼</div>
               <div class="game-title">Panda Pizzicato</div>
             </a>
@@ -1374,6 +1486,12 @@
         <div class="view-header">
           <a href="#view-home" class="back-btn">← Back</a>
           <h2>My Progress</h2>
+          <button class="icon-btn info-btn" type="button" aria-label="Progress help" popovertarget="progress-help" aria-haspopup="dialog" aria-controls="progress-help" aria-expanded="false">ⓘ</button>
+        </div>
+        <p class="view-subtitle">Track streaks, skill growth, and your recommended focus.</p>
+        <div id="progress-help" popover="auto" class="info-popover glass" role="dialog" aria-label="Progress help">
+          <h3>Progress overview</h3>
+          <p>Streaks and XP update after every session. Follow the next lesson plan to keep leveling up.</p>
         </div>
 
         <div class="progress-layout">
@@ -1449,56 +1567,56 @@
           <div class="achievements-panel glass">
             <h3>Achievement Badges</h3>
             <div class="badges-grid">
-              <div class="badge-item locked" data-achievement="first_note">
+              <div class="badge-item" data-achievement="first_note" data-locked="true">
                 <div class="badge-art">
                   <span class="badge-fallback">♪</span>
                   <span class="badge-lock">🔒</span>
                 </div>
                 <span class="badge-name">First Note</span>
               </div>
-              <div class="badge-item locked" data-achievement="streak_7">
+              <div class="badge-item" data-achievement="streak_7" data-locked="true">
                 <div class="badge-art">
                   <img src="./assets/badges/badge_practice_streak_1769390952199.png" alt="" loading="lazy" decoding="async" />
                   <span class="badge-lock">🔒</span>
                 </div>
                 <span class="badge-name">Week Warrior</span>
               </div>
-              <div class="badge-item locked" data-achievement="level_5">
+              <div class="badge-item" data-achievement="level_5" data-locked="true">
                 <div class="badge-art">
                   <span class="badge-fallback">★</span>
                   <span class="badge-lock">🔒</span>
                 </div>
                 <span class="badge-name">Rising Star</span>
               </div>
-              <div class="badge-item locked" data-achievement="practice_100">
+              <div class="badge-item" data-achievement="practice_100" data-locked="true">
                 <div class="badge-art">
                   <span class="badge-fallback">⏱</span>
                   <span class="badge-lock">🔒</span>
                 </div>
                 <span class="badge-name">Dedicated</span>
               </div>
-              <div class="badge-item locked" data-achievement="pitch_perfect">
+              <div class="badge-item" data-achievement="pitch_perfect" data-locked="true">
                 <div class="badge-art">
                   <img src="./assets/badges/badge_pitch_master_1769390924763.png" alt="" loading="lazy" decoding="async" />
                   <span class="badge-lock">🔒</span>
                 </div>
                 <span class="badge-name">Pitch Perfect</span>
               </div>
-              <div class="badge-item locked" data-achievement="rhythm_master">
+              <div class="badge-item" data-achievement="rhythm_master" data-locked="true">
                 <div class="badge-art">
                   <img src="./assets/badges/badge_rhythm_star_1769390938421.png" alt="" loading="lazy" decoding="async" />
                   <span class="badge-lock">🔒</span>
                 </div>
                 <span class="badge-name">Rhythm Master</span>
               </div>
-              <div class="badge-item locked" data-achievement="bow_hero">
+              <div class="badge-item" data-achievement="bow_hero" data-locked="true">
                 <div class="badge-art">
                   <img src="./assets/badges/badge_bow_hero_1769390964607.png" alt="" loading="lazy" decoding="async" />
                   <span class="badge-lock">🔒</span>
                 </div>
                 <span class="badge-name">Bow Hero</span>
               </div>
-              <div class="badge-item locked" data-achievement="ear_training">
+              <div class="badge-item" data-achievement="ear_training" data-locked="true">
                 <div class="badge-art">
                   <img src="./assets/badges/badge_ear_training_1769391019017.png" alt="" loading="lazy" decoding="async" />
                   <span class="badge-lock">🔒</span>
@@ -1531,9 +1649,7 @@
             <h3>XP Progress</h3>
             <div class="xp-display">
               <div class="xp-current">Level <strong data-progress="level">0</strong></div>
-              <div class="xp-bar-large" data-progress="xp-track" role="progressbar" aria-label="XP progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                <div class="xp-fill-large" data-progress="xp-fill" style="width: 0%"></div>
-              </div>
+              <progress class="xp-bar-large" data-progress="xp-track" aria-label="XP progress" max="100" value="0"></progress>
               <div class="xp-info" data-progress="xp-info">0 / 0 XP</div>
             </div>
           </div>
@@ -1563,15 +1679,15 @@
                 <span class="path-dot"></span>
                 <span class="path-label">Simple Songs</span>
               </div>
-              <div class="path-node locked" data-path-level="5">
+              <div class="path-node" data-path-level="5" data-locked="true">
                 <span class="path-dot"></span>
                 <span class="path-label">Scale Builder</span>
               </div>
-              <div class="path-node locked" data-path-level="6">
+              <div class="path-node" data-path-level="6" data-locked="true">
                 <span class="path-dot"></span>
                 <span class="path-label">Rhythm Patterns</span>
               </div>
-              <div class="path-node locked" data-path-level="7">
+              <div class="path-node" data-path-level="7" data-locked="true">
                 <span class="path-dot"></span>
                 <span class="path-label">Performance Badge</span>
               </div>
@@ -1586,6 +1702,7 @@
           <a href="#view-progress" class="back-btn">← Back</a>
           <h2>Session Review</h2>
         </div>
+        <p class="view-subtitle">Review today’s plays, recordings, and coach feedback.</p>
         <div class="analysis-layout">
           <div class="analysis-chart glass">
             <h3>Practice Quality Over Time</h3>
@@ -1689,6 +1806,12 @@
         <div class="view-header">
           <a href="#view-home" class="back-btn">← Back</a>
           <h2>Practice Tools</h2>
+          <button class="icon-btn info-btn" type="button" aria-label="Tools help" popovertarget="trainer-help" aria-haspopup="dialog" aria-controls="trainer-help" aria-expanded="false">ⓘ</button>
+        </div>
+        <p class="view-subtitle">Metronome, drones, and drills for steady practice flow.</p>
+        <div id="trainer-help" popover="auto" class="info-popover glass" role="dialog" aria-label="Practice tools help">
+          <h3>Tools quick guide</h3>
+          <p>Use the metronome for steady pulse, then stack drones and bowing drills to build intonation and control.</p>
         </div>
 
         <div class="trainer-layout">
@@ -1750,9 +1873,78 @@
                   <input type="range" min="50" max="140" value="100" data-metronome="slider" />
                   <span class="metronome-bpm" data-metronome="bpm">100 BPM</span>
                 </label>
+                <div class="metronome-options">
+                  <label class="metronome-field">
+                    <span>Time signature</span>
+                    <select data-metronome="signature" aria-label="Time signature">
+                      <option value="4" selected>4/4</option>
+                      <option value="3">3/4</option>
+                      <option value="2">2/4</option>
+                      <option value="6">6/8</option>
+                    </select>
+                  </label>
+                  <label class="metronome-field">
+                    <span>Subdivision</span>
+                    <select data-metronome="subdivision" aria-label="Subdivision">
+                      <option value="1" selected>Quarter notes</option>
+                      <option value="2">Eighth notes</option>
+                      <option value="3">Triplets</option>
+                      <option value="4">Sixteenth notes</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="metronome-toggles">
+                  <label class="toggle-setting">
+                    <span>Accent downbeat</span>
+                    <span class="toggle">
+                      <input type="checkbox" id="metronome-accent" data-metronome="accent" checked />
+                      <span class="toggle-slider"></span>
+                    </span>
+                  </label>
+                  <label class="toggle-setting">
+                    <span>Count-in</span>
+                    <span class="toggle">
+                      <input type="checkbox" id="metronome-count-in" data-metronome="count-in" checked />
+                      <span class="toggle-slider"></span>
+                    </span>
+                  </label>
+                </div>
                 <div class="metronome-actions">
-                  <button class="btn btn-primary" type="button" data-metronome="toggle" aria-pressed="false">Start</button>
+                  <input type="checkbox" id="metronome-toggle" class="state-checkbox" data-metronome="toggle" />
+                  <div class="toggle-ui">
+                    <label for="metronome-toggle" class="btn btn-primary btn-start">Start</label>
+                    <label for="metronome-toggle" class="btn btn-secondary btn-stop">Stop</label>
+                  </div>
                   <button class="btn btn-secondary" type="button" data-metronome="tap">Tap Tempo</button>
+                </div>
+                <div class="metronome-presets">
+                  <span class="metronome-presets-label">Quick tempos</span>
+                  <div class="metronome-preset-row">
+                    <label class="metronome-preset">
+                      <input class="metronome-preset-input" type="radio" name="metronome-preset" value="60" data-metronome-bpm="60" />
+                      <span class="metronome-preset-text">60</span>
+                    </label>
+                    <label class="metronome-preset">
+                      <input class="metronome-preset-input" type="radio" name="metronome-preset" value="72" data-metronome-bpm="72" />
+                      <span class="metronome-preset-text">72</span>
+                    </label>
+                    <label class="metronome-preset">
+                      <input class="metronome-preset-input" type="radio" name="metronome-preset" value="84" data-metronome-bpm="84" />
+                      <span class="metronome-preset-text">84</span>
+                    </label>
+                    <label class="metronome-preset">
+                      <input class="metronome-preset-input" type="radio" name="metronome-preset" value="96" data-metronome-bpm="96" />
+                      <span class="metronome-preset-text">96</span>
+                    </label>
+                    <label class="metronome-preset">
+                      <input class="metronome-preset-input" type="radio" name="metronome-preset" value="108" data-metronome-bpm="108" />
+                      <span class="metronome-preset-text">108</span>
+                    </label>
+                    <label class="metronome-preset">
+                      <input class="metronome-preset-input" type="radio" name="metronome-preset" value="120" data-metronome-bpm="120" />
+                      <span class="metronome-preset-text">120</span>
+                    </label>
+                  </div>
                 </div>
                 <p class="metronome-status" data-metronome="status" aria-live="polite">Tap Start to hear the click.</p>
               </div>
@@ -1806,10 +1998,36 @@
           <a href="#view-trainer" class="back-btn">← Back</a>
           <h2>Bowing Coach</h2>
         </div>
+        <p class="view-subtitle">Short checkpoints to keep bow lanes smooth and even.</p>
         <div class="game-drill game-drill--bow glass">
           <p class="game-drill-intro">
             Use these manual checkpoints to build smooth, even bow strokes.
           </p>
+          <div class="bowing-tempo">
+            <div>
+              <h3>Tempo anchors</h3>
+              <p class="game-drill-hint">Set a calm pulse before each set to keep bow lanes steady.</p>
+            </div>
+            <div class="metronome-preset-row">
+              <label class="metronome-preset">
+                <input class="metronome-preset-input" type="radio" name="metronome-preset" value="60" data-metronome-bpm="60" />
+                <span class="metronome-preset-text">60 BPM</span>
+              </label>
+              <label class="metronome-preset">
+                <input class="metronome-preset-input" type="radio" name="metronome-preset" value="72" data-metronome-bpm="72" />
+                <span class="metronome-preset-text">72 BPM</span>
+              </label>
+              <label class="metronome-preset">
+                <input class="metronome-preset-input" type="radio" name="metronome-preset" value="84" data-metronome-bpm="84" />
+                <span class="metronome-preset-text">84 BPM</span>
+              </label>
+              <label class="metronome-preset">
+                <input class="metronome-preset-input" type="radio" name="metronome-preset" value="96" data-metronome-bpm="96" />
+                <span class="metronome-preset-text">96 BPM</span>
+              </label>
+              <a class="btn btn-secondary" data-metronome-bpm="72" data-scroll-target="metronome-loops" href="#view-trainer">Open metronome</a>
+            </div>
+          </div>
           <div class="game-checklist-group" data-total="4">
             <div class="game-progress" data-total="4">
               <span class="game-progress-label">Sets complete</span>
@@ -1850,6 +2068,7 @@
           <a href="#view-trainer" class="back-btn">← Back</a>
           <h2>Posture Check</h2>
         </div>
+        <p class="view-subtitle">Quick alignment checks plus a photo mirror on device.</p>
         <div class="posture-layout">
           <div class="posture-card glass">
             <h3>Quick Snapshot</h3>
@@ -1857,13 +2076,40 @@
             <label class="btn btn-primary" for="posture-capture">Capture Photo</label>
             <input type="file" id="posture-capture" class="posture-capture" accept="image/*" capture="user">
             <p class="posture-hint">Photos stay on your device. Nothing is uploaded.</p>
-            <div class="posture-preview" data-posture-preview hidden>
+            <div class="posture-preview" data-posture-preview>
               <img alt="Posture preview" data-posture-image loading="lazy" decoding="async" />
               <button class="btn btn-secondary" type="button" data-posture-clear>Clear photo</button>
             </div>
           </div>
+          <div class="posture-checklist glass">
+            <h3>Alignment Checklist</h3>
+            <p class="game-drill-hint">Check each item while playing a slow scale.</p>
+            <div class="game-checklist-group" data-total="4">
+              <div class="game-progress" data-total="4">
+                <span class="game-progress-label">Checks complete</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="posture-check-1" data-minutes="2">
+                  <label for="posture-check-1">Tall spine, shoulders down, jaw relaxed.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="posture-check-2" data-minutes="2">
+                  <label for="posture-check-2">Violin balanced on collarbone with free head.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="posture-check-3" data-minutes="2">
+                  <label for="posture-check-3">Bow hand curved, wrist soft, fingers relaxed.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="posture-check-4" data-minutes="2">
+                  <label for="posture-check-4">Left elbow hangs, fingers drop from above.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
           <details class="posture-tips glass">
-            <summary>Posture checklist</summary>
+            <summary>Posture tips</summary>
             <ul class="game-tip-list">
               <li>Shoulders are relaxed and level.</li>
               <li>Violin sits on the collarbone, not the shoulder.</li>
@@ -1880,13 +2126,14 @@
           <h2>Parent Zone</h2>
           <div class="pin-lock" data-parent-pin-display aria-hidden="true">🔒 PIN set</div>
         </div>
+        <p class="view-subtitle">Goals, reminders, and progress summaries at a glance.</p>
 
         <dialog class="pin-dialog glass" data-pin-dialog aria-labelledby="parent-pin-title" aria-modal="true" role="dialog">
           <form method="dialog" class="pin-form">
             <h3 id="parent-pin-title">Parent Zone</h3>
             <p>Enter the 4-digit PIN to continue.</p>
             <label class="sr-only" for="parent-pin-input">Parent PIN</label>
-            <input type="password" id="parent-pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-describedby="parent-pin-error" />
+            <input type="password" id="parent-pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="parent-pin-error" />
             <p class="pin-error" id="parent-pin-error" data-pin-error role="status" aria-live="polite">Incorrect PIN. Try again.</p>
             <div class="pin-actions">
               <button class="btn btn-secondary" type="submit" value="cancel">Cancel</button>
@@ -1919,18 +2166,16 @@
           <div class="parent-goals glass">
             <h3>Goal Setting</h3>
             <p class="parent-goal-note" data-parent-goal-title>Next Recital Piece</p>
-            <div class="goal-progress parent-goal-progress" data-parent="goal-track" role="progressbar" aria-label="Weekly goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <div class="goal-fill" data-parent="goal-fill"></div>
-            </div>
-            <div class="parent-goal-value" data-parent="goal-value">0 / 15</div>
+            <progress class="goal-progress parent-goal-progress" data-parent="goal-track" aria-label="Weekly goal progress" max="100" value="0"></progress>
+            <div class="parent-goal-value" data-parent="goal-value">0 / 90</div>
             <div class="parent-goal-form">
               <label class="setting-row">
                 <span>Recital piece</span>
-                <input class="parent-goal-input" type="text" data-parent-goal-title-input placeholder="Next recital piece" autocomplete="off" />
+                <input class="parent-goal-input" type="text" data-parent-goal-title-input placeholder="Next recital piece" autocomplete="off" enterkeyhint="done" />
               </label>
               <label class="setting-row">
                 <span>Weekly minutes goal</span>
-                <input class="parent-goal-input" type="number" min="30" max="420" step="5" data-parent-goal-minutes-input />
+                <input class="parent-goal-input" type="number" min="30" max="420" step="5" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" data-parent-goal-minutes-input />
               </label>
               <div class="parent-actions">
                 <button class="btn btn-secondary" type="button" data-parent-goal-save>Save goal</button>
@@ -1956,7 +2201,7 @@
             <p class="parent-settings-note">Update the 4-digit PIN used to open Parent Zone.</p>
             <label class="setting-row">
               <span>New PIN</span>
-              <input class="parent-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" data-parent-pin-input aria-label="New parent PIN" />
+              <input class="parent-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" enterkeyhint="done" autocapitalize="off" autocorrect="off" spellcheck="false" data-parent-pin-input aria-label="New parent PIN" />
             </label>
             <div class="parent-actions">
               <button class="btn btn-secondary" type="button" data-parent-pin-save>Save PIN</button>
@@ -2171,9 +2416,7 @@
               <button class="btn btn-ghost rhythm-tap" type="button">Tap</button>
               <div class="rhythm-meta">BPM <span data-rhythm="bpm">80</span> · Suggested <span data-rhythm="suggested">80</span></div>
               <div class="rhythm-rating" data-rhythm="rating">Timing: --</div>
-              <div class="rhythm-meter" role="progressbar" aria-label="Timing accuracy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                <span class="rhythm-meter-fill" data-rhythm="meter" style="width: 0%"></span>
-              </div>
+              <progress class="rhythm-meter" data-rhythm="meter" aria-label="Timing accuracy" max="100" value="0"></progress>
               <div class="rhythm-status" data-rhythm="status" aria-live="polite">Tap Start to begin the run.</div>
             </div>
 
@@ -2570,7 +2813,8 @@
               <button class="paint-dot dot-yellow" data-painter="dot" data-painter-dot="yellow" type="button" aria-label="Yellow paint dot"></button>
               <button class="paint-dot dot-red" data-painter="dot" data-painter-dot="red" type="button" aria-label="Red paint dot"></button>
             </div>
-            <div class="painter-meter" role="progressbar" aria-label="Creativity meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="painter-meter">
+              <meter class="painter-meter-track" data-painter-meter aria-label="Creativity meter" min="0" max="100" value="0"></meter>
               <div class="painter-needle" data-painter="needle"></div>
             </div>
             <div class="painter-status" data-painter="status" aria-live="polite">Tap each dot to paint the beat.</div>
@@ -2741,9 +2985,7 @@
               <div class="tuning-score">Score <span data-tuning="score">0</span></div>
               <div class="tuning-status" data-tuning="status" aria-live="polite">Pick a string and tune to its ring.</div>
             </div>
-            <div class="tuning-progress">
-              <span class="tuning-progress-fill" data-tuning="progress" style="width: 0%"></span>
-            </div>
+            <progress class="tuning-progress" data-tuning="progress" max="100" value="0" aria-label="Tuning progress"></progress>
             <div class="tuning-strings">
               <button class="btn btn-primary tuning-btn" data-tuning-note="G" type="button">G</button>
               <button class="btn btn-primary tuning-btn" data-tuning-note="D" type="button">D</button>
@@ -2995,6 +3237,7 @@
           <a href="#view-home" class="back-btn">← Back</a>
           <h2>Settings</h2>
         </div>
+        <p class="view-subtitle">Customize focus, accessibility, and offline preferences.</p>
         <div class="settings-layout">
           <div class="settings-card glass">
             <h3>Appearance</h3>
@@ -3082,6 +3325,7 @@
             <p class="setting-note" data-storage-estimate aria-live="polite">Storage estimate loading…</p>
             <p class="setting-note" data-network-status aria-live="polite">Network status: checking…</p>
             <p class="setting-note" data-offline-status aria-live="polite">Offline integrity: checking…</p>
+            <div class="offline-ready-badge" data-offline-ready aria-live="polite">Offline ready: checking…</div>
             <p class="setting-note" data-offline-assets aria-live="polite">Cached assets: —</p>
             <p class="setting-note" data-offline-misses aria-live="polite">Offline misses: —</p>
             <p class="setting-note" data-offline-last aria-live="polite">Last offline check: —</p>
@@ -3106,7 +3350,7 @@
             <p class="setting-note" data-sync-status aria-live="polite">Background refresh status: checking…</p>
             <div class="settings-actions">
               <button class="btn btn-secondary" type="button" data-sw-update>Check for updates</button>
-              <button class="btn btn-primary" type="button" data-sw-apply hidden>Apply update</button>
+              <button class="btn btn-primary" type="button" data-sw-apply>Apply update</button>
             </div>
           </div>
 
@@ -3114,9 +3358,9 @@
             <h3>App Install</h3>
             <p class="setting-note" data-install-status aria-live="polite">Install status: Use Add to Home Screen for the best offline experience.</p>
             <p class="setting-note">Open Safari → Share → Add to Home Screen.</p>
-            <button class="btn btn-secondary" type="button" data-install-help>Show install steps</button>
+            <button class="btn btn-secondary" type="button" data-install-help commandfor="install-guide" command="show-modal">Show install steps</button>
             <p class="setting-note" data-platform-status aria-live="polite">Checking device features…</p>
-            <p class="setting-note" data-input-status aria-live="polite">Input: checking…</p>
+            <p class="setting-note" aria-live="polite">Input: Touch or Apple Pencil.</p>
           </div>
 
           <div class="settings-card glass">
@@ -3125,6 +3369,15 @@
             <p class="setting-note" data-ml-detail>Most recent: —</p>
             <p class="setting-note" data-ml-accel aria-live="polite">ML acceleration: checking…</p>
             <p class="setting-note" data-ml-accel-detail>Checking on-device ML support…</p>
+            <p class="setting-note" data-ml-backend-status aria-live="polite">ML backend: checking…</p>
+            <label class="setting-row">
+              <span>GPU ML acceleration (experimental)</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-ml-gpu" />
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <p class="setting-note">Uses WebGPU when available and Performance mode is set to High.</p>
             <label class="setting-row">
               <span>Demo mode</span>
               <span class="toggle">
@@ -3135,6 +3388,29 @@
             <p class="setting-note">Simulate adaptive updates to preview difficulty shifts.</p>
             <button class="btn btn-secondary" type="button" data-ml-simulate disabled>Simulate adaptive data</button>
             <button class="btn btn-secondary" type="button" data-ml-reset>Reset adaptive learning</button>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>Performance (A15)</h3>
+            <p class="setting-note">Optimized for iPad mini 6 (A15). High performance uses more power.</p>
+            <label class="setting-row">
+              <span>High performance mode</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-performance" />
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <p class="setting-note" data-performance-status aria-live="polite">Performance mode: Balanced.</p>
+            <details class="performance-diagnostics" open>
+              <summary>Performance diagnostics</summary>
+              <p class="setting-note" data-performance-metrics aria-live="polite">Diagnostics: waiting for samples…</p>
+              <p class="setting-note" data-performance-capabilities>Capabilities: checking…</p>
+            </details>
+            <details class="performance-diagnostics">
+              <summary>Native capabilities</summary>
+              <p class="setting-note" data-capability-summary aria-live="polite">Capabilities: checking…</p>
+              <ul class="capability-list" data-capability-list></ul>
+            </details>
           </div>
 
           <div class="settings-card glass">
@@ -3156,6 +3432,7 @@
           <a href="#view-home" class="back-btn">← Back</a>
           <h2>Data Backup</h2>
         </div>
+        <p class="view-subtitle">Export or restore practice data on this device.</p>
         <div class="backup-layout">
           <div class="backup-card glass">
             <h3>Export Practice Summary</h3>
@@ -3180,6 +3457,7 @@
           <a href="#view-home" class="back-btn">← Back</a>
           <h2>Help</h2>
         </div>
+        <p class="view-subtitle">Quick answers for install, tuning, and offline use.</p>
         <div class="help-layout">
           <details class="help-card glass">
             <summary>How do I install the app?</summary>
@@ -3206,6 +3484,7 @@
           <a href="#view-home" class="back-btn">← Back</a>
           <h2>About</h2>
         </div>
+        <p class="view-subtitle">Version, credits, and privacy notes.</p>
         <div class="about-layout">
           <div class="about-card glass">
             <h3>Emerson’s Violin Studio</h3>
@@ -3310,9 +3589,24 @@
       <img src="./assets/illustrations/mascot-happy.png" alt="" class="more-mascot" loading="lazy" decoding="async" />
       <div class="more-version">Version 2.0.0</div>
     </div>
-    <div class="popover-backdrop" data-popover-backdrop hidden aria-hidden="true" role="presentation"></div>
 
   </div>
+
+  <dialog id="install-guide" class="install-guide glass" aria-labelledby="install-guide-title">
+    <form method="dialog" class="install-guide-form">
+      <h3 id="install-guide-title">Install Panda Violin</h3>
+      <p>For the best offline experience on iPad:</p>
+      <ol>
+        <li>Open Safari's <span class="install-guide-chip">Share</span> menu.</li>
+        <li>Select <strong>Add to Home Screen</strong>.</li>
+        <li>Launch Panda Violin from your Home Screen.</li>
+      </ol>
+      <div class="install-guide-actions">
+        <button class="btn btn-primary" type="submit" value="dismiss" data-install-dismiss>Got it</button>
+        <button class="btn btn-secondary" type="submit" value="later" data-install-later>Later</button>
+      </div>
+    </form>
+  </dialog>
 
   <details class="install-banner glass" id="install-banner">
     <summary class="install-content">
@@ -3331,6 +3625,157 @@
       <p class="install-hint">Built for iPadOS 26.2. No network needed after install.</p>
     </div>
   </details>
+
+  <template id="game-header-actions-template">
+    <div class="game-header-actions" data-game-controls>
+      <div class="game-timer" data-game-timer aria-live="polite">00:00</div>
+      <button class="icon-btn" type="button" aria-label="Jump to coach plan" data-game-coach-jump>✨</button>
+      <button class="icon-btn" type="button" aria-label="Reset session" data-game-reset>↺</button>
+    </div>
+  </template>
+
+  <template id="game-coach-template">
+    <div class="game-coach glass" data-game-coach>
+      <div class="game-coach-header">
+        <div class="game-coach-text">
+          <span class="game-coach-kicker">Coach Focus</span>
+          <h3 data-game-coach-title></h3>
+          <p class="game-coach-goal" data-game-coach-goal></p>
+        </div>
+        <div class="game-coach-badge" data-game-coach-badge></div>
+      </div>
+      <div class="game-coach-steps" data-game-coach-steps>
+        <div class="game-coach-step" data-game-coach-step>
+          <span class="game-coach-step-index" data-step-index></span>
+          <span class="game-coach-step-time" data-step-time></span>
+          <span class="game-coach-step-text" data-step-text></span>
+          <span class="game-coach-step-cue" data-step-cue></span>
+        </div>
+      </div>
+      <div class="game-session" data-game-session>
+        <div class="game-session-row">
+          <span class="game-session-label">Session Timer</span>
+          <span class="game-session-time" data-game-session-time>00:00</span>
+          <span class="game-session-target" data-game-session-target></span>
+        </div>
+        <progress class="game-session-track" data-game-session-track aria-label="Session progress" max="100" value="0"></progress>
+        <div class="game-session-actions">
+          <button class="btn btn-primary" type="button" data-game-session-start>Start session</button>
+          <button class="btn btn-secondary" type="button" data-game-session-stop disabled>Finish</button>
+        </div>
+      </div>
+      <div class="game-coach-tip" data-game-coach-tip>
+        <span>Coach tip:</span> <span data-game-coach-tip-text></span>
+      </div>
+    </div>
+  </template>
+
+  <template id="parent-recording-row">
+    <div class="parent-recording-item">
+      <button class="recording-play" type="button" aria-label="Play recording">▶</button>
+      <div class="recording-info">
+        <div class="recording-title"></div>
+        <div class="recording-sub"></div>
+      </div>
+      <button class="recording-save" type="button" aria-label="Save recording">⬇</button>
+      <button class="recording-delete" type="button" aria-label="Delete recording">✕</button>
+    </div>
+  </template>
+
+  <template id="games-hub-quest-template">
+    <li class="games-hub-quest">
+      <span class="games-hub-quest-time" data-quest-time></span>
+      <span class="games-hub-quest-text" data-quest-text></span>
+      <span class="games-hub-quest-cue" data-quest-cue></span>
+    </li>
+  </template>
+
+  <template id="games-hub-quest-empty-template">
+    <li class="games-hub-quest games-hub-quest-empty">Start your next quest and keep your focus steady.</li>
+  </template>
+
+  <template id="games-hub-recent-template">
+    <li class="games-recent-item">
+      <span data-recent-label></span>
+      <strong data-recent-score></strong>
+    </li>
+  </template>
+
+  <template id="lesson-runner-template">
+    <div class="lesson-runner" data-lesson-runner>
+      <div class="lesson-runner-header">
+        <span class="lesson-runner-title">Guided Lesson</span>
+        <span class="lesson-runner-status" data-lesson-runner-status>Ready</span>
+      </div>
+      <div class="lesson-runner-body">
+        <div class="lesson-runner-step" data-lesson-runner-step>Step 1 of 1</div>
+        <div class="lesson-runner-cue" data-lesson-runner-cue>Tap Start to begin the first step.</div>
+      </div>
+      <div class="lesson-runner-timer" data-lesson-runner-timer>00:00</div>
+      <progress class="lesson-runner-progress" data-lesson-runner-track aria-label="Lesson progress" max="100" value="0"></progress>
+      <div class="lesson-runner-actions">
+        <button class="btn btn-primary" type="button" data-lesson-runner-start>Start</button>
+        <button class="btn btn-secondary" type="button" data-lesson-runner-next disabled>Next step</button>
+        <a class="btn btn-ghost" data-lesson-runner-cta href="#view-games">Open activity</a>
+      </div>
+    </div>
+  </template>
+
+  <template id="lesson-step-template">
+    <li class="lesson-step" data-lesson-step>
+      <span class="lesson-step-time" data-lesson-step-time></span>
+      <span class="lesson-step-text" data-lesson-step-text></span>
+      <a class="lesson-step-link" data-lesson-step-link href="#view-games">Open</a>
+      <span class="lesson-step-cue" data-lesson-step-cue></span>
+    </li>
+  </template>
+
+  <template id="difficulty-badge-template">
+    <span class="difficulty-badge"></span>
+  </template>
+
+  <template id="song-recommendation-template">
+    <div class="song-recommendation">Recommended</div>
+  </template>
+
+  <template id="game-recommendation-template">
+    <div class="game-recommendation">Recommended</div>
+  </template>
+
+  <template id="song-metric-template">
+    <div class="song-metric" data-song-metric>
+      <span class="song-metric-label" data-song-metric-label></span>
+      <span class="song-metric-value" data-song-metric-value></span>
+    </div>
+  </template>
+
+  <template id="song-metrics-template">
+    <div class="song-metrics"></div>
+  </template>
+
+  <template id="song-meta-template">
+    <div class="song-meta-block" data-song-meta>
+      <span class="song-meta-label" data-song-meta-label></span>
+      <strong class="song-meta-value" data-song-meta-value></strong>
+    </div>
+  </template>
+
+  <template id="download-link-template">
+    <a class="download-link" aria-hidden="true" tabindex="-1"></a>
+  </template>
+
+  <template id="game-card-meta-template">
+    <div class="game-card-meta">
+      <div class="game-card-stat">
+        <span class="game-card-label">Last</span>
+        <span class="game-card-value" data-game-card-last="true"></span>
+      </div>
+      <div class="game-card-stat">
+        <span class="game-card-label">Best</span>
+        <span class="game-card-value" data-game-card-best="true"></span>
+      </div>
+    </div>
+  </template>
 
   <script type="module" src="./src/app.js"></script>
 </body>

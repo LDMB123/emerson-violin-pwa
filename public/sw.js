@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v107';
+const CACHE_VERSION = 'v109';
 const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
 const APP_SHELL_URL = './index.html';
 const OFFLINE_URL = './offline.html';
@@ -26,15 +26,66 @@ const buildPrecacheList = () => {
     return Array.from(precache);
 };
 
+const buildExpectedUrls = () => PRECACHE_URLS.map((asset) => new URL(asset, self.location.origin).href);
+
 const PRECACHE_URLS = buildPrecacheList();
-const STATIC_DESTINATIONS = new Set(['style', 'script', 'font', 'image', 'audio']);
+const EXPECTED_URLS = new Set(buildExpectedUrls());
+const STATIC_DESTINATIONS = new Set(['style', 'script', 'font', 'image', 'audio', 'wasm']);
+const MAX_RUNTIME_ENTRIES = 60;
 let offlineMode = false;
+
+const cacheAsset = async (cache, asset) => {
+    try {
+        const request = new Request(asset, { cache: 'reload' });
+        await cache.add(request);
+    } catch {
+        try {
+            await cache.add(asset);
+        } catch {
+            // Ignore asset cache failures
+        }
+    }
+};
+
+const precacheAssets = async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.allSettled(PRECACHE_URLS.map((asset) => cacheAsset(cache, asset)));
+};
+
+const shouldCacheResponse = (response) => {
+    if (!response || !response.ok) return false;
+    if (response.type === 'opaque') return false;
+    const cacheControl = response.headers.get('cache-control') || '';
+    if (cacheControl.includes('no-store')) return false;
+    return true;
+};
+
+const trimRuntimeCache = async (cache) => {
+    try {
+        const requests = await cache.keys();
+        const runtimeRequests = requests.filter((request) => !EXPECTED_URLS.has(request.url));
+        if (runtimeRequests.length <= MAX_RUNTIME_ENTRIES) return;
+        const excess = runtimeRequests.length - MAX_RUNTIME_ENTRIES;
+        await Promise.all(runtimeRequests.slice(0, excess).map((request) => cache.delete(request)));
+    } catch {
+        // Ignore cache trim failures
+    }
+};
+
+const cacheResponse = async (cache, request, response) => {
+    if (!shouldCacheResponse(response)) return;
+    try {
+        await cache.put(request, response.clone());
+        await trimRuntimeCache(cache);
+    } catch {
+        // Ignore cache write failures
+    }
+};
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
         (async () => {
-            const cache = await caches.open(CACHE_NAME);
-            await Promise.allSettled(PRECACHE_URLS.map((asset) => cache.add(asset)));
+            await precacheAssets();
         })()
     );
     self.skipWaiting();
@@ -46,6 +97,8 @@ self.addEventListener('activate', (event) => {
             await Promise.all(
                 (await caches.keys()).map((key) => (key === CACHE_NAME ? null : caches.delete(key)))
             );
+            const cache = await caches.open(CACHE_NAME);
+            await trimRuntimeCache(cache);
             if (self.registration?.navigationPreload) {
                 await self.registration.navigationPreload.enable();
             }
@@ -100,9 +153,7 @@ const cacheFirst = async (request) => {
     if (cached) return cached;
     try {
         const response = await fetch(request);
-        if (response && response.ok) {
-            cache.put(request, response.clone());
-        }
+        await cacheResponse(cache, request, response);
         return response;
     } catch {
         await notifyOfflineMiss(request, 'cache-first');
@@ -114,9 +165,7 @@ const staleWhileRevalidate = async (request, event) => {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request);
     const fetchPromise = fetch(request).then((response) => {
-        if (response && response.ok) {
-            cache.put(request, response.clone());
-        }
+        cacheResponse(cache, request, response);
         return response;
     });
     if (cached) {
@@ -142,6 +191,22 @@ const notifyClients = async (payload) => {
     }
 };
 
+const getCacheSummary = async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const requests = await cache.keys();
+    const cachedUrls = new Set(requests.map((request) => request.url));
+    const expected = Array.from(EXPECTED_URLS);
+    let expectedCached = 0;
+    expected.forEach((url) => {
+        if (cachedUrls.has(url)) expectedCached += 1;
+    });
+    return {
+        cachedAssets: requests.length,
+        expectedTotal: expected.length,
+        expectedCached,
+    };
+};
+
 const notifyOfflineMiss = async (request, reason = 'fetch') => {
     await notifyClients({
         type: 'OFFLINE_MISS',
@@ -157,11 +222,33 @@ const updateAppShell = async (responsePromise) => {
         const response = await responsePromise;
         if (response && response.ok) {
             const cache = await caches.open(CACHE_NAME);
-            await cache.put(APP_SHELL_URL, response.clone());
+            await cacheResponse(cache, APP_SHELL_URL, response);
         }
     } catch {
         // Ignore update failures
     }
+};
+
+const runOfflineSelfTest = async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const expected = Array.from(EXPECTED_URLS);
+    let pass = 0;
+    const missing = [];
+    for (const url of expected) {
+        const cached = await cache.match(url, { ignoreSearch: true });
+        if (cached) {
+            pass += 1;
+        } else if (missing.length < 5) {
+            missing.push(url);
+        }
+    }
+    await notifyClients({
+        type: 'OFFLINE_SELFTEST_RESULT',
+        expectedTotal: expected.length,
+        expectedCached: pass,
+        missing,
+        timestamp: Date.now(),
+    });
 };
 
 const handleNavigation = async (event) => {
@@ -270,6 +357,21 @@ self.addEventListener('message', (event) => {
     if (event.data?.type === 'REFRESH_ASSETS') {
         event.waitUntil(refreshAssets());
     }
+    if (event.data?.type === 'OFFLINE_SUMMARY_REQUEST') {
+        event.waitUntil(
+            (async () => {
+                const summary = await getCacheSummary();
+                await notifyClients({
+                    type: 'OFFLINE_SUMMARY',
+                    ...summary,
+                    timestamp: Date.now(),
+                });
+            })()
+        );
+    }
+    if (event.data?.type === 'OFFLINE_SELFTEST') {
+        event.waitUntil(runOfflineSelfTest());
+    }
     if (event.data?.type === 'SET_OFFLINE_MODE') {
         offlineMode = Boolean(event.data.value);
         notifyClients({ type: 'OFFLINE_MODE', value: offlineMode, timestamp: Date.now() });
@@ -277,11 +379,12 @@ self.addEventListener('message', (event) => {
 });
 
 const refreshAssets = async () => {
-    const cache = await caches.open(CACHE_NAME);
-    await Promise.allSettled(PRECACHE_URLS.map((asset) => cache.add(asset)));
+    await precacheAssets();
+    const summary = await getCacheSummary();
     await notifyClients({
         type: 'OFFLINE_REFRESH',
         assetCount: PRECACHE_URLS.length,
+        ...summary,
         timestamp: Date.now(),
     });
 };

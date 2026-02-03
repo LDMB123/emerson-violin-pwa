@@ -41,8 +41,8 @@ test.describe('Panda Violin PWA', () => {
         await expect(gamesView).toBeVisible();
 
         // Check for specific games
-        await expect(page.locator('a[href="#view-game-pitch-quest"]')).toBeVisible();
-        await expect(page.locator('a[href="#view-game-rhythm-dash"]')).toBeVisible();
+        await expect(page.locator('#view-games .game-card[data-game-id="pitch-quest"]')).toBeVisible();
+        await expect(page.locator('#view-games .game-card[data-game-id="rhythm-dash"]')).toBeVisible();
     });
 
     test('should verify tuner view functionality', async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe('Panda Violin PWA', () => {
     test('should launch a game', async ({ page }) => {
         await page.goto('/#view-games');
         // Click Pitch Quest
-        await page.click('a[href="#view-game-pitch-quest"]');
+        await page.click('#view-games .game-card[data-game-id="pitch-quest"]');
 
         // Check game drill content
         await expect(page.locator('#view-game-pitch-quest .game-drill')).toBeVisible();

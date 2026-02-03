@@ -4,15 +4,19 @@
     "description": "Local-first violin teaching PWA for children with a Red Panda coach and iPadOS 26.2 optimization",
     "type": "module",
     "scripts": {
-        "predev": "node scripts/build-songs-html.js && node scripts/build-sw-assets.js",
+        "predev": "node scripts/build/build-songs-html.js && node scripts/build/build-sw-assets.js",
         "dev": "vite",
-        "prebuild": "node scripts/build-songs-html.js && node scripts/build-sw-assets.js",
+        "prebuild": "node scripts/build/build-songs-html.js && node scripts/build/build-sw-assets.js",
         "build": "vite build",
-        "postbuild": "node scripts/build-sw-assets.js --dist",
+        "postbuild": "node scripts/build/build-sw-assets.js --dist",
         "preview": "vite preview",
         "test": "vitest run",
         "test:watch": "vitest",
-        "lint": "eslint src --ext .js"
+        "lint": "eslint src --ext .js",
+        "wasm:build": "node scripts/build/build-wasm.js",
+        "wasm:build:dev": "node scripts/build/build-wasm.js --dev",
+        "wasm:copy": "node scripts/build/copy-wasm.js",
+        "wasm:prepare": "npm run wasm:build && npm run wasm:copy"
     },
     "devDependencies": {
         "@playwright/test": "^1.58.0",

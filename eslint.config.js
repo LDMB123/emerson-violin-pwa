@@ -1,7 +1,7 @@
 export default [
   {
     files: ['src/**/*.js'],
-    ignores: ['src/wasm/**'],
+    ignores: ['src/core/wasm/**'],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: 'module',

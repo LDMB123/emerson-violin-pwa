@@ -1,54 +1,63 @@
+import { getViewId as getCurrentViewId, onViewChange } from './core/utils/view-events.js';
+
 const moduleLoaders = {
-    platform: () => import('./platform/native-apis.js'),
-    dataSaver: () => import('./platform/data-saver.js'),
-    offlineRecovery: () => import('./platform/offline-recovery.js'),
-    installGuide: () => import('./platform/install-guide.js'),
-    ipadosCapabilities: () => import('./platform/ipados-capabilities.js'),
-    inputCapabilities: () => import('./platform/input-capabilities.js'),
-    mlScheduler: () => import('./ml/offline-scheduler.js'),
-    mlAccelerator: () => import('./ml/accelerator.js'),
-    offlineIntegrity: () => import('./platform/offline-integrity.js'),
-    offlineMode: () => import('./platform/offline-mode.js'),
-    progress: () => import('./progress/progress.js'),
-    persist: () => import('./persistence/persist.js'),
-    tuner: () => import('./tuner/tuner.js'),
-    songSearch: () => import('./songs/song-search.js'),
-    songProgress: () => import('./songs/song-progress.js'),
-    sessionReview: () => import('./analysis/session-review.js'),
-    coachActions: () => import('./coach/coach-actions.js'),
-    focusTimer: () => import('./coach/focus-timer.js'),
-    lessonPlan: () => import('./coach/lesson-plan.js'),
-    reminders: () => import('./notifications/reminders.js'),
-    backupExport: () => import('./backup/export.js'),
-    gameMetrics: () => import('./games/game-metrics.js'),
-    gameEnhancements: () => import('./games/game-enhancements.js'),
-    trainerTools: () => import('./trainer/tools.js'),
-    recordings: () => import('./recordings/recordings.js'),
-    parentPin: () => import('./parent/pin.js'),
-    parentRecordings: () => import('./parent/recordings.js'),
-    parentGoals: () => import('./parent/goals.js'),
-    swUpdates: () => import('./platform/sw-updates.js'),
-    adaptiveUi: () => import('./ml/adaptive-ui.js'),
-    recommendationsUi: () => import('./ml/recommendations-ui.js'),
+    platform: () => import('./core/platform/native-apis.js'),
+    installGuide: () => import('./core/platform/install-guide.js'),
+    ipadosCapabilities: () => import('./core/platform/ipados-capabilities.js'),
+    capabilityRegistry: () => import('./core/platform/capability-registry.js'),
+    performanceMode: () => import('./core/platform/performance-mode.js'),
+    perfTelemetry: () => import('./core/platform/perf-telemetry.js'),
+    mlScheduler: () => import('./core/ml/offline-scheduler.js'),
+    mlBackend: () => import('./core/ml/backend-manager.js'),
+    mlInference: () => import('./core/ml/inference.js'),
+    offlineIntegrity: () => import('./core/platform/offline-integrity.js'),
+    offlineMode: () => import('./core/platform/offline-mode.js'),
+    progress: () => import('./features/progress/progress.js'),
+    persist: () => import('./core/persistence/persist.js'),
+    tuner: () => import('./features/tuner/tuner.js'),
+    songSearch: () => import('./features/songs/song-search.js'),
+    songProgress: () => import('./features/songs/song-progress.js'),
+    sessionReview: () => import('./features/analysis/session-review.js'),
+    coachActions: () => import('./features/coach/coach-actions.js'),
+    focusTimer: () => import('./features/coach/focus-timer.js'),
+    lessonPlan: () => import('./features/coach/lesson-plan.js'),
+    coachInsights: () => import('./features/coach/coach-insights.js'),
+    reminders: () => import('./features/notifications/reminders.js'),
+    backupExport: () => import('./features/backup/export.js'),
+    gameMetrics: () => import('./features/games/game-metrics.js'),
+    gameEnhancements: () => import('./features/games/game-enhancements.js'),
+    gameHub: () => import('./features/games/game-hub.js'),
+    trainerTools: () => import('./features/trainer/tools.js'),
+    recordings: () => import('./features/recordings/recordings.js'),
+    parentPin: () => import('./features/parent/pin.js'),
+    parentRecordings: () => import('./features/parent/recordings.js'),
+    parentGoals: () => import('./features/parent/goals.js'),
+    swUpdates: () => import('./core/platform/sw-updates.js'),
+    adaptiveUi: () => import('./core/ml/adaptive-ui.js'),
+    recommendationsUi: () => import('./core/ml/recommendations-ui.js'),
 };
 
 const loaded = new Map();
 const PRIMARY_VIEWS = new Set(['view-home', 'view-coach', 'view-games', 'view-progress']);
+const getPerformanceMode = () => document.documentElement?.dataset?.perfMode || 'balanced';
+
 const scheduleIdle = (task) => {
     if (typeof window === 'undefined') return;
     if (document.prerendering) {
         document.addEventListener('prerenderingchange', () => scheduleIdle(task), { once: true });
         return;
     }
+    const perfMode = getPerformanceMode();
+    const prefersFast = perfMode === 'high';
     if (globalThis.scheduler?.postTask) {
-        globalThis.scheduler.postTask(() => task(), { priority: 'background' });
+        globalThis.scheduler.postTask(() => task(), { priority: prefersFast ? 'user-visible' : 'background' });
         return;
     }
-    if ('requestIdleCallback' in window) {
+    if (!prefersFast && 'requestIdleCallback' in window) {
         window.requestIdleCallback(task, { timeout: 1500 });
         return;
     }
-    window.setTimeout(() => task({ timeRemaining: () => 0, didTimeout: true }), 600);
+    window.setTimeout(() => task({ timeRemaining: () => 0, didTimeout: true }), prefersFast ? 200 : 600);
 };
 
 const loadModule = (key) => {
@@ -66,8 +75,8 @@ const loadIdle = (key) => {
     scheduleIdle(() => loadModule(key));
 };
 
-const getViewId = () => {
-    const hash = window.location.hash || '';
+const getViewIdFromUrl = (url) => {
+    const hash = url?.hash || window.location.hash || '';
     const id = hash.replace('#', '').trim();
     return id || 'view-home';
 };
@@ -95,6 +104,7 @@ const loadForView = (viewId) => {
         loadModule('focusTimer');
         loadModule('lessonPlan');
         loadModule('recommendationsUi');
+        loadModule('coachInsights');
     }
 
     if (viewId === 'view-trainer' || viewId === 'view-bowing' || viewId === 'view-posture') {
@@ -122,6 +132,7 @@ const loadForView = (viewId) => {
     if (viewId === 'view-games' || viewId.startsWith('view-game-')) {
         loadModule('gameMetrics');
         loadModule('gameEnhancements');
+        loadModule('gameHub');
     }
 
     if (viewId === 'view-progress') {
@@ -142,33 +153,39 @@ const boot = () => {
         return;
     }
     loadModule('platform');
-    loadModule('dataSaver');
-    loadModule('offlineRecovery');
     loadModule('ipadosCapabilities');
-    loadModule('inputCapabilities');
+    loadIdle('capabilityRegistry');
+    loadModule('performanceMode');
+    loadModule('perfTelemetry');
     loadModule('progress');
     loadModule('persist');
     loadIdle('installGuide');
+    loadIdle('swUpdates');
     loadIdle('mlScheduler');
-    loadIdle('mlAccelerator');
+    loadIdle('mlBackend');
+    loadIdle('mlInference');
     loadIdle('offlineIntegrity');
     loadIdle('offlineMode');
     loadIdle('reminders');
-    loadForView(getViewId());
     registerServiceWorker();
-
-    window.addEventListener('hashchange', () => {
-        loadForView(getViewId());
-        updateNavState();
-    }, { passive: true });
 
     const reduceMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
     const prefersReducedMotion = () => reduceMotionMedia.matches;
     const reduceMotionToggle = document.querySelector('#setting-reduce-motion');
-    const popoverBackdrop = document.querySelector('[data-popover-backdrop]');
-    const supportsPopover = 'showPopover' in HTMLElement.prototype;
     const navItems = Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]'));
-    let lastPopoverTrigger = null;
+    const mainContent = document.querySelector('.main-content');
+    const supportsNavigation = () => 'navigation' in window && typeof window.navigation?.addEventListener === 'function';
+
+    const resetViewScroll = () => {
+        if (!mainContent) return;
+        mainContent.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    };
+    const applyViewState = (viewId) => {
+        loadForView(viewId);
+        updateNavState(viewId);
+        resetViewScroll();
+        document.dispatchEvent(new CustomEvent('panda:view-change', { detail: { viewId } }));
+    };
 
     const setPopoverExpanded = (popover, expanded) => {
         if (!popover?.id) return;
@@ -199,6 +216,14 @@ const boot = () => {
             if (afterNav) afterNav();
             return;
         }
+        if (supportsNavigation() && typeof window.navigation.navigate === 'function') {
+            const url = new URL(href, window.location.href);
+            const nav = window.navigation.navigate(url.toString());
+            if (afterNav) {
+                nav.finished.then(afterNav).catch(() => afterNav());
+            }
+            return;
+        }
         if (afterNav) {
             const handle = () => afterNav();
             window.addEventListener('hashchange', handle, { once: true });
@@ -212,12 +237,10 @@ const boot = () => {
         }
     };
 
-    const updateNavState = () => {
-        const viewId = getViewId();
+    const updateNavState = (viewId = getCurrentViewId()) => {
         const activeHref = PRIMARY_VIEWS.has(viewId) ? `#${viewId}` : null;
         navItems.forEach((item) => {
             const isActive = activeHref && item.getAttribute('href') === activeHref;
-            item.classList.toggle('is-active', Boolean(isActive));
             if (isActive) {
                 item.setAttribute('aria-current', 'page');
             } else {
@@ -226,67 +249,41 @@ const boot = () => {
         });
     };
 
-    const enhanceToggleLabels = () => {
-        const labels = document.querySelectorAll(
-            '.toggle-ui label[for], .song-controls label[for], .focus-controls label[for]'
-        );
-        labels.forEach((label) => {
-            if (label.dataset.keybound === 'true') return;
-            label.dataset.keybound = 'true';
-            label.setAttribute('role', 'button');
-            label.setAttribute('tabindex', '0');
-            label.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    label.click();
-                }
+    if (supportsNavigation()) {
+        window.navigation.addEventListener('navigate', (event) => {
+            if (!event?.canIntercept) return;
+            const destinationUrl = new URL(event.destination.url);
+            if (destinationUrl.origin !== window.location.origin) return;
+            event.intercept({
+                scroll: 'manual',
+                async handler() {
+                    const viewId = getViewIdFromUrl(destinationUrl);
+                    if (shouldAnimateNav()) {
+                        await document.startViewTransition(() => {
+                            applyViewState(viewId);
+                        });
+                    } else {
+                        applyViewState(viewId);
+                    }
+                },
             });
         });
-    };
-
-    updateNavState();
-    enhanceToggleLabels();
-
-    const openPopoverFallback = (popover) => {
-        if (!popover) return;
-        popover.dataset.fallbackOpen = 'true';
-        setPopoverExpanded(popover, true);
-        focusFirstPopoverItem(popover);
-        document.documentElement.classList.add('popover-open');
-        if (popoverBackdrop) {
-            popoverBackdrop.hidden = false;
-            popoverBackdrop.classList.add('is-open');
-        }
-    };
-
-    const closePopoverFallback = (popover) => {
-        if (popover) {
-            delete popover.dataset.fallbackOpen;
-            setPopoverExpanded(popover, false);
-        }
-        if (popoverBackdrop) {
-            popoverBackdrop.classList.remove('is-open');
-            popoverBackdrop.hidden = true;
-        }
-        document.documentElement.classList.remove('popover-open');
-        if (lastPopoverTrigger instanceof HTMLElement) {
-            lastPopoverTrigger.focus();
-        }
-    };
-
-    if (supportsPopover) {
-        document.querySelectorAll('[popover]').forEach((popover) => {
-            popover.addEventListener('toggle', () => {
-                const open = popover.matches(':popover-open');
-                setPopoverExpanded(popover, open);
-                if (open) {
-                    focusFirstPopoverItem(popover);
-                } else if (lastPopoverTrigger instanceof HTMLElement) {
-                    lastPopoverTrigger.focus();
-                }
-            });
-        });
+    } else {
+        onViewChange((viewId) => {
+            applyViewState(viewId);
+        }, { includePanda: false });
     }
+    applyViewState(getCurrentViewId());
+    const popovers = Array.from(document.querySelectorAll('[popover]'));
+    popovers.forEach((popover) => {
+        popover.addEventListener('toggle', () => {
+            const open = popover.matches(':popover-open');
+            setPopoverExpanded(popover, open);
+            if (open) {
+                focusFirstPopoverItem(popover);
+            }
+        });
+    });
 
     const focusFirstPopoverItem = (popover) => {
         if (!popover) return;
@@ -295,44 +292,6 @@ const boot = () => {
             target.focus();
         }
     };
-
-    document.querySelectorAll('[popovertarget]').forEach((button) => {
-        button.addEventListener('click', () => {
-            lastPopoverTrigger = button;
-        });
-    });
-
-    if (!supportsPopover) {
-        document.querySelectorAll('[popovertarget]').forEach((button) => {
-            button.addEventListener('click', (event) => {
-                const targetId = button.getAttribute('popovertarget');
-                const popover = targetId ? document.getElementById(targetId) : null;
-                if (!popover) return;
-                event.preventDefault();
-                if (popover.dataset.fallbackOpen === 'true') {
-                    closePopoverFallback(popover);
-                } else {
-                    openPopoverFallback(popover);
-                }
-            });
-        });
-
-        popoverBackdrop?.addEventListener('click', () => {
-            const openPopover = document.querySelector('[data-fallback-open="true"]');
-            if (openPopover) closePopoverFallback(openPopover);
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape') return;
-            const openPopover = document.querySelector('[data-fallback-open="true"]');
-            if (openPopover) closePopoverFallback(openPopover);
-        });
-
-        window.addEventListener('hashchange', () => {
-            const openPopover = document.querySelector('[data-fallback-open="true"]');
-            if (openPopover) closePopoverFallback(openPopover);
-        }, { passive: true });
-    }
 
     document.addEventListener('click', (event) => {
         const link = event.target.closest('a[href^="#view-"]');
@@ -347,22 +306,10 @@ const boot = () => {
                 popover.hidePopover();
             } else {
                 popover.removeAttribute('open');
-                closePopoverFallback(popover);
             }
         }
         navigateTo(href, targetId ? () => scrollToTarget(targetId) : null);
     });
-
-    if (!supportsPopover) {
-        document.querySelectorAll('[popovertargetaction="hide"]').forEach((button) => {
-            button.addEventListener('click', (event) => {
-                const popover = button.closest('[popover]');
-                if (!popover) return;
-                event.preventDefault();
-                closePopoverFallback(popover);
-            });
-        });
-    }
 };
 
 if (document.readyState === 'loading') {

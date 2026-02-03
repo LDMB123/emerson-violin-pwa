@@ -1,0 +1,3063 @@
+import { getGameTuning, updateGameResult } from '@core/ml/adaptive-engine.js';
+import { getLearningRecommendations } from '@core/ml/recommendations.js';
+import { cloneTemplate, ensureDifficultyBadge, ensureTemplateInstance } from '@core/utils/templates.js';
+import { appendFeatureFrame } from '@core/ml/feature-store.js';
+import { getViewId, onViewChange } from '@core/utils/view-events.js';
+import { createRhythmTimer } from '@core/wasm/game-timer.js';
+import { createTonePlayer } from '../audio/tone-player.js';
+import { getJSON, setJSON } from '@core/persistence/storage.js';
+
+const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
+const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
+const getPerfMode = () => document.documentElement?.dataset?.perfMode || 'balanced';
+const getUiInterval = () => (getPerfMode() === 'high' ? 300 : 500);
+const EVENT_KEY = 'panda-violin:events:v1';
+const MAX_EVENTS = 500;
+const todayDay = () => Math.floor(Date.now() / 86400000);
+const formatCountdown = (seconds) => {
+    const safe = Math.max(0, Math.ceil(seconds));
+    const minutes = Math.floor(safe / 60);
+    const remaining = safe % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
+};
+
+const soundToggle = document.querySelector('#setting-sounds');
+const gameRecommendationTemplate = '#game-recommendation-template';
+const gameCardMetaTemplate = document.querySelector('#game-card-meta-template');
+
+const isSoundEnabled = () => {
+    if (!soundToggle) return true;
+    return soundToggle.checked;
+};
+
+let tonePlayer = null;
+const getTonePlayer = () => {
+    if (tonePlayer) return tonePlayer;
+    const created = createTonePlayer();
+    if (!created) return null;
+    tonePlayer = created;
+    return tonePlayer;
+};
+
+const stopTonePlayer = () => {
+    if (tonePlayer) {
+        tonePlayer.stopAll();
+    }
+};
+
+const playToneNote = (note, options) => {
+    if (!isSoundEnabled()) return false;
+    const player = getTonePlayer();
+    if (!player) return false;
+    player.playNote(note, options).catch(() => {});
+    return true;
+};
+
+const playToneSequence = (notes, options) => {
+    if (!isSoundEnabled()) return false;
+    const player = getTonePlayer();
+    if (!player) return false;
+    player.playSequence(notes, options).catch(() => {});
+    return true;
+};
+
+const bindTap = (element, handler, { threshold = 160, clickIgnoreWindow = 420 } = {}) => {
+    if (!element || typeof handler !== 'function') return;
+    let lastTap = 0;
+    let lastPointerTap = 0;
+    const invoke = (event) => {
+        const now = performance.now();
+        if (now - lastTap < threshold) return;
+        lastTap = now;
+        handler(event);
+    };
+    element.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        event.preventDefault();
+        lastPointerTap = performance.now();
+        invoke(event);
+    }, { passive: false });
+    element.addEventListener('click', (event) => {
+        const now = performance.now();
+        if (now - lastPointerTap < clickIgnoreWindow && event.detail !== 0) return;
+        invoke(event);
+    });
+};
+
+const readLiveNumber = (el, key) => {
+    if (!el || !el.dataset) return null;
+    const value = Number(el.dataset[key]);
+    return Number.isFinite(value) ? value : null;
+};
+
+const setLiveNumber = (el, key, value, formatter) => {
+    if (!el) return;
+    el.dataset[key] = String(value);
+    el.textContent = formatter ? formatter(value) : String(value);
+};
+
+const markChecklist = (id) => {
+    if (!id) return;
+    const input = document.getElementById(id);
+    if (!input || input.checked) return;
+    input.checked = true;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+const markChecklistIf = (condition, id) => {
+    if (condition) markChecklist(id);
+};
+
+const formatDifficulty = (value) => {
+    const label = value || 'medium';
+    return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+const setDifficultyBadge = (container, difficulty, prefix = 'Adaptive') => {
+    if (!container) return;
+    const badge = ensureDifficultyBadge(container, { prefix });
+    if (!badge) return;
+    badge.dataset.level = difficulty || 'medium';
+    badge.textContent = `${prefix}: ${formatDifficulty(difficulty)}`;
+};
+
+const recordGameEvent = async (id, payload = {}) => {
+    if (!id) return;
+    const events = await getJSON(EVENT_KEY);
+    const list = Array.isArray(events) ? events : [];
+    const entry = {
+        type: 'game',
+        id,
+        day: todayDay(),
+        timestamp: Date.now(),
+    };
+    if (Number.isFinite(payload.score)) entry.score = Math.round(payload.score);
+    if (Number.isFinite(payload.accuracy)) entry.accuracy = Math.round(payload.accuracy);
+    if (Number.isFinite(payload.stars)) entry.stars = Math.round(payload.stars);
+    list.push(entry);
+    if (list.length > MAX_EVENTS) {
+        list.splice(0, list.length - MAX_EVENTS);
+    }
+    await setJSON(EVENT_KEY, list);
+    document.dispatchEvent(new CustomEvent('panda:game-recorded', { detail: entry }));
+};
+
+const GAME_CARD_SELECTOR = '#view-games .game-card';
+let gameSummaryBound = false;
+
+const getGameCardId = (card) => {
+    if (!card) return null;
+    const dataId = card.dataset?.gameId;
+    if (dataId) return dataId;
+    const href = card.getAttribute('href') || '';
+    const match = href.match(/#view-game-([a-z0-9-]+)/);
+    return match ? match[1] : null;
+};
+
+const ensureGameCardStats = (card) => {
+    if (!card) return { lastValueEl: null, bestValueEl: null };
+    let meta = card.querySelector('.game-card-meta');
+    if (!meta) {
+        meta = cloneTemplate(gameCardMetaTemplate);
+        if (!meta) {
+            return { lastValueEl: null, bestValueEl: null };
+        }
+        card.appendChild(meta);
+    }
+    return {
+        lastValueEl: meta.querySelector('[data-game-card-last]'),
+        bestValueEl: meta.querySelector('[data-game-card-best]'),
+    };
+};
+
+const pickMetric = (events) => {
+    if (events.some((event) => Number.isFinite(event.accuracy))) return 'accuracy';
+    if (events.some((event) => Number.isFinite(event.stars))) return 'stars';
+    if (events.some((event) => Number.isFinite(event.score))) return 'score';
+    return null;
+};
+
+const metricValue = (event, metric) => {
+    if (!event || !metric) return null;
+    const value = metric === 'accuracy'
+        ? event.accuracy
+        : metric === 'stars'
+            ? event.stars
+            : event.score;
+    return Number.isFinite(value) ? value : null;
+};
+
+const formatMetric = (event, metric) => {
+    if (!event) return '—';
+    const value = metricValue(event, metric);
+    if (value === null) {
+        if (Number.isFinite(event.accuracy)) return `${Math.round(event.accuracy)}%`;
+        if (Number.isFinite(event.stars)) return `${Math.round(event.stars)}★`;
+        if (Number.isFinite(event.score)) return `Score ${Math.round(event.score)}`;
+        return '—';
+    }
+    if (metric === 'accuracy') return `${Math.round(value)}%`;
+    if (metric === 'stars') return `${Math.round(value)}★`;
+    return `Score ${Math.round(value)}`;
+};
+
+const updateGameCards = async () => {
+    const cards = Array.from(document.querySelectorAll(GAME_CARD_SELECTOR));
+    if (!cards.length) return;
+    const events = await getJSON(EVENT_KEY);
+    const gameEvents = Array.isArray(events)
+        ? events.filter((event) => event?.type === 'game' && event?.id)
+        : [];
+    const eventsByGame = new Map();
+    gameEvents.forEach((event) => {
+        const list = eventsByGame.get(event.id) || [];
+        list.push(event);
+        eventsByGame.set(event.id, list);
+    });
+
+    cards.forEach((card) => {
+        const id = getGameCardId(card);
+        if (!id) return;
+        const entries = eventsByGame.get(id) || [];
+        const { lastValueEl, bestValueEl } = ensureGameCardStats(card);
+        if (!lastValueEl || !bestValueEl) return;
+        if (!entries.length) {
+            lastValueEl.textContent = '—';
+            bestValueEl.textContent = '—';
+            return;
+        }
+        const metric = pickMetric(entries);
+        const last = entries[entries.length - 1];
+        let best = null;
+        let bestValue = null;
+        entries.forEach((event) => {
+            const value = metricValue(event, metric);
+            if (value === null) return;
+            if (bestValue === null || value > bestValue) {
+                bestValue = value;
+                best = event;
+            }
+        });
+        lastValueEl.textContent = formatMetric(last, metric);
+        bestValueEl.textContent = formatMetric(best || last, metric);
+    });
+};
+
+const ensureGameRecommendation = (card, active) => {
+    if (!card) return;
+    if (active) {
+        card.dataset.recommended = 'true';
+        const badge = ensureTemplateInstance(card, {
+            selector: '.game-recommendation',
+            templateId: gameRecommendationTemplate,
+            className: 'game-recommendation',
+        });
+        if (badge && !badge.textContent) badge.textContent = 'Recommended';
+        return;
+    }
+    delete card.dataset.recommended;
+    const badge = card.querySelector('.game-recommendation');
+    if (badge) badge.remove();
+};
+
+const updateGameRecommendations = async () => {
+    const cards = Array.from(document.querySelectorAll(GAME_CARD_SELECTOR));
+    if (!cards.length) return;
+    const recs = await getLearningRecommendations().catch(() => null);
+    const recommendedId = recs?.recommendedGameId || recs?.recommendedGame;
+    cards.forEach((card) => {
+        const id = getGameCardId(card);
+        const isRecommended = Boolean(recommendedId && id === recommendedId);
+        ensureGameRecommendation(card, isRecommended);
+    });
+};
+
+const bindGameCardSummary = () => {
+    if (gameSummaryBound) return;
+    const cards = document.querySelectorAll(GAME_CARD_SELECTOR);
+    if (!cards.length) return;
+    gameSummaryBound = true;
+    const refresh = () => {
+        updateGameCards().catch(() => {});
+        updateGameRecommendations().catch(() => {});
+    };
+    refresh();
+    document.addEventListener('panda:game-recorded', refresh);
+    document.addEventListener('panda:ml-update', refresh);
+    document.addEventListener('panda:ml-reset', refresh);
+    document.addEventListener('panda:ml-recs', refresh);
+};
+
+const attachTuning = (id, onUpdate) => {
+    const apply = (tuning) => {
+        if (!tuning) return;
+        onUpdate(tuning);
+    };
+    const refresh = () => {
+        getGameTuning(id).then(apply).catch(() => {});
+    };
+    refresh();
+    document.addEventListener('panda:ml-reset', refresh);
+    const report = (payload) => updateGameResult(id, payload).then(apply).catch(() => {});
+    report.refresh = refresh;
+    return report;
+};
+
+const updatePitchQuest = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-pitch-quest input[id^="pq-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const total = inputs.length;
+    const scoreEl = document.querySelector('[data-pitch="score"]');
+    const starsEl = document.querySelector('[data-pitch="stars"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    const liveStars = readLiveNumber(starsEl, 'liveStars');
+
+    if (scoreEl) {
+        const score = Number.isFinite(liveScore) ? liveScore : (checked * 15 + (checked === total ? 10 : 0));
+        scoreEl.textContent = String(score);
+    }
+
+    if (starsEl) {
+        const stars = Number.isFinite(liveStars) ? Math.round(liveStars) : Math.min(3, Math.ceil(checked / 2));
+        starsEl.textContent = formatStars(stars, 3);
+    }
+};
+
+const updateRhythmDash = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-rhythm-dash input[id^="rd-set-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = document.querySelector('[data-rhythm="score"]');
+    const comboEl = document.querySelector('[data-rhythm="combo"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    const liveCombo = readLiveNumber(comboEl, 'liveCombo');
+
+    if (scoreEl) {
+        scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : (checked * 25 + (checked === inputs.length ? 20 : 0)));
+    }
+    if (comboEl) {
+        const combo = Number.isFinite(liveCombo) ? liveCombo : checked;
+        comboEl.textContent = `x${combo}`;
+    }
+};
+
+const updateNoteMemory = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-note-memory input[id^="nm-card-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const pairs = Math.floor(checked / 2);
+    const matchesEl = document.querySelector('[data-memory="matches"]');
+    const scoreEl = document.querySelector('[data-memory="score"]');
+    const liveMatches = readLiveNumber(matchesEl, 'liveMatches');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+
+    if (matchesEl) {
+        const value = Number.isFinite(liveMatches) ? liveMatches : pairs;
+        matchesEl.textContent = `${value}/6`;
+    }
+    if (scoreEl) {
+        const score = Number.isFinite(liveScore) ? liveScore : pairs * 60;
+        scoreEl.textContent = String(score);
+    }
+};
+
+const updateEarTrainer = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-ear-trainer input[id^="et-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const questionEl = document.querySelector('[data-ear="question"]');
+    if (questionEl && checked > 0 && !questionEl.dataset.live) {
+        questionEl.textContent = `Rounds complete: ${checked}/${inputs.length}`;
+    }
+};
+
+const updateBowHero = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-bow-hero input[id^="bh-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const starsEl = document.querySelector('[data-bow="stars"]');
+    const liveStars = readLiveNumber(starsEl, 'liveStars');
+    if (starsEl) starsEl.textContent = String(Number.isFinite(liveStars) ? liveStars : checked);
+};
+
+const updateStringQuest = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-string-quest input[id^="sq-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = document.querySelector('[data-string="score"]');
+    const comboEl = document.querySelector('[data-string="combo"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    const liveCombo = readLiveNumber(comboEl, 'liveCombo');
+    if (scoreEl) {
+        scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : (checked * 30 + (checked === inputs.length ? 30 : 0)));
+    }
+    if (comboEl) {
+        const combo = Number.isFinite(liveCombo) ? liveCombo : checked;
+        comboEl.textContent = `x${combo}`;
+    }
+};
+
+const updateRhythmPainter = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-rhythm-painter input[id^="rp-pattern-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = document.querySelector('[data-painter="score"]');
+    const creativityEl = document.querySelector('[data-painter="creativity"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    const liveCreativity = readLiveNumber(creativityEl, 'liveCreativity');
+    const creativity = Math.min(100, checked * 25);
+
+    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 120);
+    if (creativityEl) {
+        const value = Number.isFinite(liveCreativity) ? liveCreativity : creativity;
+        creativityEl.textContent = `${value}%`;
+    }
+};
+
+const updateStorySong = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-story-song input[id^="ss-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const titleEl = document.querySelector('#view-game-story-song [data-story="title"]');
+    if (titleEl) {
+        titleEl.textContent = checked === inputs.length ? 'Story Song Lab · Complete!' : 'Story Song Lab';
+    }
+};
+
+const bindStorySong = () => {
+    const stage = document.querySelector('#view-game-story-song');
+    if (!stage) return;
+    const toggle = stage.querySelector('#story-play');
+    const statusEl = stage.querySelector('[data-story="status"]');
+    const titleEl = stage.querySelector('[data-story="title"]');
+    const pageEl = stage.querySelector('[data-story="page"]');
+    const notesEl = stage.querySelector('[data-story="notes"]');
+    const promptEl = stage.querySelector('[data-story="prompt"]');
+    const storyPages = [
+        {
+            title: 'Open String Overture',
+            prompt: 'Warm up with your open strings.',
+            notes: ['G', 'D', 'A', 'E'],
+        },
+        {
+            title: 'Fingerboard Sparkle',
+            prompt: 'Climb gently with first-finger steps.',
+            notes: ['G', 'A', 'B', 'C'],
+        },
+        {
+            title: 'Finale Glow',
+            prompt: 'Resolve with a soft descent.',
+            notes: ['D', 'C', 'B', 'A'],
+        },
+    ];
+    let stageSeconds = 4;
+    let tempo = 92;
+    let reported = false;
+    let wasPlaying = false;
+    let pageIndex = 0;
+    let completedNotes = 0;
+    let completedPages = 0;
+    let playToken = 0;
+
+    const updateStatus = (message) => {
+        if (!statusEl) return;
+        if (message) {
+            statusEl.textContent = message;
+            return;
+        }
+        statusEl.textContent = toggle?.checked
+            ? 'Play-along running — follow the notes.'
+            : 'Press Play-Along to start.';
+    };
+
+    const updatePage = (index = pageIndex) => {
+        const page = storyPages[index];
+        if (titleEl) {
+            titleEl.textContent = page ? `Story Song Lab · ${page.title}` : 'Story Song Lab';
+        }
+        if (pageEl) {
+            pageEl.textContent = page ? `Page ${index + 1} of ${storyPages.length}` : '';
+        }
+        if (notesEl) {
+            notesEl.textContent = page ? page.notes.join(' · ') : '♪ ♪ ♪';
+        }
+        if (promptEl) {
+            promptEl.textContent = page ? page.prompt : 'Warm up with your open strings.';
+        }
+    };
+
+    const stopPlayback = ({ keepToggle = false, message } = {}) => {
+        playToken += 1;
+        stopTonePlayer();
+        if (!keepToggle && toggle) {
+            toggle.checked = false;
+        }
+        if (message) {
+            updateStatus(message);
+        }
+    };
+
+    const reportResult = attachTuning('story-song', (tuning) => {
+        stageSeconds = tuning.stageSeconds ?? stageSeconds;
+        tempo = tuning.tempo ?? tuning.storyTempo ?? tempo;
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        updatePage();
+    });
+
+    const reportSession = () => {
+        if (reported) return;
+        if (completedPages === 0) return;
+        reported = true;
+        const accuracy = storyPages.length ? (completedPages / storyPages.length) * 100 : 0;
+        const score = completedNotes * 12 + completedPages * 40;
+        reportResult({ accuracy, score });
+        recordGameEvent('story-song', { accuracy, score });
+    };
+
+    const resetStory = () => {
+        pageIndex = 0;
+        completedNotes = 0;
+        completedPages = 0;
+        reported = false;
+        updatePage();
+        updateStatus('Press Play-Along to start.');
+    };
+
+    const playStory = async () => {
+        if (!toggle || !toggle.checked) return;
+        if (!isSoundEnabled()) {
+            stopPlayback({ message: 'Sounds are off. Enable Sounds to play along.' });
+            return;
+        }
+        const player = getTonePlayer();
+        if (!player) {
+            stopPlayback({ message: 'Audio is unavailable on this device.' });
+            return;
+        }
+        if (pageIndex >= storyPages.length || reported) {
+            pageIndex = 0;
+            completedNotes = 0;
+            completedPages = 0;
+            reported = false;
+        }
+        const token = ++playToken;
+        markChecklist('ss-step-1');
+        updateStatus('Play-along running — follow the notes.');
+
+        while (pageIndex < storyPages.length) {
+            if (token !== playToken || !toggle.checked) break;
+            const page = storyPages[pageIndex];
+            updatePage(pageIndex);
+            const played = await player.playSequence(page.notes, {
+                tempo: page.tempo ?? tempo,
+                gap: 0.12,
+                duration: 0.4,
+                volume: 0.2,
+                type: 'triangle',
+            });
+            if (!played || token !== playToken || !toggle.checked) break;
+            completedNotes += page.notes.length;
+            completedPages = Math.max(completedPages, pageIndex + 1);
+            markChecklistIf(page.notes.length >= 4, 'ss-step-2');
+            markChecklist('ss-step-3');
+            pageIndex += 1;
+            if (pageIndex < storyPages.length) {
+                await new Promise((resolve) => setTimeout(resolve, Math.max(400, stageSeconds * 250)));
+            }
+        }
+
+        if (token !== playToken) return;
+        if (pageIndex >= storyPages.length) {
+            updateStatus('Story complete! Tap Play-Along to replay.');
+            if (toggle) toggle.checked = false;
+            reportSession();
+        } else if (!toggle.checked) {
+            updateStatus('Play-along paused. Tap Play-Along to resume.');
+        } else {
+            updateStatus('Play-along ready. Tap Play-Along to continue.');
+        }
+    };
+
+    toggle?.addEventListener('change', () => {
+        if (toggle.checked) {
+            if (completedPages === 0) {
+                resetStory();
+            }
+            playStory();
+        } else {
+            markChecklist('ss-step-4');
+            stopPlayback({ keepToggle: true, message: 'Play-along paused. Tap Play-Along to resume.' });
+            reportSession();
+        }
+    });
+    updatePage();
+    updateStatus();
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopPlayback({ message: 'Sounds are off. Enable Sounds to play along.' });
+        } else if (event.detail?.enabled === true) {
+            updateStatus('Sounds on. Tap Play-Along to start.');
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (!toggle) return;
+        if (document.hidden) {
+            wasPlaying = toggle.checked;
+            stopPlayback({ message: 'Play-along paused.' });
+        } else if (wasPlaying) {
+            wasPlaying = false;
+            if (statusEl) {
+                statusEl.textContent = 'Play-along paused. Tap Play-Along to resume.';
+            }
+        }
+    });
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-story-song') {
+            resetStory();
+            return;
+        }
+        stopPlayback();
+        reportSession();
+    });
+};
+
+const updatePizzicato = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-pizzicato input[id^="pz-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = document.querySelector('[data-pizzicato="score"]');
+    const comboEl = document.querySelector('[data-pizzicato="combo"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    const liveCombo = readLiveNumber(comboEl, 'liveCombo');
+    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : (checked * 40 + (checked === inputs.length ? 40 : 0)));
+    if (comboEl) {
+        const combo = Number.isFinite(liveCombo) ? liveCombo : checked;
+        comboEl.textContent = `x${combo}`;
+    }
+};
+
+const updateTuningTime = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-tuning-time input[id^="tt-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = document.querySelector('[data-tuning="score"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 25);
+};
+
+const updateMelodyMaker = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-melody-maker input[id^="mm-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = document.querySelector('[data-melody="score"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 30);
+};
+
+const updateScalePractice = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-scale-practice input[id^="sp-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = document.querySelector('[data-scale="score"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 28);
+};
+
+const updateDuetChallenge = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-duet-challenge input[id^="dc-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = document.querySelector('[data-duet="score"]');
+    const comboEl = document.querySelector('[data-duet="combo"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    const liveCombo = readLiveNumber(comboEl, 'liveCombo');
+    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 22);
+    if (comboEl) {
+        const combo = Number.isFinite(liveCombo) ? liveCombo : checked;
+        comboEl.textContent = `x${combo}`;
+    }
+};
+
+const updates = [
+    updatePitchQuest,
+    updateRhythmDash,
+    updateNoteMemory,
+    updateEarTrainer,
+    updateBowHero,
+    updateStringQuest,
+    updateRhythmPainter,
+    updateStorySong,
+    updatePizzicato,
+    updateTuningTime,
+    updateMelodyMaker,
+    updateScalePractice,
+    updateDuetChallenge,
+];
+
+const updateAll = () => {
+    updates.forEach((fn) => fn());
+};
+
+let updateScheduled = false;
+const scheduleUpdateAll = () => {
+    if (updateScheduled) return;
+    updateScheduled = true;
+    requestAnimationFrame(() => {
+        updateScheduled = false;
+        updateAll();
+    });
+};
+
+const shouldUpdate = (id) => {
+    return /^(pq-step-|rd-set-|nm-card-|et-step-|bh-step-|sq-step-|rp-pattern-|ss-step-|pz-step-|tt-step-|mm-step-|sp-step-|dc-step-)/.test(id);
+};
+
+const bindPitchQuest = () => {
+    const stage = document.querySelector('#view-game-pitch-quest');
+    if (!stage) return;
+    const slider = stage.querySelector('[data-pitch="slider"]');
+    const toleranceSlider = stage.querySelector('[data-pitch="tolerance"]');
+    const toleranceValue = stage.querySelector('[data-pitch="tolerance-value"]');
+    const offsetEl = stage.querySelector('[data-pitch="offset"]');
+    const feedbackEl = stage.querySelector('[data-pitch="feedback"]');
+    const statusEl = stage.querySelector('[data-pitch="status"]');
+    const checkButton = stage.querySelector('[data-pitch="check"]');
+    const gauge = stage.querySelector('.pitch-gauge');
+    const scoreEl = stage.querySelector('[data-pitch="score"]');
+    const starsEl = stage.querySelector('[data-pitch="stars"]');
+    const stabilityEl = stage.querySelector('[data-pitch="stability"]');
+    const targets = Array.from(stage.querySelectorAll('.pitch-target-toggle'));
+    const checklist = Array.from(stage.querySelectorAll('input[id^="pq-step-"]'));
+
+    let score = readLiveNumber(scoreEl, 'liveScore') ?? 0;
+    let stars = readLiveNumber(starsEl, 'liveStars') ?? 0;
+    let streak = 0;
+    let stabilityStreak = 0;
+    let lastMatchAt = 0;
+    let tolerance = 6;
+    let attempts = 0;
+    let hits = 0;
+    let reported = false;
+
+    const targetNoteFromInput = (input) => {
+        const raw = input?.id?.split('-').pop();
+        return raw ? raw.toUpperCase() : null;
+    };
+
+    const updateTolerance = (value, { user = false } = {}) => {
+        const next = clamp(Number(value) || tolerance, 3, 12);
+        tolerance = next;
+        if (toleranceValue) toleranceValue.textContent = `±${next}¢`;
+        if (toleranceSlider) {
+            toleranceSlider.value = String(next);
+            toleranceSlider.setAttribute('aria-valuenow', String(next));
+            toleranceSlider.setAttribute('aria-valuetext', `±${next} cents`);
+            if (user) toleranceSlider.dataset.userSet = 'true';
+        }
+        updateTargetStatus();
+        if (slider) setOffset(slider.value);
+    };
+
+    const setOffset = (raw) => {
+        const cents = clamp(Number(raw) || 0, -50, 50);
+        const angle = cents * 0.5;
+        if (slider) {
+            const sign = cents > 0 ? '+' : '';
+            slider.setAttribute('aria-valuenow', String(cents));
+            slider.setAttribute('aria-valuetext', `${sign}${cents} cents`);
+        }
+        if (gauge) gauge.style.setProperty('--pitch-offset', `${angle}deg`);
+        if (offsetEl) {
+            const sign = cents > 0 ? '+' : '';
+            offsetEl.textContent = `${sign}${cents} cents`;
+        }
+        if (feedbackEl) {
+            if (Math.abs(cents) <= tolerance) {
+                feedbackEl.textContent = `In tune (±${tolerance}¢) ✨`;
+            } else if (cents > 0) {
+                feedbackEl.textContent = 'A little sharp — ease it down.';
+            } else {
+                feedbackEl.textContent = 'A little flat — lift it up.';
+            }
+        }
+        return cents;
+    };
+
+    const updateTargetStatus = () => {
+        if (!statusEl) return;
+        const active = targets.find((radio) => radio.checked);
+        if (!active) {
+            statusEl.textContent = 'Pick a target note.';
+            return;
+        }
+        const note = active.id.split('-').pop()?.toUpperCase() || '';
+        statusEl.textContent = note ? `Target: ${note} · ±${tolerance}¢` : 'Pick a target note.';
+    };
+
+    const reportResult = attachTuning('pitch-quest', (tuning) => {
+        const nextTolerance = tuning.tolerance ?? tolerance;
+        if (!(toleranceSlider && toleranceSlider.dataset.userSet)) {
+            updateTolerance(nextTolerance);
+        }
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        updateTargetStatus();
+    });
+
+    const reportSession = () => {
+        if (reported || attempts === 0) return;
+        reported = true;
+        const accuracy = attempts ? (hits / attempts) * 100 : 0;
+        reportResult({ accuracy, score, stars });
+        recordGameEvent('pitch-quest', { accuracy, score, stars });
+    };
+
+    const markNoteChecklist = () => {
+        const next = checklist.find((input) => !input.checked && /pq-step-[1-4]/.test(input.id));
+        if (!next) return;
+        next.checked = true;
+        next.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    const updateStability = (value) => {
+        if (!stabilityEl) return;
+        stabilityEl.textContent = `${value}x`;
+    };
+
+    const randomizeOffset = () => {
+        if (!slider) return;
+        const value = Math.round((Math.random() * 40) - 20);
+        slider.value = String(value);
+        setOffset(value);
+    };
+
+    slider?.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        setOffset(target.value);
+    });
+
+    targets.forEach((radio) => {
+        radio.addEventListener('change', () => {
+            streak = 0;
+            stabilityStreak = 0;
+            randomizeOffset();
+            updateTargetStatus();
+            updateStability(stabilityStreak);
+            const note = targetNoteFromInput(radio);
+            if (note) {
+                playToneNote(note, { duration: 0.3, volume: 0.18, type: 'triangle' });
+            }
+        });
+    });
+
+    bindTap(checkButton, () => {
+        const activeTarget = targets.find((radio) => radio.checked);
+        if (!activeTarget) {
+            if (statusEl) statusEl.textContent = 'Pick a target note before checking.';
+            return;
+        }
+        const cents = slider ? setOffset(slider.value) : 0;
+        const targetNote = targetNoteFromInput(activeTarget);
+        const matched = Math.abs(cents) <= tolerance;
+        attempts += 1;
+        if (matched) {
+            hits += 1;
+            streak += 1;
+            score += 18 + streak * 3;
+            stars = Math.max(stars, Math.min(3, Math.ceil(streak / 2)));
+            markNoteChecklist();
+            if (targetNote) {
+                playToneNote(targetNote, { duration: 0.32, volume: 0.2, type: 'triangle' });
+            }
+            const now = Date.now();
+            if (now - lastMatchAt <= 4000) {
+                stabilityStreak += 1;
+            } else {
+                stabilityStreak = 1;
+            }
+            lastMatchAt = now;
+            if (stabilityStreak >= 3) markChecklist('pq-step-5');
+            if (streak >= 2) markChecklist('pq-step-6');
+        } else {
+            streak = 0;
+            stabilityStreak = 0;
+            score = Math.max(0, score - 6);
+            const detuneNote = cents > 0 ? 'F#' : 'F';
+            playToneNote(detuneNote, { duration: 0.2, volume: 0.14, type: 'sawtooth' });
+        }
+        const accuracy = attempts ? (hits / attempts) * 100 : 0;
+        setLiveNumber(scoreEl, 'liveScore', score);
+        if (starsEl) {
+            starsEl.dataset.liveStars = String(stars);
+            starsEl.textContent = formatStars(stars, 3);
+        }
+        updateStability(stabilityStreak);
+        reportResult({ accuracy, score, stars });
+        if (checklist.length && checklist.every((input) => input.checked)) {
+            reportSession();
+        }
+    });
+
+    if (slider) setOffset(slider.value);
+    if (toleranceSlider) {
+        updateTolerance(toleranceSlider.value);
+        toleranceSlider.addEventListener('input', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement)) return;
+            updateTolerance(target.value, { user: true });
+        });
+    }
+    updateTargetStatus();
+    updateStability(stabilityStreak);
+
+    const resetSession = () => {
+        score = 0;
+        stars = 0;
+        streak = 0;
+        stabilityStreak = 0;
+        attempts = 0;
+        hits = 0;
+        reported = false;
+        setLiveNumber(scoreEl, 'liveScore', score);
+        if (starsEl) {
+            starsEl.dataset.liveStars = String(stars);
+            starsEl.textContent = formatStars(stars, 3);
+        }
+        updateStability(stabilityStreak);
+        updateTargetStatus();
+        if (slider) {
+            setOffset(slider.value);
+        }
+    };
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-pitch-quest') {
+            resetSession();
+            return;
+        }
+        reportSession();
+    });
+};
+
+const bindNoteMemory = () => {
+    const stage = document.querySelector('#view-game-note-memory');
+    if (!stage) return;
+    const cards = Array.from(stage.querySelectorAll('.memory-card'));
+    const timerEl = stage.querySelector('[data-memory="timer"]');
+    const matchesEl = stage.querySelector('[data-memory="matches"]');
+    const scoreEl = stage.querySelector('[data-memory="score"]');
+    const streakEl = stage.querySelector('[data-memory="streak"]');
+    const resetButton = stage.querySelector('[data-memory="reset"]');
+
+    if (!cards.length) return;
+    const totalPairs = Math.floor(cards.length / 2);
+    const noteValues = cards.map((card) => card.querySelector('.memory-back')?.textContent?.trim() || '');
+    let flipped = [];
+    let lock = false;
+    let matches = 0;
+    let score = 0;
+    let matchStreak = 0;
+    let timeLimit = 45;
+    let timeLeft = timeLimit;
+    let timerId = null;
+    let endTime = null;
+    let ended = false;
+    let reported = false;
+    let paused = false;
+    let mismatchTimer = null;
+
+    const updateHud = () => {
+        if (matchesEl) {
+            matchesEl.dataset.liveMatches = String(matches);
+            matchesEl.textContent = `${matches}/${totalPairs}`;
+        }
+        setLiveNumber(scoreEl, 'liveScore', score);
+        if (streakEl) streakEl.textContent = String(matchStreak);
+        if (timerEl) timerEl.textContent = formatCountdown(timeLeft);
+    };
+
+    const reportResult = attachTuning('note-memory', (tuning) => {
+        timeLimit = tuning.timeLimit ?? timeLimit;
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        if (!timerId && !ended) {
+            timeLeft = timeLimit;
+            updateHud();
+        }
+    });
+
+    const stopTimer = () => {
+        if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+        }
+        endTime = null;
+    };
+
+    const pauseTimer = () => {
+        if (!timerId) return;
+        if (endTime) {
+            timeLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        }
+        stopTimer();
+        paused = true;
+    };
+
+    const resumeTimer = () => {
+        if (!paused || ended) return;
+        if (window.location.hash !== '#view-game-note-memory') return;
+        if (timeLeft <= 0) return;
+        paused = false;
+        startTimer();
+    };
+
+    const finalizeGame = () => {
+        if (reported) return;
+        reported = true;
+        const accuracy = totalPairs ? (matches / totalPairs) * 100 : 0;
+        reportResult({ accuracy, score });
+        recordGameEvent('note-memory', { accuracy, score });
+    };
+
+    const startTimer = () => {
+        if (timerId) return;
+        paused = false;
+        endTime = Date.now() + timeLeft * 1000;
+        timerId = window.setInterval(() => {
+            if (!endTime) return;
+            timeLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+            if (timeLeft <= 0) {
+                timeLeft = 0;
+                ended = true;
+                lock = false;
+                stopTimer();
+                finalizeGame();
+            }
+            updateHud();
+        }, getUiInterval());
+    };
+
+    const resetGame = () => {
+        stopTimer();
+        if (mismatchTimer) {
+            clearTimeout(mismatchTimer);
+            mismatchTimer = null;
+        }
+        flipped = [];
+        lock = false;
+        matches = 0;
+        score = 0;
+        matchStreak = 0;
+        timeLeft = timeLimit;
+        ended = false;
+        reported = false;
+        cards.forEach((card) => {
+            card.removeAttribute('data-matched');
+            const input = card.querySelector('input');
+            if (input) {
+                input.checked = false;
+                input.disabled = false;
+            }
+        });
+        const values = [...noteValues];
+        for (let i = values.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [values[i], values[j]] = [values[j], values[i]];
+        }
+        cards.forEach((card, index) => {
+            const back = card.querySelector('.memory-back');
+            if (back && values[index]) back.textContent = values[index];
+        });
+        updateHud();
+    };
+
+    const noteForCard = (card) => {
+        const value = card.querySelector('.memory-back')?.textContent?.trim();
+        return value || '';
+    };
+
+    const handleMatch = () => {
+        const matchedNotes = flipped.map(({ note }) => note).filter(Boolean);
+        matches += 1;
+        matchStreak += 1;
+        score += 120 + matchStreak * 10;
+        flipped.forEach(({ card, input }) => {
+            card.setAttribute('data-matched', 'true');
+            if (input) input.disabled = true;
+        });
+        flipped = [];
+        lock = false;
+        if (matchedNotes.length) {
+            playToneSequence(matchedNotes, { tempo: 140, gap: 0.1, duration: 0.22, volume: 0.18, type: 'triangle' });
+        }
+        if (matches >= totalPairs) {
+            ended = true;
+            stopTimer();
+            finalizeGame();
+        }
+        updateHud();
+    };
+
+    const handleMismatch = () => {
+        score = Math.max(0, score - 10);
+        matchStreak = 0;
+        const current = [...flipped];
+        flipped = [];
+        if (mismatchTimer) clearTimeout(mismatchTimer);
+        mismatchTimer = window.setTimeout(() => {
+            current.forEach(({ input }) => {
+                if (input) input.checked = false;
+            });
+            lock = false;
+            updateHud();
+        }, 600);
+    };
+
+    cards.forEach((card) => {
+        const input = card.querySelector('input');
+        if (!input) return;
+        input.addEventListener('change', () => {
+            if (!input.checked) return;
+            if (lock) {
+                input.checked = false;
+                return;
+            }
+            if (ended) {
+                resetGame();
+                input.checked = false;
+                return;
+            }
+            if (input.disabled) return;
+            if (!timerId) startTimer();
+            const note = noteForCard(card);
+            flipped.push({ card, input, note });
+            if (note) {
+                playToneNote(note, { duration: 0.24, volume: 0.18, type: 'triangle' });
+            }
+            if (flipped.length === 2) {
+                lock = true;
+                if (flipped[0].note && flipped[0].note === flipped[1].note) {
+                    handleMatch();
+                } else {
+                    handleMismatch();
+                }
+            }
+        });
+    });
+
+    bindTap(resetButton, () => {
+        resetGame();
+    });
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopTonePlayer();
+        }
+    });
+
+    updateHud();
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-note-memory') {
+            resetGame();
+            return;
+        }
+        if (matches > 0 || score > 0) {
+            finalizeGame();
+        }
+        stopTimer();
+        if (mismatchTimer) {
+            clearTimeout(mismatchTimer);
+            mismatchTimer = null;
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            pauseTimer();
+        } else {
+            resumeTimer();
+        }
+    });
+
+    if (getViewId() === 'view-game-note-memory') {
+        resetGame();
+    }
+};
+
+const bindRhythmDash = () => {
+    const stage = document.querySelector('#view-game-rhythm-dash');
+    if (!stage) return;
+    const tapButton = stage.querySelector('.rhythm-tap');
+    const runToggle = stage.querySelector('#rhythm-run');
+    const pauseButton = stage.querySelector('[data-rhythm="pause"]');
+    const settingsButton = stage.querySelector('[data-rhythm="settings"]');
+    const scoreEl = stage.querySelector('[data-rhythm="score"]');
+    const comboEl = stage.querySelector('[data-rhythm="combo"]');
+    const bpmEl = stage.querySelector('[data-rhythm="bpm"]');
+    const suggestedEl = stage.querySelector('[data-rhythm="suggested"]');
+    const statusEl = stage.querySelector('[data-rhythm="status"]');
+    const ratingEl = stage.querySelector('[data-rhythm="rating"]');
+    const meterEl = stage.querySelector('[data-rhythm="meter"]');
+    const targetSlider = stage.querySelector('[data-rhythm="target-slider"]');
+    const targetValue = stage.querySelector('[data-rhythm="target-value"]');
+    const settingsReset = stage.querySelector('[data-rhythm="settings-reset"]');
+
+    let combo = 0;
+    let score = 0;
+    let lastTap = 0;
+    let wasRunning = false;
+    let tapCount = 0;
+    let runStartedAt = 0;
+    const tapHistory = [];
+    let targetBpm = 90;
+    let coachTarget = targetBpm;
+    let reported = false;
+    let timingScores = [];
+    let beatInterval = 60000 / targetBpm;
+    let paused = false;
+    let pausedByVisibility = false;
+    let metronomeId = null;
+    let metronomeBeat = 0;
+    let featureSessionId = null;
+    let tapTimes = [];
+    let wasmTimer = null;
+    let wasmInitPromise = null;
+    let wasmFailed = false;
+
+    if (!tapButton) return;
+
+    const setStatus = (message) => {
+        if (statusEl) statusEl.textContent = message;
+    };
+
+    const setRating = (label, level, scoreValue) => {
+        if (ratingEl) {
+            ratingEl.textContent = `Timing: ${label}`;
+            if (level) ratingEl.dataset.level = level;
+        }
+        if (meterEl) {
+            const percent = clamp(scoreValue * 100, 0, 100);
+            if ('value' in meterEl) {
+                meterEl.value = percent;
+                if (!meterEl.max) meterEl.max = 100;
+            } else {
+                meterEl.setAttribute('aria-valuenow', String(Math.round(percent)));
+            }
+        }
+    };
+
+    const updateTargetBpm = (value, { user = false } = {}) => {
+        const next = clamp(Number(value) || targetBpm, 60, 140);
+        targetBpm = next;
+        beatInterval = 60000 / targetBpm;
+        if (wasmTimer) {
+            wasmTimer.setBpm(next);
+        }
+        stage.style.setProperty('--beat-interval', `${(60 / targetBpm).toFixed(2)}s`);
+        stage.style.setProperty('--beat-cycle', `${(60 / targetBpm * 8).toFixed(2)}s`);
+        if (targetSlider) {
+            targetSlider.value = String(next);
+            targetSlider.setAttribute('aria-valuenow', String(next));
+            targetSlider.setAttribute('aria-valuetext', `${next} BPM`);
+            if (user) targetSlider.dataset.userSet = 'true';
+        }
+        if (targetValue) targetValue.textContent = `${next} BPM`;
+        if (!wasRunning) {
+            setStatus(`Tap Start to begin the run. Target ${targetBpm} BPM.`);
+        }
+        if (runToggle?.checked) {
+            startMetronome();
+        }
+    };
+
+    const reportResult = attachTuning('rhythm-dash', (tuning) => {
+        coachTarget = tuning.targetBpm ?? coachTarget;
+        if (!(targetSlider && targetSlider.dataset.userSet)) {
+            updateTargetBpm(coachTarget);
+        } else if (suggestedEl) {
+            suggestedEl.textContent = String(coachTarget);
+        }
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        if (suggestedEl && !tapHistory.length) suggestedEl.textContent = String(coachTarget);
+        if (!wasRunning) {
+            setStatus(`Tap Start to begin the run. Target ${targetBpm} BPM.`);
+        }
+    });
+
+    const computeAccuracy = () => {
+        if (timingScores.length) {
+            const avg = timingScores.reduce((sum, value) => sum + value, 0) / timingScores.length;
+            return clamp(avg * 100, 0, 100);
+        }
+        if (!tapHistory.length) return 0;
+        const average = tapHistory.reduce((sum, value) => sum + value, 0) / tapHistory.length;
+        const delta = Math.abs(average - targetBpm) / Math.max(targetBpm, 1);
+        return clamp((1 - delta) * 100, 0, 100);
+    };
+
+    const reportSession = () => {
+        if (reported || tapCount === 0) return;
+        reported = true;
+        const accuracy = computeAccuracy();
+        reportResult({ score, accuracy });
+        recordGameEvent('rhythm-dash', { accuracy, score });
+    };
+
+    const stopMetronome = () => {
+        if (metronomeId) {
+            clearInterval(metronomeId);
+            metronomeId = null;
+        }
+        metronomeBeat = 0;
+    };
+
+    const startMetronome = () => {
+        stopMetronome();
+        if (!isSoundEnabled()) return;
+        const player = getTonePlayer();
+        if (!player) return;
+        const interval = Math.max(240, beatInterval);
+        metronomeId = window.setInterval(() => {
+            const strong = metronomeBeat % 4 === 0;
+            const note = strong ? 'E' : 'A';
+            const volume = strong ? 0.18 : 0.12;
+            player.playNote(note, { duration: 0.08, volume, type: 'square' }).catch(() => {});
+            metronomeBeat += 1;
+        }, interval);
+        player.playNote('E', { duration: 0.1, volume: 0.2, type: 'square' }).catch(() => {});
+        metronomeBeat = 1;
+    };
+
+    const primeWasmTimer = (bpm, startAt = null) => {
+        if (wasmFailed || wasmTimer || wasmInitPromise) return;
+        wasmInitPromise = createRhythmTimer(bpm)
+            .then((timer) => {
+                wasmTimer = timer;
+                if (wasmTimer) {
+                    wasmTimer.setBpm(bpm);
+                    if (Number.isFinite(startAt)) {
+                        wasmTimer.start(startAt);
+                    }
+                } else {
+                    wasmFailed = true;
+                }
+            })
+            .catch(() => {
+                wasmFailed = true;
+            })
+            .finally(() => {
+                wasmInitPromise = null;
+            });
+    };
+
+    const startWasmTimer = () => {
+        const now = performance.now();
+        if (wasmTimer) {
+            wasmTimer.start(now);
+        } else {
+            primeWasmTimer(targetBpm, now);
+        }
+    };
+
+    const updateRunningState = () => {
+        const running = runToggle?.checked;
+        const wasActive = wasRunning;
+        if (running) {
+            if (paused) {
+                paused = false;
+                setStatus('Run resumed. Tap the beat in the hit zone.');
+            } else {
+                setStatus('Run started. Tap the beat in the hit zone.');
+                if (!runStartedAt) runStartedAt = Date.now();
+                reported = false;
+                timingScores = [];
+                if (!wasActive) {
+                    featureSessionId = `rhythm-dash-${Date.now()}`;
+                    tapTimes = [];
+                }
+                setRating('--', 'off', 0);
+            }
+            startWasmTimer();
+            startMetronome();
+        } else {
+            stopMetronome();
+            if (!paused && wasActive && tapCount > 0) {
+                reportSession();
+            }
+            if (paused) {
+                setStatus('Run paused. Tap Start to resume.');
+            } else {
+                setStatus(wasActive ? 'Run paused. Tap Start to resume.' : `Tap Start to begin the run. Target ${targetBpm} BPM.`);
+                lastTap = 0;
+                tapHistory.length = 0;
+                timingScores = [];
+                tapCount = 0;
+                runStartedAt = 0;
+                featureSessionId = null;
+                tapTimes = [];
+            }
+        }
+        wasRunning = Boolean(running);
+    };
+
+    const resetRun = () => {
+        combo = 0;
+        score = 0;
+        lastTap = 0;
+        tapCount = 0;
+        runStartedAt = 0;
+        tapHistory.length = 0;
+        timingScores = [];
+        reported = false;
+        paused = false;
+        pausedByVisibility = false;
+        featureSessionId = null;
+        tapTimes = [];
+        stopMetronome();
+        if (runToggle) runToggle.checked = false;
+        wasRunning = false;
+        setLiveNumber(scoreEl, 'liveScore', score);
+        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
+        if (bpmEl) bpmEl.textContent = '--';
+        setRating('--', 'off', 0);
+        if (meterEl) {
+            if ('value' in meterEl) {
+                meterEl.value = 0;
+                if (!meterEl.max) meterEl.max = 100;
+            } else {
+                meterEl.setAttribute('aria-valuenow', '0');
+            }
+            meterEl.setAttribute('aria-valuetext', '0%');
+        }
+        updateRunningState();
+    };
+
+    runToggle?.addEventListener('change', updateRunningState);
+    updateRunningState();
+    if (targetSlider) {
+        updateTargetBpm(targetSlider.value);
+    }
+
+    const pauseRun = (message) => {
+        if (!runToggle?.checked) return;
+        paused = true;
+        runToggle.checked = false;
+        updateRunningState();
+        if (message) setStatus(message);
+    };
+
+    pauseButton?.addEventListener('click', () => {
+        if (!runToggle) return;
+        if (runToggle.checked) {
+            pauseRun('Run paused. Tap Start to resume.');
+            return;
+        }
+        if (paused) {
+            runToggle.checked = true;
+            updateRunningState();
+            return;
+        }
+        paused = false;
+        runToggle.checked = true;
+        updateRunningState();
+    });
+
+    settingsButton?.addEventListener('click', () => {
+        setStatus('Tip: watch the hit zone and tap evenly for combos.');
+    });
+
+    targetSlider?.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        updateTargetBpm(target.value, { user: true });
+    });
+
+    settingsReset?.addEventListener('click', () => {
+        if (targetSlider) delete targetSlider.dataset.userSet;
+        updateTargetBpm(coachTarget);
+        setStatus(`Target reset to ${coachTarget} BPM.`);
+    });
+
+    bindTap(tapButton, () => {
+        if (runToggle && !runToggle.checked) {
+            setStatus('Tap Start to run the lanes.');
+            return;
+        }
+        const now = performance.now();
+        const delta = lastTap ? now - lastTap : 0;
+        let timingScore = 0;
+        let rating = 'Off';
+        let level = 'off';
+        if (wasmTimer) {
+            const wasmResult = wasmTimer.scoreTap(now);
+            timingScore = wasmResult.timingScore;
+            rating = wasmResult.label;
+            level = wasmResult.level;
+        } else if (delta > 0) {
+            const deviation = Math.abs(delta - beatInterval);
+            timingScore = clamp(1 - deviation / beatInterval, 0, 1);
+            if (timingScore >= 0.9) {
+                rating = 'Perfect';
+                level = 'perfect';
+            } else if (timingScore >= 0.75) {
+                rating = 'Great';
+                level = 'great';
+            } else if (timingScore >= 0.6) {
+                rating = 'Good';
+                level = 'good';
+            }
+        }
+        if (delta > 0 && timingScore >= 0.6) {
+            combo += 1;
+        } else {
+            combo = 1;
+        }
+        const base = timingScore >= 0.9 ? 22 : timingScore >= 0.75 ? 16 : timingScore >= 0.6 ? 12 : 6;
+        score += base + combo * 2;
+        tapCount += 1;
+        setLiveNumber(scoreEl, 'liveScore', score);
+        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
+        if (delta > 0 && bpmEl) {
+            const bpm = clamp(Math.round(60000 / delta), 50, 160);
+            bpmEl.textContent = String(bpm);
+            tapHistory.push(bpm);
+            if (tapHistory.length > 4) tapHistory.shift();
+            if (suggestedEl && tapHistory.length >= 2) {
+                const avg = Math.round(tapHistory.reduce((sum, value) => sum + value, 0) / tapHistory.length);
+                suggestedEl.textContent = String(avg);
+            }
+            if (featureSessionId) {
+                tapTimes.push(now);
+                if (tapTimes.length > 6) tapTimes.shift();
+                let onsetRate = null;
+                if (tapTimes.length >= 2) {
+                    const span = tapTimes[tapTimes.length - 1] - tapTimes[0];
+                    onsetRate = span > 0 ? ((tapTimes.length - 1) / (span / 1000)) : null;
+                }
+                const jitter = Math.abs(delta - beatInterval);
+                appendFeatureFrame({
+                    source: 'rhythm-dash',
+                    sessionId: featureSessionId,
+                    bpmTarget: targetBpm,
+                    tempoBpm: bpm,
+                    timingJitterMs: Math.round(jitter),
+                    onsetRate,
+                    sampleMs: Math.round(delta),
+                }).catch(() => {});
+            }
+        }
+        lastTap = now;
+        if (delta > 0) {
+            timingScores.push(timingScore);
+            if (timingScores.length > 12) timingScores.shift();
+            setRating(rating, level, timingScore);
+        }
+        if (combo >= 3) {
+            setStatus(`Nice streak! ${rating} timing · Combo x${combo}.`);
+        } else {
+            setStatus(`Timing: ${rating}. Keep the beat steady.`);
+        }
+        markChecklistIf(tapCount >= 8, 'rd-set-1');
+        markChecklistIf(combo >= 10, 'rd-set-2');
+        const elapsed = runStartedAt ? (Date.now() - runStartedAt) : 0;
+        markChecklistIf(tapCount >= 16 || elapsed >= 20000, 'rd-set-3');
+    });
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-rhythm-dash') {
+            resetRun();
+            return;
+        }
+        if (runToggle?.checked) {
+            runToggle.checked = false;
+            runToggle.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+            reportSession();
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (runToggle?.checked) {
+                pausedByVisibility = true;
+                pauseRun('Paused while app is in the background.');
+            }
+        } else if (pausedByVisibility) {
+            pausedByVisibility = false;
+            setStatus('Run paused. Tap Start to resume.');
+        }
+    });
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopMetronome();
+        } else if (runToggle?.checked) {
+            startMetronome();
+        }
+    });
+};
+
+const bindEarTrainer = () => {
+    const stage = document.querySelector('#view-game-ear-trainer');
+    if (!stage) return;
+    const playButton = stage.querySelector('[data-ear="play"]');
+    const questionEl = stage.querySelector('[data-ear="question"]');
+    const streakEl = stage.querySelector('[data-ear="streak"]');
+    const dots = Array.from(stage.querySelectorAll('.ear-dot'));
+    const choices = Array.from(stage.querySelectorAll('.ear-choice'));
+    const audioG = stage.querySelector('audio[aria-labelledby="ear-g-label"]');
+    const audioD = stage.querySelector('audio[aria-labelledby="ear-d-label"]');
+    const audioA = stage.querySelector('audio[aria-labelledby="ear-a-label"]');
+    const audioE = stage.querySelector('audio[aria-labelledby="ear-e-label"]');
+    const audioMap = {
+        G: audioG,
+        D: audioD,
+        A: audioA,
+        E: audioE,
+    };
+    const tonePool = ['G', 'D', 'A', 'E'];
+    const checklistMap = {
+        G: 'et-step-1',
+        D: 'et-step-2',
+        A: 'et-step-3',
+        E: 'et-step-4',
+    };
+
+    let currentIndex = 0;
+    let currentTone = null;
+    let correctStreak = 0;
+    let correctCount = 0;
+    let totalAnswered = 0;
+    let rounds = dots.length;
+    let reported = false;
+
+    const setActiveDot = () => {
+        dots.forEach((dot, index) => {
+            const isActive = index === currentIndex && index < rounds;
+            dot.toggleAttribute('data-active', isActive);
+            dot.toggleAttribute('data-disabled', index >= rounds);
+        });
+    };
+
+    const applyRounds = (nextRounds) => {
+        const resolved = Math.min(dots.length, nextRounds || dots.length);
+        rounds = resolved;
+        if (currentIndex > rounds) {
+            currentIndex = rounds;
+        }
+        setActiveDot();
+    };
+
+    const setQuestion = (text) => {
+        if (!questionEl) return;
+        questionEl.textContent = text;
+        questionEl.dataset.live = 'true';
+    };
+
+    const updateStreak = () => {
+        if (streakEl) streakEl.textContent = String(correctStreak);
+    };
+
+    const reportResult = attachTuning('ear-trainer', (tuning) => {
+        applyRounds(tuning.rounds ?? rounds);
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        if (!totalAnswered && !currentTone) {
+            setQuestion(`Question 1 of ${rounds}`);
+        }
+    });
+
+    setActiveDot();
+
+    const reportSession = () => {
+        if (reported || totalAnswered === 0) return;
+        reported = true;
+        const accuracy = totalAnswered ? (correctCount / totalAnswered) * 100 : 0;
+        reportResult({ accuracy, score: correctCount * 10 });
+        recordGameEvent('ear-trainer', { accuracy, score: correctCount * 10 });
+    };
+
+    const resetTrainer = (message = `Question 1 of ${rounds}`) => {
+        currentIndex = 0;
+        currentTone = null;
+        correctStreak = 0;
+        correctCount = 0;
+        totalAnswered = 0;
+        reported = false;
+        dots.forEach((dot) => {
+            dot.removeAttribute('data-result');
+        });
+        choices.forEach((choice) => {
+            choice.checked = false;
+        });
+        setActiveDot();
+        setQuestion(message);
+        updateStreak();
+    };
+
+    const updateSoundState = () => {
+        const enabled = isSoundEnabled();
+        if (playButton) playButton.disabled = !enabled;
+        choices.forEach((choice) => {
+            choice.disabled = !enabled;
+        });
+    };
+
+    updateSoundState();
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            setQuestion('Sounds are off. Turn on Sounds to play.');
+            Object.values(audioMap).forEach((audio) => {
+                if (audio && !audio.paused) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            });
+        }
+        updateSoundState();
+    });
+
+    bindTap(playButton, () => {
+        if (!isSoundEnabled()) {
+            setQuestion('Sounds are off. Turn on Sounds to play.');
+            return;
+        }
+        if (currentIndex >= rounds) {
+            resetTrainer('New round! Listen and tap the matching note.');
+        }
+        currentTone = tonePool[Math.floor(Math.random() * tonePool.length)];
+        const audio = currentTone ? audioMap[currentTone] : null;
+        if (audio) {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+        }
+        const total = rounds || 10;
+        setQuestion(`Question ${Math.min(currentIndex + 1, total)} of ${total} · Tap the matching note.`);
+    });
+
+    choices.forEach((choice) => {
+        choice.addEventListener('change', () => {
+            if (!currentTone) {
+                setQuestion('Tap Play to hear the note.');
+                return;
+            }
+            const selected = choice.dataset.earNote || '';
+            const dot = dots[currentIndex];
+            const isCorrect = selected === currentTone;
+            if (dot) {
+                dot.dataset.result = isCorrect ? 'correct' : 'wrong';
+            }
+            totalAnswered += 1;
+            if (isCorrect) {
+                correctStreak += 1;
+                correctCount += 1;
+                const checklistId = checklistMap[selected];
+                if (checklistId) markChecklist(checklistId);
+                markChecklistIf(correctStreak >= 3, 'et-step-5');
+                playToneNote(selected, { duration: 0.22, volume: 0.18, type: 'triangle' });
+            } else {
+                correctStreak = 0;
+                playToneNote('F', { duration: 0.18, volume: 0.14, type: 'sawtooth' });
+            }
+            currentTone = null;
+            currentIndex = Math.min(currentIndex + 1, rounds);
+            choices.forEach((choiceItem) => {
+                choiceItem.checked = false;
+            });
+            setActiveDot();
+            if (currentIndex >= rounds) {
+                markChecklist('et-step-6');
+                setQuestion(`Great job! All ${rounds} rounds complete. Tap Play to restart.`);
+                if (!reported) {
+                    reported = true;
+                    const accuracy = rounds ? (correctCount / rounds) * 100 : 0;
+                    reportResult({ accuracy, score: correctCount * 10 });
+                    recordGameEvent('ear-trainer', { accuracy, score: correctCount * 10 });
+                }
+            } else {
+                setQuestion(`Question ${currentIndex + 1} of ${rounds}`);
+            }
+            updateStreak();
+        });
+    });
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-ear-trainer') {
+            resetTrainer();
+            return;
+        }
+        reportSession();
+    });
+
+    if (getViewId() === 'view-game-ear-trainer') {
+        resetTrainer();
+    }
+};
+
+const bindBowHero = () => {
+    const stage = document.querySelector('#view-game-bow-hero');
+    if (!stage) return;
+    const strokeButton = stage.querySelector('.bow-stroke');
+    const runToggle = stage.querySelector('#bow-hero-run');
+    const timerEl = stage.querySelector('[data-bow="timer"]');
+    const stars = Array.from(stage.querySelectorAll('.bow-star'));
+    const starsEl = stage.querySelector('[data-bow="stars"]');
+    const statusEl = stage.querySelector('[data-bow="status"]');
+    let starCount = 0;
+    let strokeCount = 0;
+    let targetTempo = 72;
+    let timeLimit = 105;
+    let remaining = timeLimit;
+    let timerId = null;
+    let endTime = null;
+    let runStartedAt = 0;
+    let reported = false;
+    let paused = false;
+    let pausedAt = 0;
+    let lastStrokeAt = 0;
+    let smoothStreak = 0;
+
+    const resetStars = () => {
+        starCount = 0;
+        strokeCount = 0;
+        reported = false;
+        stars.forEach((star) => {
+            star.removeAttribute('data-lit');
+        });
+        setLiveNumber(starsEl, 'liveStars', starCount);
+    };
+
+    const setStatus = (message) => {
+        if (statusEl) statusEl.textContent = message;
+    };
+
+    const updateTimer = () => {
+        if (timerEl) timerEl.textContent = formatCountdown(remaining);
+    };
+
+    const reportResult = attachTuning('bow-hero', (tuning) => {
+        timeLimit = tuning.timeLimit ?? timeLimit;
+        targetTempo = tuning.targetTempo ?? targetTempo;
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        if (!timerId) {
+            remaining = timeLimit;
+            updateTimer();
+        }
+    });
+
+    const finalizeRun = () => {
+        if (reported) return;
+        reported = true;
+        const accuracy = stars.length ? (starCount / stars.length) * 100 : 0;
+        const score = starCount * 20 + strokeCount * 2;
+        reportResult({ stars: starCount, score, accuracy });
+        recordGameEvent('bow-hero', { stars: starCount, score, accuracy });
+    };
+
+    const stopTimer = () => {
+        if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+        }
+        endTime = null;
+    };
+
+    const pauseTimer = () => {
+        if (!timerId) return;
+        if (endTime) {
+            remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        }
+        stopTimer();
+        paused = true;
+        pausedAt = Date.now();
+        setStatus('Paused while app is in the background.');
+    };
+
+    const resumeTimer = () => {
+        if (!paused) return;
+        if (!runToggle?.checked) return;
+        if (window.location.hash !== '#view-game-bow-hero') return;
+        if (remaining <= 0) return;
+        if (pausedAt && runStartedAt) {
+            runStartedAt += Date.now() - pausedAt;
+        }
+        paused = false;
+        pausedAt = 0;
+        startTimer();
+    };
+
+    const startTimer = () => {
+        if (timerId) return;
+        paused = false;
+        if (remaining <= 0) remaining = timeLimit;
+        if (remaining === timeLimit && starCount > 0) resetStars();
+        if (!runStartedAt) runStartedAt = Date.now();
+        endTime = Date.now() + remaining * 1000;
+        timerId = window.setInterval(() => {
+            if (!endTime) return;
+            remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+            updateTimer();
+            if (remaining <= 0) {
+                stopTimer();
+                if (runToggle) runToggle.checked = false;
+                setStatus('Time! Tap Start to begin another round.');
+                markChecklist('bh-step-5');
+                finalizeRun();
+            }
+            if (runStartedAt && Date.now() - runStartedAt >= 30000) {
+                markChecklist('bh-step-4');
+            }
+        }, getUiInterval());
+        updateTimer();
+        setStatus('Timer running. Keep bow strokes steady.');
+    };
+
+    const resetRun = () => {
+        stopTimer();
+        runStartedAt = 0;
+        paused = false;
+        pausedAt = 0;
+        lastStrokeAt = 0;
+        smoothStreak = 0;
+        remaining = timeLimit;
+        resetStars();
+        if (runToggle) runToggle.checked = false;
+        updateTimer();
+        setStatus('Press Start to begin the timer.');
+    };
+
+    bindTap(strokeButton, () => {
+        starCount = Math.min(stars.length, starCount + 1);
+        strokeCount += 1;
+        stars.forEach((star, index) => {
+            star.toggleAttribute('data-lit', index < starCount);
+        });
+        setLiveNumber(starsEl, 'liveStars', starCount);
+        const now = performance.now();
+        if (lastStrokeAt) {
+            const interval = now - lastStrokeAt;
+            const bpm = Math.round(60000 / Math.max(120, interval));
+            const deviation = Math.abs(bpm - targetTempo) / Math.max(targetTempo, 1);
+            if (deviation <= 0.18) {
+                smoothStreak += 1;
+                setStatus(`Smooth strokes! ${bpm} BPM · streak x${smoothStreak}.`);
+            } else {
+                smoothStreak = 0;
+                setStatus(`Aim for ${targetTempo} BPM · current ${bpm} BPM.`);
+            }
+        } else {
+            setStatus('Nice stroke! Keep going.');
+        }
+        lastStrokeAt = now;
+        const strokeNote = strokeCount % 2 === 0 ? 'A' : 'D';
+        playToneNote(strokeNote, { duration: 0.16, volume: 0.12, type: 'triangle' });
+        markChecklistIf(strokeCount >= 8, 'bh-step-1');
+        markChecklistIf(strokeCount >= 16, 'bh-step-2');
+        markChecklistIf(strokeCount >= 24, 'bh-step-3');
+    });
+
+    runToggle?.addEventListener('change', () => {
+        if (runToggle.checked) {
+            startTimer();
+        } else {
+            stopTimer();
+            runStartedAt = 0;
+            paused = false;
+            pausedAt = 0;
+            setStatus('Paused. Tap Start to resume.');
+            if (strokeCount > 0) {
+                finalizeRun();
+            }
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            pauseTimer();
+        } else {
+            resumeTimer();
+        }
+    });
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-bow-hero') {
+            resetRun();
+            return;
+        }
+        if (strokeCount > 0) {
+            finalizeRun();
+        }
+        stopTimer();
+        runStartedAt = 0;
+    });
+
+    setStatus('Press Start to begin the timer.');
+};
+
+const bindStringQuest = () => {
+    const stage = document.querySelector('#view-game-string-quest');
+    if (!stage) return;
+    const scoreEl = stage.querySelector('[data-string="score"]');
+    const comboEl = stage.querySelector('[data-string="combo"]');
+    const promptEl = stage.querySelector('[data-string="prompt"]');
+    const sequenceEl = stage.querySelector('[data-string="sequence"]');
+    const buttons = Array.from(stage.querySelectorAll('.string-btn'));
+    const targets = Array.from(stage.querySelectorAll('[data-string-target]'));
+    const notePool = ['G', 'D', 'A', 'E'];
+    let sequence = ['G', 'D', 'A', 'E'];
+    let seqIndex = 0;
+    let combo = 0;
+    let score = 0;
+    let lastCorrectNote = null;
+    let comboTarget = 8;
+    let sequenceLength = 4;
+
+    const buildSequence = () => {
+        const next = [];
+        for (let i = 0; i < sequenceLength; i += 1) {
+            const options = notePool.filter((note) => note !== next[i - 1]);
+            const choice = options[Math.floor(Math.random() * options.length)];
+            next.push(choice);
+        }
+        sequence = next;
+        seqIndex = 0;
+    };
+
+    const updateTargets = (message) => {
+        const targetNote = sequence[seqIndex];
+        targets.forEach((target) => {
+            target.toggleAttribute('data-target', target.dataset.stringTarget === targetNote);
+        });
+        if (promptEl) {
+            promptEl.textContent = message || `Target: ${targetNote} string · Combo goal x${comboTarget}.`;
+        }
+        if (sequenceEl) {
+            sequenceEl.textContent = `Sequence: ${sequence.join(' · ')}`;
+        }
+    };
+
+    const updateScoreboard = () => {
+        setLiveNumber(scoreEl, 'liveScore', score);
+        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
+    };
+
+    const reportResult = attachTuning('string-quest', (tuning) => {
+        comboTarget = tuning.comboTarget ?? comboTarget;
+        sequenceLength = comboTarget >= 7 ? 5 : 4;
+        buildSequence();
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        updateTargets();
+    });
+
+    const reportSession = () => {
+        if (score <= 0) return;
+        const accuracy = comboTarget ? Math.min(1, combo / comboTarget) * 100 : 0;
+        reportResult({ accuracy, score });
+        recordGameEvent('string-quest', { accuracy, score });
+    };
+
+    const resetSession = () => {
+        combo = 0;
+        score = 0;
+        seqIndex = 0;
+        lastCorrectNote = null;
+        buildSequence();
+        updateTargets();
+        updateScoreboard();
+    };
+
+    updateTargets();
+
+    buttons.forEach((button) => {
+        bindTap(button, () => {
+            const note = button.dataset.stringBtn;
+            if (note) {
+                playToneNote(note, { duration: 0.28, volume: 0.22, type: 'triangle' });
+            }
+            if (note === sequence[seqIndex]) {
+                combo += 1;
+                score += 20 + combo * 3;
+                seqIndex = (seqIndex + 1) % sequence.length;
+                if (note === 'G') markChecklist('sq-step-1');
+                if (lastCorrectNote === 'D' && note === 'A') {
+                    markChecklist('sq-step-2');
+                }
+                if (seqIndex === 0) {
+                    const completedSequence = sequence.slice();
+                    markChecklist('sq-step-3');
+                    reportSession();
+                    buildSequence();
+                    playToneSequence(completedSequence, { tempo: 140, gap: 0.1, duration: 0.2, volume: 0.14, type: 'sine' });
+                }
+                lastCorrectNote = note;
+                updateTargets();
+            } else {
+                combo = 0;
+                score = Math.max(0, score - 5);
+                updateTargets(`Missed. Aim for ${sequence[seqIndex]} next.`);
+            }
+            updateScoreboard();
+            markChecklistIf(combo >= comboTarget, 'sq-step-4');
+        });
+    });
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-string-quest') {
+            resetSession();
+            return;
+        }
+        reportSession();
+    });
+};
+
+const bindRhythmPainter = () => {
+    const stage = document.querySelector('#view-game-rhythm-painter');
+    if (!stage) return;
+    const dots = Array.from(stage.querySelectorAll('.paint-dot'));
+    const scoreEl = stage.querySelector('[data-painter="score"]');
+    const creativityEl = stage.querySelector('[data-painter="creativity"]');
+    const roundsEl = stage.querySelector('[data-painter="rounds"]');
+    const meter = stage.querySelector('.painter-meter');
+    const meterTrack = stage.querySelector('[data-painter-meter]');
+    const statusEl = stage.querySelector('[data-painter="status"]');
+    const dotNotes = {
+        blue: 'G',
+        green: 'D',
+        yellow: 'A',
+        red: 'E',
+    };
+    let score = 0;
+    let creativity = 0;
+    let tapCount = 0;
+    let rounds = 0;
+    const tappedDots = new Set();
+    let creativityTarget = 70;
+    let reported = false;
+    let flourishPlayed = false;
+
+    const update = () => {
+        setLiveNumber(scoreEl, 'liveScore', score);
+        setLiveNumber(creativityEl, 'liveCreativity', creativity, (value) => `${value}%`);
+        if (roundsEl) roundsEl.textContent = String(rounds);
+        const angle = (creativity / 100) * 180 - 90;
+        if (meter) {
+            meter.style.setProperty('--painter-angle', `${angle}deg`);
+        }
+        if (meterTrack) {
+            if ('value' in meterTrack) {
+                meterTrack.value = creativity;
+                if (!meterTrack.max) meterTrack.max = 100;
+            } else {
+                meterTrack.setAttribute('aria-valuenow', String(Math.round(creativity)));
+            }
+            meterTrack.setAttribute('aria-valuetext', `${creativity}% creativity`);
+        }
+        if (statusEl) {
+            if (creativity >= creativityTarget) {
+                statusEl.textContent = 'Fantastic rhythm flow!';
+            } else if (creativity >= 50) {
+                statusEl.textContent = 'Nice groove — keep layering.';
+            } else {
+                statusEl.textContent = 'Tap each dot to paint the beat.';
+            }
+        }
+    };
+
+    const reportResult = attachTuning('rhythm-painter', (tuning) => {
+        creativityTarget = tuning.creativityTarget ?? creativityTarget;
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        update();
+    });
+
+    const reportSession = () => {
+        if (reported || tapCount === 0) return;
+        reported = true;
+        const accuracy = clamp((creativity / creativityTarget) * 100, 0, 100);
+        reportResult({ accuracy, score });
+        recordGameEvent('rhythm-painter', { accuracy, score });
+    };
+
+    const resetSession = () => {
+        score = 0;
+        creativity = 0;
+        tapCount = 0;
+        rounds = 0;
+        tappedDots.clear();
+        reported = false;
+        flourishPlayed = false;
+        dots.forEach((dot) => dot.removeAttribute('data-hit'));
+        update();
+    };
+
+    dots.forEach((dot) => {
+        bindTap(dot, () => {
+            score += 30;
+            creativity = Math.min(100, score > 0 ? creativity + 8 : creativity);
+            tapCount += 1;
+            rounds = Math.floor(tapCount / 4);
+            const note = dotNotes[dot.dataset.painterDot];
+            if (note) {
+                playToneNote(note, { duration: 0.2, volume: 0.16, type: 'triangle' });
+            }
+            tappedDots.add(dot.dataset.painterDot || dot.dataset.painter || dot.className);
+            dot.setAttribute('data-hit', 'true');
+            setTimeout(() => dot.removeAttribute('data-hit'), 220);
+            update();
+            markChecklistIf(tappedDots.size >= 4, 'rp-pattern-1');
+            markChecklistIf(tapCount >= 4, 'rp-pattern-2');
+            markChecklistIf(creativity >= 70, 'rp-pattern-3');
+            markChecklistIf(rounds >= 3, 'rp-pattern-4');
+            if (creativity >= creativityTarget) {
+                if (!flourishPlayed) {
+                    flourishPlayed = true;
+                    playToneSequence(['G', 'D', 'A', 'E'], { tempo: 180, gap: 0.08, duration: 0.16, volume: 0.18, type: 'sine' });
+                }
+                reportSession();
+            }
+        });
+    });
+
+    update();
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-rhythm-painter') {
+            resetSession();
+            return;
+        }
+        reportSession();
+    });
+};
+
+const bindPizzicato = () => {
+    const stage = document.querySelector('#view-game-pizzicato');
+    if (!stage) return;
+    const scoreEl = stage.querySelector('[data-pizzicato="score"]');
+    const comboEl = stage.querySelector('[data-pizzicato="combo"]');
+    const statusEl = stage.querySelector('[data-pizzicato="status"]');
+    const sequenceEl = stage.querySelector('[data-pizzicato="sequence"]');
+    const buttons = Array.from(stage.querySelectorAll('.pizzicato-btn'));
+    const targets = Array.from(stage.querySelectorAll('[data-pizzicato-target]'));
+    const notePool = ['G', 'D', 'A', 'E'];
+    let sequence = ['G', 'D', 'A', 'E'];
+    let seqIndex = 0;
+    let combo = 0;
+    let score = 0;
+    const hitNotes = new Set();
+    let comboTarget = 6;
+
+    const buildSequence = () => {
+        const next = [];
+        for (let i = 0; i < 4; i += 1) {
+            const options = notePool.filter((note) => note !== next[i - 1]);
+            next.push(options[Math.floor(Math.random() * options.length)]);
+        }
+        sequence = next;
+        seqIndex = 0;
+    };
+
+    const updateTargets = (message) => {
+        const targetNote = sequence[seqIndex];
+        targets.forEach((target) => {
+            target.toggleAttribute('data-target', target.dataset.pizzicatoTarget === targetNote);
+        });
+        if (statusEl) {
+            statusEl.textContent = message || `Target: ${targetNote} string · Combo goal x${comboTarget}.`;
+        }
+        if (sequenceEl) {
+            sequenceEl.textContent = `Sequence: ${sequence.join(' · ')}`;
+        }
+    };
+
+    const updateScoreboard = () => {
+        setLiveNumber(scoreEl, 'liveScore', score);
+        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
+    };
+
+    const reportResult = attachTuning('pizzicato', (tuning) => {
+        comboTarget = tuning.comboTarget ?? comboTarget;
+        buildSequence();
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        updateTargets();
+    });
+
+    const reportSession = () => {
+        if (score <= 0) return;
+        const accuracy = comboTarget ? Math.min(1, combo / comboTarget) * 100 : 0;
+        reportResult({ accuracy, score });
+        recordGameEvent('pizzicato', { accuracy, score });
+    };
+
+    const resetSession = () => {
+        combo = 0;
+        score = 0;
+        seqIndex = 0;
+        hitNotes.clear();
+        buildSequence();
+        updateTargets();
+        updateScoreboard();
+    };
+
+    updateTargets();
+
+    buttons.forEach((button) => {
+        bindTap(button, () => {
+            const note = button.dataset.pizzicatoBtn;
+            if (note) {
+                playToneNote(note, { duration: 0.26, volume: 0.2, type: 'triangle' });
+            }
+            if (note === sequence[seqIndex]) {
+                combo += 1;
+                score += 18 + combo * 2;
+                seqIndex = (seqIndex + 1) % sequence.length;
+                hitNotes.add(note);
+                markChecklistIf(hitNotes.size >= 4, 'pz-step-1');
+                if (seqIndex === 0) {
+                    const completedSequence = sequence.slice();
+                    markChecklist('pz-step-2');
+                    reportSession();
+                    buildSequence();
+                    playToneSequence(completedSequence, { tempo: 150, gap: 0.1, duration: 0.18, volume: 0.14, type: 'sine' });
+                }
+                updateTargets();
+            } else {
+                combo = 0;
+                score = Math.max(0, score - 4);
+                updateTargets(`Missed. Aim for ${sequence[seqIndex]} next.`);
+            }
+            updateScoreboard();
+            markChecklistIf(combo >= comboTarget, 'pz-step-3');
+        });
+    });
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-pizzicato') {
+            resetSession();
+            return;
+        }
+        reportSession();
+    });
+};
+
+const bindMelodyMaker = () => {
+    const stage = document.querySelector('#view-game-melody-maker');
+    if (!stage) return;
+    const buttons = Array.from(stage.querySelectorAll('.melody-btn'));
+    const trackEl = stage.querySelector('[data-melody="track"]');
+    const scoreEl = stage.querySelector('[data-melody="score"]');
+    const targetEl = stage.querySelector('[data-melody="target"]');
+    const statusEl = stage.querySelector('[data-melody="status"]');
+    const playButton = stage.querySelector('[data-melody="play"]');
+    const playTargetButton = stage.querySelector('[data-melody="play-target"]');
+    const clearButton = stage.querySelector('[data-melody="clear"]');
+    const track = [];
+    let score = 0;
+    let lastSequence = '';
+    let repeatMarked = false;
+    const uniqueNotes = new Set();
+    let lengthTarget = 4;
+    let maxTrack = 6;
+    let tempo = 92;
+    let reported = false;
+    let targetMotif = ['G', 'A', 'B', 'C'];
+    let matchCount = 0;
+    let isPlaying = false;
+    let playToken = 0;
+    const notePool = buttons.map((button) => button.dataset.melodyNote).filter(Boolean);
+
+    const setStatus = (message) => {
+        if (statusEl) statusEl.textContent = message;
+    };
+
+    const updateTrack = () => {
+        if (trackEl) trackEl.textContent = track.length ? track.join(' · ') : 'Tap notes to build a melody.';
+    };
+
+    const updateScore = () => {
+        setLiveNumber(scoreEl, 'liveScore', score);
+    };
+
+    const updateTarget = () => {
+        if (!targetEl) return;
+        targetEl.textContent = `Target: ${targetMotif.join(' · ')}`;
+    };
+
+    const buildTarget = () => {
+        if (!notePool.length) return;
+        const next = [];
+        for (let i = 0; i < lengthTarget; i += 1) {
+            const options = notePool.filter((note) => note !== next[i - 1]);
+            next.push(options[Math.floor(Math.random() * options.length)]);
+        }
+        targetMotif = next;
+        matchCount = 0;
+        updateTarget();
+    };
+
+    const stopPlayback = (message) => {
+        playToken += 1;
+        isPlaying = false;
+        stopTonePlayer();
+        if (message) setStatus(message);
+    };
+
+    const playSequence = async (notes, message) => {
+        if (!notes.length) {
+            setStatus('Add notes to hear your melody.');
+            return;
+        }
+        if (!isSoundEnabled()) {
+            setStatus('Sounds are off. Enable Sounds to play.');
+            return;
+        }
+        const player = getTonePlayer();
+        if (!player) {
+            setStatus('Audio is unavailable on this device.');
+            return;
+        }
+        const token = ++playToken;
+        isPlaying = true;
+        setStatus(message);
+        const played = await player.playSequence(notes, {
+            tempo,
+            gap: 0.12,
+            duration: 0.4,
+            volume: 0.22,
+            type: 'triangle',
+        });
+        if (token !== playToken || !played) return;
+        isPlaying = false;
+        setStatus('Nice! Try a new variation or hit Play again.');
+        markChecklist('mm-step-4');
+        reportSession();
+    };
+
+    const updateSoundState = () => {
+        const enabled = isSoundEnabled();
+        if (playButton) playButton.disabled = !enabled;
+        if (playTargetButton) playTargetButton.disabled = !enabled;
+        if (!enabled) {
+            setStatus('Sounds are off. You can still build melodies, but enable Sounds to hear them.');
+        }
+    };
+
+    const reportResult = attachTuning('melody-maker', (tuning) => {
+        lengthTarget = tuning.lengthTarget ?? lengthTarget;
+        tempo = tuning.tempo ?? tuning.melodyTempo ?? tempo;
+        maxTrack = Math.max(lengthTarget + 2, 6);
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        buildTarget();
+        updateSoundState();
+    });
+
+    const reportSession = () => {
+        if (reported || score <= 0) return;
+        reported = true;
+        const accuracy = lengthTarget ? Math.min(1, track.length / lengthTarget) * 100 : 0;
+        reportResult({ accuracy, score });
+        recordGameEvent('melody-maker', { accuracy, score });
+    };
+
+    const resetSession = (message = 'Tap notes to build a melody.') => {
+        track.length = 0;
+        score = 0;
+        lastSequence = '';
+        repeatMarked = false;
+        uniqueNotes.clear();
+        reported = false;
+        matchCount = 0;
+        stopPlayback();
+        updateTrack();
+        updateScore();
+        buildTarget();
+        setStatus(message);
+    };
+
+    buttons.forEach((button) => {
+        bindTap(button, () => {
+            const note = button.dataset.melodyNote;
+            if (!note) return;
+            if (isPlaying) {
+                stopPlayback('Editing melody. Tap Play to hear it.');
+            }
+            track.push(note);
+            if (track.length > maxTrack) track.shift();
+            score += 20;
+            uniqueNotes.add(note);
+            if (isSoundEnabled()) {
+                const player = getTonePlayer();
+                if (player) {
+                    player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => {});
+                }
+            }
+            updateTrack();
+            updateScore();
+            if (track.length >= lengthTarget) {
+                markChecklist('mm-step-1');
+                const currentSequence = track.slice(-lengthTarget).join('');
+                if (lastSequence && currentSequence === lastSequence && !repeatMarked) {
+                    repeatMarked = true;
+                    markChecklist('mm-step-2');
+                }
+                lastSequence = currentSequence;
+            }
+            markChecklistIf(uniqueNotes.size >= 3, 'mm-step-3');
+
+            if (track.length >= targetMotif.length) {
+                const attempt = track.slice(-targetMotif.length).join('');
+                const target = targetMotif.join('');
+                if (attempt === target) {
+                    matchCount += 1;
+                    score += 50;
+                    updateScore();
+                    setStatus(`Target hit! ${matchCount} in a row.`);
+                    if (matchCount >= 1) markChecklist('mm-step-1');
+                    if (matchCount >= 2) markChecklist('mm-step-2');
+                    if (matchCount >= 3) reportSession();
+                    buildTarget();
+                }
+            }
+        });
+    });
+
+    bindTap(clearButton, () => {
+        reportSession();
+        resetSession('Melody cleared. Tap notes to build a new one.');
+    });
+
+    bindTap(playButton, () => {
+        playSequence(track, 'Playing your melody…');
+    });
+
+    bindTap(playTargetButton, () => {
+        playSequence(targetMotif, 'Playing target motif…');
+    });
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopPlayback('Sounds are off. Enable Sounds to play your melody.');
+        } else if (event.detail?.enabled === true) {
+            setStatus('Sounds on. Tap Play to hear your melody.');
+        }
+        updateSoundState();
+    });
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-melody-maker') {
+            resetSession();
+            return;
+        }
+        stopPlayback();
+        reportSession();
+    });
+
+    updateTrack();
+    updateScore();
+    buildTarget();
+    updateSoundState();
+    setStatus('Build a melody, then press Play.');
+};
+
+const bindScalePractice = () => {
+    const stage = document.querySelector('#view-game-scale-practice');
+    if (!stage) return;
+    const slider = stage.querySelector('[data-scale="slider"]');
+    const tempoEl = stage.querySelector('[data-scale="tempo"]');
+    const statusEl = stage.querySelector('[data-scale="status"]');
+    const scoreEl = stage.querySelector('[data-scale="score"]');
+    const tapButton = stage.querySelector('[data-scale="tap"]');
+    const ratingEl = stage.querySelector('[data-scale="rating"]');
+    const tempoTags = new Set();
+    const scaleNotes = ['G', 'A', 'B', 'C', 'D', 'E', 'F#', 'G'];
+    let targetTempo = 85;
+    let reported = false;
+    let lastTap = 0;
+    let score = 0;
+    let scaleIndex = 0;
+    const timingScores = [];
+
+    const updateTempo = () => {
+        if (!slider || !tempoEl) return;
+        const tempo = Number.parseInt(slider.value, 10);
+        tempoEl.textContent = `${tempo} BPM`;
+        slider.setAttribute('aria-valuenow', String(tempo));
+        slider.setAttribute('aria-valuetext', `${tempo} BPM`);
+        if (statusEl) statusEl.textContent = `Tempo set to ${tempo} BPM · Goal ${targetTempo} BPM.`;
+        if (tempo <= 70) {
+            tempoTags.add('slow');
+            markChecklist('sp-step-1');
+        }
+        if (tempo >= 80 && tempo <= 95) {
+            tempoTags.add('target');
+            markChecklist('sp-step-2');
+        }
+        if (tempo >= 100) {
+            tempoTags.add('fast');
+            markChecklist('sp-step-3');
+        }
+        markChecklistIf(tempoTags.size >= 3, 'sp-step-4');
+    };
+
+    const reportResult = attachTuning('scale-practice', (tuning) => {
+        targetTempo = tuning.targetTempo ?? targetTempo;
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        if (slider && !slider.dataset.userSet) {
+            slider.value = String(targetTempo);
+            updateTempo();
+        }
+    });
+
+    const reportSession = (accuracy, score) => {
+        if (reported) return;
+        reported = true;
+        recordGameEvent('scale-practice', { accuracy, score });
+    };
+
+    const resetSession = () => {
+        score = 0;
+        lastTap = 0;
+        scaleIndex = 0;
+        timingScores.length = 0;
+        reported = false;
+        if (scoreEl) scoreEl.textContent = '0';
+        if (ratingEl) ratingEl.textContent = 'Timing: --';
+    };
+
+    slider?.addEventListener('input', () => {
+        if (slider) slider.dataset.userSet = 'true';
+        scaleIndex = 0;
+        updateTempo();
+    });
+    slider?.addEventListener('change', () => {
+        const tempo = slider ? Number.parseInt(slider.value, 10) : 0;
+        const delta = Math.abs(tempo - targetTempo) / Math.max(targetTempo, 1);
+        const accuracy = clamp((1 - delta) * 100, 0, 100);
+        reportResult({ accuracy, score: tempo });
+        reportSession(accuracy, tempo);
+    });
+
+    bindTap(tapButton, () => {
+        const now = performance.now();
+        if (lastTap) {
+            const interval = now - lastTap;
+            const ideal = 60000 / targetTempo;
+            const deviation = Math.abs(interval - ideal);
+            const timingScore = clamp(1 - deviation / ideal, 0, 1);
+            timingScores.push(timingScore);
+            if (timingScores.length > 8) timingScores.shift();
+            let label = 'Off';
+            if (timingScore >= 0.9) label = 'Perfect';
+            else if (timingScore >= 0.75) label = 'Great';
+            else if (timingScore >= 0.6) label = 'Good';
+            score += Math.round(8 + timingScore * 12);
+            if (scoreEl) scoreEl.textContent = String(score);
+            if (ratingEl) ratingEl.textContent = `Timing: ${label}`;
+            if (timingScore >= 0.75) markChecklist('sp-step-2');
+            if (timingScore >= 0.6) markChecklist('sp-step-1');
+            if (timingScore >= 0.9) markChecklist('sp-step-4');
+            if (timingScore >= 0.75) {
+                const note = scaleNotes[scaleIndex % scaleNotes.length];
+                playToneNote(note, { duration: 0.22, volume: 0.18, type: 'triangle' });
+                scaleIndex += 1;
+            } else if (timingScore > 0) {
+                playToneNote('F', { duration: 0.18, volume: 0.12, type: 'sawtooth' });
+            }
+            const accuracy = clamp((timingScores.reduce((sum, value) => sum + value, 0) / timingScores.length) * 100, 0, 100);
+            reportResult({ accuracy, score });
+            if (timingScores.length >= 4) {
+                reportSession(accuracy, score);
+            }
+        }
+        lastTap = now;
+    });
+    updateTempo();
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-scale-practice') {
+            resetSession();
+        }
+    });
+};
+
+const bindDuetChallenge = () => {
+    const stage = document.querySelector('#view-game-duet-challenge');
+    if (!stage) return;
+    const playButton = stage.querySelector('[data-duet="play"]');
+    const buttons = Array.from(stage.querySelectorAll('.duet-btn'));
+    const promptEl = stage.querySelector('[data-duet="prompt"]');
+    const roundEl = stage.querySelector('[data-duet="round"]');
+    const scoreEl = stage.querySelector('[data-duet="score"]');
+    const comboEl = stage.querySelector('[data-duet="combo"]');
+    const notesEl = stage.querySelector('.duet-notes');
+    const audioMap = new Map(
+        Array.from(stage.querySelectorAll('[data-duet-audio]')).map((audio) => [audio.dataset.duetAudio, audio])
+    );
+    const notePool = ['G', 'D', 'A', 'E'];
+    let sequence = ['G', 'D', 'A', 'E'];
+    let seqIndex = 0;
+    let combo = 0;
+    let score = 0;
+    let active = false;
+    let isPlayingPartner = false;
+    let partnerToken = 0;
+    let comboTarget = 3;
+    let reported = false;
+    let round = 1;
+    let mistakes = 0;
+
+    const updateScoreboard = () => {
+        setLiveNumber(scoreEl, 'liveScore', score);
+        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
+    };
+
+    const reportResult = attachTuning('duet-challenge', (tuning) => {
+        comboTarget = tuning.comboTarget ?? comboTarget;
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+    });
+
+    const buildSequence = () => {
+        const next = [];
+        for (let i = 0; i < 4; i += 1) {
+            const options = notePool.filter((note) => note !== next[i - 1]);
+            next.push(options[Math.floor(Math.random() * options.length)]);
+        }
+        sequence = next;
+        if (notesEl) notesEl.textContent = sequence.join(' · ');
+        if (roundEl) roundEl.textContent = `Round ${round}`;
+        seqIndex = 0;
+        mistakes = 0;
+    };
+
+    const updateSoundState = () => {
+        if (playButton) playButton.disabled = !isSoundEnabled();
+    };
+
+    const playTone = (audio, token) => new Promise((resolve) => {
+        if (!audio) {
+            resolve();
+            return;
+        }
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            audio.removeEventListener('ended', finish);
+            resolve();
+        };
+        if (token !== partnerToken) {
+            resolve();
+            return;
+        }
+        audio.addEventListener('ended', finish);
+        audio.currentTime = 0;
+        audio.play().catch(() => {
+            finish();
+        });
+        setTimeout(finish, 900);
+    });
+
+    const stopPartnerPlayback = () => {
+        partnerToken += 1;
+        isPlayingPartner = false;
+        audioMap.forEach((audio) => {
+            if (audio && !audio.paused) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        });
+        if (playButton) playButton.disabled = false;
+    };
+
+    const playPartnerSequence = async () => {
+        if (isPlayingPartner) return;
+        if (!isSoundEnabled()) {
+            if (promptEl) promptEl.textContent = 'Sounds are off. Turn on Sounds to hear the partner.';
+            return;
+        }
+        const token = partnerToken + 1;
+        partnerToken = token;
+        isPlayingPartner = true;
+        if (playButton) playButton.disabled = true;
+        if (promptEl) promptEl.textContent = 'Partner playing… get ready to respond.';
+        for (const note of sequence) {
+            if (token !== partnerToken) break;
+            const audio = audioMap.get(note);
+            await playTone(audio, token);
+        }
+        if (token === partnerToken) {
+            if (playButton) playButton.disabled = false;
+            isPlayingPartner = false;
+        }
+    };
+
+    const setButtonsDisabled = (disabled) => {
+        buttons.forEach((button) => {
+            button.disabled = disabled;
+        });
+    };
+
+    const reportSession = () => {
+        if (reported || score <= 0) return;
+        reported = true;
+        const accuracy = sequence.length ? (Math.max(0, sequence.length - mistakes) / sequence.length) * 100 : 0;
+        reportResult({ accuracy, score });
+        recordGameEvent('duet-challenge', { accuracy, score });
+    };
+
+    const resetSession = () => {
+        combo = 0;
+        score = 0;
+        seqIndex = 0;
+        active = false;
+        reported = false;
+        round = 1;
+        mistakes = 0;
+        stopPartnerPlayback();
+        updateScoreboard();
+        buildSequence();
+        if (promptEl) promptEl.textContent = 'Press play to hear the partner line.';
+        setButtonsDisabled(true);
+    };
+
+    bindTap(playButton, () => {
+        if (!isSoundEnabled()) {
+            if (promptEl) promptEl.textContent = 'Sounds are off. Turn on Sounds to hear the partner.';
+            return;
+        }
+        active = false;
+        buildSequence();
+        reported = false;
+        if (promptEl) promptEl.textContent = `Partner plays: ${sequence.join(' · ')}`;
+        setButtonsDisabled(true);
+        playPartnerSequence().then(() => {
+            active = true;
+            setButtonsDisabled(false);
+            if (promptEl) promptEl.textContent = `Your turn: ${sequence.join(' · ')}`;
+        });
+        markChecklist('dc-step-1');
+    });
+
+    buttons.forEach((button) => {
+        bindTap(button, () => {
+            if (isPlayingPartner) {
+                if (promptEl) promptEl.textContent = 'Wait for the partner line to finish.';
+                return;
+            }
+            if (!active) {
+                if (promptEl) promptEl.textContent = 'Press play to hear the partner line.';
+                return;
+            }
+            const note = button.dataset.duetNote;
+            if (note) {
+                playToneNote(note, { duration: 0.2, volume: 0.18, type: 'triangle' });
+            }
+            if (note === sequence[seqIndex]) {
+                combo += 1;
+                score += 15 + combo * 2;
+                seqIndex += 1;
+                if (seqIndex === 1) markChecklist('dc-step-2');
+                if (combo >= comboTarget) markChecklist('dc-step-3');
+                if (seqIndex >= sequence.length) {
+                    active = false;
+                    if (promptEl) promptEl.textContent = 'Great duet! Play again for a new combo.';
+                    markChecklist('dc-step-4');
+                    playToneSequence(sequence, { tempo: 160, gap: 0.1, duration: 0.18, volume: 0.16, type: 'sine' });
+                    if (!reported) {
+                        reportSession();
+                    }
+                    round += 1;
+                } else {
+                    if (promptEl) promptEl.textContent = `Your turn: ${sequence.slice(seqIndex).join(' · ')}`;
+                }
+            } else {
+                combo = 0;
+                mistakes += 1;
+                seqIndex = 0;
+                if (promptEl) promptEl.textContent = 'Try again from the start.';
+                playToneNote('F', { duration: 0.16, volume: 0.12, type: 'sawtooth' });
+            }
+            updateScoreboard();
+        });
+    });
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopPartnerPlayback();
+        }
+        updateSoundState();
+    });
+
+    updateSoundState();
+    setButtonsDisabled(true);
+    buildSequence();
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-duet-challenge') {
+            resetSession();
+            return;
+        }
+        stopPartnerPlayback();
+        reportSession();
+    });
+};
+
+const bindTuningTime = () => {
+    const stage = document.querySelector('#view-game-tuning-time');
+    if (!stage) return;
+    const statusEl = stage.querySelector('[data-tuning="status"]');
+    const progressEl = stage.querySelector('[data-tuning="progress"]');
+    const buttons = Array.from(stage.querySelectorAll('.tuning-btn'));
+    const audioMap = {
+        G: stage.querySelector('audio[aria-labelledby="tuning-g-label"]'),
+        D: stage.querySelector('audio[aria-labelledby="tuning-d-label"]'),
+        A: stage.querySelector('audio[aria-labelledby="tuning-a-label"]'),
+        E: stage.querySelector('audio[aria-labelledby="tuning-e-label"]'),
+    };
+    const checklistMap = {
+        G: 'tt-step-1',
+        D: 'tt-step-2',
+        A: 'tt-step-3',
+        E: 'tt-step-4',
+    };
+    const tunedNotes = new Set();
+    let targetStrings = 3;
+    let reported = false;
+
+    const reportResult = attachTuning('tuning-time', (tuning) => {
+        targetStrings = tuning.targetStrings ?? targetStrings;
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+        if (statusEl && tunedNotes.size === 0) {
+            statusEl.textContent = `Tune ${targetStrings} strings to warm up.`;
+        }
+        if (progressEl) {
+            const percent = clamp((tunedNotes.size / targetStrings) * 100, 0, 100);
+            if ('value' in progressEl) {
+                progressEl.value = percent;
+                if (!progressEl.max) progressEl.max = 100;
+            } else {
+                progressEl.setAttribute('aria-valuenow', String(percent));
+            }
+        }
+    });
+
+    const reportSession = () => {
+        if (reported || tunedNotes.size === 0) return;
+        reported = true;
+        const accuracy = clamp((tunedNotes.size / targetStrings) * 100, 0, 100);
+        const score = tunedNotes.size * 25;
+        reportResult({ accuracy, score });
+        recordGameEvent('tuning-time', { accuracy, score });
+    };
+
+    buttons.forEach((button) => {
+        bindTap(button, () => {
+            const note = button.dataset.tuningNote;
+            if (!note) return;
+            if (!isSoundEnabled()) {
+                if (statusEl) statusEl.textContent = 'Sounds are off. Enable Sounds to hear the tone.';
+                return;
+            }
+            const audio = audioMap[note];
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+            }
+            tunedNotes.add(note);
+            if (statusEl) {
+                const remaining = Math.max(0, targetStrings - tunedNotes.size);
+                statusEl.textContent = remaining
+                    ? `Tuning ${note} · ${remaining} more string${remaining === 1 ? '' : 's'} to go.`
+                    : 'All target strings tuned. Great job!';
+            }
+            if (progressEl) {
+                const percent = clamp((tunedNotes.size / targetStrings) * 100, 0, 100);
+                if ('value' in progressEl) {
+                    progressEl.value = percent;
+                    if (!progressEl.max) progressEl.max = 100;
+                } else {
+                    progressEl.setAttribute('aria-valuenow', String(percent));
+                }
+            }
+            markChecklist(checklistMap[note]);
+            if (tunedNotes.size >= targetStrings) {
+                reportSession();
+            }
+        });
+    });
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false && statusEl) {
+            statusEl.textContent = 'Sounds are off. Enable Sounds to hear tones.';
+        }
+    });
+
+    onViewChange((viewId) => {
+        if (viewId === 'view-game-tuning-time') {
+            tunedNotes.clear();
+            reported = false;
+            if (statusEl) {
+                statusEl.textContent = `Tune ${targetStrings} strings to warm up.`;
+            }
+            if (progressEl) {
+                if ('value' in progressEl) {
+                    progressEl.value = 0;
+                    if (!progressEl.max) progressEl.max = 100;
+                } else {
+                    progressEl.setAttribute('aria-valuenow', '0');
+                }
+            }
+            return;
+        }
+        reportSession();
+    });
+};
+
+const bindInteractions = () => {
+    bindPitchQuest();
+    bindNoteMemory();
+    bindRhythmDash();
+    bindEarTrainer();
+    bindBowHero();
+    bindStringQuest();
+    bindRhythmPainter();
+    bindStorySong();
+    bindPizzicato();
+    bindMelodyMaker();
+    bindScalePractice();
+    bindDuetChallenge();
+    bindTuningTime();
+};
+
+const handleChange = (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    if (input.type !== 'checkbox' || !input.id) return;
+    if (!shouldUpdate(input.id)) return;
+    scheduleUpdateAll();
+};
+
+const initMetrics = () => {
+    bindInteractions();
+    scheduleUpdateAll();
+    bindGameCardSummary();
+    document.addEventListener('change', handleChange);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMetrics);
+} else {
+    initMetrics();
+}
+
+document.addEventListener('panda:persist-applied', () => {
+    scheduleUpdateAll();
+});
+
+document.addEventListener('panda:sounds-change', (event) => {
+    if (event.detail?.enabled === false) {
+        stopTonePlayer();
+    }
+});

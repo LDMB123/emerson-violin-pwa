@@ -1,82 +1,33 @@
 # Panda Violin PWA
 
-A local-first violin teaching Progressive Web App for children, featuring a Red Panda coach and optimized for iPadOS 26.2.
+Local-first violin teaching PWA for children with a Red Panda coach, optimized for iPadOS 26.2.
 
-## Overview
-
-Interactive violin teaching application designed for young learners with:
-- Red Panda mascot coach
-- Local-first architecture (works offline)
-- iPadOS 26.2 optimization
-- Progressive Web App capabilities
-
-## Project Structure
-
-```
-emerson-violin-pwa/
-├── src/              # Application source code
-├── public/           # Static assets
-├── tests/            # Test suites
-├── wasm/             # WebAssembly modules
-├── scripts/          # Build scripts
-│   ├── build-songs-html.js
-│   └── build-sw-assets.js
-├── docs/             # Reports and QA notes
-│   └── reports/qa/    # QA plans and issue logs
-├── _archived/         # Legacy assets
-├── manifest.webmanifest
-└── index.html
-```
-
-## Features
-
-- **Offline-First**: Works without internet connection
-- **PWA**: Installable on devices
-- **WebAssembly**: High-performance audio processing
-- **iPadOS Optimized**: Specifically tuned for iPad
-- **Testing**: Comprehensive test suite with Playwright + Vitest
-
-## Development
+## Quick Start
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
-
-# Build for production
-npm run build
-
-# Run tests
-npm test
-
-# Watch mode testing
-npm run test:watch
-
-# Preview production build
-npm run preview
 ```
 
-## Technologies
+## Commands
 
-- **Build**: Vite 6.0
-- **Testing**: Vitest + Playwright
-- **Service Worker**: Custom offline-first implementation
-- **Audio**: WebAssembly for performance
+- `npm run dev` development server
+- `npm run build` production build
+- `npm run preview` preview build
+- `npm test` run unit tests
+- `npm run lint` lint JS
 
-## Requirements
+## Structure
 
-- Node.js >= 20.0.0
-- Modern browser with PWA support
-- For full experience: iPadOS 26.2+
+- `src/app.js` app boot + view-based module loading
+- `src/core/` platform, persistence, ML, utils, audio, worklets, WASM
+- `src/features/` coach, games, trainer, tuner, songs, progress, analysis, parent, backup, notifications, recordings
+- `src/data/songs.json` song data source
+- `public/assets/` images, audio, icons, mockups, badges, illustrations
+- `docs/` reports + AI context pack
 
-## Scripts
+## AI Context
 
-- `predev` / `prebuild`: Builds song HTML and service worker assets
-- `postbuild`: Updates service worker with dist assets
-- All builds automatically generate required static content
-
-## Status
-
-Version 2.0.0 - Production ready
+- `docs/ai/PROJECT_CONTEXT.md`
+- `docs/ai/FILE_MAP.md`
+- `docs/ai/IGNORE.md`

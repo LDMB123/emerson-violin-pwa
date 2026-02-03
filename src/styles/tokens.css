@@ -1,0 +1,120 @@
+/* ===========================================================================
+   Design Tokens Layer
+   =========================================================================== */
+
+@layer tokens {
+    :root {
+        color-scheme: light;
+        --keyboard-offset: 0px;
+        /* Colors - Warm Panda Palette (Refined) */
+        --color-primary: #E95639;
+        --color-primary-light: color-mix(in oklch, var(--color-primary), white 28%);
+        --color-primary-dark: color-mix(in oklch, var(--color-primary), black 18%);
+
+        --color-secondary: #F9A93F;
+        --color-accent: #4FB69E;
+        --color-success: #31D0A0;
+        --color-warning: #F9C74F;
+        --color-error: #EF5A5A;
+
+        /* Neutrals - Soft Warm */
+        --color-bg: #FFF9F3;
+        --color-bg-alt: #FFEFE2;
+        --color-surface: #FFFFFF;
+        --color-text: #352019;
+        --color-text-muted: #553628;
+
+        /* Liquid Glass - Ultra Premium */
+        --glass-bg: rgba(255, 255, 255, 0.92);
+        --glass-bg-strong: rgba(255, 255, 255, 0.97);
+        --glass-border: rgba(255, 255, 255, 0.9);
+        --glass-shadow:
+            0 18px 40px rgba(86, 40, 23, 0.15),
+            0 6px 14px rgba(86, 40, 23, 0.08),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+
+        /* Typography */
+        --font-main: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-display: 'Fraunces', 'Nunito', serif;
+
+        --text-xs: clamp(0.75rem, 2vw, 0.875rem);
+        --text-sm: clamp(0.875rem, 2.5vw, 1rem);
+        --text-base: clamp(1rem, 3vw, 1.125rem);
+        --text-lg: clamp(1.125rem, 3.5vw, 1.25rem);
+        --text-xl: clamp(1.25rem, 4vw, 1.5rem);
+        --text-2xl: clamp(1.5rem, 5vw, 2rem);
+        --text-3xl: clamp(2rem, 6vw, 2.5rem);
+
+        /* Typographic Rhythm */
+        --leading-tight: 1.1;
+        --leading-snug: 1.25;
+        --leading-relaxed: 1.45;
+        --tracking-tight: 0.01em;
+        --tracking-wide: 0.08em;
+
+        /* Spacing */
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-5: 1.25rem;
+        --space-6: 1.5rem;
+        --space-8: 2rem;
+        --space-10: 2.5rem;
+        --space-12: 3rem;
+        --space-16: 4rem;
+
+        /* Border Radius */
+        --radius-sm: 8px;
+        --radius-md: 14px;
+        --radius-lg: 22px;
+        --radius-xl: 30px;
+        --radius-full: 9999px;
+
+        /* Animations - iPadOS 26.2 Spring Physics */
+        --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+        --ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+        --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+        --duration-fast: 0.2s;
+        --duration-normal: 0.35s;
+        --duration-slow: 0.5s;
+
+        /* Safe Areas (iPadOS 26.2) */
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-right: env(safe-area-inset-right, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-left: env(safe-area-inset-left, 0px);
+
+        /* Z-Index Scale */
+        --z-base: 0;
+        --z-dropdown: 100;
+        --z-sticky: 200;
+        --z-modal: 300;
+        --z-toast: 400;
+    }
+
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --color-bg: #1A1A2E;
+            --color-bg-alt: #16213E;
+            --color-surface: #0F3460;
+            --color-text: #F5F5F5;
+            --color-text-muted: color-mix(in oklch, var(--color-text), transparent 25%);
+
+            --glass-bg: color-mix(in srgb, #0F3460 82%, transparent);
+            --glass-bg-strong: color-mix(in srgb, #0F3460 92%, transparent);
+            --glass-border: color-mix(in srgb, white 32%, transparent);
+        }
+    }
+
+    /* Reduce motion preference */
+    @media (prefers-reduced-motion: reduce) {
+        :root {
+            --duration-fast: 0.01ms;
+            --duration-normal: 0.01ms;
+            --duration-slow: 0.01ms;
+        }
+    }
+}
