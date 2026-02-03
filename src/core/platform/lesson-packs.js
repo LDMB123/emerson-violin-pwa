@@ -3,6 +3,7 @@ import { cloneTemplate } from '../utils/templates.js';
 const PACKS = [
     {
         id: 'practice-audio',
+        version: '2026-02-03',
         title: 'Practice Audio',
         description: 'Metronome clicks and string tones for tuner drills.',
         assets: [
@@ -17,6 +18,7 @@ const PACKS = [
     },
     {
         id: 'coach-visuals',
+        version: '2026-02-03',
         title: 'Coach Visuals',
         description: 'Mascot illustrations used across the coach views.',
         assets: [
@@ -28,6 +30,7 @@ const PACKS = [
     },
     {
         id: 'rewards-badges',
+        version: '2026-02-03',
         title: 'Rewards Badges',
         description: 'Achievement badges for streaks and milestones.',
         assets: [
@@ -58,7 +61,7 @@ const updateSummary = () => {
     const totals = { ready: 0, total: PACKS.length };
     PACKS.forEach((pack) => {
         const entry = state.get(pack.id);
-        if (entry?.cached === pack.assets.length && pack.assets.length) {
+        if (entry?.status === 'ready' && pack.assets.length) {
             totals.ready += 1;
         }
     });
@@ -88,7 +91,8 @@ const setPackState = (packId, next) => {
         node.root.dataset.packState = entry.status;
     }
     if (downloadBtn) {
-        downloadBtn.disabled = entry.status === 'downloading' || entry.cached === entry.total;
+        const isComplete = entry.total && entry.cached === entry.total;
+        downloadBtn.disabled = entry.status === 'downloading' || (isComplete && entry.status !== 'stale');
     }
     if (removeBtn) {
         removeBtn.disabled = entry.status === 'downloading' || entry.cached === 0;
@@ -112,7 +116,7 @@ const renderPack = (pack) => {
 
     if (titleEl) titleEl.textContent = pack.title;
     if (descEl) descEl.textContent = pack.description;
-    if (sizeEl) sizeEl.textContent = `${pack.assets.length} files`;
+    if (sizeEl) sizeEl.textContent = `${pack.assets.length} files · v${pack.version}`;
     if (progressEl) {
         progressEl.max = pack.assets.length || 1;
         progressEl.value = 0;
@@ -126,7 +130,12 @@ const renderPack = (pack) => {
                 total: pack.assets.length,
                 message: 'Downloading…',
             });
-            sendToServiceWorker({ type: 'PACK_CACHE', packId: pack.id, assets: pack.assets });
+            sendToServiceWorker({
+                type: 'PACK_CACHE',
+                packId: pack.id,
+                version: pack.version,
+                assets: pack.assets,
+            });
         });
     }
 
@@ -217,12 +226,19 @@ const handleMessage = (event) => {
             data.packs.forEach((pack) => {
                 const cached = formatCount(pack.cached);
                 const total = formatCount(pack.total);
-                const status = cached && cached === total ? 'ready' : 'partial';
-                const message = cached && cached === total
-                    ? 'Ready offline.'
-                    : total
-                        ? `Missing ${Math.max(0, total - cached)} files.`
-                        : 'Not downloaded yet.';
+                const stale = Boolean(pack.stale);
+                const status = stale
+                    ? 'stale'
+                    : cached && cached === total
+                        ? 'ready'
+                        : 'partial';
+                const message = stale
+                    ? 'Update required. Download again.'
+                    : cached && cached === total
+                        ? 'Ready offline.'
+                        : total
+                            ? `Missing ${Math.max(0, total - cached)} files.`
+                            : 'Not downloaded yet.';
                 setPackState(pack.packId, {
                     status: cached ? status : 'idle',
                     cached,
@@ -244,7 +260,24 @@ const handleMessage = (event) => {
 const requestSummary = () => {
     sendToServiceWorker({
         type: 'PACK_SUMMARY_REQUEST',
-        packs: PACKS.map((pack) => ({ id: pack.id, assets: pack.assets })),
+        packs: PACKS.map((pack) => ({ id: pack.id, assets: pack.assets, version: pack.version })),
+    });
+};
+
+const requestVerify = () => {
+    PACKS.forEach((pack) => {
+        setPackState(pack.id, {
+            status: 'downloading',
+            cached: 0,
+            total: pack.assets.length,
+            message: 'Verifying…',
+        });
+        sendToServiceWorker({
+            type: 'PACK_VERIFY',
+            packId: pack.id,
+            assets: pack.assets,
+            version: pack.version,
+        });
     });
 };
 
@@ -267,7 +300,7 @@ const init = () => {
         navigator.serviceWorker.addEventListener('message', handleMessage);
     }
     if (refreshButton) {
-        refreshButton.addEventListener('click', requestSummary);
+        refreshButton.addEventListener('click', requestVerify);
     }
     if (clearButton) {
         clearButton.addEventListener('click', clearAll);

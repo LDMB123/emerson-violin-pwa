@@ -2,6 +2,7 @@ const CACHE_VERSION = 'v110';
 const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
 const PACK_CACHE_NAME = `panda-violin-pack-${CACHE_VERSION}`;
 const PACK_CACHE_PREFIX = 'panda-violin-pack-';
+const PACK_MANIFEST_PREFIX = './__pack-manifests__/';
 const APP_SHELL_URL = './index.html';
 const OFFLINE_URL = './offline.html';
 
@@ -103,7 +104,40 @@ const summarizePack = async (assets = []) => {
     return { total: assets.length, cached };
 };
 
-const cachePackAssets = async (packId, assets = []) => {
+const getPackManifestUrl = (packId) => new URL(`${PACK_MANIFEST_PREFIX}${packId}.json`, self.location.origin).href;
+
+const writePackManifest = async (packId, manifest) => {
+    if (!packId || !manifest) return;
+    try {
+        const cache = await caches.open(PACK_CACHE_NAME);
+        const body = JSON.stringify(manifest);
+        const response = new Response(body, {
+            headers: { 'Content-Type': 'application/json' },
+        });
+        await cache.put(getPackManifestUrl(packId), response);
+    } catch {
+        // Ignore manifest persistence failures
+    }
+};
+
+const readPackManifest = async (packId) => {
+    try {
+        const cache = await caches.open(PACK_CACHE_NAME);
+        const response = await cache.match(getPackManifestUrl(packId), { ignoreSearch: true });
+        if (!response) return null;
+        return await response.json();
+    } catch {
+        return null;
+    }
+};
+
+const cachePackAssets = async (packId, assets = [], version = null) => {
+    await writePackManifest(packId, {
+        id: packId,
+        version: version || null,
+        assets,
+        updatedAt: Date.now(),
+    });
     const packCache = await caches.open(PACK_CACHE_NAME);
     let completed = 0;
     const total = assets.length;
@@ -119,10 +153,30 @@ const cachePackAssets = async (packId, assets = []) => {
     await notifyClients({ type: 'PACK_COMPLETE', packId, ...summary, timestamp: Date.now() });
 };
 
-const clearPackAssets = async (packId, assets = []) => {
+const deletePackAssets = async (assets = []) => {
     const cache = await caches.open(PACK_CACHE_NAME);
     await Promise.all(assets.map((asset) => cache.delete(asset, { ignoreSearch: true })));
+};
+
+const clearPackAssets = async (packId, assets = []) => {
+    await deletePackAssets(assets);
+    const cache = await caches.open(PACK_CACHE_NAME);
+    await cache.delete(getPackManifestUrl(packId), { ignoreSearch: true });
     await notifyClients({ type: 'PACK_CLEAR_DONE', packId, total: assets.length, timestamp: Date.now() });
+};
+
+const verifyPackAssets = async (packId, assets = [], version = null) => {
+    const manifest = await readPackManifest(packId);
+    const manifestAssets = Array.isArray(manifest?.assets) ? manifest.assets : [];
+    if (manifest?.version && version && manifest.version !== version) {
+        const staleAssets = manifestAssets.filter((asset) => !assets.includes(asset));
+        if (staleAssets.length) {
+            await deletePackAssets(staleAssets);
+        }
+        const cache = await caches.open(PACK_CACHE_NAME);
+        await cache.delete(getPackManifestUrl(packId), { ignoreSearch: true });
+    }
+    await cachePackAssets(packId, assets, version);
 };
 
 const clearAllPacks = async () => {
@@ -134,7 +188,14 @@ const getPackSummary = async (packs = []) => {
     const results = [];
     for (const pack of packs) {
         const summary = await summarizePack(pack.assets || []);
-        results.push({ packId: pack.id, ...summary });
+        const manifest = await readPackManifest(pack.id);
+        const stale = Boolean(pack.version && (!manifest?.version || manifest.version !== pack.version));
+        results.push({
+            packId: pack.id,
+            version: manifest?.version || null,
+            stale,
+            ...summary,
+        });
     }
     return results;
 };
@@ -438,12 +499,16 @@ self.addEventListener('message', (event) => {
         notifyClients({ type: 'OFFLINE_MODE', value: offlineMode, timestamp: Date.now() });
     }
     if (event.data?.type === 'PACK_CACHE') {
-        const { packId, assets } = event.data;
-        event.waitUntil(cachePackAssets(packId, Array.isArray(assets) ? assets : []));
+        const { packId, assets, version } = event.data;
+        event.waitUntil(cachePackAssets(packId, Array.isArray(assets) ? assets : [], version || null));
     }
     if (event.data?.type === 'PACK_CLEAR') {
         const { packId, assets } = event.data;
         event.waitUntil(clearPackAssets(packId, Array.isArray(assets) ? assets : []));
+    }
+    if (event.data?.type === 'PACK_VERIFY') {
+        const { packId, assets, version } = event.data;
+        event.waitUntil(verifyPackAssets(packId, Array.isArray(assets) ? assets : [], version || null));
     }
     if (event.data?.type === 'PACK_CLEAR_ALL') {
         event.waitUntil(clearAllPacks());
