@@ -12,6 +12,7 @@ const centsEl = document.querySelector('#tuner-cents');
 const freqEl = document.querySelector('#tuner-frequency');
 const statusEl = document.querySelector('#tuner-status');
 const demoEl = document.querySelector('[data-tuner-demo]');
+const directionEl = document.querySelector('[data-tuner-direction]');
 const toneButtons = Array.from(document.querySelectorAll('[data-tone]'));
 const toneSamples = new Map(
     Array.from(document.querySelectorAll('[data-tone-audio]')).map((audio) => [audio.dataset.toneAudio, audio])
@@ -59,8 +60,13 @@ const formatDifficulty = (value) => {
 const ensureBadge = () => ensureDifficultyBadge(livePanel?.querySelector('.tuner-card-header'));
 const formatCentsHint = (cents) => {
     if (!Number.isFinite(cents)) return 'Center it';
-    if (Math.abs(cents) <= tolerance) return 'Great job';
-    return cents > 0 ? 'Too high' : 'Too low';
+    if (Math.abs(cents) <= tolerance) return 'Perfect!';
+    return cents > 0 ? 'Lower' : 'Higher';
+};
+
+const setTuneState = (state, label) => {
+    if (livePanel) livePanel.dataset.tuneState = state;
+    if (directionEl) directionEl.textContent = label;
 };
 
 const applyTuning = async () => {
@@ -88,6 +94,7 @@ const resetDisplay = () => {
     if (freqEl) freqEl.textContent = '0 Hz';
     if (demoEl) demoEl.textContent = 'Live input: --';
     if (livePanel) delete livePanel.dataset.inTune;
+    setTuneState('silent', 'Tap the mic');
     if (livePanel) livePanel.style.setProperty('--tuner-offset', '0');
 };
 
@@ -213,6 +220,7 @@ const handlePitchResult = ({
 } = {}) => {
     if (!frequency || volume < 0.01) {
         resetDisplay();
+        setTuneState('silent', 'Play a string');
         setStatus('Listening… play a string.');
         return;
     }
@@ -258,6 +266,13 @@ const handlePitchResult = ({
         livePanel.dataset.inTune = 'true';
     } else {
         delete livePanel.dataset.inTune;
+    }
+    if (inTune) {
+        setTuneState('in', 'Perfect!');
+    } else if (displayCents > 0) {
+        setTuneState('high', 'Lower');
+    } else {
+        setTuneState('low', 'Higher');
     }
     detectCount += 1;
     if (inTune) inTuneCount += 1;
