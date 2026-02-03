@@ -47,6 +47,7 @@ const observers = [];
 let memoryTimer = null;
 let autoSnapshotTimer = null;
 let tunerSnapshotTimer = null;
+let frameSamplerControl = null;
 
 const supported = PerformanceObserver?.supportedEntryTypes || [];
 
@@ -169,7 +170,10 @@ const bindTunerPerf = () => {
 
 const bindFrameSampler = () => {
     let last = performance.now();
+    let active = true;
+    let rafId = null;
     const tick = (now) => {
+        if (!active) return;
         const delta = now - last;
         last = now;
         if (Number.isFinite(delta) && delta > 0) {
@@ -178,9 +182,23 @@ const bindFrameSampler = () => {
             state.frameMax = Math.max(state.frameMax, delta);
             if (delta > 32) state.frameOver32 += 1;
         }
-        window.requestAnimationFrame(tick);
+        rafId = window.requestAnimationFrame(tick);
     };
-    window.requestAnimationFrame(tick);
+    const start = () => {
+        if (active) return;
+        active = true;
+        last = performance.now();
+        rafId = window.requestAnimationFrame(tick);
+    };
+    const stop = () => {
+        active = false;
+        if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+    };
+    rafId = window.requestAnimationFrame(tick);
+    return { start, stop };
 };
 
 const bindMemorySampler = () => {
@@ -217,6 +235,10 @@ const disconnectObservers = () => {
     if (memoryTimer) {
         clearInterval(memoryTimer);
         memoryTimer = null;
+    }
+    if (frameSamplerControl) {
+        frameSamplerControl.stop();
+        frameSamplerControl = null;
     }
     if (autoSnapshotTimer) {
         clearTimeout(autoSnapshotTimer);
@@ -420,10 +442,14 @@ const scheduleFlush = (reason) => {
 const bindLifecycle = () => {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
+            frameSamplerControl?.stop();
             scheduleFlush('hidden');
         } else if (flushTimer) {
             clearTimeout(flushTimer);
             flushTimer = null;
+            frameSamplerControl?.start();
+        } else {
+            frameSamplerControl?.start();
         }
     });
     window.addEventListener('pagehide', () => {
@@ -448,7 +474,7 @@ const init = () => {
     bindAudioPerf();
     bindFeaturePerf();
     bindTunerPerf();
-    bindFrameSampler();
+    frameSamplerControl = bindFrameSampler();
     bindMemorySampler();
     updateBaselineUI();
     if (!autoSnapshotTimer) {
