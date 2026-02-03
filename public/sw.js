@@ -1,5 +1,7 @@
-const CACHE_VERSION = 'v109';
+const CACHE_VERSION = 'v110';
 const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
+const PACK_CACHE_NAME = `panda-violin-pack-${CACHE_VERSION}`;
+const PACK_CACHE_PREFIX = 'panda-violin-pack-';
 const APP_SHELL_URL = './index.html';
 const OFFLINE_URL = './offline.html';
 
@@ -82,20 +84,78 @@ const cacheResponse = async (cache, request, response) => {
     }
 };
 
+const matchFromCaches = async (request, options) => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request, options);
+    if (cached) return { cached, cache };
+    const packCache = await caches.open(PACK_CACHE_NAME);
+    const packCached = await packCache.match(request, options);
+    if (packCached) return { cached: packCached, cache: packCache };
+    return { cached: null, cache };
+};
+
+const summarizePack = async (assets = []) => {
+    let cached = 0;
+    for (const asset of assets) {
+        const hit = await matchFromCaches(asset, { ignoreSearch: true });
+        if (hit?.cached) cached += 1;
+    }
+    return { total: assets.length, cached };
+};
+
+const cachePackAssets = async (packId, assets = []) => {
+    const packCache = await caches.open(PACK_CACHE_NAME);
+    let completed = 0;
+    const total = assets.length;
+    for (const asset of assets) {
+        const hit = await matchFromCaches(asset, { ignoreSearch: true });
+        if (!hit?.cached) {
+            await cacheAsset(packCache, asset);
+        }
+        completed += 1;
+        await notifyClients({ type: 'PACK_PROGRESS', packId, cached: completed, total, timestamp: Date.now() });
+    }
+    const summary = await summarizePack(assets);
+    await notifyClients({ type: 'PACK_COMPLETE', packId, ...summary, timestamp: Date.now() });
+};
+
+const clearPackAssets = async (packId, assets = []) => {
+    const cache = await caches.open(PACK_CACHE_NAME);
+    await Promise.all(assets.map((asset) => cache.delete(asset, { ignoreSearch: true })));
+    await notifyClients({ type: 'PACK_CLEAR_DONE', packId, total: assets.length, timestamp: Date.now() });
+};
+
+const clearAllPacks = async () => {
+    await caches.delete(PACK_CACHE_NAME);
+    await notifyClients({ type: 'PACK_CLEAR_ALL_DONE', timestamp: Date.now() });
+};
+
+const getPackSummary = async (packs = []) => {
+    const results = [];
+    for (const pack of packs) {
+        const summary = await summarizePack(pack.assets || []);
+        results.push({ packId: pack.id, ...summary });
+    }
+    return results;
+};
+
 self.addEventListener('install', (event) => {
     event.waitUntil(
         (async () => {
             await precacheAssets();
         })()
     );
-    self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         (async () => {
             await Promise.all(
-                (await caches.keys()).map((key) => (key === CACHE_NAME ? null : caches.delete(key)))
+                (await caches.keys()).map((key) => {
+                    if (key === CACHE_NAME || key === PACK_CACHE_NAME) return null;
+                    if (key.startsWith(PACK_CACHE_PREFIX)) return caches.delete(key);
+                    return caches.delete(key);
+                })
             );
             const cache = await caches.open(CACHE_NAME);
             await trimRuntimeCache(cache);
@@ -130,8 +190,8 @@ const parseRange = (rangeHeader, size) => {
 const respondWithRange = async (request) => {
     const rangeHeader = request.headers.get('range');
     if (!rangeHeader) return null;
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request.url);
+    const match = await matchFromCaches(request.url, { ignoreSearch: true });
+    const cached = match.cached;
     if (!cached) return null;
     const buffer = await cached.arrayBuffer();
     const range = parseRange(rangeHeader, buffer.byteLength);
@@ -148,8 +208,9 @@ const respondWithRange = async (request) => {
 };
 
 const cacheFirst = async (request) => {
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request);
+    const match = await matchFromCaches(request);
+    const cache = match.cache;
+    const cached = match.cached;
     if (cached) return cached;
     try {
         const response = await fetch(request);
@@ -276,8 +337,8 @@ const handleNavigation = async (event) => {
 };
 
 const cacheOnly = async (request) => {
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request, { ignoreSearch: true });
+    const match = await matchFromCaches(request, { ignoreSearch: true });
+    const cached = match.cached;
     if (cached) return cached;
     await notifyOfflineMiss(request, 'cache-only');
     return Response.error();
@@ -375,6 +436,26 @@ self.addEventListener('message', (event) => {
     if (event.data?.type === 'SET_OFFLINE_MODE') {
         offlineMode = Boolean(event.data.value);
         notifyClients({ type: 'OFFLINE_MODE', value: offlineMode, timestamp: Date.now() });
+    }
+    if (event.data?.type === 'PACK_CACHE') {
+        const { packId, assets } = event.data;
+        event.waitUntil(cachePackAssets(packId, Array.isArray(assets) ? assets : []));
+    }
+    if (event.data?.type === 'PACK_CLEAR') {
+        const { packId, assets } = event.data;
+        event.waitUntil(clearPackAssets(packId, Array.isArray(assets) ? assets : []));
+    }
+    if (event.data?.type === 'PACK_CLEAR_ALL') {
+        event.waitUntil(clearAllPacks());
+    }
+    if (event.data?.type === 'PACK_SUMMARY_REQUEST') {
+        const packs = Array.isArray(event.data.packs) ? event.data.packs : [];
+        event.waitUntil(
+            (async () => {
+                const summary = await getPackSummary(packs);
+                await notifyClients({ type: 'PACK_SUMMARY', packs: summary, timestamp: Date.now() });
+            })()
+        );
     }
 });
 
