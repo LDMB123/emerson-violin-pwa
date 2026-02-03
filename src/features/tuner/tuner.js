@@ -129,10 +129,12 @@ const setStatus = (text) => {
 const ensureFallbackDetector = async (sampleRate) => {
     if (!PitchDetector) return null;
     if (!fallbackWasmReady) {
-        fallbackWasmReady = initAudioWasm().catch(() => null);
+        fallbackWasmReady = initAudioWasm()
+            .then(() => true)
+            .catch(() => false);
     }
-    await fallbackWasmReady;
-    if (!fallbackWasmReady) return null;
+    const ready = await fallbackWasmReady;
+    if (!ready) return null;
     const detector = new PitchDetector(sampleRate, FALLBACK_BUFFER_SIZE);
     detector.set_tune_tolerance(tolerance);
     detector.set_volume_threshold(0.01);
