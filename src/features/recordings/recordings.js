@@ -1,6 +1,6 @@
 import { getJSON, setJSON, setBlob, removeBlob, supportsIndexedDB } from '@core/persistence/storage.js';
 import { dataUrlToBlob } from '@core/utils/recording-export.js';
-import { getViewId, onViewChange } from '@core/utils/view-events.js';
+import { onViewChange } from '@core/utils/view-events.js';
 
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
 const MAX_RECORDINGS = 4;
@@ -17,10 +17,6 @@ let stopResolve = null;
 
 const getSongId = (section) => section?.id?.replace('view-song-', '') || '';
 const getSongIdFromViewId = (viewId) => (viewId?.startsWith('view-song-') ? viewId.replace('view-song-', '') : '');
-const getSongIdFromHash = () => {
-    return getSongIdFromViewId(getViewId());
-};
-
 const getSongTitle = (songId) => {
     const view = document.getElementById(`view-song-${songId}`);
     const title = view?.querySelector('h2')?.textContent?.trim();

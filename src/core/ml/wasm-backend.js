@@ -1,7 +1,7 @@
 const WASM_CACHE = 'panda-violin-wasm-v1';
 const WASM_MODULES = [
-    { name: 'audio', url: new URL('../wasm/panda_audio_bg.wasm', import.meta.url) },
-    { name: 'core', url: new URL('../wasm/panda_core_bg.wasm', import.meta.url) },
+    { url: new URL('../wasm/panda_audio_bg.wasm', import.meta.url) },
+    { url: new URL('../wasm/panda_core_bg.wasm', import.meta.url) },
 ];
 
 let warmPromise = null;
@@ -19,7 +19,7 @@ const cacheWasmResponse = async (url, response) => {
     }
 };
 
-const compileWasm = async ({ name, url }) => {
+const compileWasm = async ({ url }) => {
     if (compiledModules.has(url.href)) return compiledModules.get(url.href);
     const response = await fetch(url, { cache: 'force-cache' });
     if (!response.ok) return null;

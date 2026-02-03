@@ -114,6 +114,12 @@ const getChecks = () => ([
         detail: () => 'Native popovers.',
     },
     {
+        id: 'dialog',
+        label: 'HTML dialog',
+        check: () => supportsDialog(),
+        detail: () => 'Native dialog element.',
+    },
+    {
         id: 'command',
         label: 'HTML command',
         check: () => supportsCommand(),
