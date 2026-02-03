@@ -3,6 +3,7 @@ const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
 const PACK_CACHE_NAME = `panda-violin-pack-${CACHE_VERSION}`;
 const PACK_CACHE_PREFIX = 'panda-violin-pack-';
 const PACK_MANIFEST_PREFIX = './__pack-manifests__/';
+const PACK_MANIFEST_PATH = '/__pack-manifests__/';
 const APP_SHELL_URL = './index.html';
 const OFFLINE_URL = './offline.html';
 
@@ -95,16 +96,37 @@ const matchFromCaches = async (request, options) => {
     return { cached: null, cache };
 };
 
-const summarizePack = async (assets = []) => {
+const summarizePackWithCaches = async (assets = [], cache, packCache) => {
     let cached = 0;
     for (const asset of assets) {
-        const hit = await matchFromCaches(asset, { ignoreSearch: true });
-        if (hit?.cached) cached += 1;
+        const hit = await cache.match(asset, { ignoreSearch: true });
+        if (hit) {
+            cached += 1;
+            continue;
+        }
+        const packHit = await packCache.match(asset, { ignoreSearch: true });
+        if (packHit) cached += 1;
     }
     return { total: assets.length, cached };
 };
 
+const summarizePack = async (assets = []) => {
+    const cache = await caches.open(CACHE_NAME);
+    const packCache = await caches.open(PACK_CACHE_NAME);
+    return summarizePackWithCaches(assets, cache, packCache);
+};
+
 const getPackManifestUrl = (packId) => new URL(`${PACK_MANIFEST_PREFIX}${packId}.json`, self.location.origin).href;
+const isPackManifestUrl = (url) => typeof url === 'string' && url.includes(PACK_MANIFEST_PATH);
+const toAbsoluteUrl = (asset) => new URL(asset, self.location.origin).href;
+
+const buildCachedUrlSet = async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const packCache = await caches.open(PACK_CACHE_NAME);
+    const [cacheKeys, packKeys] = await Promise.all([cache.keys(), packCache.keys()]);
+    const cachedUrls = new Set([...cacheKeys, ...packKeys].map((request) => request.url));
+    return { cache, packCache, cachedUrls, packKeys };
+};
 
 const writePackManifest = async (packId, manifest) => {
     if (!packId || !manifest) return;
@@ -131,6 +153,38 @@ const readPackManifest = async (packId) => {
     }
 };
 
+const verifyCachedPacks = async () => {
+    const { packCache, cachedUrls, packKeys } = await buildCachedUrlSet();
+    const manifestRequests = packKeys.filter((request) => isPackManifestUrl(request.url));
+    for (const request of manifestRequests) {
+        let manifest = null;
+        try {
+            const response = await packCache.match(request, { ignoreSearch: true });
+            manifest = response ? await response.json() : null;
+        } catch {
+            manifest = null;
+        }
+        if (!manifest?.assets?.length) continue;
+        let missing = 0;
+        for (const asset of manifest.assets) {
+            const absolute = toAbsoluteUrl(asset);
+            if (!cachedUrls.has(absolute)) {
+                missing += 1;
+                await cacheAsset(packCache, asset);
+                cachedUrls.add(absolute);
+            }
+        }
+        if (missing) {
+            await notifyClients({
+                type: 'PACK_AUTO_REPAIR',
+                packId: manifest.id || null,
+                missing,
+                timestamp: Date.now(),
+            });
+        }
+    }
+};
+
 const cachePackAssets = async (packId, assets = [], version = null) => {
     await writePackManifest(packId, {
         id: packId,
@@ -138,18 +192,20 @@ const cachePackAssets = async (packId, assets = [], version = null) => {
         assets,
         updatedAt: Date.now(),
     });
+    const cache = await caches.open(CACHE_NAME);
     const packCache = await caches.open(PACK_CACHE_NAME);
     let completed = 0;
     const total = assets.length;
     for (const asset of assets) {
-        const hit = await matchFromCaches(asset, { ignoreSearch: true });
-        if (!hit?.cached) {
+        const hit = await cache.match(asset, { ignoreSearch: true });
+        const packHit = hit ? null : await packCache.match(asset, { ignoreSearch: true });
+        if (!hit && !packHit) {
             await cacheAsset(packCache, asset);
         }
         completed += 1;
         await notifyClients({ type: 'PACK_PROGRESS', packId, cached: completed, total, timestamp: Date.now() });
     }
-    const summary = await summarizePack(assets);
+    const summary = await summarizePackWithCaches(assets, cache, packCache);
     await notifyClients({ type: 'PACK_COMPLETE', packId, ...summary, timestamp: Date.now() });
 };
 
@@ -185,9 +241,15 @@ const clearAllPacks = async () => {
 };
 
 const getPackSummary = async (packs = []) => {
+    const { cachedUrls } = await buildCachedUrlSet();
     const results = [];
     for (const pack of packs) {
-        const summary = await summarizePack(pack.assets || []);
+        const assets = pack.assets || [];
+        let cached = 0;
+        assets.forEach((asset) => {
+            if (cachedUrls.has(toAbsoluteUrl(asset))) cached += 1;
+        });
+        const summary = { total: assets.length, cached };
         const manifest = await readPackManifest(pack.id);
         const stale = Boolean(pack.version && (!manifest?.version || manifest.version !== pack.version));
         results.push({
@@ -220,6 +282,11 @@ self.addEventListener('activate', (event) => {
             );
             const cache = await caches.open(CACHE_NAME);
             await trimRuntimeCache(cache);
+            try {
+                await verifyCachedPacks();
+            } catch {
+                // Ignore pack verification failures
+            }
             if (self.registration?.navigationPreload) {
                 await self.registration.navigationPreload.enable();
             }
@@ -526,6 +593,11 @@ self.addEventListener('message', (event) => {
 
 const refreshAssets = async () => {
     await precacheAssets();
+    try {
+        await verifyCachedPacks();
+    } catch {
+        // Ignore pack verification failures
+    }
     const summary = await getCacheSummary();
     await notifyClients({
         type: 'OFFLINE_REFRESH',

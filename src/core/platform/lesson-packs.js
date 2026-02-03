@@ -239,6 +239,16 @@ const handleMessage = (event) => {
         });
         return;
     }
+    if (data.type === 'PACK_AUTO_REPAIR') {
+        if (data.packId) {
+            setPackState(data.packId, {
+                status: 'partial',
+                message: `Auto-repaired ${formatCount(data.missing)} files.`,
+            });
+        }
+        requestSummary();
+        return;
+    }
     if (data.type === 'PACK_SUMMARY') {
         if (Array.isArray(data.packs)) {
             data.packs.forEach((pack) => {
