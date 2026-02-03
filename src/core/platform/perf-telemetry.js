@@ -27,6 +27,16 @@ const state = {
     audioMaxMs: 0,
     audioBufferSize: null,
     audioSampleRate: null,
+    featureLoadCount: 0,
+    featureLoadTotalMs: 0,
+    featureLoadMaxMs: 0,
+    lastFeatureLoad: null,
+    frameCount: 0,
+    frameTotal: 0,
+    frameMax: 0,
+    frameOver32: 0,
+    memoryBytes: null,
+    tunerStartMs: null,
 };
 
 let flushed = false;
@@ -125,6 +135,64 @@ const bindAudioPerf = () => {
     });
 };
 
+const bindFeaturePerf = () => {
+    document.addEventListener('panda:feature-load', (event) => {
+        const detail = event.detail || {};
+        const durationMs = Number(detail.durationMs);
+        if (!Number.isFinite(durationMs)) return;
+        state.featureLoadCount += 1;
+        state.featureLoadTotalMs += durationMs;
+        state.featureLoadMaxMs = Math.max(state.featureLoadMaxMs, durationMs);
+        state.lastFeatureLoad = detail.featureId || state.lastFeatureLoad;
+    });
+};
+
+const bindTunerPerf = () => {
+    document.addEventListener('panda:tuner-first-note', (event) => {
+        const detail = event.detail || {};
+        if (!Number.isFinite(detail.elapsedMs)) return;
+        state.tunerStartMs = Math.round(detail.elapsedMs);
+    });
+};
+
+const bindFrameSampler = () => {
+    let last = performance.now();
+    const tick = (now) => {
+        const delta = now - last;
+        last = now;
+        if (Number.isFinite(delta) && delta > 0) {
+            state.frameCount += 1;
+            state.frameTotal += delta;
+            state.frameMax = Math.max(state.frameMax, delta);
+            if (delta > 32) state.frameOver32 += 1;
+        }
+        window.requestAnimationFrame(tick);
+    };
+    window.requestAnimationFrame(tick);
+};
+
+const bindMemorySampler = () => {
+    const measure = async () => {
+        try {
+            if (typeof performance?.measureUserAgentSpecificMemory === 'function') {
+                const result = await performance.measureUserAgentSpecificMemory();
+                if (Number.isFinite(result?.bytes)) {
+                    state.memoryBytes = Math.round(result.bytes);
+                }
+                return;
+            }
+            if (performance?.memory?.usedJSHeapSize) {
+                state.memoryBytes = Math.round(performance.memory.usedJSHeapSize);
+            }
+        } catch {
+            // Ignore memory sampling failures.
+        }
+    };
+
+    measure();
+    window.setInterval(measure, 10000);
+};
+
 const disconnectObservers = () => {
     observers.forEach((observer) => {
         try {
@@ -147,11 +215,18 @@ const formatTimestamp = (value) => {
 
 const formatMs = (value) => (Number.isFinite(value) ? `${Math.round(value)} ms` : '—');
 const formatPct = (value) => (Number.isFinite(value) ? `${Math.round(value)}%` : '—');
+const formatBytes = (value) => {
+    if (!Number.isFinite(value)) return '—';
+    const mb = value / (1024 * 1024);
+    return `${mb.toFixed(1)} MB`;
+};
 
 const buildSample = (reason) => {
     const eventAvg = state.eventCount ? state.eventTotal / state.eventCount : 0;
     const longTaskAvg = state.longTaskCount ? state.longTaskTotal / state.longTaskCount : 0;
     const audioAvg = state.audioCount ? state.audioTotalMs / state.audioCount : 0;
+    const featureAvg = state.featureLoadCount ? state.featureLoadTotalMs / state.featureLoadCount : 0;
+    const frameAvg = state.frameCount ? state.frameTotal / state.frameCount : 0;
     const audioBudgetMs = (state.audioBufferSize && state.audioSampleRate)
         ? (state.audioBufferSize / state.audioSampleRate) * 1000
         : null;
@@ -177,6 +252,14 @@ const buildSample = (reason) => {
         audioCount: state.audioCount,
         audioBudgetMs: audioBudgetMs ? Math.round(audioBudgetMs) : null,
         audioBudgetPct: audioBudgetPct ? Math.round(audioBudgetPct) : null,
+        featureLoadAvgMs: featureAvg ? Math.round(featureAvg) : null,
+        featureLoadMaxMs: state.featureLoadMaxMs ? Math.round(state.featureLoadMaxMs) : null,
+        lastFeatureLoad: state.lastFeatureLoad,
+        frameMaxMs: state.frameMax ? Math.round(state.frameMax) : null,
+        frameAvgMs: frameAvg ? Math.round(frameAvg) : null,
+        frameOver32: state.frameOver32,
+        memoryBytes: state.memoryBytes,
+        tunerStartMs: state.tunerStartMs,
         deviceMemory: navigator.deviceMemory || null,
         hardwareConcurrency: navigator.hardwareConcurrency || null,
     };
@@ -203,12 +286,12 @@ const updateBaselineUI = async (sampleOverride = null) => {
     }
     if (ttiEl) {
         ttiEl.textContent = sample
-            ? `TTI proxy ${formatMs(sample.ttiProxyMs)} · LCP ${formatMs(sample.lcpMs)} · Input max ${formatMs(sample.eventMaxMs)} · Long task max ${formatMs(sample.longTaskMaxMs)}`
+            ? `TTI proxy ${formatMs(sample.ttiProxyMs)} · LCP ${formatMs(sample.lcpMs)} · Input max ${formatMs(sample.eventMaxMs)} · Long task max ${formatMs(sample.longTaskMaxMs)} · Frame max ${formatMs(sample.frameMaxMs)}`
             : 'TTI proxy: —';
     }
     if (audioEl) {
         audioEl.textContent = sample
-            ? `Audio budget avg ${formatMs(sample.audioAvgMs)} / ${formatMs(sample.audioBudgetMs)} (${formatPct(sample.audioBudgetPct)}) · max ${formatMs(sample.audioMaxMs)}`
+            ? `Audio budget avg ${formatMs(sample.audioAvgMs)} / ${formatMs(sample.audioBudgetMs)} (${formatPct(sample.audioBudgetPct)}) · max ${formatMs(sample.audioMaxMs)} · tuner start ${formatMs(sample.tunerStartMs)} · mem ${formatBytes(sample.memoryBytes)}`
             : 'Audio budget: —';
     }
 };
@@ -298,6 +381,10 @@ const init = () => {
     recordLongTasks();
     bindFirstInput();
     bindAudioPerf();
+    bindFeaturePerf();
+    bindTunerPerf();
+    bindFrameSampler();
+    bindMemorySampler();
     updateBaselineUI();
     if (snapshotButton) {
         snapshotButton.addEventListener('click', () => {

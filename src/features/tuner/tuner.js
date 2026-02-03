@@ -1,7 +1,7 @@
 import { getGameTuning, updateGameResult } from '@core/ml/adaptive-engine.js';
 import { ensureDifficultyBadge } from '@core/utils/templates.js';
 import { appendFeatureFrame } from '@core/ml/feature-store.js';
-import { getViewId, onViewChange } from '@core/utils/view-events.js';
+import { onViewChange } from '@core/utils/view-events.js';
 import initAudioWasm, { PitchDetector } from '@core/wasm/panda_audio.js';
 
 const livePanel = document.querySelector('#tuner-live');
@@ -31,12 +31,16 @@ let fallbackBuffer = null;
 let fallbackTimer = null;
 let fallbackActive = false;
 let fallbackWasmReady = null;
+let firstNoteSent = false;
+let tunerStartAt = null;
 const FALLBACK_BUFFER_SIZE = 2048;
 const FALLBACK_INTERVAL = 80;
 const STABILITY_THRESHOLD = 3;
+const WORKLET_STALL_MS = 1600;
+let workletWatchdog = null;
+let lastWorkletAt = 0;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-const isTunerView = () => getViewId() === 'view-tuner';
 const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
 
 const formatDifficulty = (value) => {
@@ -166,6 +170,16 @@ const handlePitchResult = ({
         return;
     }
 
+    if (!firstNoteSent && Number.isFinite(tunerStartAt)) {
+        firstNoteSent = true;
+        document.dispatchEvent(new CustomEvent('panda:tuner-first-note', {
+            detail: {
+                elapsedMs: performance.now() - tunerStartAt,
+                fallback: Boolean(fallback),
+            },
+        }));
+    }
+
     const roundedFreq = Math.round(frequency * 10) / 10;
     const roundedCents = Math.round(Number.isFinite(cents) ? cents : 0);
     const roundedStable = Number.isFinite(stableCents) ? Math.round(stableCents) : roundedCents;
@@ -212,6 +226,8 @@ const stopTuner = async () => {
     starting = false;
     featureSessionId = null;
     lastFeatureAt = 0;
+    firstNoteSent = false;
+    tunerStartAt = null;
     stopFallback();
     if (workletNode) {
         workletNode.port.onmessage = null;
@@ -251,6 +267,8 @@ const startTuner = async () => {
     const token = startToken + 1;
     startToken = token;
     starting = true;
+    firstNoteSent = false;
+    tunerStartAt = performance.now();
 
     if (!navigator.mediaDevices?.getUserMedia) {
         setStatus('Microphone access is not available on this device.');

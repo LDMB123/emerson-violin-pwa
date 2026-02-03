@@ -23,7 +23,7 @@ Note: These are local build outputs, not device runtime measurements.
 - Open Settings -> Performance -> Baseline metrics
 - Tap `Record baseline snapshot`
 - Tap `Export baseline JSON` (attach to issue log)
-- Record `TTI proxy`, `LCP`, `Input max`, `Long task max`
+- Record `TTI proxy`, `LCP`, `Input max`, `Long task max`, `Frame max`, `Memory`
 
 ## Memory After 5 Minutes
 - Start tuner
@@ -35,7 +35,7 @@ Note: These are local build outputs, not device runtime measurements.
 - Start tuner
 - Play sustained notes for 30 seconds
 - Open Settings -> Performance -> Baseline metrics
-- Record `Audio budget avg/max` values
+- Record `Audio budget avg/max` values and `Tuner start`
 - Optional: Web Inspector CPU profile if available
 
 ## Audio Latency / Responsiveness
