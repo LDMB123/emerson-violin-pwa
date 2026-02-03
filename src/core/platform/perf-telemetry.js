@@ -42,6 +42,7 @@ const state = {
 let flushed = false;
 let flushTimer = null;
 const observers = [];
+let memoryTimer = null;
 
 const supported = PerformanceObserver?.supportedEntryTypes || [];
 
@@ -190,7 +191,7 @@ const bindMemorySampler = () => {
     };
 
     measure();
-    window.setInterval(measure, 10000);
+    memoryTimer = window.setInterval(measure, 10000);
 };
 
 const disconnectObservers = () => {
@@ -202,6 +203,10 @@ const disconnectObservers = () => {
         }
     });
     observers.length = 0;
+    if (memoryTimer) {
+        clearInterval(memoryTimer);
+        memoryTimer = null;
+    }
 };
 
 const formatTimestamp = (value) => {
