@@ -43,6 +43,7 @@ const PACKS = [
     },
 ];
 
+const PACK_INDEX = new Map(PACKS.map((pack) => [pack.id, pack]));
 const listEl = document.querySelector('[data-pack-list]');
 const summaryEl = document.querySelector('[data-pack-summary]');
 const refreshButton = document.querySelector('[data-pack-refresh]');
@@ -50,6 +51,7 @@ const clearButton = document.querySelector('[data-pack-clear]');
 
 const state = new Map();
 const nodes = new Map();
+const autoVerify = new Set();
 
 const setSummary = (text) => {
     if (summaryEl) summaryEl.textContent = text;
@@ -183,6 +185,20 @@ const sendToServiceWorker = async (payload) => {
     }
 };
 
+const queueAutoVerify = (packId) => {
+    if (!navigator.onLine) return;
+    const pack = PACK_INDEX.get(packId);
+    if (!pack) return;
+    if (autoVerify.has(packId)) return;
+    autoVerify.add(packId);
+    sendToServiceWorker({
+        type: 'PACK_VERIFY',
+        packId: pack.id,
+        assets: pack.assets,
+        version: pack.version,
+    });
+};
+
 const handleMessage = (event) => {
     const data = event?.data;
     if (!data?.type) return;
@@ -198,6 +214,7 @@ const handleMessage = (event) => {
         return;
     }
     if (data.type === 'PACK_COMPLETE') {
+        autoVerify.delete(data.packId);
         const cached = formatCount(data.cached);
         const total = formatCount(data.total);
         const status = cached && cached === total ? 'ready' : 'partial';
@@ -213,6 +230,7 @@ const handleMessage = (event) => {
         return;
     }
     if (data.type === 'PACK_CLEAR_DONE') {
+        autoVerify.delete(data.packId);
         setPackState(data.packId, {
             status: 'idle',
             cached: 0,
@@ -245,6 +263,9 @@ const handleMessage = (event) => {
                     total,
                     message,
                 });
+                if (stale) {
+                    queueAutoVerify(pack.packId);
+                }
             });
         }
         return;
@@ -299,6 +320,7 @@ const init = () => {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', handleMessage);
     }
+    window.addEventListener('online', requestSummary, { passive: true });
     if (refreshButton) {
         refreshButton.addEventListener('click', requestVerify);
     }
