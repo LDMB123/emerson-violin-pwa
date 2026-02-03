@@ -36,6 +36,15 @@ let fallbackActive = false;
 let fallbackWasmReady = null;
 let firstNoteSent = false;
 let tunerStartAt = null;
+let lastStatus = '';
+let lastDirectionState = '';
+let lastDirectionLabel = '';
+let lastNoteText = '';
+let lastCentsText = '';
+let lastFreqText = '';
+let lastDemoText = '';
+let lastOffset = null;
+let lastInTune = null;
 const FALLBACK_BUFFER_SIZE = 2048;
 const FALLBACK_INTERVAL = 80;
 const STABILITY_THRESHOLD = 3;
@@ -65,8 +74,14 @@ const formatCentsHint = (cents) => {
 };
 
 const setTuneState = (state, label) => {
-    if (livePanel) livePanel.dataset.tuneState = state;
-    if (directionEl) directionEl.textContent = label;
+    if (state !== lastDirectionState && livePanel) {
+        livePanel.dataset.tuneState = state;
+        lastDirectionState = state;
+    }
+    if (label !== lastDirectionLabel && directionEl) {
+        directionEl.textContent = label;
+        lastDirectionLabel = label;
+    }
 };
 
 const applyTuning = async () => {
@@ -96,10 +111,19 @@ const resetDisplay = () => {
     if (livePanel) delete livePanel.dataset.inTune;
     setTuneState('silent', 'Tap the mic');
     if (livePanel) livePanel.style.setProperty('--tuner-offset', '0');
+    lastNoteText = '--';
+    lastCentsText = '±0 cents';
+    lastFreqText = '0 Hz';
+    lastDemoText = 'Live input: --';
+    lastOffset = 0;
+    lastInTune = null;
 };
 
 const setStatus = (text) => {
-    if (statusEl) statusEl.textContent = text;
+    if (!statusEl) return;
+    if (text === lastStatus) return;
+    statusEl.textContent = text;
+    lastStatus = text;
 };
 
 const ensureFallbackDetector = async (sampleRate) => {
@@ -252,20 +276,40 @@ const handlePitchResult = ({
             sampleMs: 100,
         }).catch(() => {});
     }
-    noteEl.textContent = displayNote || '--';
+    const nextNoteText = displayNote || '--';
     const centsLabel = `${displayCents > 0 ? '+' : ''}${displayCents}¢`;
-    centsEl.textContent = `${formatCentsHint(displayCents)} · ${centsLabel}`;
-    freqEl.textContent = `${roundedFreq} Hz`;
-    if (demoEl) {
-        demoEl.textContent = `Live input: ${displayNote || '--'} · ${roundedFreq} Hz`;
+    const nextCentsText = `${formatCentsHint(displayCents)} · ${centsLabel}`;
+    const nextFreqText = `${roundedFreq} Hz`;
+    const nextDemoText = `Live input: ${nextNoteText} · ${roundedFreq} Hz`;
+    if (noteEl && nextNoteText !== lastNoteText) {
+        noteEl.textContent = nextNoteText;
+        lastNoteText = nextNoteText;
+    }
+    if (centsEl && nextCentsText !== lastCentsText) {
+        centsEl.textContent = nextCentsText;
+        lastCentsText = nextCentsText;
+    }
+    if (freqEl && nextFreqText !== lastFreqText) {
+        freqEl.textContent = nextFreqText;
+        lastFreqText = nextFreqText;
+    }
+    if (demoEl && nextDemoText !== lastDemoText) {
+        demoEl.textContent = nextDemoText;
+        lastDemoText = nextDemoText;
     }
 
     const offset = clamp(displayCents, -50, 50);
-    livePanel.style.setProperty('--tuner-offset', offset.toString());
-    if (inTune) {
-        livePanel.dataset.inTune = 'true';
-    } else {
-        delete livePanel.dataset.inTune;
+    if (livePanel && offset !== lastOffset) {
+        livePanel.style.setProperty('--tuner-offset', offset.toString());
+        lastOffset = offset;
+    }
+    if (livePanel && inTune !== lastInTune) {
+        if (inTune) {
+            livePanel.dataset.inTune = 'true';
+        } else {
+            delete livePanel.dataset.inTune;
+        }
+        lastInTune = inTune;
     }
     if (inTune) {
         setTuneState('in', 'Perfect!');
