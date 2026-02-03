@@ -34,6 +34,7 @@ let fallbackBuffer = null;
 let fallbackTimer = null;
 let fallbackActive = false;
 let fallbackWasmReady = null;
+let fallbackSource = null;
 let firstNoteSent = false;
 let tunerStartAt = null;
 let lastStatus = '';
@@ -156,6 +157,12 @@ const stopFallback = () => {
         } catch {}
         fallbackAnalyser = null;
     }
+    if (fallbackSource) {
+        try {
+            fallbackSource.disconnect();
+        } catch {}
+        fallbackSource = null;
+    }
     fallbackDetector = null;
     fallbackBuffer = null;
 };
@@ -205,8 +212,8 @@ const startFallback = async (context, stream) => {
     fallbackAnalyser = context.createAnalyser();
     fallbackAnalyser.fftSize = FALLBACK_BUFFER_SIZE;
     fallbackBuffer = new Float32Array(fallbackAnalyser.fftSize);
-    const source = context.createMediaStreamSource(stream);
-    source.connect(fallbackAnalyser);
+    fallbackSource = context.createMediaStreamSource(stream);
+    fallbackSource.connect(fallbackAnalyser);
     fallbackActive = true;
 
     const tick = () => {
@@ -245,8 +252,11 @@ const handlePitchResult = ({
     fallback,
 } = {}) => {
     if (!frequency || volume < 0.01) {
-        resetDisplay();
-        setTuneState('silent', 'Play a string');
+        if (lastDirectionState !== 'silent' || lastNoteText !== '--' || lastOffset !== 0) {
+            resetDisplay();
+        } else {
+            setTuneState('silent', 'Play a string');
+        }
         setStatus('Listening… play a string.');
         return;
     }

@@ -11,15 +11,57 @@ import {
 const loaded = new Map();
 const preloaded = new Set();
 const getPerformanceMode = () => document.documentElement?.dataset?.perfMode || 'balanced';
+const idleQueue = [];
+let idleQueueListener = false;
+const prerenderQueue = [];
+let prerenderQueueListener = false;
+
+const flushIdleQueue = () => {
+    if (document.visibilityState === 'hidden') return;
+    const tasks = idleQueue.splice(0, idleQueue.length);
+    tasks.forEach((task) => scheduleIdle(task));
+};
+
+const bindIdleQueueListener = () => {
+    if (idleQueueListener) return;
+    idleQueueListener = true;
+    const handleVisibility = () => {
+        if (document.visibilityState === 'hidden') return;
+        document.removeEventListener('visibilitychange', handleVisibility);
+        idleQueueListener = false;
+        flushIdleQueue();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+};
+
+const flushPrerenderQueue = () => {
+    if (document.prerendering) return;
+    const tasks = prerenderQueue.splice(0, prerenderQueue.length);
+    tasks.forEach((task) => scheduleIdle(task));
+};
+
+const bindPrerenderQueueListener = () => {
+    if (prerenderQueueListener) return;
+    prerenderQueueListener = true;
+    const handlePrerender = () => {
+        if (document.prerendering) return;
+        document.removeEventListener('prerenderingchange', handlePrerender);
+        prerenderQueueListener = false;
+        flushPrerenderQueue();
+    };
+    document.addEventListener('prerenderingchange', handlePrerender);
+};
 
 const scheduleIdle = (task) => {
     if (typeof window === 'undefined') return;
     if (document.visibilityState === 'hidden') {
-        document.addEventListener('visibilitychange', () => scheduleIdle(task), { once: true });
+        idleQueue.push(task);
+        bindIdleQueueListener();
         return;
     }
     if (document.prerendering) {
-        document.addEventListener('prerenderingchange', () => scheduleIdle(task), { once: true });
+        prerenderQueue.push(task);
+        bindPrerenderQueueListener();
         return;
     }
     const perfMode = getPerformanceMode();
