@@ -14,6 +14,10 @@ const getPerformanceMode = () => document.documentElement?.dataset?.perfMode || 
 
 const scheduleIdle = (task) => {
     if (typeof window === 'undefined') return;
+    if (document.visibilityState === 'hidden') {
+        document.addEventListener('visibilitychange', () => scheduleIdle(task), { once: true });
+        return;
+    }
     if (document.prerendering) {
         document.addEventListener('prerenderingchange', () => scheduleIdle(task), { once: true });
         return;
@@ -59,11 +63,13 @@ const loadIdle = (featureId) => {
 
 const canPrefetch = () => {
     if (document.prerendering) return false;
+    if (document.visibilityState === 'hidden') return false;
     const perfMode = getPerformanceMode();
     const deviceMemory = navigator.deviceMemory || 4;
     const cores = navigator.hardwareConcurrency || 4;
     const lowTier = deviceMemory <= 2 || cores <= 4;
     if (lowTier && perfMode !== 'high') return false;
+    if (window.matchMedia?.('(prefers-reduced-data: reduce)').matches) return false;
     const connection = navigator.connection;
     if (!connection) return true;
     if (connection.saveData) return false;
@@ -201,7 +207,9 @@ const boot = () => {
     navItems.forEach((item) => {
         const href = item.getAttribute('href');
         if (!href) return;
-        item.addEventListener('pointerenter', () => prefetchFromHref(href), { passive: true });
+        if (window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) {
+            item.addEventListener('pointerenter', () => prefetchFromHref(href), { passive: true });
+        }
         item.addEventListener('focus', () => prefetchFromHref(href));
     });
 
