@@ -321,23 +321,23 @@ const respondWithRange = async (request) => {
     const match = await matchFromCaches(request.url, { ignoreSearch: true });
     const cached = match.cached;
     if (!cached) return null;
+    let slicedBody = null;
     let byteLength = Number(cached.headers.get('Content-Length'));
-    if (!Number.isFinite(byteLength) || byteLength <= 0) {
-        try {
-            const buffer = await cached.arrayBuffer();
-            byteLength = buffer.byteLength;
-        } catch {
-            byteLength = 0;
+    let blob = null;
+    try {
+        blob = await cached.blob();
+        if (!Number.isFinite(byteLength) || byteLength <= 0) {
+            byteLength = blob.size;
         }
+    } catch {
+        blob = null;
     }
-    if (!byteLength) return cached;
+    if (!Number.isFinite(byteLength) || byteLength <= 0) return cached;
     const range = parseRange(rangeHeader, byteLength);
     if (!range) return cached;
-    let slicedBody = null;
-    try {
-        const blob = await cached.blob();
+    if (blob) {
         slicedBody = blob.slice(range.start, range.end + 1);
-    } catch {
+    } else {
         const buffer = await cached.arrayBuffer();
         slicedBody = buffer.slice(range.start, range.end + 1);
     }
