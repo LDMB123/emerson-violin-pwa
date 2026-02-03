@@ -327,6 +327,49 @@ const parseRange = (rangeHeader, size) => {
     return { start, end };
 };
 
+const streamRange = (body, range) => {
+    if (!body?.getReader) return null;
+    const reader = body.getReader();
+    let bytesRead = 0;
+    let bytesSent = 0;
+    const total = range.end - range.start + 1;
+
+    return new ReadableStream({
+        async pull(controller) {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    controller.close();
+                    return;
+                }
+                if (!value || !value.byteLength) continue;
+                const chunkStart = bytesRead;
+                const chunkEnd = bytesRead + value.byteLength - 1;
+                bytesRead += value.byteLength;
+                if (chunkEnd < range.start) {
+                    continue;
+                }
+                const sliceStart = Math.max(0, range.start - chunkStart);
+                const sliceEnd = Math.min(value.byteLength, range.end - chunkStart + 1);
+                if (sliceStart >= sliceEnd) {
+                    continue;
+                }
+                const sliced = value.slice(sliceStart, sliceEnd);
+                bytesSent += sliced.byteLength;
+                controller.enqueue(sliced);
+                if (bytesSent >= total) {
+                    controller.close();
+                    reader.cancel().catch(() => {});
+                }
+                return;
+            }
+        },
+        cancel() {
+            reader.cancel().catch(() => {});
+        },
+    });
+};
+
 const respondWithRange = async (request) => {
     const rangeHeader = request.headers.get('range');
     if (!rangeHeader) return null;
@@ -334,16 +377,15 @@ const respondWithRange = async (request) => {
     const match = await matchFromCaches(request, { ignoreSearch: true }, cacheName);
     const cached = match.cached;
     if (!cached) return null;
-    let slicedBody = null;
     let byteLength = Number(cached.headers.get('Content-Length'));
     let blob = null;
-    try {
-        blob = await cached.blob();
-        if (!Number.isFinite(byteLength) || byteLength <= 0) {
+    if (!Number.isFinite(byteLength) || byteLength <= 0) {
+        try {
+            blob = await cached.blob();
             byteLength = blob.size;
+        } catch {
+            blob = null;
         }
-    } catch {
-        blob = null;
     }
     if (!Number.isFinite(byteLength) || byteLength <= 0) return cached;
     const range = parseRange(rangeHeader, byteLength);
@@ -355,12 +397,6 @@ const respondWithRange = async (request) => {
     if (range.start === 0 && range.end === byteLength - 1) {
         return cached;
     }
-    if (blob) {
-        slicedBody = blob.slice(range.start, range.end + 1);
-    } else {
-        const buffer = await cached.arrayBuffer();
-        slicedBody = buffer.slice(range.start, range.end + 1);
-    }
     const headers = new Headers(cached.headers);
     headers.set('Content-Range', `bytes ${range.start}-${range.end}/${byteLength}`);
     headers.set('Content-Length', String(range.end - range.start + 1));
@@ -368,9 +404,20 @@ const respondWithRange = async (request) => {
     if (!headers.get('Content-Type')) {
         headers.set('Content-Type', 'application/octet-stream');
     }
-    if (slicedBody && typeof slicedBody.stream === 'function') {
-        return new Response(slicedBody.stream(), { status: 206, statusText: 'Partial Content', headers });
+    const responseClone = cached.clone();
+    const streamed = streamRange(responseClone.body, range);
+    if (streamed) {
+        return new Response(streamed, { status: 206, statusText: 'Partial Content', headers });
     }
+    if (blob) {
+        const slicedBody = blob.slice(range.start, range.end + 1);
+        if (slicedBody && typeof slicedBody.stream === 'function') {
+            return new Response(slicedBody.stream(), { status: 206, statusText: 'Partial Content', headers });
+        }
+        return new Response(slicedBody, { status: 206, statusText: 'Partial Content', headers });
+    }
+    const buffer = await cached.arrayBuffer();
+    const slicedBody = buffer.slice(range.start, range.end + 1);
     return new Response(slicedBody, { status: 206, statusText: 'Partial Content', headers });
 };
 
