@@ -2,6 +2,7 @@ import { getGameTuning, updateGameResult } from '@core/ml/adaptive-engine.js';
 import { ensureDifficultyBadge } from '@core/utils/templates.js';
 import { appendFeatureFrame } from '@core/ml/feature-store.js';
 import { getViewId, onViewChange } from '@core/utils/view-events.js';
+import initAudioWasm, { PitchDetector } from '@core/wasm/panda_audio.js';
 
 const livePanel = document.querySelector('#tuner-live');
 const tunerToggle = document.querySelector('#tuner-active');
@@ -24,6 +25,15 @@ let startToken = 0;
 let starting = false;
 let featureSessionId = null;
 let lastFeatureAt = 0;
+let fallbackDetector = null;
+let fallbackAnalyser = null;
+let fallbackBuffer = null;
+let fallbackTimer = null;
+let fallbackActive = false;
+let fallbackWasmReady = null;
+const FALLBACK_BUFFER_SIZE = 2048;
+const FALLBACK_INTERVAL = 80;
+const STABILITY_THRESHOLD = 3;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const isTunerView = () => getViewId() === 'view-tuner';
@@ -50,6 +60,9 @@ const applyTuning = async () => {
     if (workletNode) {
         workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
     }
+    if (fallbackDetector?.set_tune_tolerance) {
+        fallbackDetector.set_tune_tolerance(tolerance);
+    }
 };
 
 const resetDisplay = () => {
@@ -64,11 +77,142 @@ const setStatus = (text) => {
     if (statusEl) statusEl.textContent = text;
 };
 
+const ensureFallbackDetector = async (sampleRate) => {
+    if (!PitchDetector) return null;
+    if (!fallbackWasmReady) {
+        fallbackWasmReady = initAudioWasm().catch(() => null);
+    }
+    await fallbackWasmReady;
+    if (!fallbackWasmReady) return null;
+    const detector = new PitchDetector(sampleRate, FALLBACK_BUFFER_SIZE);
+    detector.set_tune_tolerance(tolerance);
+    detector.set_volume_threshold(0.01);
+    if (detector.set_stability_threshold) {
+        detector.set_stability_threshold(STABILITY_THRESHOLD);
+    }
+    return detector;
+};
+
+const stopFallback = () => {
+    fallbackActive = false;
+    if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+    }
+    if (fallbackAnalyser) {
+        try {
+            fallbackAnalyser.disconnect();
+        } catch {}
+        fallbackAnalyser = null;
+    }
+    fallbackDetector = null;
+    fallbackBuffer = null;
+};
+
+const startFallback = async (context, stream) => {
+    if (!context || !stream) return false;
+    stopFallback();
+    const detector = await ensureFallbackDetector(context.sampleRate);
+    if (!detector) {
+        setStatus('Fallback tuner unavailable on this device.');
+        return false;
+    }
+    fallbackDetector = detector;
+    fallbackAnalyser = context.createAnalyser();
+    fallbackAnalyser.fftSize = FALLBACK_BUFFER_SIZE;
+    fallbackBuffer = new Float32Array(fallbackAnalyser.fftSize);
+    const source = context.createMediaStreamSource(stream);
+    source.connect(fallbackAnalyser);
+    fallbackActive = true;
+
+    const tick = () => {
+        if (!fallbackActive || !fallbackAnalyser || !fallbackBuffer || !fallbackDetector) return;
+        fallbackAnalyser.getFloatTimeDomainData(fallbackBuffer);
+        const result = fallbackDetector.detect(fallbackBuffer);
+        handlePitchResult({
+            frequency: result.frequency,
+            note: result.note,
+            cents: result.cents,
+            volume: result.volume,
+            inTune: result.in_tune,
+            confidence: result.confidence,
+            stableNote: result.stable_note,
+            stableCents: result.stable_cents,
+            stability: result.stability,
+            fallback: true,
+        });
+        fallbackTimer = window.setTimeout(tick, FALLBACK_INTERVAL);
+    };
+
+    setStatus('Fallback tuner active. Play a note.');
+    tick();
+    return true;
+};
+
+const handlePitchResult = ({
+    frequency,
+    note,
+    cents,
+    volume,
+    inTune,
+    stableNote,
+    stableCents,
+    stability,
+    fallback,
+} = {}) => {
+    if (!frequency || volume < 0.01) {
+        resetDisplay();
+        setStatus(`Listening… play a note (±${tolerance}¢).`);
+        return;
+    }
+
+    const roundedFreq = Math.round(frequency * 10) / 10;
+    const roundedCents = Math.round(Number.isFinite(cents) ? cents : 0);
+    const roundedStable = Number.isFinite(stableCents) ? Math.round(stableCents) : roundedCents;
+    const displayNote = stableNote || note || '--';
+    const displayCents = stableNote ? roundedStable : roundedCents;
+    const now = Date.now();
+    if (featureSessionId && now - lastFeatureAt >= 100) {
+        lastFeatureAt = now;
+        appendFeatureFrame({
+            source: 'tuner',
+            sessionId: featureSessionId,
+            pitchHz: roundedFreq,
+            centsOffset: displayCents,
+            rms: volume,
+            sampleMs: 100,
+        }).catch(() => {});
+    }
+    noteEl.textContent = displayNote || '--';
+    centsEl.textContent = `${displayCents > 0 ? '+' : ''}${displayCents} cents`;
+    freqEl.textContent = `${roundedFreq} Hz`;
+
+    const offset = clamp(displayCents, -50, 50);
+    livePanel.style.setProperty('--tuner-offset', offset.toString());
+    if (inTune) {
+        livePanel.dataset.inTune = 'true';
+    } else {
+        delete livePanel.dataset.inTune;
+    }
+    detectCount += 1;
+    if (inTune) inTuneCount += 1;
+    if (fallback) {
+        setStatus(inTune ? `In tune (fallback) ✨` : 'Adjust to center');
+        return;
+    }
+    if (Number.isFinite(stability) && stability >= 1) {
+        setStatus(inTune ? `In tune (stable) ✨` : 'Adjust to center');
+        return;
+    }
+    setStatus(inTune ? `In tune (±${tolerance}¢) ✨` : 'Adjust to center');
+};
+
 const stopTuner = async () => {
     startToken += 1;
     starting = false;
     featureSessionId = null;
     lastFeatureAt = 0;
+    stopFallback();
     if (workletNode) {
         workletNode.port.onmessage = null;
         workletNode.disconnect();
@@ -137,8 +281,21 @@ const startTuner = async () => {
             throw new Error('AudioContext not supported');
         }
         audioContext = new AudioCtx({ latencyHint: 'interactive' });
+        featureSessionId = `tuner-${Date.now()}`;
+        lastFeatureAt = 0;
         if (!audioContext.audioWorklet) {
-            throw new Error('AudioWorklet not supported');
+            setStatus('AudioWorklet unavailable. Using fallback tuner…');
+            await audioContext.resume();
+            const startedFallback = await startFallback(audioContext, micStream);
+            if (token !== startToken) {
+                await stopTuner();
+                return;
+            }
+            if (!startedFallback) {
+                throw new Error('Fallback tuner unavailable');
+            }
+            starting = false;
+            return;
         }
         await audioContext.audioWorklet.addModule(new URL('../../core/worklets/tuner-processor.js', import.meta.url));
         if (token !== startToken) {
@@ -151,8 +308,7 @@ const startTuner = async () => {
         workletNode = new AudioWorkletNode(audioContext, 'tuner-processor');
         silenceGain = audioContext.createGain();
         silenceGain.gain.value = 0;
-        featureSessionId = `tuner-${Date.now()}`;
-        lastFeatureAt = 0;
+        
 
         source.connect(workletNode).connect(silenceGain).connect(audioContext.destination);
         await audioContext.resume();
@@ -161,12 +317,31 @@ const startTuner = async () => {
             return;
         }
         workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
+        workletNode.port.postMessage({ type: 'stability', value: STABILITY_THRESHOLD });
 
         workletNode.port.onmessage = (event) => {
-            const { frequency, note, cents, volume, inTune, error, ready } = event.data;
+            const {
+                frequency,
+                note,
+                cents,
+                volume,
+                inTune,
+                error,
+                ready,
+                stableNote,
+                stableCents,
+                stability,
+                fallback,
+            } = event.data;
 
             if (error) {
-                setStatus('Live tuner unavailable on this device.');
+                setStatus('WASM unavailable. Switching to fallback…');
+                if (workletNode) {
+                    workletNode.port.onmessage = null;
+                    workletNode.disconnect();
+                    workletNode = null;
+                }
+                startFallback(audioContext, micStream);
                 return;
             }
 
@@ -175,40 +350,17 @@ const startTuner = async () => {
                 return;
             }
 
-            if (!frequency || volume < 0.01) {
-                resetDisplay();
-                setStatus(`Listening… play a note (±${tolerance}¢).`);
-                return;
-            }
-
-            const roundedFreq = Math.round(frequency * 10) / 10;
-            const roundedCents = Math.round(cents);
-            const now = Date.now();
-            if (featureSessionId && now - lastFeatureAt >= 100) {
-                lastFeatureAt = now;
-                appendFeatureFrame({
-                    source: 'tuner',
-                    sessionId: featureSessionId,
-                    pitchHz: roundedFreq,
-                    centsOffset: roundedCents,
-                    rms: volume,
-                    sampleMs: 100,
-                }).catch(() => {});
-            }
-            noteEl.textContent = note || '--';
-            centsEl.textContent = `${roundedCents > 0 ? '+' : ''}${roundedCents} cents`;
-            freqEl.textContent = `${roundedFreq} Hz`;
-
-            const offset = clamp(roundedCents, -50, 50);
-            livePanel.style.setProperty('--tuner-offset', offset.toString());
-            if (inTune) {
-                livePanel.dataset.inTune = 'true';
-            } else {
-                delete livePanel.dataset.inTune;
-            }
-            detectCount += 1;
-            if (inTune) inTuneCount += 1;
-            setStatus(inTune ? `In tune (±${tolerance}¢) ✨` : 'Adjust to center');
+            handlePitchResult({
+                frequency,
+                note,
+                cents,
+                volume,
+                inTune,
+                stableNote,
+                stableCents,
+                stability,
+                fallback,
+            });
         };
 
         setStatus(`Listening… play a note (±${tolerance}¢).`);

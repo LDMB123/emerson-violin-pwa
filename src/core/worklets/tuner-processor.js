@@ -10,6 +10,7 @@ class TunerProcessor extends AudioWorkletProcessor {
         this.bufferIndex = 0;
         this.detector = null;
         this.tolerance = 8;
+        this.stabilityThreshold = 3;
         this.port.onmessage = (event) => {
             const { type, value } = event.data || {};
             if (type === 'tolerance') {
@@ -19,14 +20,24 @@ class TunerProcessor extends AudioWorkletProcessor {
                     this.detector.set_tune_tolerance(this.tolerance);
                 }
             }
+            if (type === 'stability') {
+                const next = Math.min(8, Math.max(1, Number(value) || this.stabilityThreshold));
+                this.stabilityThreshold = next;
+                if (this.detector?.set_stability_threshold) {
+                    this.detector.set_stability_threshold(this.stabilityThreshold);
+                }
+            }
         };
         this.ready = wasmReady.then(() => {
             this.detector = new PitchDetector(sampleRate, this.bufferSize);
             this.detector.set_tune_tolerance(this.tolerance);
             this.detector.set_volume_threshold(0.01);
+            if (this.detector.set_stability_threshold) {
+                this.detector.set_stability_threshold(this.stabilityThreshold);
+            }
             this.port.postMessage({ ready: true });
         }).catch((error) => {
-            this.port.postMessage({ error: 'WASM init failed', detail: `${error}` });
+            this.port.postMessage({ error: 'WASM init failed', detail: `${error}`, fallback: true });
         });
         this.frameCounter = 0;
     }
@@ -66,6 +77,9 @@ class TunerProcessor extends AudioWorkletProcessor {
                         volume: result.volume,
                         inTune: result.in_tune,
                         confidence: result.confidence,
+                        stableNote: result.stable_note,
+                        stableCents: result.stable_cents,
+                        stability: result.stability,
                     });
                 }
                 this.bufferIndex = 0;
