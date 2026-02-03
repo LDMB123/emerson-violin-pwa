@@ -163,7 +163,28 @@ const startTuner = async () => {
         workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
 
         workletNode.port.onmessage = (event) => {
-            const { frequency, note, cents, volume, inTune, error, ready } = event.data;
+            const {
+                frequency,
+                note,
+                cents,
+                volume,
+                inTune,
+                error,
+                ready,
+                processMs,
+                bufferSize,
+                sampleRate,
+            } = event.data;
+
+            if (Number.isFinite(processMs)) {
+                document.dispatchEvent(new CustomEvent('panda:audio-perf', {
+                    detail: {
+                        processMs,
+                        bufferSize,
+                        sampleRate,
+                    },
+                }));
+            }
 
             if (error) {
                 setStatus('Live tuner unavailable on this device.');

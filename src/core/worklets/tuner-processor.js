@@ -10,6 +10,7 @@ class TunerProcessor extends AudioWorkletProcessor {
         this.bufferIndex = 0;
         this.detector = null;
         this.tolerance = 8;
+        this.hasPerf = typeof performance !== 'undefined' && typeof performance.now === 'function';
         this.port.onmessage = (event) => {
             const { type, value } = event.data || {};
             if (type === 'tolerance') {
@@ -56,7 +57,9 @@ class TunerProcessor extends AudioWorkletProcessor {
             offset += copyCount;
 
             if (this.bufferIndex >= this.bufferSize) {
+                const start = this.hasPerf ? performance.now() : 0;
                 const result = this.detector.detect(this.buffer);
+                const processMs = this.hasPerf ? performance.now() - start : null;
                 this.frameCounter += 1;
                 if (this.frameCounter % 3 === 0) {
                     this.port.postMessage({
@@ -66,6 +69,9 @@ class TunerProcessor extends AudioWorkletProcessor {
                         volume: result.volume,
                         inTune: result.in_tune,
                         confidence: result.confidence,
+                        processMs,
+                        bufferSize: this.bufferSize,
+                        sampleRate,
                     });
                 }
                 this.bufferIndex = 0;
