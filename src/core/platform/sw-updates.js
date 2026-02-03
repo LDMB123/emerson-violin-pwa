@@ -5,6 +5,7 @@ const applyButton = document.querySelector('[data-sw-apply]');
 const SW_PATH = './sw.js';
 const MIN_REFRESH_INTERVAL = 3 * 60 * 1000;
 let lastRefresh = 0;
+let applyingUpdate = false;
 
 const setStatus = (message) => {
     if (statusEl) statusEl.textContent = message;
@@ -87,8 +88,12 @@ const bindLifecycleRefresh = () => {
 };
 
 const handleControllerChange = () => {
-    setStatus('Update applied. Reloading…');
-    window.location.reload();
+    if (applyingUpdate) {
+        setStatus('Update applied. Reloading…');
+        window.location.reload();
+        return;
+    }
+    setStatus('Update installed. Restart when ready.');
 };
 
 const bindUpdateFlow = (registration) => {
@@ -122,6 +127,7 @@ const bindUpdateFlow = (registration) => {
 const applyUpdate = async () => {
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration?.waiting) return;
+    applyingUpdate = true;
     registration.waiting.postMessage({ type: 'SKIP_WAITING' });
 };
 
