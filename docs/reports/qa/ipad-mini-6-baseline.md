@@ -8,9 +8,9 @@
 - Date: 2026-02-03
 
 ## Build Output (Local, 2026-02-03)
-- Initial JS (gzip): 4.3 KB
-- Total JS (gzip): 100.0 KB
-- Total CSS (gzip): 24.1 KB
+- Initial JS (gzip): 4.9 KB
+- Total JS (gzip): 105.6 KB
+- Total CSS (gzip): 24.2 KB
 - Total WASM (gzip): 67.4 KB
 - Largest assets: `panda_core_bg.wasm` 45.0 KB (gzip), `panda_audio_bg.wasm` 22.4 KB (gzip), `game-metrics` 15.0 KB (gzip)
 
