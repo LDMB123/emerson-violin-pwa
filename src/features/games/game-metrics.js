@@ -4,7 +4,7 @@ import { cloneTemplate, ensureDifficultyBadge, ensureTemplateInstance } from '@c
 import { appendFeatureFrame } from '@core/ml/feature-store.js';
 import { getViewId, onViewChange } from '@core/utils/view-events.js';
 import { createRhythmTimer } from '@core/wasm/game-timer.js';
-import { createTonePlayer } from '../audio/tone-player.js';
+import { createTonePlayer } from '@core/audio/tone-player.js';
 import { getJSON, setJSON } from '@core/persistence/storage.js';
 
 const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));

@@ -5,7 +5,16 @@
 - OS: iPadOS 26.2
 - Mode: Safari 26.2 or Home Screen
 - Build: `Panda Violin 2.0.0` (update if changed)
-- Date: ____
+- Date: 2026-02-03
+
+## Build Output (Local, 2026-02-03)
+- Initial JS (gzip): 4.3 KB
+- Total JS (gzip): 100.0 KB
+- Total CSS (gzip): 24.1 KB
+- Total WASM (gzip): 67.4 KB
+- Largest assets: `panda_core_bg.wasm` 45.0 KB (gzip), `panda_audio_bg.wasm` 22.4 KB (gzip), `game-metrics` 15.0 KB (gzip)
+
+Note: These are local build outputs, not device runtime measurements.
 
 ## Cold Start TTI Proxy
 - Clear Safari tabs
