@@ -335,6 +335,9 @@ const respondWithRange = async (request) => {
     if (!Number.isFinite(byteLength) || byteLength <= 0) return cached;
     const range = parseRange(rangeHeader, byteLength);
     if (!range) return cached;
+    if (range.start === 0 && range.end === byteLength - 1) {
+        return cached;
+    }
     if (blob) {
         slicedBody = blob.slice(range.start, range.end + 1);
     } else {

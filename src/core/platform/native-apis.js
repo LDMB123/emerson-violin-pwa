@@ -588,16 +588,34 @@ const bindInstallState = () => {
     }
 };
 
+let keyboardOffsetRaf = null;
+let lastKeyboardOffset = null;
+
+const commitKeyboardOffset = (offset) => {
+    if (!rootStyle) return;
+    if (lastKeyboardOffset === offset) return;
+    lastKeyboardOffset = offset;
+    rootStyle.setProperty('--keyboard-offset', `${offset}px`);
+};
+
 const updateKeyboardOffset = () => {
     if (!rootStyle) return;
     const viewport = window.visualViewport;
     if (!viewport) {
-        rootStyle.setProperty('--keyboard-offset', '0px');
+        commitKeyboardOffset(0);
         return;
     }
     const rawOffset = window.innerHeight - viewport.height - viewport.offsetTop;
     const offset = Math.max(0, Math.round(rawOffset));
-    rootStyle.setProperty('--keyboard-offset', `${offset}px`);
+    commitKeyboardOffset(offset);
+};
+
+const scheduleKeyboardOffset = () => {
+    if (keyboardOffsetRaf) return;
+    keyboardOffsetRaf = window.requestAnimationFrame(() => {
+        keyboardOffsetRaf = null;
+        updateKeyboardOffset();
+    });
 };
 
 const bindVisualViewport = () => {
@@ -606,9 +624,9 @@ const bindVisualViewport = () => {
         return;
     }
     updateKeyboardOffset();
-    window.visualViewport.addEventListener('resize', updateKeyboardOffset, { passive: true });
-    window.visualViewport.addEventListener('scroll', updateKeyboardOffset, { passive: true });
-    window.addEventListener('orientationchange', updateKeyboardOffset, { passive: true });
+    window.visualViewport.addEventListener('resize', scheduleKeyboardOffset, { passive: true });
+    window.visualViewport.addEventListener('scroll', scheduleKeyboardOffset, { passive: true });
+    window.addEventListener('orientationchange', scheduleKeyboardOffset, { passive: true });
 };
 
 bindStorageUI();
