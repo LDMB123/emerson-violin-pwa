@@ -2,6 +2,7 @@ import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAdaptiveLog, getGameTuning } from './adaptive-engine.js';
 import initCore, { compute_recommendation_seed } from '@core/wasm/panda_core.js';
 import { computeRecommendationsFromData } from './recommendations-engine.js';
+import { getCapabilityProfile, isTierAtLeast } from '../platform/capability-tier.js';
 
 const EVENT_KEY = 'panda-violin:events:v1';
 const CACHE_KEY = 'panda-violin:ml:recs-v1';
@@ -14,11 +15,9 @@ const workerRequests = new Map();
 const isWorkerSupported = () => typeof Worker !== 'undefined';
 const shouldUseWasmSeed = () => {
     if (typeof WebAssembly === 'undefined') return false;
-    const mem = navigator.deviceMemory || 4;
-    const cores = navigator.hardwareConcurrency || 4;
-    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    if (connection?.saveData) return false;
-    return mem >= 4 && cores >= 4;
+    const profile = getCapabilityProfile();
+    if (profile.saveData) return false;
+    return isTierAtLeast(profile.tier, 'balanced');
 };
 
 const ensureWorker = () => {
