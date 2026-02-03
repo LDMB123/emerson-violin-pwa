@@ -22,6 +22,7 @@ Note: These are local build outputs, not device runtime measurements.
 - Launch app
 - Open Settings -> Performance -> Baseline metrics
 - Tap `Record baseline snapshot`
+- Tap `Export baseline JSON` (attach to issue log)
 - Record `TTI proxy`, `LCP`, `Input max`, `Long task max`
 
 ## Memory After 5 Minutes

@@ -8,6 +8,7 @@ const baselineEl = document.querySelector('[data-perf-baseline]');
 const ttiEl = document.querySelector('[data-perf-tti]');
 const audioEl = document.querySelector('[data-perf-audio]');
 const snapshotButton = document.querySelector('[data-perf-snapshot]');
+const exportButton = document.querySelector('[data-perf-export]');
 const clearButton = document.querySelector('[data-perf-clear]');
 
 const state = {
@@ -224,6 +225,25 @@ const clearHistory = async () => {
     await updateBaselineUI(null);
 };
 
+const exportHistory = async () => {
+    const stored = await getJSON(METRICS_KEY);
+    const payload = {
+        exportedAt: Date.now(),
+        samples: Array.isArray(stored) ? stored : [],
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+    link.href = url;
+    link.download = `panda-violin-perf-${timestamp}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    if (baselineEl) {
+        baselineEl.textContent = `Baseline exported: ${formatTimestamp(payload.exportedAt)}`;
+    }
+};
+
 const flush = async (reason) => {
     if (flushed) return;
     flushed = true;
@@ -282,6 +302,11 @@ const init = () => {
     if (snapshotButton) {
         snapshotButton.addEventListener('click', () => {
             snapshot('manual');
+        });
+    }
+    if (exportButton) {
+        exportButton.addEventListener('click', () => {
+            exportHistory();
         });
     }
     if (clearButton) {
