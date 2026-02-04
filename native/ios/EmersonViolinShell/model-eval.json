@@ -1,0 +1,23 @@
+{
+  "cases": [
+    {
+      "id": "pitch-quality-latency",
+      "model": "PitchQuality",
+      "inputKey": "input",
+      "outputKey": "output",
+      "autoSampleCount": 24,
+      "fillStrategy": "sine",
+      "maxSamples": 24
+    },
+    {
+      "id": "posture-check-latency",
+      "model": "PostureCheck",
+      "inputKey": "input",
+      "outputKey": "output",
+      "autoSampleCount": 24,
+      "fillStrategy": "randomUniform",
+      "range": [-1.0, 1.0],
+      "maxSamples": 24
+    }
+  ]
+}

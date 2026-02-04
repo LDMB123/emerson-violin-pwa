@@ -45,8 +45,10 @@ const parseInitialAssets = async (distRoot) => {
     const indexPath = path.join(distRoot, 'index.html');
     const html = await fs.readFile(indexPath, 'utf8');
     const scriptMatches = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)];
+    const preloadMatches = [...html.matchAll(/<link[^>]+rel="modulepreload"[^>]+href="([^"]+)"/g)];
     const styleMatches = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)];
     const scriptSrcs = scriptMatches.map((match) => match[1]);
+    const preloadSrcs = preloadMatches.map((match) => match[1]);
     const styleHrefs = styleMatches.map((match) => match[1]);
 
     const resolveAsset = (assetPath) => {
@@ -55,7 +57,7 @@ const parseInitialAssets = async (distRoot) => {
     };
 
     return {
-        scripts: scriptSrcs.map(resolveAsset),
+        scripts: [...scriptSrcs, ...preloadSrcs].map(resolveAsset),
         styles: styleHrefs.map(resolveAsset),
     };
 };

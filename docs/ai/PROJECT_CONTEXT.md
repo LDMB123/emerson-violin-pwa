@@ -1,28 +1,13 @@
 # Project Context (Token-Optimized)
 
-- Product: Panda Violin PWA for children, offline-first, Red Panda coach, iPadOS 26.2 focus
-- Runtime: Vite + vanilla ES modules, Web Audio API, AudioWorklet, WebAssembly (panda_core, panda_audio)
-- Entry points: `index.html`, `src/app.js`
-- Feature loading: `src/core/app/feature-registry.js` drives lazy load + prefetch
-- Storage: IndexedDB KV + blob store in `src/core/persistence/storage.js`
-- Storage queue: write retry queue in `src/core/persistence/storage.js` for resiliency
-- Storage integrity: checksums in `src/core/persistence/integrity.js`
-- Service worker: `public/sw-assets.js` (dev) and `dist/sw-assets.js` (build), `sw.js` registered in `src/app.js`
-- Lesson packs: versioned in `src/core/platform/lesson-packs.js`, cached/verified/auto-repaired in `public/sw.js`
-- Styles: design tokens in `src/styles/tokens.css`, main styles in `src/styles/app.css`
-- Capability tiers: `src/core/platform/capability-tier.js` for device gating
-- ML worker: `src/core/ml/recommendations-worker.js` (optional WASM seed gated by device)
-- Song data: `src/data/songs.json` → `scripts/build/build-songs-html.js` injects song views into `index.html`
-- Core layout: `src/core/` platform/persistence/ml/utils/audio/worklets/wasm, `src/features/` coach/games/trainer/tuner/songs/progress/analysis/parent/backup/notifications/recordings
-- Audio budget: `src/core/audio/audio-budget.js` drives fallback gating in tuner
-- ML compute: `src/core/ml/recommendations-engine.js` (pure), `src/core/ml/recommendations-worker.js` (background)
-- WASM sources: `wasm-src/` Rust crates for `panda-core` + `panda-audio`
-- Commands: `npm run dev`, `npm run build`, `npm run preview`, `npm test`, `npm run lint`
-- Token hints: read `docs/ai/FILE_MAP.md` before scanning repo; skip large assets unless task needs them
-- AI fast path: `docs/ai/FAST_PATH.md`
-- Docs: `docs/README.md` for doc overview
-- Strategy: `docs/strategy/README.md` for architecture + modernization plans
-- Decisions: `docs/adr/README.md` for architecture decisions
-- QA: `docs/reports/qa/README.md` for test plans + issues
-- Archive: `docs/ARCHIVE_POLICY.md`
-- Docs assets: `docs/assets/README.md`
+- Product: Emerson Violin Studio command center (PWA)
+- Runtime: HTML/CSS shell + Rust/WASM logic; JS is only the Trunk loader (`dist/emerson-violin-pwa.js`)
+- Target: Chromium 143 on macOS 26.2 (Apple Silicon)
+- Entry points: `index.html`, `Cargo.toml`, `rust/lib.rs`
+- UI model: anchored sections (`#overview`, `#flow`, `#studio`, `#ml`, `#core`, `#support`, `#controls`) with top nav
+- Preferences: localStorage (`shell:preferences`)
+- Install UX: localStorage (`shell:install-dismissed`)
+- Service worker: `public/sw-assets.js` (dev), `dist/sw-assets.js` (build), `public/sw.js`
+- Styles: tokens in `src/styles/tokens.css`, command-center styles in `src/styles/app.css`
+- Docs: `docs/rebuild/05-architecture.md` architecture
+- Commands: `npm run dev`, `npm run build`, `npm run preview`, `npm test`

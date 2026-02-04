@@ -1,0 +1,91 @@
+[package]
+name = "emerson-violin-pwa"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "rust/lib.rs"
+
+[[bin]]
+name = "emerson-violin-pwa"
+path = "rust/main.rs"
+
+[dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde-wasm-bindgen = "0.6"
+console_error_panic_hook = "0.1"
+futures-channel = "0.3"
+web-sys = { version = "0.3", features = [
+  "console",
+  "Window",
+  "Document",
+  "Element",
+  "HtmlElement",
+  "HtmlInputElement",
+  "HtmlDialogElement",
+  "HtmlTextAreaElement",
+  "HtmlButtonElement",
+  "Node",
+  "NodeList",
+  "DomTokenList",
+  "DomStringList",
+  "DomStringMap",
+  "CssStyleDeclaration",
+  "Event",
+  "EventTarget",
+  "KeyboardEvent",
+  "Storage",
+  "StorageManager",
+  "Navigator",
+  "Location",
+  "MediaQueryList",
+  "Clipboard",
+  "ClipboardEvent",
+  "MediaDevices",
+  "MediaStream",
+  "MediaStreamTrack",
+  "MediaStreamConstraints",
+  "MediaStreamAudioSourceNode",
+  "AudioContext",
+  "AudioDestinationNode",
+  "OscillatorNode",
+  "GainNode",
+  "AnalyserNode",
+  "AudioNode",
+  "AudioParam",
+  "Blob",
+  "BlobPropertyBag",
+  "BlobEvent",
+  "MediaRecorder",
+  "MediaRecorderOptions",
+  "Crypto",
+  "Url",
+  "Performance",
+  "ServiceWorkerContainer",
+  "ServiceWorkerRegistration",
+  "ServiceWorker",
+  "IdbFactory",
+  "IdbDatabase",
+  "IdbOpenDbRequest",
+  "IdbRequest",
+  "IdbTransaction",
+  "IdbObjectStore",
+  "IdbObjectStoreParameters",
+  "IdbTransactionMode",
+  "IdbRequestReadyState",
+] }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"

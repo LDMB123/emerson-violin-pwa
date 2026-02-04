@@ -1,31 +1,29 @@
 {
-    "name": "panda-violin-pwa",
-    "version": "2.0.0",
-    "description": "Local-first violin teaching PWA for children with a Red Panda coach and iPadOS 26.2 optimization",
-    "type": "module",
-    "scripts": {
-        "predev": "node scripts/build/build-songs-html.js && node scripts/build/build-sw-assets.js",
-        "dev": "vite",
-        "prebuild": "node scripts/build/build-songs-html.js && node scripts/build/build-sw-assets.js",
-        "build": "vite build",
-        "postbuild": "node scripts/build/build-sw-assets.js --dist && node scripts/build/check-budgets.js",
-        "preview": "vite preview",
-        "test": "vitest run",
-        "test:watch": "vitest",
-        "lint": "eslint src --ext .js",
-        "wasm:build": "node scripts/build/build-wasm.js",
-        "wasm:build:dev": "node scripts/build/build-wasm.js --dev",
-        "wasm:copy": "node scripts/build/copy-wasm.js",
-        "wasm:prepare": "npm run wasm:build && npm run wasm:copy"
-    },
-    "devDependencies": {
-        "@playwright/test": "^1.58.0",
-        "@vitest/coverage-v8": "^2.1.9",
-        "happy-dom": "^20.3.9",
-        "vite": "^6.0.0",
-        "vitest": "^2.0.0"
-    },
-    "engines": {
-        "node": ">=20.0.0"
-    }
+  "name": "emerson-violin-pwa",
+  "version": "2.0.0",
+  "description": "Emerson Violin Studio command center PWA (offline-first practice cockpit)",
+  "type": "module",
+  "scripts": {
+    "prune:legacy": "node scripts/maintenance/prune-legacy.js",
+    "predev": "node scripts/maintenance/prune-legacy.js",
+    "dev": "trunk serve --port 5173",
+    "prebuild": "node scripts/maintenance/prune-legacy.js",
+    "build": "trunk build --release",
+    "postbuild": "node scripts/build/build-sw-assets.js --dist",
+    "ios:bundle": "node scripts/build/copy-pwa-to-ios.js",
+    "preview": "trunk serve --release --port 5173",
+    "prelint": "node scripts/maintenance/prune-legacy.js",
+    "lint": "eslint src --no-error-on-unmatched-pattern",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "happy-dom": "^20.3.9",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }

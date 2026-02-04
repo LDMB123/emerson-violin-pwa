@@ -13,16 +13,13 @@ const viewports = [
 ];
 
 const routes = [
-  { name: 'home', hash: '#view-home' },
-  { name: 'games', hash: '#view-games' },
-  { name: 'songs', hash: '#view-songs' },
-  { name: 'trainer', hash: '#view-trainer' },
-  { name: 'tuner', hash: '#view-tuner' },
-  { name: 'coach', hash: '#view-coach' },
-  { name: 'progress', hash: '#view-progress' },
-  { name: 'analysis', hash: '#view-analysis' },
-  { name: 'parent', hash: '#view-parent' },
-  { name: 'more', hash: '#view-home', action: 'open-more' },
+  { name: 'overview', hash: '#overview' },
+  { name: 'flow', hash: '#flow' },
+  { name: 'studio', hash: '#studio' },
+  { name: 'ml', hash: '#ml' },
+  { name: 'core', hash: '#core' },
+  { name: 'support', hash: '#support' },
+  { name: 'controls', hash: '#controls' },
 ];
 
 const ensureDir = async (dir) => {
@@ -66,15 +63,6 @@ const findChromiumExecutable = async () => {
 const captureView = async (page, route, outputPath) => {
   await page.goto(`${baseUrl}${route.hash}`, { waitUntil: 'load' });
   await page.waitForTimeout(300);
-
-  if (route.action === 'open-more') {
-    const trigger = page.locator('button[popovertarget="more-menu"]');
-    if (await trigger.count()) {
-      await trigger.first().click();
-      await page.waitForTimeout(200);
-    }
-  }
-
   await page.screenshot({ path: outputPath, fullPage: true });
 };
 

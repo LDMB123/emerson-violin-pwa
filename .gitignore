@@ -7,8 +7,7 @@ playwright-report/
 coverage/
 sw.js
 sw-assets.js
-wasm-src/target/
-wasm-src/**/pkg/
+target/
 node_modules/
 .claude/
 *.log

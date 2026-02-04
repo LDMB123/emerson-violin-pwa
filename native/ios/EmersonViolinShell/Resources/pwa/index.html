@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#D56A3F" />
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-touch-fullscreen" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Emerson Violin Studio" />
+
+  <meta name="description" content="Emerson Violin Studio command center for focused practice, ML coaching, and offline-first tools." />
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  
+  
+<script type="module">
+import init, * as bindings from '/emerson-violin-pwa.js';
+const wasm = await init({ module_or_path: '/emerson-violin-pwa_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script>
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/icon-180.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="./assets/icons/icon-167.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="./assets/icons/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="./assets/icons/icon-120.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon-32.png" />
+
+  <link rel="preload" href="./assets/fonts/fraunces-vf.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="./assets/fonts/nunito-vf.woff2" as="font" type="font/woff2" crossorigin />
+
+  <title>Emerson Violin Studio</title>
+  <link rel="stylesheet" href="/tokens.css" integrity="sha384-xUKgqfBk4QzxcTq42WOiFZTAROy5KR3aQfo870WvncRWO0xo7Xlpj2Zkl5iqyhFE"/>
+  <link rel="stylesheet" href="/app.css" integrity="sha384-jFus/UiCyNCsGhvwZL76Su/mFjbG+qSXqtPdzaZ/Yd+2+RwGtDXXdSc0CRFfki+C"/>
+  <link rel="stylesheet" href="/scroll-animations.css" integrity="sha384-IMFWyu/4CwDI62jGf0CeBEMIG+SGBOpK8UqqyeORxf67Ebb/nZm2vAN9MiqmoXLp"/>
+<link rel="modulepreload" href="/emerson-violin-pwa.js" crossorigin="anonymous" integrity="sha384-K7VSG6w5DOtarK72GhjvnyhhUD7FD5lglKYhleHDYSK++khMtLIcSLGzapOwoC+3"><link rel="preload" href="/emerson-violin-pwa_bg.wasm" crossorigin="anonymous" integrity="sha384-lW7er+EKT3raq6jsZXFHdbme5yw9xGtlSW5Z0EFzMt54jZclwxm2fvWxuUwwZ5tr" as="fetch" type="application/wasm"></head>
+<body>
+  <a href="#overview" class="skip-link">Skip to main content</a>
+
+  <div class="ambient" aria-hidden="true">
+    <span class="orb orb-one"></span>
+    <span class="orb orb-two"></span>
+    <span class="orb orb-three"></span>
+  </div>
+
+  <div id="app" class="app-shell">
+    <aside class="banner install-banner" data-install-banner hidden>
+      <div>
+        <p class="banner-title">Install Emerson Studio</p>
+        <p class="banner-copy">Add the studio to your home screen for offline practice and quick launch.</p>
+      </div>
+      <div class="banner-actions">
+        <button class="btn btn-primary" type="button" data-install-action>Install</button>
+        <button class="btn btn-ghost" type="button" data-install-dismiss>Not now</button>
+      </div>
+    </aside>
+
+    <aside class="banner update-banner" data-update-banner hidden>
+      <div>
+        <p class="banner-title">Update ready</p>
+        <p class="banner-copy">Refresh to load the latest offline bundle.</p>
+      </div>
+      <div class="banner-actions">
+        <button class="btn btn-primary" type="button" data-update-action>Reload</button>
+        <button class="btn btn-ghost" type="button" data-update-dismiss>Later</button>
+      </div>
+    </aside>
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">EV</div>
+        <div class="brand-copy">
+          <p class="brand-kicker">Emerson Violin Studio</p>
+          <h1 class="brand-title">Studio Command</h1>
+          <p class="brand-subtitle">A focused practice cockpit with ML coaching and offline-first tools.</p>
+        </div>
+      </div>
+
+      <nav class="top-nav" aria-label="Primary">
+        <a href="#overview" data-nav-link>Overview</a>
+        <a href="#flow" data-nav-link>Flow</a>
+        <a href="#studio" data-nav-link>Studio</a>
+        <a href="#ml" data-nav-link>ML Lab</a>
+        <a href="#core" data-nav-link>Core</a>
+        <a href="#support" data-nav-link>Support</a>
+        <a href="#controls" data-nav-link>Controls</a>
+      </nav>
+
+      <div class="status-stack">
+        <div class="status-chip" data-offline-indicator data-state="online">Online</div>
+        <div class="status-chip" data-platform-status>Device: checking...</div>
+        <div class="status-chip" data-install-status>Install status: Not installed.</div>
+        <div class="status-chip" data-ml-status>ML: standing by</div>
+        <div class="status-meter">
+          <span class="status-label">Storage</span>
+          <div class="meter-bar" role="presentation">
+            <span class="meter-fill" data-storage-bar></span>
+          </div>
+          <small data-storage-status>Storage: checking...</small>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section" id="overview" data-section data-reveal>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Today</p>
+            <h2>Session Overview</h2>
+            <p class="section-subtitle">Start clean, track the flow, and leave with a clear win.</p>
+          </div>
+          <div class="section-actions">
+            <button class="btn btn-primary" type="button" data-session-start>Start session</button>
+            <button class="btn btn-secondary" type="button" data-session-pause>Pause</button>
+            <button class="btn btn-ghost" type="button" data-session-finish>Finish and log</button>
+          </div>
+        </div>
+
+        <div class="grid overview-grid">
+          <article class="card hero-card">
+            <div class="hero-header">
+              <div class="progress-ring" data-session-progress style="--progress: 0;">
+                <svg viewBox="0 0 120 120" aria-hidden="true">
+                  <circle class="ring-track" cx="60" cy="60" r="52" />
+                  <circle class="ring-fill" cx="60" cy="60" r="52" />
+                </svg>
+                <div class="ring-label">
+                  <span class="ring-value" data-session-percent>0%</span>
+                  <span class="ring-caption">Flow complete</span>
+                </div>
+              </div>
+              <div class="hero-meta">
+                <p class="meta-label">Session timer</p>
+                <p class="meta-value" data-session-timer>00:00</p>
+                <p class="meta-sub" data-session-status>Ready to begin</p>
+              </div>
+            </div>
+            <div class="hero-stats">
+              <div>
+                <p class="stat-label">Practice minutes</p>
+                <p class="stat-value" data-summary-minutes>0</p>
+              </div>
+              <div>
+                <p class="stat-label">Current streak</p>
+                <p class="stat-value" data-summary-streak>0 days</p>
+              </div>
+              <div>
+                <p class="stat-label">Sessions logged</p>
+                <p class="stat-value" data-summary-total>0</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="card plan-card">
+            <div class="card-head">
+              <h3>Focus plan</h3>
+              <span class="badge" data-plan-focus>Intonation</span>
+            </div>
+            <ul class="plan-list">
+              <li>
+                <span class="plan-title">Open string warm-up</span>
+                <span class="plan-meta">5 min - bow lanes</span>
+              </li>
+              <li>
+                <span class="plan-title">Scale ladder in D</span>
+                <span class="plan-meta">8 min - tone center</span>
+              </li>
+              <li>
+                <span class="plan-title">Rhythm grid</span>
+                <span class="plan-meta">4 min - steady pulse</span>
+              </li>
+              <li>
+                <span class="plan-title">Song focus: Minuet</span>
+                <span class="plan-meta">10 min - phrasing</span>
+              </li>
+            </ul>
+            <div class="plan-note">Tip: finish with a quiet replay to lock in intonation.</div>
+          </article>
+
+          <article class="card insight-card">
+            <div class="card-head">
+              <h3>Insight engine</h3>
+              <span class="badge badge-soft" data-insight-focus>Focus: Balance</span>
+            </div>
+            <p class="insight-message" data-insight-message>
+              Capture a few tuner and metronome samples to unlock live coaching.
+            </p>
+            <div class="insight-grid">
+              <div>
+                <p class="stat-label">Pitch accuracy</p>
+                <p class="stat-value" data-insight-pitch>--</p>
+              </div>
+              <div>
+                <p class="stat-label">Rhythm stability</p>
+                <p class="stat-value" data-insight-rhythm>--</p>
+              </div>
+              <div>
+                <p class="stat-label">Focus score</p>
+                <p class="stat-value" data-insight-focus-score>--</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="flow" data-section data-reveal>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Flow</p>
+            <h2>Session Pathway</h2>
+            <p class="section-subtitle">A guided sequence to keep energy and attention steady.</p>
+          </div>
+          <div class="section-actions">
+            <button class="btn btn-secondary" type="button" data-flow-reset>Reset checklist</button>
+          </div>
+        </div>
+
+        <div class="grid flow-grid">
+          <article class="card">
+            <div class="card-head">
+              <h3>Checklist</h3>
+              <span class="pill" data-flow-complete>0 / 4 complete</span>
+            </div>
+            <ol class="flow-list">
+              <li class="flow-step" data-flow-step data-step-id="warmup">
+                <div class="step-index">1</div>
+                <div class="step-body">
+                  <p class="note">Open strings + bow lanes</p>
+                  <p class="muted">5 minutes</p>
+                </div>
+                <button class="btn btn-secondary" type="button" data-flow-toggle>Mark done</button>
+              </li>
+              <li class="flow-step" data-flow-step data-step-id="scales">
+                <div class="step-index">2</div>
+                <div class="step-body">
+                  <p class="note">Scale ladder in D</p>
+                  <p class="muted">8 minutes</p>
+                </div>
+                <button class="btn btn-secondary" type="button" data-flow-toggle>Mark done</button>
+              </li>
+              <li class="flow-step" data-flow-step data-step-id="rhythm">
+                <div class="step-index">3</div>
+                <div class="step-body">
+                  <p class="note">Rhythm grid</p>
+                  <p class="muted">4 minutes</p>
+                </div>
+                <button class="btn btn-secondary" type="button" data-flow-toggle>Mark done</button>
+              </li>
+              <li class="flow-step" data-flow-step data-step-id="song">
+                <div class="step-index">4</div>
+                <div class="step-body">
+                  <p class="note">Song focus: Minuet</p>
+                  <p class="muted">10 minutes</p>
+                </div>
+                <button class="btn btn-secondary" type="button" data-flow-toggle>Mark done</button>
+              </li>
+            </ol>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Reflection</h3>
+              <span class="pill">Session notes</span>
+            </div>
+            <div class="stack">
+              <label class="label" for="session-reflection">What felt strong today?</label>
+              <textarea class="field" id="session-reflection" rows="5" data-reflection-input placeholder="Add a quick note after each flow step."></textarea>
+            </div>
+            <div class="flow-summary">
+              <div class="metric">
+                <p class="stat-label">Energy</p>
+                <div class="energy-bars" aria-hidden="true">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+              <div class="metric">
+                <p class="stat-label">Weekly minutes</p>
+                <p class="stat-value" data-summary-week>0</p>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="studio" data-section data-reveal>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Studio</p>
+            <h2>Live Tools</h2>
+            <p class="section-subtitle">Keep tuner, metronome, and recording within one scroll.</p>
+          </div>
+          <div class="section-actions">
+            <button class="btn btn-ghost" type="button" data-tools-stop>Stop all tools</button>
+          </div>
+        </div>
+
+        <div class="grid tool-grid">
+          <article class="card tool-card" id="studio-tuner">
+            <div class="card-head">
+              <h3>Smart tuner</h3>
+              <span class="pill" data-tuner-status>Idle</span>
+            </div>
+            <div class="tuner-readout">
+              <div>
+                <p class="stat-label">Note</p>
+                <p class="stat-value" data-tuner-note>--</p>
+              </div>
+              <div>
+                <p class="stat-label">Cents</p>
+                <p class="stat-value" data-tuner-cents>0</p>
+              </div>
+            </div>
+            <div class="meter tuner-meter" data-tuner-meter>
+              <span></span>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-tuner-toggle>Start tuner</button>
+              <button class="btn btn-ghost" type="button" data-tuner-calibrate>Calibrate</button>
+            </div>
+            <ul class="step-list" aria-label="Reference strings">
+              <li>
+                <span>G string</span>
+                <button class="btn btn-ghost" type="button" data-tuner-target="G3">G3</button>
+              </li>
+              <li>
+                <span>D string</span>
+                <button class="btn btn-ghost" type="button" data-tuner-target="D4">D4</button>
+              </li>
+              <li>
+                <span>A string</span>
+                <button class="btn btn-ghost" type="button" data-tuner-target="A4">A4</button>
+              </li>
+              <li>
+                <span>E string</span>
+                <button class="btn btn-ghost" type="button" data-tuner-target="E5">E5</button>
+              </li>
+            </ul>
+          </article>
+
+          <article class="card tool-card" id="studio-metronome">
+            <div class="card-head">
+              <h3>Metronome</h3>
+              <span class="pill" data-metronome-status>Stopped</span>
+            </div>
+            <div class="metronome-controls">
+              <div class="metronome-meta">
+                <p class="stat-label">Tempo</p>
+                <p class="stat-value"><span data-metronome-bpm>90</span> BPM</p>
+              </div>
+              <div class="range">
+                <input type="range" min="60" max="140" step="1" value="90" data-metronome-range aria-label="Tempo" />
+                <span class="range-value muted">60-140 BPM</span>
+              </div>
+              <div class="button-row">
+                <button class="btn btn-primary" type="button" data-metronome-toggle>Start metronome</button>
+                <button class="btn btn-ghost" type="button" data-metronome-tap>Tap tempo</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card tool-card" id="studio-recorder">
+            <div class="card-head">
+              <h3>Recorder</h3>
+              <span class="pill" data-recorder-status>Idle</span>
+            </div>
+            <p class="tool-hint">Record short takes to review tone and rhythm.</p>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-recorder-toggle>Start recording</button>
+              <button class="btn btn-ghost" type="button" data-recorder-clear>Clear list</button>
+            </div>
+            <ul class="recording-list resource-list" data-recorder-list>
+              <li class="empty">No recordings yet.</li>
+            </ul>
+          </article>
+
+          <article class="card tool-card" id="studio-tones">
+            <div class="card-head">
+              <h3>Reference tones</h3>
+              <span class="pill">Offline audio</span>
+            </div>
+            <p class="tool-hint">Play reference tones to tune and log pitch samples.</p>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-tone-play data-tone-note="G3">Play G3</button>
+              <button class="btn btn-secondary" type="button" data-tone-play data-tone-note="D4">Play D4</button>
+              <button class="btn btn-secondary" type="button" data-tone-play data-tone-note="A4">Play A4</button>
+              <button class="btn btn-secondary" type="button" data-tone-play data-tone-note="E5">Play E5</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="ml" data-section data-reveal>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">ML Lab</p>
+            <h2>Coaching Intelligence</h2>
+            <p class="section-subtitle">Local-first inference with WebGPU and WASM fallbacks.</p>
+          </div>
+        </div>
+
+        <div class="grid ml-grid">
+          <article class="card">
+            <div class="card-head">
+              <h3>Live metrics</h3>
+              <span class="badge badge-soft" data-ml-focus-label>Focus</span>
+            </div>
+            <div class="ml-live-grid">
+              <div>
+                <p class="stat-label">Pitch accuracy</p>
+                <p class="stat-value" data-ml-pitch>--</p>
+              </div>
+              <div>
+                <p class="stat-label">Rhythm stability</p>
+                <p class="stat-value" data-ml-rhythm>--</p>
+              </div>
+              <div>
+                <p class="stat-label">Focus score</p>
+                <p class="stat-value" data-ml-focus>--</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Runtime status</h3>
+              <span class="badge" data-ml-backend>Backend: --</span>
+            </div>
+            <div class="summary-row">
+              <div>
+                <p class="stat-label">WASM</p>
+                <p class="stat-value" data-wasm-status>Checking...</p>
+              </div>
+              <div>
+                <p class="stat-label">Inference latency</p>
+                <p class="stat-value" data-ml-latency>--</p>
+              </div>
+              <div>
+                <p class="stat-label">Samples</p>
+                <p class="stat-value" data-ml-samples>0</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Recommendations</h3>
+              <span class="pill" data-ml-recommendation-title>Next focus</span>
+            </div>
+            <p class="card-body" data-ml-recommendation>
+              Start the tuner to calibrate pitch, then run the metronome for rhythm samples.
+            </p>
+            <ul class="target-list">
+              <li>
+                <span>Target pitch drift</span>
+                <span class="pill" data-ml-target-pitch>+-10 cents</span>
+              </li>
+              <li>
+                <span>Target tempo variance</span>
+                <span class="pill" data-ml-target-rhythm>+-25 ms</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Model registry</h3>
+              <span class="pill" data-model-count>0 models</span>
+            </div>
+            <ul class="model-list" data-model-list>
+              <li class="empty">No model manifest loaded.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="core" data-section data-reveal>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Core</p>
+            <h2>Offline + Exports</h2>
+            <p class="section-subtitle">Keep data on-device and share summaries when needed.</p>
+          </div>
+        </div>
+
+        <div class="grid core-grid">
+          <article class="card">
+            <div class="card-head">
+              <h3>Offline readiness</h3>
+              <span class="pill" data-offline-ready>Checking...</span>
+            </div>
+            <div class="summary-row">
+              <div>
+                <p class="stat-label">Storage used</p>
+                <p class="stat-value" data-storage-usage>--</p>
+              </div>
+              <div>
+                <p class="stat-label">Quota</p>
+                <p class="stat-value" data-storage-quota>--</p>
+              </div>
+            </div>
+            <div class="storage-meter">
+              <span class="storage-fill" data-storage-fill></span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Service worker</h3>
+              <span class="pill" data-sw-status>Checking...</span>
+            </div>
+            <p class="card-body">Control updates and refresh the offline cache.</p>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-sw-update>Check updates</button>
+              <button class="btn btn-primary" type="button" data-sw-apply disabled>Apply update</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Weekly export</h3>
+              <span class="pill">JSON summary</span>
+            </div>
+            <p class="card-body">Generate a lightweight summary for parents or coaches.</p>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-export-summary>Export weekly summary</button>
+              <button class="btn btn-ghost" type="button" data-export-session>Export latest session</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Share inbox</h3>
+              <span class="pill" data-share-inbox-count>0 items</span>
+            </div>
+            <p class="card-body">Files shared into the studio appear here for review.</p>
+            <ul class="resource-list" data-share-inbox-list>
+              <li class="empty">No shared files yet.</li>
+            </ul>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-share-inbox-refresh>Refresh inbox</button>
+              <button class="btn btn-ghost" type="button" data-share-inbox-clear>Clear inbox</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="support" data-section data-reveal>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Support</p>
+            <h2>Install + Share</h2>
+            <p class="section-subtitle">Keep the studio ready for offline practice on any device.</p>
+          </div>
+        </div>
+
+        <div class="grid support-grid">
+          <article class="card">
+            <div class="card-head">
+              <h3>Install guide</h3>
+              <span class="pill">PWA</span>
+            </div>
+            <p class="card-body">Add Emerson Violin Studio to the home screen for offline access.</p>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-install-help>Open install guide</button>
+              <button class="btn btn-ghost" type="button" data-install-check>Check install state</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Share studio</h3>
+              <span class="pill">Link</span>
+            </div>
+            <p class="card-body">Send the studio link to a parent or teacher.</p>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-share-button>Share link</button>
+              <button class="btn btn-ghost" type="button" data-copy-link>Copy link</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="controls" data-section data-reveal>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Controls</p>
+            <h2>Preferences</h2>
+            <p class="section-subtitle">Adjust readability and motion to fit the studio space.</p>
+          </div>
+        </div>
+
+        <div class="grid controls-grid">
+          <article class="card">
+            <div class="card-head">
+              <h3>Accessibility</h3>
+              <span class="pill">Local settings</span>
+            </div>
+            <div class="toggle-grid">
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Large text</p>
+                  <p class="muted">Increase base font size.</p>
+                </div>
+                <label class="toggle" for="setting-large-text">
+                  <input type="checkbox" id="setting-large-text" />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">High contrast</p>
+                  <p class="muted">Stronger text + outline contrast.</p>
+                </div>
+                <label class="toggle" for="setting-high-contrast">
+                  <input type="checkbox" id="setting-high-contrast" />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Calm background</p>
+                  <p class="muted">Softens accent saturation.</p>
+                </div>
+                <label class="toggle" for="setting-calm-bg">
+                  <input type="checkbox" id="setting-calm-bg" />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Reduce motion</p>
+                  <p class="muted">Minimize animations.</p>
+                </div>
+                <label class="toggle" for="setting-reduce-motion">
+                  <input type="checkbox" id="setting-reduce-motion" />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Data tools</h3>
+              <span class="pill">Local only</span>
+            </div>
+            <p class="card-body">Reset local progress or clear recordings stored on this device.</p>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-reset-data>Reset progress</button>
+              <button class="btn btn-ghost" type="button" data-clear-recordings>Clear recordings</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Capability scan</h3>
+              <span class="pill">Device check</span>
+            </div>
+            <ul class="capability-list" data-capability-list>
+              <li>
+                <span>WebAssembly</span>
+                <span class="capability-pill" data-capability="wasm" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>WebGPU</span>
+                <span class="capability-pill" data-capability="webgpu" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Microphone</span>
+                <span class="capability-pill" data-capability="mic" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Persistent storage</span>
+                <span class="capability-pill" data-capability="storage" data-state="warn">Checking</span>
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">Emerson Violin Studio - Offline-ready command center.</footer>
+  </div>
+
+  <dialog class="install-guide" id="install-guide">
+    <div class="install-card">
+      <div class="card-head">
+        <h3>Install on your device</h3>
+        <span class="pill">Add to Home Screen</span>
+      </div>
+      <ol class="step-list">
+        <li>
+          <span>Open the share menu in your browser.</span>
+          <span class="pill">iOS Safari</span>
+        </li>
+        <li>
+          <span>Select "Add to Home Screen".</span>
+          <span class="pill">Install</span>
+        </li>
+        <li>
+          <span>Launch Emerson Violin Studio from your home screen.</span>
+          <span class="pill">Offline ready</span>
+        </li>
+      </ol>
+      <div class="button-row">
+        <button class="btn btn-primary" type="button" data-install-close>Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Rust/WASM entrypoint handled by Trunk -->
+</body>
+</html>

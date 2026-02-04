@@ -1,8 +1,8 @@
 {
   "gzip": {
-    "initialJsKb": 220,
-    "totalJsKb": 380,
-    "totalCssKb": 90,
-    "totalWasmKb": 320
+    "initialJsKb": 15,
+    "totalJsKb": 30,
+    "totalCssKb": 50,
+    "totalWasmKb": 110
   }
 }

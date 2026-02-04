@@ -4,10 +4,10 @@ These budgets are enforced in `postbuild` via `scripts/build/check-budgets.js`.
 
 ## Gzip Budgets
 
-- Initial JS: 220 KB
-- Total JS: 380 KB
-- Total CSS: 90 KB
-- Total WASM: 320 KB
+- Initial JS: 15 KB
+- Total JS: 30 KB
+- Total CSS: 50 KB
+- Total WASM: 110 KB
 
 ## Notes
 

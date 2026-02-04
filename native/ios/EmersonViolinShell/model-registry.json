@@ -1,0 +1,40 @@
+{
+  "defaults": {
+    "preferredComputeUnits": "cpuAndNeuralEngine",
+    "maxInferencesPerSecond": 12,
+    "maxConcurrency": 2,
+    "topKDefault": null,
+    "maxOutputDefault": null,
+    "allowCache": true,
+    "batchEnabled": true,
+    "fallbackModel": null,
+    "variants": null,
+    "variantStrategy": null,
+    "integrityHash": null,
+    "requireIntegrity": false
+  },
+  "preload": [
+    "PitchQuality"
+  ],
+  "models": {
+    "PitchQuality": {
+      "preferredComputeUnits": "cpuAndNeuralEngine",
+      "maxInferencesPerSecond": 8,
+      "maxConcurrency": 1,
+      "topKDefault": 5,
+      "targetLatencyMs": 12,
+      "allowCache": true,
+      "fallbackModel": "PitchQuality_small",
+      "requireIntegrity": false
+    },
+    "PostureCheck": {
+      "preferredComputeUnits": "cpuAndNeuralEngine",
+      "maxInferencesPerSecond": 6,
+      "maxConcurrency": 1,
+      "targetLatencyMs": 18,
+      "allowCache": true,
+      "fallbackModel": "PostureCheck_small",
+      "requireIntegrity": false
+    }
+  }
+}

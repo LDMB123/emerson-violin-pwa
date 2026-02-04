@@ -1,0 +1,20 @@
+{
+  "version": "2026-02-04",
+  "registryUrl": "https://example.com/emerson/model-registry.json",
+  "models": [
+    {
+      "name": "PitchQuality",
+      "url": "https://example.com/emerson/models/PitchQuality.mlmodel",
+      "sha256": "",
+      "compile": true,
+      "skipIfExists": false
+    },
+    {
+      "name": "PostureCheck",
+      "url": "https://example.com/emerson/models/PostureCheck.mlmodel",
+      "sha256": "",
+      "compile": true,
+      "skipIfExists": false
+    }
+  ]
+}

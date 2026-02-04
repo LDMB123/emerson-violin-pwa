@@ -1,17 +1,13 @@
 # Documentation
 
 **Core**
-- `docs/ai/` token-optimized context for AI tooling
-- `docs/adr/` architecture decision records
-- `docs/strategy/README.md` architecture + modernization planning index
-- `docs/reports/` QA + test reports
-- `docs/assets/` archived design assets
+- `docs/rebuild/` rebuild IA, flows, design system, architecture, and audit
+- `docs/feature-inventory.md` feature and games inventory captured before rebuild
+- `docs/rebuild-roadmap.md` roadmap for the rebuild
+- `docs/stack-architecture.md` Chromium 143 + Rust/WASM rebuild architecture
 - `docs/ARCHIVE_POLICY.md` archive guidance
+- `docs/ai/` token-optimized context for AI tooling (optional)
+- `docs/assets/` archived design assets
 
-**Strategy**
-- `docs/strategy/architecture-options.md` architecture paths + tradeoffs
-- `docs/strategy/groundbreaking-foundation.md` foundation plan + pillars
-- `docs/strategy/modernization-plan.md` phased modernization plan
-- `docs/strategy/modernization-audit.md` audit map + targets
-- `docs/strategy/wasm-rust-modernization.md` WASM/Rust roadmap
-- `docs/strategy/worktree-plan.md` worktree scopes
+**Archives**
+- `docs/_archived/legacy-docs/` prior strategy, reports, and ADRs

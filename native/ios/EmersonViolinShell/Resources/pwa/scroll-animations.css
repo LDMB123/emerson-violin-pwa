@@ -1,0 +1,113 @@
+/**
+ * Scroll-Driven Animations - iPadOS 26.2 Optimized
+ *
+ * Zero-JavaScript scroll animations using CSS scroll-timeline.
+ */
+
+/* ========================================
+   SURFACE REVEAL
+   ======================================== */
+
+:is(
+    .game-card,
+    .coach-card,
+    .lesson-plan,
+    .coach-insights,
+    .analysis-coach,
+    .progress-hero,
+    .progress-actions,
+    .skill-radar,
+    .trainer-hero,
+    .tool-card,
+    .audio-panel,
+    .games-hub,
+    .games-filters,
+    .game-coach
+) {
+    animation: surface-rise linear both;
+    animation-timeline: view();
+    animation-range: entry 10% entry 75%;
+}
+
+@keyframes surface-rise {
+    from {
+        opacity: 0;
+        transform: translateY(32px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ========================================
+   REDUCED MOTION / DATA
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    :is(
+        .game-card,
+        .coach-card,
+        .lesson-plan,
+        .coach-insights,
+        .analysis-coach,
+        .progress-hero,
+        .progress-actions,
+        .skill-radar,
+        .trainer-hero,
+        .tool-card,
+        .audio-panel,
+        .games-hub,
+        .games-filters,
+        .game-coach
+    ) {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
+
+:root:has(#setting-reduce-motion:checked) :is(
+    .game-card,
+    .coach-card,
+    .lesson-plan,
+    .coach-insights,
+    .analysis-coach,
+    .progress-hero,
+    .progress-actions,
+    .skill-radar,
+    .trainer-hero,
+    .tool-card,
+    .audio-panel,
+    .games-hub,
+    .games-filters,
+    .game-coach
+) {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+@media (prefers-reduced-data: reduce) {
+    :is(
+        .game-card,
+        .coach-card,
+        .lesson-plan,
+        .coach-insights,
+        .analysis-coach,
+        .progress-hero,
+        .progress-actions,
+        .skill-radar,
+        .trainer-hero,
+        .tool-card,
+        .audio-panel,
+        .games-hub,
+        .games-filters,
+        .game-coach
+    ) {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}

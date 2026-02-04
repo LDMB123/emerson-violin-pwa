@@ -1,6 +1,6 @@
-# Panda Violin PWA
+# Emerson Violin Studio (PWA)
 
-Local-first violin teaching PWA for children with a Red Panda coach, optimized for iPadOS 26.2.
+Offline-first command center for focused practice: guided session flow, live tools (tuner, metronome, recorder), ML lab telemetry, and parent/coach support views.
 
 ## Quick Start
 
@@ -9,27 +9,22 @@ npm install
 npm run dev
 ```
 
+## Requirements
+
+- Node.js 20+
+- Rust toolchain + `wasm32-unknown-unknown` target
+- Trunk (`cargo install trunk`)
+
 ## Commands
 
-- `npm run dev` development server
-- `npm run build` production build
-- `npm run preview` preview build
+- `npm run dev` start Trunk dev server
+- `npm run build` build production assets
+- `npm run preview` run Trunk in release mode
 - `npm test` run unit tests
-- `npm run lint` lint JS
+- `npm run lint` run eslint (shell assets)
 
-## Structure
+## Docs
 
-- `src/app.js` app boot + view-based module loading
-- `src/core/` platform, persistence, ML, utils, audio, worklets, WASM
-- `src/features/` coach, games, trainer, tuner, songs, progress, analysis, parent, backup, notifications, recordings
-- `src/data/songs.json` song data source
-- `public/assets/` images, audio, icons, mockups, badges, illustrations
-- `docs/` reports + AI context pack
-- `docs/strategy/` architecture + modernization plans
-
-## AI Context
-
-- `docs/ai/FAST_PATH.md`
-- `docs/ai/PROJECT_CONTEXT.md`
-- `docs/ai/FILE_MAP.md`
-- `docs/ai/IGNORE.md`
+- `docs/README.md` documentation index
+- `docs/rebuild/` IA + UX + architecture notes
+- `docs/stack-architecture.md` first-principles stack summary

@@ -1,8 +1,8 @@
 # Build Scripts
 
-- `build-songs-html.js` injects song cards + song views into `index.html`.
 - `build-sw-assets.js` generates `public/sw-assets.js` (dev) or `dist/sw-assets.js` (build).
-- `build-wasm.js` builds Rust crates via `wasm-pack`.
-- `copy-wasm.js` copies WASM artifacts into `src/core/wasm/`.
+- `generate-pwa-manifest.js` creates `pwa-manifest.json` with SHA-256 hashes.
+- `copy-pwa-to-ios.js` copies `dist/` into `native/ios/EmersonViolinShell/Resources/pwa`.
+- `update-ios-plist.js` updates `PWAContentVersion` in iOS Info.plist sample (or real plist if present).
 - `check-budgets.js` validates build size budgets.
 - `budgets.json` perf budget thresholds.

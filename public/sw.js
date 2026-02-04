@@ -1,721 +1,225 @@
-const CACHE_VERSION = 'v110';
-const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
-const MEDIA_CACHE_NAME = `panda-violin-media-${CACHE_VERSION}`;
-const PACK_CACHE_NAME = `panda-violin-pack-${CACHE_VERSION}`;
-const PACK_CACHE_PREFIX = 'panda-violin-pack-';
-const PACK_MANIFEST_PREFIX = './__pack-manifests__/';
-const PACK_MANIFEST_PATH = '/__pack-manifests__/';
-const APP_SHELL_URL = './index.html';
+const CACHE_VERSION = 'v204';
+const CACHE_NAME = `emerson-violin-shell-${CACHE_VERSION}`;
+const PACK_CACHE = `emerson-violin-packs-${CACHE_VERSION}`;
 const OFFLINE_URL = './offline.html';
+const SHARE_ENDPOINT = './share-target';
+
+const DB_NAME = 'emerson-violin-db';
+const DB_VERSION = 3;
 
 let ASSETS_TO_CACHE = [];
 try {
-    importScripts('./sw-assets.js');
-    if (Array.isArray(self.__ASSETS__)) {
-        ASSETS_TO_CACHE = self.__ASSETS__;
-    }
+  importScripts('./sw-assets.js');
+  if (Array.isArray(self.__ASSETS__)) {
+    ASSETS_TO_CACHE = self.__ASSETS__;
+  }
 } catch (error) {
-    console.warn('[Service Worker] Asset manifest missing, using fallback', error);
+  console.warn('[sw] asset manifest missing', error);
 }
 
 if (!ASSETS_TO_CACHE.length) {
-    ASSETS_TO_CACHE = ['./', APP_SHELL_URL, './manifest.webmanifest'];
+  ASSETS_TO_CACHE = ['./', './index.html', './manifest.webmanifest', OFFLINE_URL];
 }
 
-const buildPrecacheList = () => {
-    const precache = new Set(ASSETS_TO_CACHE);
-    precache.add('./');
-    precache.add(APP_SHELL_URL);
-    precache.add('./manifest.webmanifest');
-    precache.add(OFFLINE_URL);
-    return Array.from(precache);
-};
+const PRECACHE_URLS = Array.from(new Set([
+  ...ASSETS_TO_CACHE,
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  OFFLINE_URL,
+]));
 
-const buildExpectedUrls = () => PRECACHE_URLS.map((asset) => new URL(asset, self.location.origin).href);
-
-const PRECACHE_URLS = buildPrecacheList();
-const EXPECTED_URLS = new Set(buildExpectedUrls());
-const STATIC_DESTINATIONS = new Set(['style', 'script', 'font', 'image', 'audio', 'wasm']);
-const MAX_RUNTIME_ENTRIES = 60;
-const MAX_MEDIA_ENTRIES = 30;
-let offlineMode = false;
-
-const cacheAsset = async (cache, asset) => {
-    try {
-        const request = new Request(asset, { cache: 'reload' });
-        await cache.add(request);
-    } catch {
-        try {
-            await cache.add(asset);
-        } catch {
-            // Ignore asset cache failures
-        }
+const openDb = () => new Promise((resolve, reject) => {
+  const request = indexedDB.open(DB_NAME, DB_VERSION);
+  request.onupgradeneeded = () => {
+    const db = request.result;
+    if (!db.objectStoreNames.contains('sessions')) {
+      db.createObjectStore('sessions', { keyPath: 'id' });
     }
-};
-
-const precacheAssets = async () => {
-    const cache = await caches.open(CACHE_NAME);
-    await Promise.allSettled(PRECACHE_URLS.map((asset) => cacheAsset(cache, asset)));
-};
-
-const shouldCacheResponse = (response) => {
-    if (!response || !response.ok) return false;
-    if (response.type === 'opaque') return false;
-    const cacheControl = response.headers.get('cache-control') || '';
-    if (cacheControl.includes('no-store')) return false;
-    return true;
-};
-
-const trimRuntimeCache = async (cache, maxEntries = MAX_RUNTIME_ENTRIES) => {
-    try {
-        const requests = await cache.keys();
-        const runtimeRequests = requests.filter((request) => !EXPECTED_URLS.has(request.url));
-        if (runtimeRequests.length <= maxEntries) return;
-        const excess = runtimeRequests.length - maxEntries;
-        await Promise.all(runtimeRequests.slice(0, excess).map((request) => cache.delete(request)));
-    } catch {
-        // Ignore cache trim failures
+    if (!db.objectStoreNames.contains('recordings')) {
+      db.createObjectStore('recordings', { keyPath: 'id' });
     }
-};
-
-const cacheResponse = async (cache, request, response, { maxEntries } = {}) => {
-    if (!shouldCacheResponse(response)) return;
-    try {
-        await cache.put(request, response.clone());
-        await trimRuntimeCache(cache, maxEntries);
-    } catch {
-        // Ignore cache write failures
+    if (!db.objectStoreNames.contains('syncQueue')) {
+      db.createObjectStore('syncQueue', { keyPath: 'id' });
     }
-};
-
-const matchFromCaches = async (request, options, cacheName = CACHE_NAME) => {
-    const cache = await caches.open(cacheName);
-    const cached = await cache.match(request, options);
-    if (cached) return { cached, cache };
-    const packCache = await caches.open(PACK_CACHE_NAME);
-    const packCached = await packCache.match(request, options);
-    if (packCached) return { cached: packCached, cache: packCache };
-    return { cached: null, cache };
-};
-
-const getRuntimeCacheName = (request) => {
-    const destination = request?.destination;
-    if (destination === 'audio' || destination === 'wasm') return MEDIA_CACHE_NAME;
-    return CACHE_NAME;
-};
-
-const getRuntimeLimit = (cacheName) => (cacheName === MEDIA_CACHE_NAME ? MAX_MEDIA_ENTRIES : MAX_RUNTIME_ENTRIES);
-
-const summarizePackWithCaches = async (assets = [], cache, packCache) => {
-    let cached = 0;
-    for (const asset of assets) {
-        const hit = await cache.match(asset, { ignoreSearch: true });
-        if (hit) {
-            cached += 1;
-            continue;
-        }
-        const packHit = await packCache.match(asset, { ignoreSearch: true });
-        if (packHit) cached += 1;
+    if (!db.objectStoreNames.contains('shareInbox')) {
+      db.createObjectStore('shareInbox', { keyPath: 'id' });
     }
-    return { total: assets.length, cached };
+  };
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+
+const withStore = async (storeName, mode, callback) => {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, mode);
+    const store = tx.objectStore(storeName);
+    const result = callback(store, tx);
+    tx.oncomplete = () => resolve(result);
+    tx.onerror = () => reject(tx.error);
+  });
 };
 
-const summarizePack = async (assets = []) => {
-    const cache = await caches.open(CACHE_NAME);
-    const packCache = await caches.open(PACK_CACHE_NAME);
-    return summarizePackWithCaches(assets, cache, packCache);
-};
+const addShareEntry = (entry) => withStore('shareInbox', 'readwrite', (store) => {
+  store.put(entry);
+});
 
-const getPackManifestUrl = (packId) => new URL(`${PACK_MANIFEST_PREFIX}${packId}.json`, self.location.origin).href;
-const isPackManifestUrl = (url) => typeof url === 'string' && url.includes(PACK_MANIFEST_PATH);
-const toAbsoluteUrl = (asset) => new URL(asset, self.location.origin).href;
+const getSyncEntries = () => withStore('syncQueue', 'readonly', (store) => new Promise((resolve) => {
+  const request = store.getAll();
+  request.onsuccess = () => resolve(request.result || []);
+  request.onerror = () => resolve([]);
+}));
 
-const buildCachedUrlSet = async () => {
-    const cache = await caches.open(CACHE_NAME);
-    const packCache = await caches.open(PACK_CACHE_NAME);
-    const [cacheKeys, packKeys] = await Promise.all([cache.keys(), packCache.keys()]);
-    const cachedUrls = new Set([...cacheKeys, ...packKeys].map((request) => request.url));
-    return { cache, packCache, cachedUrls, packKeys };
-};
+const clearSyncEntries = () => withStore('syncQueue', 'readwrite', (store) => {
+  store.clear();
+});
 
-const writePackManifest = async (packId, manifest) => {
-    if (!packId || !manifest) return;
-    try {
-        const cache = await caches.open(PACK_CACHE_NAME);
-        const body = JSON.stringify(manifest);
-        const response = new Response(body, {
-            headers: { 'Content-Type': 'application/json' },
-        });
-        await cache.put(getPackManifestUrl(packId), response);
-    } catch {
-        // Ignore manifest persistence failures
-    }
-};
-
-const readPackManifest = async (packId) => {
-    try {
-        const cache = await caches.open(PACK_CACHE_NAME);
-        const response = await cache.match(getPackManifestUrl(packId), { ignoreSearch: true });
-        if (!response) return null;
-        return await response.json();
-    } catch {
-        return null;
-    }
-};
-
-const verifyCachedPacks = async () => {
-    const { packCache, cachedUrls, packKeys } = await buildCachedUrlSet();
-    const manifestRequests = packKeys.filter((request) => isPackManifestUrl(request.url));
-    for (const request of manifestRequests) {
-        let manifest = null;
-        try {
-            const response = await packCache.match(request, { ignoreSearch: true });
-            manifest = response ? await response.json() : null;
-        } catch {
-            manifest = null;
-        }
-        if (!manifest?.assets?.length) continue;
-        let missing = 0;
-        for (const asset of manifest.assets) {
-            const absolute = toAbsoluteUrl(asset);
-            if (!cachedUrls.has(absolute)) {
-                missing += 1;
-                await cacheAsset(packCache, asset);
-                cachedUrls.add(absolute);
-            }
-        }
-        if (missing) {
-            await notifyClients({
-                type: 'PACK_AUTO_REPAIR',
-                packId: manifest.id || null,
-                missing,
-                timestamp: Date.now(),
-            });
-        }
-    }
-};
-
-const cachePackAssets = async (packId, assets = [], version = null) => {
-    await writePackManifest(packId, {
-        id: packId,
-        version: version || null,
-        assets,
-        updatedAt: Date.now(),
-    });
-    const cache = await caches.open(CACHE_NAME);
-    const packCache = await caches.open(PACK_CACHE_NAME);
-    let completed = 0;
-    const total = assets.length;
-    for (const asset of assets) {
-        const hit = await cache.match(asset, { ignoreSearch: true });
-        const packHit = hit ? null : await packCache.match(asset, { ignoreSearch: true });
-        if (!hit && !packHit) {
-            await cacheAsset(packCache, asset);
-        }
-        completed += 1;
-        await notifyClients({ type: 'PACK_PROGRESS', packId, cached: completed, total, timestamp: Date.now() });
-    }
-    const summary = await summarizePackWithCaches(assets, cache, packCache);
-    await notifyClients({ type: 'PACK_COMPLETE', packId, ...summary, timestamp: Date.now() });
-};
-
-const deletePackAssets = async (assets = []) => {
-    const cache = await caches.open(PACK_CACHE_NAME);
-    await Promise.all(assets.map((asset) => cache.delete(asset, { ignoreSearch: true })));
-};
-
-const clearPackAssets = async (packId, assets = []) => {
-    await deletePackAssets(assets);
-    const cache = await caches.open(PACK_CACHE_NAME);
-    await cache.delete(getPackManifestUrl(packId), { ignoreSearch: true });
-    await notifyClients({ type: 'PACK_CLEAR_DONE', packId, total: assets.length, timestamp: Date.now() });
-};
-
-const verifyPackAssets = async (packId, assets = [], version = null) => {
-    const manifest = await readPackManifest(packId);
-    const manifestAssets = Array.isArray(manifest?.assets) ? manifest.assets : [];
-    if (manifest?.version && version && manifest.version !== version) {
-        const staleAssets = manifestAssets.filter((asset) => !assets.includes(asset));
-        if (staleAssets.length) {
-            await deletePackAssets(staleAssets);
-        }
-        const cache = await caches.open(PACK_CACHE_NAME);
-        await cache.delete(getPackManifestUrl(packId), { ignoreSearch: true });
-    }
-    await cachePackAssets(packId, assets, version);
-};
-
-const clearAllPacks = async () => {
-    await caches.delete(PACK_CACHE_NAME);
-    await notifyClients({ type: 'PACK_CLEAR_ALL_DONE', timestamp: Date.now() });
-};
-
-const getPackSummary = async (packs = []) => {
-    const { cachedUrls } = await buildCachedUrlSet();
-    const results = [];
-    for (const pack of packs) {
-        const assets = pack.assets || [];
-        let cached = 0;
-        assets.forEach((asset) => {
-            if (cachedUrls.has(toAbsoluteUrl(asset))) cached += 1;
-        });
-        const summary = { total: assets.length, cached };
-        const manifest = await readPackManifest(pack.id);
-        const stale = Boolean(pack.version && (!manifest?.version || manifest.version !== pack.version));
-        results.push({
-            packId: pack.id,
-            version: manifest?.version || null,
-            stale,
-            ...summary,
-        });
-    }
-    return results;
+const notifyClients = async (message) => {
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  clients.forEach((client) => client.postMessage(message));
 };
 
 self.addEventListener('install', (event) => {
-    event.waitUntil(
-        (async () => {
-            await precacheAssets();
-        })()
-    );
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        (async () => {
-            await Promise.all(
-                (await caches.keys()).map((key) => {
-                    if (key === CACHE_NAME || key === MEDIA_CACHE_NAME || key === PACK_CACHE_NAME) return null;
-                    if (key.startsWith(PACK_CACHE_PREFIX)) return caches.delete(key);
-                    return caches.delete(key);
-                })
-            );
-            const cache = await caches.open(CACHE_NAME);
-            await trimRuntimeCache(cache, MAX_RUNTIME_ENTRIES);
-            const mediaCache = await caches.open(MEDIA_CACHE_NAME);
-            await trimRuntimeCache(mediaCache, MAX_MEDIA_ENTRIES);
-            try {
-                await verifyCachedPacks();
-            } catch {
-                // Ignore pack verification failures
-            }
-            if (self.registration?.navigationPreload) {
-                await self.registration.navigationPreload.enable();
-            }
-        })()
-    );
-    self.clients.claim();
-});
-
-const parseRange = (rangeHeader, size) => {
-    if (!rangeHeader) return null;
-    const bytesPrefix = 'bytes=';
-    if (!rangeHeader.startsWith(bytesPrefix)) return null;
-    const range = rangeHeader.slice(bytesPrefix.length).split('-');
-    let start = Number.parseInt(range[0], 10);
-    let end = Number.parseInt(range[1], 10);
-    if (Number.isNaN(start)) {
-        const suffixLength = Number.parseInt(range[1], 10);
-        if (Number.isNaN(suffixLength)) return null;
-        start = size - suffixLength;
-        end = size - 1;
-    }
-    if (Number.isNaN(end) || end >= size) {
-        end = size - 1;
-    }
-    if (start < 0 || end < 0 || start > end) return null;
-    return { start, end };
-};
-
-const streamRange = (body, range) => {
-    if (!body?.getReader) return null;
-    const reader = body.getReader();
-    let bytesRead = 0;
-    let bytesSent = 0;
-    const total = range.end - range.start + 1;
-
-    return new ReadableStream({
-        async pull(controller) {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    controller.close();
-                    return;
-                }
-                if (!value || !value.byteLength) continue;
-                const chunkStart = bytesRead;
-                const chunkEnd = bytesRead + value.byteLength - 1;
-                bytesRead += value.byteLength;
-                if (chunkEnd < range.start) {
-                    continue;
-                }
-                const sliceStart = Math.max(0, range.start - chunkStart);
-                const sliceEnd = Math.min(value.byteLength, range.end - chunkStart + 1);
-                if (sliceStart >= sliceEnd) {
-                    continue;
-                }
-                const sliced = value.slice(sliceStart, sliceEnd);
-                bytesSent += sliced.byteLength;
-                controller.enqueue(sliced);
-                if (bytesSent >= total) {
-                    controller.close();
-                    reader.cancel().catch(() => {});
-                }
-                return;
-            }
-        },
-        cancel() {
-            reader.cancel().catch(() => {});
-        },
-    });
-};
-
-const respondWithRange = async (request) => {
-    const rangeHeader = request.headers.get('range');
-    if (!rangeHeader) return null;
-    const cacheName = getRuntimeCacheName(request);
-    const match = await matchFromCaches(request, { ignoreSearch: true }, cacheName);
-    const cached = match.cached;
-    if (!cached) return null;
-    let byteLength = Number(cached.headers.get('Content-Length'));
-    let blob = null;
-    if (!Number.isFinite(byteLength) || byteLength <= 0) {
-        try {
-            blob = await cached.blob();
-            byteLength = blob.size;
-        } catch {
-            blob = null;
-        }
-    }
-    if (!Number.isFinite(byteLength) || byteLength <= 0) return cached;
-    const range = parseRange(rangeHeader, byteLength);
-    if (!range) {
-        const headers = new Headers(cached.headers);
-        headers.set('Content-Range', `bytes */${byteLength}`);
-        return new Response(null, { status: 416, statusText: 'Range Not Satisfiable', headers });
-    }
-    if (range.start === 0 && range.end === byteLength - 1) {
-        return cached;
-    }
-    const headers = new Headers(cached.headers);
-    headers.set('Content-Range', `bytes ${range.start}-${range.end}/${byteLength}`);
-    headers.set('Content-Length', String(range.end - range.start + 1));
-    headers.set('Accept-Ranges', 'bytes');
-    if (!headers.get('Content-Type')) {
-        headers.set('Content-Type', 'application/octet-stream');
-    }
-    const responseClone = cached.clone();
-    const streamed = streamRange(responseClone.body, range);
-    if (streamed) {
-        return new Response(streamed, { status: 206, statusText: 'Partial Content', headers });
-    }
-    if (blob) {
-        const slicedBody = blob.slice(range.start, range.end + 1);
-        if (slicedBody && typeof slicedBody.stream === 'function') {
-            return new Response(slicedBody.stream(), { status: 206, statusText: 'Partial Content', headers });
-        }
-        return new Response(slicedBody, { status: 206, statusText: 'Partial Content', headers });
-    }
-    const buffer = await cached.arrayBuffer();
-    const slicedBody = buffer.slice(range.start, range.end + 1);
-    return new Response(slicedBody, { status: 206, statusText: 'Partial Content', headers });
-};
-
-const cacheFirst = async (request, cacheName = CACHE_NAME) => {
-    const match = await matchFromCaches(request, undefined, cacheName);
-    const cache = match.cache;
-    const cached = match.cached;
-    if (cached) return cached;
-    try {
-        const response = await fetch(request);
-        await cacheResponse(cache, request, response, { maxEntries: getRuntimeLimit(cacheName) });
-        return response;
-    } catch {
-        await notifyOfflineMiss(request, 'cache-first');
-        return Response.error();
-    }
-};
-
-const staleWhileRevalidate = async (request, event, cacheName = CACHE_NAME) => {
-    const cache = await caches.open(cacheName);
-    const cached = await cache.match(request);
-    const fetchPromise = fetch(request).then((response) => {
-        cacheResponse(cache, request, response, { maxEntries: getRuntimeLimit(cacheName) });
-        return response;
-    });
-    if (cached) {
-        if (event) {
-            event.waitUntil(fetchPromise.catch(() => {}));
-        }
-        return cached;
-    }
-    try {
-        return await fetchPromise;
-    } catch {
-        await notifyOfflineMiss(request, 'stale-while-revalidate');
-        return Response.error();
-    }
-};
-
-const notifyClients = async (payload) => {
-    try {
-        const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-        clientList.forEach((client) => client.postMessage(payload));
-    } catch {
-        // Ignore notification failures
-    }
-};
-
-const getCacheSummary = async () => {
-    const cache = await caches.open(CACHE_NAME);
-    const mediaCache = await caches.open(MEDIA_CACHE_NAME);
-    const [requests, mediaRequests] = await Promise.all([cache.keys(), mediaCache.keys()]);
-    const cachedUrls = new Set(requests.map((request) => request.url));
-    const expected = Array.from(EXPECTED_URLS);
-    let expectedCached = 0;
-    expected.forEach((url) => {
-        if (cachedUrls.has(url)) expectedCached += 1;
-    });
-    return {
-        cachedAssets: requests.length + mediaRequests.length,
-        expectedTotal: expected.length,
-        expectedCached,
-    };
-};
-
-const notifyOfflineMiss = async (request, reason = 'fetch') => {
-    await notifyClients({
-        type: 'OFFLINE_MISS',
-        url: request?.url,
-        destination: request?.destination,
-        reason,
-        timestamp: Date.now(),
-    });
-};
-
-const updateAppShell = async (responsePromise) => {
-    try {
-        const response = await responsePromise;
-        if (response && response.ok) {
-            const cache = await caches.open(CACHE_NAME);
-            await cacheResponse(cache, APP_SHELL_URL, response);
-        }
-    } catch {
-        // Ignore update failures
-    }
-};
-
-const runOfflineSelfTest = async () => {
-    const cache = await caches.open(CACHE_NAME);
-    const expected = Array.from(EXPECTED_URLS);
-    let pass = 0;
-    const missing = [];
-    for (const url of expected) {
-        const cached = await cache.match(url, { ignoreSearch: true });
-        if (cached) {
-            pass += 1;
-        } else if (missing.length < 5) {
-            missing.push(url);
-        }
-    }
-    await notifyClients({
-        type: 'OFFLINE_SELFTEST_RESULT',
-        expectedTotal: expected.length,
-        expectedCached: pass,
-        missing,
-        timestamp: Date.now(),
-    });
-};
-
-const handleNavigation = async (event) => {
-    const preloadResponse = await event.preloadResponse;
-    const fetchPromise = preloadResponse ? Promise.resolve(preloadResponse) : fetch(event.request);
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(APP_SHELL_URL, { ignoreSearch: true });
-
-    if (cached) {
-        event.waitUntil(updateAppShell(fetchPromise));
-        return cached;
-    }
-
-    try {
-        const response = await fetchPromise;
-        if (response && response.ok) {
-            await cache.put(APP_SHELL_URL, response.clone());
-        }
-        return response;
-    } catch {
-        const offline = await cache.match(OFFLINE_URL, { ignoreSearch: true });
-        await notifyOfflineMiss(event.request, 'navigate');
-        return offline || Response.error();
-    }
-};
-
-const cacheOnly = async (request, cacheName = CACHE_NAME) => {
-    const match = await matchFromCaches(request, { ignoreSearch: true }, cacheName);
-    const cached = match.cached;
-    if (cached) return cached;
-    await notifyOfflineMiss(request, 'cache-only');
-    return Response.error();
-};
-
-self.addEventListener('fetch', (event) => {
-    const { request } = event;
-    if (request.method !== 'GET') {
-        return;
-    }
-    const url = new URL(request.url);
-    if (url.origin !== self.location.origin) {
-        return;
-    }
-
-    if (offlineMode) {
-        if (request.mode === 'navigate' || request.destination === 'document') {
-            event.respondWith(
-                (async () => {
-                    const cache = await caches.open(CACHE_NAME);
-                    const cached = await cache.match(APP_SHELL_URL, { ignoreSearch: true });
-                    if (cached) return cached;
-                    const offline = await cache.match(OFFLINE_URL, { ignoreSearch: true });
-                    await notifyOfflineMiss(request, 'offline-mode');
-                    return offline || Response.error();
-                })()
-            );
-            return;
-        }
-        if (request.headers.has('range')) {
-            event.respondWith(
-                (async () => {
-                    const ranged = await respondWithRange(request);
-                    if (ranged) return ranged;
-                    return cacheOnly(request, getRuntimeCacheName(request));
-                })()
-            );
-            return;
-        }
-        event.respondWith(cacheOnly(request, getRuntimeCacheName(request)));
-        return;
-    }
-
-    if (request.mode === 'navigate' || request.destination === 'document') {
-        event.respondWith(handleNavigation(event));
-        return;
-    }
-
-    if (request.headers.has('range')) {
-        event.respondWith(
-            (async () => {
-                try {
-                    const ranged = await respondWithRange(request);
-                    if (ranged) return ranged;
-                    return await fetch(request);
-                } catch {
-                    await notifyOfflineMiss(request, 'range');
-                    return Response.error();
-                }
-            })()
-        );
-        return;
-    }
-
-    if (STATIC_DESTINATIONS.has(request.destination)) {
-        const cacheName = getRuntimeCacheName(request);
-        event.respondWith(cacheFirst(request, cacheName));
-        return;
-    }
-
-    event.respondWith(staleWhileRevalidate(request, event, CACHE_NAME));
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((key) => (
+        key === CACHE_NAME || key === PACK_CACHE ? null : caches.delete(key)
+      ))))
+      .then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('message', (event) => {
-    if (event.data?.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
-    if (event.data?.type === 'REFRESH_ASSETS') {
-        event.waitUntil(refreshAssets());
-    }
-    if (event.data?.type === 'OFFLINE_SUMMARY_REQUEST') {
-        event.waitUntil(
-            (async () => {
-                const summary = await getCacheSummary();
-                await notifyClients({
-                    type: 'OFFLINE_SUMMARY',
-                    ...summary,
-                    timestamp: Date.now(),
-                });
-            })()
-        );
-    }
-    if (event.data?.type === 'OFFLINE_SELFTEST') {
-        event.waitUntil(runOfflineSelfTest());
-    }
-    if (event.data?.type === 'SET_OFFLINE_MODE') {
-        offlineMode = Boolean(event.data.value);
-        notifyClients({ type: 'OFFLINE_MODE', value: offlineMode, timestamp: Date.now() });
-    }
-    if (event.data?.type === 'PACK_CACHE') {
-        const { packId, assets, version } = event.data;
-        event.waitUntil(cachePackAssets(packId, Array.isArray(assets) ? assets : [], version || null));
-    }
-    if (event.data?.type === 'PACK_CLEAR') {
-        const { packId, assets } = event.data;
-        event.waitUntil(clearPackAssets(packId, Array.isArray(assets) ? assets : []));
-    }
-    if (event.data?.type === 'PACK_VERIFY') {
-        const { packId, assets, version } = event.data;
-        event.waitUntil(verifyPackAssets(packId, Array.isArray(assets) ? assets : [], version || null));
-    }
-    if (event.data?.type === 'PACK_CLEAR_ALL') {
-        event.waitUntil(clearAllPacks());
-    }
-    if (event.data?.type === 'PACK_SUMMARY_REQUEST') {
-        const packs = Array.isArray(event.data.packs) ? event.data.packs : [];
-        event.waitUntil(
-            (async () => {
-                const summary = await getPackSummary(packs);
-                await notifyClients({ type: 'PACK_SUMMARY', packs: summary, timestamp: Date.now() });
-            })()
-        );
-    }
+  const { data } = event;
+  if (!data || !data.type) return;
+  if (data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+  if (data.type === 'CACHE_STATS') {
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) => cache.keys())
+        .then((entries) => notifyClients({
+          type: 'CACHE_STATS',
+          cacheEntries: entries.length,
+          precacheEntries: PRECACHE_URLS.length,
+        }))
+    );
+  }
+  if (data.type === 'CLEAR_PACKS') {
+    event.waitUntil(
+      caches.delete(PACK_CACHE).then(() => notifyClients({ type: 'PACKS_CLEARED' }))
+    );
+  }
 });
 
-const refreshAssets = async () => {
-    await precacheAssets();
-    try {
-        await verifyCachedPacks();
-    } catch {
-        // Ignore pack verification failures
-    }
-    const summary = await getCacheSummary();
-    await notifyClients({
-        type: 'OFFLINE_REFRESH',
-        assetCount: PRECACHE_URLS.length,
-        ...summary,
-        timestamp: Date.now(),
-    });
+const cacheFirst = async (request) => {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response && response.ok) {
+    cache.put(request, response.clone()).catch(() => {});
+  }
+  return response;
 };
 
+const networkFirst = async (request) => {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const response = await fetch(request);
+    if (response && response.ok) {
+      cache.put(request, response.clone()).catch(() => {});
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    if (request.mode === 'navigate') {
+      return cache.match(OFFLINE_URL);
+    }
+    return cached;
+  }
+};
+
+const handleShareTarget = async (request) => {
+  const formData = await request.formData();
+  const files = formData.getAll('files').filter(Boolean);
+  const title = formData.get('title');
+  const text = formData.get('text');
+  const url = formData.get('url');
+  const createdAt = new Date().toISOString();
+
+  await Promise.all(files.map(async (file) => {
+    if (!file || typeof file === 'string') return null;
+    const entry = {
+      id: `${createdAt}-${file.name}-${Math.random().toString(16).slice(2)}`,
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size,
+      lastModified: file.lastModified,
+      createdAt,
+      title,
+      text,
+      url,
+      blob: file,
+    };
+    await addShareEntry(entry);
+    return entry;
+  }));
+
+  await notifyClients({ type: 'SHARE_INBOX_UPDATED' });
+
+  return Response.redirect('./#core', 303);
+};
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.method === 'POST') {
+    const url = new URL(request.url);
+    if (url.pathname.endsWith('/share-target') || url.pathname.endsWith('share-target')) {
+      event.respondWith(handleShareTarget(request));
+    }
+    return;
+  }
+
+  if (request.method !== 'GET') return;
+
+  const destination = request.destination;
+
+  if (request.mode === 'navigate' || destination === 'document') {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  if (['style', 'script', 'image', 'font', 'audio', 'video'].includes(destination)) {
+    event.respondWith(cacheFirst(request));
+    return;
+  }
+
+  event.respondWith(networkFirst(request));
+});
+
 self.addEventListener('sync', (event) => {
-    if (event.tag === 'panda-refresh') {
-        event.waitUntil(refreshAssets());
-    }
-});
-
-self.addEventListener('periodicsync', (event) => {
-    if (event.tag === 'panda-refresh') {
-        event.waitUntil(refreshAssets());
-    }
-});
-
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
+  if (event.tag === 'session-sync') {
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            for (const client of clientList) {
-                if ('focus' in client) return client.focus();
-            }
-            if (clients.openWindow) return clients.openWindow('./#view-coach');
-            return undefined;
+      getSyncEntries()
+        .then(async (entries) => {
+          if (!entries.length) return 0;
+          await clearSyncEntries();
+          await notifyClients({ type: 'SYNC_COMPLETE', synced: entries.length });
+          return entries.length;
         })
+        .catch(() => 0)
     );
+  }
 });
