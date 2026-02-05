@@ -156,6 +156,7 @@ fn boot(state: Rc<RefCell<AppState>>) {
     }
     let _ = storage::prune_recordings(90.0).await;
     storage_cleanup::run_auto();
+    db_migration::check_migration_cta();
 
     state_clone.borrow_mut().ml = ml::load_state();
     {
