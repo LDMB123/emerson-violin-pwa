@@ -1,4 +1,6 @@
-pub const SCHEMA_VERSION: u32 = 1;
+use crate::db_messages::DbMigration;
+
+pub const SCHEMA_VERSION: u32 = 2;
 
 // Keep PRAGMA user_version and meta.schema_version aligned with SCHEMA_VERSION.
 pub const SCHEMA_SQL: &str = r#"
@@ -101,25 +103,79 @@ CREATE INDEX IF NOT EXISTS telemetry_queue_created_at_idx ON telemetry_queue(cre
 
 CREATE TABLE IF NOT EXISTS error_queue (
   id TEXT PRIMARY KEY,
-  created_at REAL,
+  created_at REAL NOT NULL,
   payload TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS error_queue_created_at_idx ON error_queue(created_at);
 
 CREATE TABLE IF NOT EXISTS score_scans (
   id TEXT PRIMARY KEY,
-  created_at REAL,
+  created_at REAL NOT NULL,
   payload TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS score_scans_created_at_idx ON score_scans(created_at);
 
 CREATE TABLE IF NOT EXISTS model_cache (
   id TEXT PRIMARY KEY,
-  created_at REAL,
+  created_at REAL NOT NULL,
   payload TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS model_cache_created_at_idx ON model_cache(created_at);
 
-PRAGMA user_version = 1;
-INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');
+CREATE TABLE IF NOT EXISTS migration_state (
+  id TEXT PRIMARY KEY,
+  source_version INTEGER NOT NULL,
+  started_at REAL NOT NULL,
+  updated_at REAL NOT NULL,
+  last_store TEXT,
+  last_index INTEGER,
+  counts_json TEXT NOT NULL,
+  errors_json TEXT NOT NULL,
+  completed_at REAL
+);
+
+CREATE TABLE IF NOT EXISTS migration_log (
+  id TEXT PRIMARY KEY,
+  migration_id TEXT NOT NULL,
+  store TEXT NOT NULL,
+  level TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at REAL NOT NULL
+);
+
+PRAGMA user_version = 2;
+INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '2');
 "#;
+
+pub fn migrations() -> Vec<DbMigration> {
+  vec![DbMigration {
+    version: 2,
+    sql: r#"
+CREATE TABLE IF NOT EXISTS migration_state (
+  id TEXT PRIMARY KEY,
+  source_version INTEGER NOT NULL,
+  started_at REAL NOT NULL,
+  updated_at REAL NOT NULL,
+  last_store TEXT,
+  last_index INTEGER,
+  counts_json TEXT NOT NULL,
+  errors_json TEXT NOT NULL,
+  completed_at REAL
+);
+
+CREATE TABLE IF NOT EXISTS migration_log (
+  id TEXT PRIMARY KEY,
+  migration_id TEXT NOT NULL,
+  store TEXT NOT NULL,
+  level TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at REAL NOT NULL
+);
+
+PRAGMA user_version = 2;
+INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '2');
+"#
+      .trim()
+      .to_string(),
+  }]
+}

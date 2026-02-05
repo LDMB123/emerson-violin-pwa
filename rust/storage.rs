@@ -13,7 +13,7 @@ use web_sys::{
 use crate::dom;
 
 const DB_NAME: &str = "emerson-violin-db";
-const DB_VERSION: u32 = 3;
+pub const DB_VERSION: u32 = 5;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
@@ -166,6 +166,11 @@ async fn get_all_values(store_name: &str) -> Result<Vec<JsValue>, JsValue> {
   let array = Array::from(&result);
   Ok(array.iter().collect())
 }
+
+pub async fn get_store_values(store_name: &str) -> Result<Vec<JsValue>, JsValue> {
+  get_all_values(store_name).await
+}
+
 
 async fn put_value(store_name: &str, value: &JsValue) -> Result<(), JsValue> {
   let db = open_db().await?;

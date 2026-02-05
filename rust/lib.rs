@@ -20,6 +20,8 @@ mod perf;
 mod opfs_test;
 mod db_schema;
 mod db_messages;
+mod db_client;
+mod db_migration;
 mod db_worker;
 
 use std::cell::RefCell;
@@ -50,6 +52,7 @@ pub fn start() {
   perf::init();
   opfs_test::init();
   db_worker::init();
+  db_migration::init();
 
   let state_clone = state.clone();
   spawn_local(async move {

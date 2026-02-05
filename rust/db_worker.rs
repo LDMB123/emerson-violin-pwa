@@ -5,7 +5,7 @@ use wasm_bindgen::JsValue;
 use web_sys::{Event, MessageEvent, Worker, WorkerOptions, WorkerType};
 
 use crate::db_messages::{DbRequest, DbResponse};
-use crate::db_schema::{SCHEMA_SQL, SCHEMA_VERSION};
+use crate::db_schema::{migrations, SCHEMA_SQL, SCHEMA_VERSION};
 use crate::dom;
 use crate::storage;
 use crate::utils;
@@ -104,6 +104,7 @@ fn start_worker() {
     request_id: utils::create_id(),
     schema_version: SCHEMA_VERSION,
     schema_sql: SCHEMA_SQL.to_string(),
+    migrations: migrations(),
   };
   let message = serde_wasm_bindgen::to_value(&request).unwrap_or(JsValue::NULL);
   let _ = worker.post_message(&message);
