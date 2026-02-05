@@ -68,6 +68,11 @@ if (distMode) {
     excludeDirs: ['mockups'],
   });
 
+  addDir('public/sqlite', {
+    urlPrefix: 'sqlite',
+    include: /\.(?:mjs|js|wasm)$/i,
+  });
+
   const distDir = path.join(rootDir, 'dist');
   if (fs.existsSync(distDir)) {
     addDir('dist', {

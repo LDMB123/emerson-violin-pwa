@@ -1,12 +1,14 @@
 use std::cell::RefCell;
 
-use js_sys::{Object, Reflect};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
-use web_sys::{Event, MessageEvent, Worker};
+use web_sys::{Event, MessageEvent, Worker, WorkerOptions, WorkerType};
 
+use crate::db_messages::{DbRequest, DbResponse};
+use crate::db_schema::{SCHEMA_SQL, SCHEMA_VERSION};
 use crate::dom;
 use crate::storage;
+use crate::utils;
 
 thread_local! {
   static WORKER: RefCell<Option<Worker>> = RefCell::new(None);
@@ -24,7 +26,7 @@ pub fn init() {
 
 fn start_worker() {
   dom::set_text("[data-db-worker-status]", "Starting…");
-  dom::set_text("[data-db-worker-detail]", "Launching DB worker");
+  dom::set_text("[data-db-worker-detail]", "Launching SQLite OPFS worker");
 
   if !storage::opfs_supported() {
     dom::set_text("[data-db-worker-status]", "OPFS unavailable");
@@ -32,7 +34,10 @@ fn start_worker() {
     return;
   }
 
-  let worker = match Worker::new("./db-worker.js") {
+  let mut options = WorkerOptions::new();
+  options.set_type(WorkerType::Module);
+  options.set_name("emerson-db-worker");
+  let worker = match Worker::new_with_options("./db-worker.js", &options) {
     Ok(worker) => worker,
     Err(_) => {
       dom::set_text("[data-db-worker-status]", "Worker failed");
@@ -44,43 +49,38 @@ fn start_worker() {
   let worker_clone = worker.clone();
   let cb = wasm_bindgen::closure::Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
     let data = event.data();
-    let msg_type = Reflect::get(&data, &"type".into())
-      .ok()
-      .and_then(|val| val.as_string())
-      .unwrap_or_default();
+    let response = serde_wasm_bindgen::from_value::<DbResponse>(data);
+    let response = match response {
+      Ok(response) => response,
+      Err(_) => return,
+    };
 
-    if msg_type != "DB_WORKER_STATUS" {
-      return;
-    }
-
-    let ok = Reflect::get(&data, &"ok".into())
-      .ok()
-      .and_then(|val| val.as_bool())
-      .unwrap_or(false);
-    let status = Reflect::get(&data, &"status".into())
-      .ok()
-      .and_then(|val| val.as_string())
-      .unwrap_or_else(|| "Unknown".to_string());
-    let detail = Reflect::get(&data, &"detail".into())
-      .ok()
-      .and_then(|val| val.as_string())
-      .unwrap_or_default();
-    let bytes = Reflect::get(&data, &"bytes".into())
-      .ok()
-      .and_then(|val| val.as_f64())
-      .unwrap_or(0.0);
-    let ms = Reflect::get(&data, &"ms".into())
-      .ok()
-      .and_then(|val| val.as_f64())
-      .unwrap_or(0.0);
-
-    dom::set_text("[data-db-worker-status]", &status);
-    dom::set_text("[data-db-worker-detail]", &detail);
-    if ok {
-      dom::set_text(
-        "[data-db-worker-file]",
-        &format!("emerson.db ({} bytes, {:.0} ms)", bytes as u64, ms),
-      );
+    match response {
+      DbResponse::Ready {
+        ok,
+        detail,
+        db_file,
+        sqlite_version,
+        schema_version,
+        ms,
+        ..
+      } => {
+        dom::set_text("[data-db-worker-status]", if ok { "Ready" } else { "Failed" });
+        dom::set_text(
+          "[data-db-worker-detail]",
+          &format!("{} (schema v{}, {:.0} ms)", detail, schema_version, ms),
+        );
+        if ok {
+          dom::set_text(
+            "[data-db-worker-file]",
+            &format!("{} (SQLite {})", db_file, sqlite_version),
+          );
+        }
+      }
+      DbResponse::Error { message, .. } => {
+        dom::set_text("[data-db-worker-status]", "Failed");
+        dom::set_text("[data-db-worker-detail]", &message);
+      }
     }
 
     worker_clone.terminate();
@@ -100,9 +100,13 @@ fn start_worker() {
   worker.set_onerror(Some(onerror.as_ref().unchecked_ref()));
   onerror.forget();
 
-  let message = Object::new();
-  let _ = Reflect::set(&message, &"type".into(), &JsValue::from_str("DB_WORKER_INIT"));
-  let _ = worker.post_message(&message.into());
+  let request = DbRequest::Init {
+    request_id: utils::create_id(),
+    schema_version: SCHEMA_VERSION,
+    schema_sql: SCHEMA_SQL.to_string(),
+  };
+  let message = serde_wasm_bindgen::to_value(&request).unwrap_or(JsValue::NULL);
+  let _ = worker.post_message(&message);
 
   WORKER.with(|slot| *slot.borrow_mut() = Some(worker));
 }

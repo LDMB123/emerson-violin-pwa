@@ -18,6 +18,8 @@ mod tools;
 mod tone;
 mod perf;
 mod opfs_test;
+mod db_schema;
+mod db_messages;
 mod db_worker;
 
 use std::cell::RefCell;

@@ -1,51 +1,65 @@
+import sqlite3InitModule from './sqlite/index.mjs';
+
+let sqlitePromise = null;
+
+const loadSqlite = () => {
+  if (!sqlitePromise) {
+    sqlitePromise = sqlite3InitModule({
+      locateFile: (path, prefix) => {
+        try {
+          return new URL(path, import.meta.url).href;
+        } catch {
+          return `${prefix || ''}${path}`;
+        }
+      },
+    });
+  }
+  return sqlitePromise;
+};
+
 self.onmessage = async (event) => {
   const data = event.data || {};
-  if (data.type !== 'DB_WORKER_INIT') return;
+  if (data.type !== 'DB_INIT') return;
 
   const start = performance.now();
+  const requestId = data.request_id || 'unknown';
+  let db = null;
+
   try {
-    if (!self.navigator?.storage?.getDirectory) {
-      throw new Error('OPFS not available');
+    const sqlite3 = await loadSqlite();
+    if (!sqlite3?.oo1?.OpfsDb) {
+      throw new Error('sqlite3 OPFS VFS unavailable');
     }
 
-    const root = await self.navigator.storage.getDirectory();
-    const dir = await root.getDirectoryHandle('db', { create: true });
-    const file = await dir.getFileHandle('emerson.db', { create: true });
-    const accessHandle = await file.createSyncAccessHandle();
-
-    const header = new Uint8Array([0x45, 0x4d, 0x52, 0x53, 0x4f, 0x4e, 0x01, 0x00]);
-    accessHandle.write(header, { at: 0 });
-    accessHandle.flush();
-
-    const readback = new Uint8Array(header.length);
-    accessHandle.read(readback, { at: 0 });
-    accessHandle.close();
-
-    let ok = true;
-    for (let i = 0; i < header.length; i += 1) {
-      if (header[i] !== readback[i]) {
-        ok = false;
-        break;
-      }
+    db = new sqlite3.oo1.OpfsDb('emerson.db', 'c');
+    if (data.schema_sql) {
+      db.exec(data.schema_sql);
     }
 
-    const end = performance.now();
+    const sqliteVersion = sqlite3.capi?.sqlite3_libversion?.() || 'unknown';
+    const dbFile = db.filename || 'emerson.db';
+
     self.postMessage({
-      type: 'DB_WORKER_STATUS',
-      ok,
-      status: ok ? 'Ready' : 'Header mismatch',
-      detail: ok ? 'DB file created via SyncAccessHandle' : 'DB file readback mismatch',
-      bytes: header.length,
-      ms: end - start,
+      type: 'DB_READY',
+      request_id: requestId,
+      ok: true,
+      detail: 'SQLite OPFS ready',
+      db_file: dbFile,
+      sqlite_version: sqliteVersion,
+      schema_version: data.schema_version || 0,
+      ms: performance.now() - start,
     });
   } catch (err) {
     self.postMessage({
-      type: 'DB_WORKER_STATUS',
-      ok: false,
-      status: 'Failed',
-      detail: String(err?.message || err),
-      bytes: 0,
-      ms: performance.now() - start,
+      type: 'DB_ERROR',
+      request_id: requestId,
+      message: String(err?.message || err),
     });
+  } finally {
+    try {
+      db?.close();
+    } catch {
+      // Ignore close errors for diagnostics worker.
+    }
   }
 };
