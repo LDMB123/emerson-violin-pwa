@@ -21,6 +21,14 @@ export default defineConfig({
             name: 'iPad Safari',
             use: { ...devices['iPad Pro 11'] },
         },
+        {
+            name: 'sw-enabled',
+            use: {
+                ...devices['Desktop Chrome'],
+                serviceWorkers: 'allow',
+            },
+            testMatch: /pwa-validation/,
+        },
     ],
     webServer: {
         command: 'npm run dev',
