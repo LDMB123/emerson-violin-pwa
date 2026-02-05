@@ -349,8 +349,9 @@ async fn run_integrity_drill() -> Result<String, wasm_bindgen::JsValue> {
   let saved_state = load_state().await?;
 
   // Clean any prior drill data from IDB + SQLite
+  let sqlite_tables: Vec<&str> = STORE_SPECS.iter().map(|s| s.table).collect();
   storage::clear_drill_data().await?;
-  storage::clear_drill_data_sqlite().await?;
+  storage::clear_drill_data_sqlite(&sqlite_tables).await?;
 
   // Seed 3 dummy records per IDB store
   let seeded = storage::seed_drill_data(3).await?;
@@ -390,7 +391,7 @@ async fn run_integrity_drill() -> Result<String, wasm_bindgen::JsValue> {
     .unwrap_or(true);
 
   // Resume: run full migration — should pick up from interrupted state
-  let _ = run_migration().await;
+  let migration_err = run_migration().await.err();
 
   // Verify completion
   let final_state = load_state().await?;
@@ -407,24 +408,9 @@ async fn run_integrity_drill() -> Result<String, wasm_bindgen::JsValue> {
     .map(|s| s.errors.is_empty())
     .unwrap_or(false);
 
-  // Check for duplicates via SQL
+  // Check for duplicates via SQL (derive table names from STORE_SPECS)
   let mut duplicates_found = false;
-  let tables = [
-    "sessions",
-    "recordings",
-    "sync_queue",
-    "share_inbox",
-    "ml_traces",
-    "game_scores",
-    "score_library",
-    "assignments",
-    "profiles",
-    "telemetry_queue",
-    "error_queue",
-    "score_scans",
-    "model_cache",
-  ];
-  for table in tables {
+  for table in STORE_SPECS.iter().map(|s| s.table) {
     let pattern = format!("{}%", storage::DRILL_PREFIX);
     let rows = db_client::query(
       &format!(
@@ -442,7 +428,7 @@ async fn run_integrity_drill() -> Result<String, wasm_bindgen::JsValue> {
 
   // Cleanup drill data from IDB + SQLite
   storage::clear_drill_data().await?;
-  storage::clear_drill_data_sqlite().await?;
+  storage::clear_drill_data_sqlite(&sqlite_tables).await?;
 
   // Restore original migration state
   if let Some(original) = saved_state {
@@ -450,11 +436,16 @@ async fn run_integrity_drill() -> Result<String, wasm_bindgen::JsValue> {
   }
 
   // Report
-  let pass = incomplete && completed && checksums_ok && no_errors && !duplicates_found;
+  let no_migration_err = migration_err.is_none();
+  let pass = incomplete && completed && checksums_ok && no_errors && !duplicates_found && no_migration_err;
   let status = if pass { "PASS" } else { "FAIL" };
+  let migration_err_str = migration_err
+    .and_then(|e| e.as_string())
+    .unwrap_or_default();
   let detail = format!(
-    "seeded={}, interrupted_after={}, incomplete={}, completed={}, checksums={}, errors={}, duplicates={}",
-    seeded, stores_done, incomplete, completed, checksums_ok, no_errors, !duplicates_found
+    "seeded={}, interrupted_after={}, incomplete={}, completed={}, checksums={}, errors={}, duplicates={}, migration_err={}",
+    seeded, stores_done, incomplete, completed, checksums_ok, no_errors, !duplicates_found,
+    if migration_err_str.is_empty() { "none" } else { &migration_err_str }
   );
   Ok(format!("{}: {}", status, detail))
 }

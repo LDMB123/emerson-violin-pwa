@@ -633,23 +633,8 @@ pub async fn clear_drill_data() -> Result<usize, JsValue> {
   Ok(removed)
 }
 
-pub async fn clear_drill_data_sqlite() -> Result<usize, JsValue> {
+pub async fn clear_drill_data_sqlite(tables: &[&str]) -> Result<usize, JsValue> {
   let mut removed = 0usize;
-  let tables = [
-    "sessions",
-    "recordings",
-    "sync_queue",
-    "share_inbox",
-    "ml_traces",
-    "game_scores",
-    "score_library",
-    "assignments",
-    "profiles",
-    "telemetry_queue",
-    "error_queue",
-    "score_scans",
-    "model_cache",
-  ];
   for table in tables {
     let pattern = format!("{}%", DRILL_PREFIX);
     let rows = db_client::query(
