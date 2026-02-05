@@ -576,7 +576,15 @@ pub async fn legacy_idb_has_data() -> bool {
   idb_has_any_data().await
 }
 
-
+pub async fn legacy_idb_total_count() -> usize {
+  let mut total = 0usize;
+  for store in IDB_STORES {
+    if let Ok(count) = get_store_count(store).await {
+      total = total.saturating_add(count as usize);
+    }
+  }
+  total
+}
 
 pub async fn get_sessions() -> Result<Vec<Session>, JsValue> {
   if should_use_sqlite().await {
