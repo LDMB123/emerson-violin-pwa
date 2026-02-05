@@ -335,7 +335,7 @@ fn show_banner(visible: bool) {
     if visible {
       let _ = el.remove_attribute("hidden");
     } else {
-      let _ = el.set_attribute("hidden", "");
+      let _ = el.set_attribute("hidden", "true");
     }
   }
 }
@@ -482,6 +482,7 @@ async fn run_migration() -> Result<(), wasm_bindgen::JsValue> {
 
   // Auto-hide CTA banner if migration succeeded
   if state.errors.is_empty() {
+    dismiss_cta();
     show_banner(false);
   }
 
