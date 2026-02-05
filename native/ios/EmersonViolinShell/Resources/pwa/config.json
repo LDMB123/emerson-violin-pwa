@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "features": {
+    "games": true,
+    "ml": true,
+    "pose": true,
+    "score_following": true,
+    "teacher_mode": true,
+    "telemetry": true,
+    "push": true,
+    "audio_worklet": true,
+    "webcodecs": true
+  },
+  "endpoints": {
+    "telemetry": "/api/telemetry",
+    "errors": "/api/errors",
+    "push_subscribe": "/api/push/subscribe",
+    "push_schedule": "/api/push/schedule",
+    "push_public_key": "/api/push/public-key",
+    "update": "/api/pwa/update"
+  },
+  "channels": {
+    "update": "stable"
+  }
+}
