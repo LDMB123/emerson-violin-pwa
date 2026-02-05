@@ -26,21 +26,78 @@ const PRECACHE_URLS = Array.from(new Set([
   OFFLINE_URL,
 ]));
 
+
+const DB_NAME = 'emerson-share-inbox';
+const DB_VERSION = 1;
+
+const openDb = () => new Promise((resolve, reject) => {
+  const request = indexedDB.open(DB_NAME, DB_VERSION);
+  request.onupgradeneeded = () => {
+    const db = request.result;
+    if (!db.objectStoreNames.contains('shareInbox')) {
+      db.createObjectStore('shareInbox', { keyPath: 'id' });
+    }
+  };
+  request.onsuccess = () => resolve(request.result);
+  request.onerror = () => reject(request.error);
+});
+
+const withStore = async (storeName, mode, callback) => {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, mode);
+    const store = tx.objectStore(storeName);
+    const result = callback(store, tx);
+    tx.oncomplete = () => resolve(result);
+    tx.onerror = () => reject(tx.error);
+  });
+};
+
+const addShareEntry = (entry) => withStore('shareInbox', 'readwrite', (store) => {
+  store.put(entry);
+});
+
+const listShareEntries = () => withStore('shareInbox', 'readonly', (store) => new Promise((resolve) => {
+  const request = store.getAll();
+  request.onsuccess = () => resolve(request.result || []);
+  request.onerror = () => resolve([]);
+}));
+
+const deleteShareEntries = (ids) => {
+  if (!Array.isArray(ids) || !ids.length) return Promise.resolve();
+  return withStore('shareInbox', 'readwrite', (store) => {
+    ids.forEach((id) => store.delete(id));
+  });
+};
+
+const postShareEntries = (client, entries) => {
+  if (!client) return;
+  client.postMessage({ type: 'SHARE_PAYLOAD', entries });
+};
+
+const broadcastShareEntries = async (entries) => {
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  if (!clients.length) return false;
+  clients.forEach((client) => postShareEntries(client, entries));
+  return true;
+};
+
+const ensureShareDelivery = async (entries) => {
+  if (await broadcastShareEntries(entries)) return;
+  const client = await self.clients.openWindow('./#core');
+  if (client) {
+    postShareEntries(client, entries);
+  }
+};
+
 const notifyClients = async (message) => {
   const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   clients.forEach((client) => client.postMessage(message));
 };
 
 const shareToClients = async (entries) => {
-  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-  if (clients.length) {
-    clients.forEach((client) => client.postMessage({ type: 'SHARE_PAYLOAD', entries }));
-    return;
-  }
-  const client = await self.clients.openWindow('./#core');
-  if (client) {
-    client.postMessage({ type: 'SHARE_PAYLOAD', entries });
-  }
+  await Promise.all(entries.map((entry) => addShareEntry(entry)));
+  await ensureShareDelivery(entries);
 };
 
 self.addEventListener('install', (event) => {
@@ -66,6 +123,26 @@ self.addEventListener('message', (event) => {
   if (!data || !data.type) return;
   if (data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+    return;
+  }
+
+  if (data.type === 'REQUEST_SHARE_INBOX') {
+    event.waitUntil(
+      listShareEntries().then((entries) => {
+        if (!entries.length) return;
+        if (event.source) {
+          postShareEntries(event.source, entries);
+          return;
+        }
+        return ensureShareDelivery(entries);
+      })
+    );
+    return;
+  }
+  if (data.type === 'ACK_SHARE_INBOX') {
+    const ids = Array.isArray(data.ids) ? data.ids : [];
+    if (!ids.length) return;
+    event.waitUntil(deleteShareEntries(ids));
     return;
   }
   if (data.type === 'CACHE_STATS') {

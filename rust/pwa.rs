@@ -317,6 +317,7 @@ fn init_service_worker() {
       wire_update_buttons(reg.clone(), waiting.clone());
       watch_for_updates(reg.clone(), waiting.clone());
       request_cache_stats();
+      request_share_inbox();
     } else {
       dom::set_text("[data-sw-status]", "Service worker failed");
       set_button_disabled("[data-sw-update]", true);
@@ -332,6 +333,7 @@ fn wire_update_buttons(reg: ServiceWorkerRegistration, waiting: Rc<RefCell<Optio
       dom::set_text("[data-sw-status]", "Checking for updates...");
       let _ = reg_clone.update();
       request_cache_stats();
+      request_share_inbox();
     });
     let _ = check.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
     cb.forget();
@@ -427,6 +429,7 @@ fn handle_sw_message(data: &JsValue) {
       dom::set_text("[data-sw-status]", &format!("Synced {} sessions", synced as i32));
     }
 
+
 "SHARE_PAYLOAD" => {
   dom::set_text("[data-sw-status]", "Share payload received");
   let entries_val = Reflect::get(data, &JsValue::from_str("entries")).ok();
@@ -434,17 +437,70 @@ fn handle_sw_message(data: &JsValue) {
     .map(|val| Array::from(&val))
     .unwrap_or_else(Array::new);
   let values: Vec<JsValue> = entries.iter().collect();
+  let ids = extract_share_entry_ids(&values);
   spawn_local(async move {
-    let _ = storage::ingest_share_entries(values).await;
-    share_inbox::refresh();
+    match storage::ingest_share_entries(values).await {
+      Ok(_) => {
+        acknowledge_share_entries(ids);
+        dom::set_text("[data-sw-status]", "Share inbox updated");
+        share_inbox::refresh();
+      }
+      Err(_) => {
+        dom::set_text("[data-sw-status]", "Share inbox ingest failed");
+      }
+    }
   });
 }
-    "SHARE_INBOX_UPDATED" => {
+
+"SHARE_INBOX_UPDATED" => {
       dom::set_text("[data-sw-status]", "Share inbox updated");
       share_inbox::refresh();
     }
     _ => {}
   }
+}
+
+
+fn request_share_inbox() {
+  let sw = dom::window().navigator().service_worker();
+  if let Ok(controller) = Reflect::get(&sw, &JsValue::from_str("controller")) {
+    if let Ok(worker) = controller.dyn_into::<ServiceWorker>() {
+      let message = js_sys::Object::new();
+      let _ = Reflect::set(&message, &JsValue::from_str("type"), &JsValue::from_str("REQUEST_SHARE_INBOX"));
+      let _ = worker.post_message(&message);
+    }
+  }
+}
+
+fn acknowledge_share_entries(ids: Vec<String>) {
+  if ids.is_empty() {
+    return;
+  }
+  let sw = dom::window().navigator().service_worker();
+  if let Ok(controller) = Reflect::get(&sw, &JsValue::from_str("controller")) {
+    if let Ok(worker) = controller.dyn_into::<ServiceWorker>() {
+      let message = js_sys::Object::new();
+      let _ = Reflect::set(&message, &JsValue::from_str("type"), &JsValue::from_str("ACK_SHARE_INBOX"));
+      let ids_array = Array::new();
+      for id in ids {
+        ids_array.push(&JsValue::from_str(&id));
+      }
+      let _ = Reflect::set(&message, &JsValue::from_str("ids"), &ids_array);
+      let _ = worker.post_message(&message);
+    }
+  }
+}
+
+fn extract_share_entry_ids(entries: &[JsValue]) -> Vec<String> {
+  let mut ids = Vec::new();
+  for entry in entries {
+    if let Ok(id_val) = Reflect::get(entry, &JsValue::from_str("id")) {
+      if let Some(id) = id_val.as_string() {
+        ids.push(id);
+      }
+    }
+  }
+  ids
 }
 
 fn request_cache_stats() {
