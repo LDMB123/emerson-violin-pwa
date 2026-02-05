@@ -20,6 +20,7 @@ Repo: `/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa`
 ### Git State
 - Branch: `codex/audit-rust-transition-ipados`
 - Latest commits:
+  - `45f0590` docs: update handoff status
   - `ca94fd3` pwa: harden share staging, PDF offline gating, diagnostics
   - `5beb56c` ui: expose migration verification + IDB purge
   - `6d4fc92` pwa: push reminders, share staging stats, update docs
