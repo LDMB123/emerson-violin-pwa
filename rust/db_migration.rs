@@ -480,6 +480,11 @@ async fn run_migration() -> Result<(), wasm_bindgen::JsValue> {
   state.last_key = None;
   upsert_state(&state).await?;
 
+  // Auto-hide CTA banner if migration succeeded
+  if state.errors.is_empty() {
+    show_banner(false);
+  }
+
   if state.errors.is_empty() {
     dom::set_text("[data-db-migrate-status]", "Migration complete.");
   } else {
