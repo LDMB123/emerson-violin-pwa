@@ -2250,6 +2250,15 @@ async fn delete_opfs_dir(name: &str) -> Result<(), JsValue> {
 }
 
 
+pub async fn save_blob_to_opfs_public(path: &str, blob: &Blob) -> Result<(), JsValue> {
+  save_blob_to_opfs(path, blob).await
+}
+
+pub async fn delete_opfs_dir_public(name: &str) -> Result<(), JsValue> {
+  delete_opfs_dir(name).await
+}
+
+
 pub fn opfs_supported() -> bool {
   let navigator = dom::window().navigator();
   let storage = Reflect::get(&navigator, &JsValue::from_str("storage")).ok();

@@ -1373,6 +1373,21 @@
 	            <p class="status-line" data-db-migrate-checksums>Checksums: Unknown</p>
 	            <p class="status-line" data-db-migrate-idb>Legacy IDB: Unknown</p>
 	            <p class="status-line" data-db-integrity-drill-status>Integrity drill idle.</p>
+
+              <details class="drill-section">
+                <summary>Storage pressure drill</summary>
+                <div class="button-row" style="margin-top: 0.5rem;">
+                  <label>
+                    <span class="note">Size (MB)</span>
+                    <input type="number" value="64" min="1" max="512" style="width: 5rem;" data-storage-drill-size />
+                  </label>
+                  <button class="btn btn-ghost" type="button" data-storage-drill-fill>Fill OPFS</button>
+                  <button class="btn btn-ghost" type="button" data-storage-drill-clear>Clear drill blobs</button>
+                  <button class="btn btn-ghost" type="button" data-storage-drill-check>Check pressure</button>
+                </div>
+                <p class="status-line" data-storage-drill-status>Storage drill idle.</p>
+                <p class="status-line" data-storage-drill-pressure>Pressure: unknown</p>
+              </details>
 	          </article>
         </div>
       </section>

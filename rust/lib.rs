@@ -55,6 +55,7 @@ mod db_migration;
 mod db_worker;
 mod perf;
 mod opfs_test;
+mod storage_drill;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -143,6 +144,7 @@ fn boot(state: Rc<RefCell<AppState>>) {
   db_migration::init_integrity_drill();
   perf::init();
   opfs_test::init();
+  storage_drill::init();
 
   let state_clone = state.clone();
   spawn_local(async move {
