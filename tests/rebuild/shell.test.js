@@ -16,6 +16,13 @@ describe('Rust-first shell markup', () => {
     expect(indexHtml).toContain('id="controls"');
   });
 
+  it('includes migration CTA banner', () => {
+    expect(indexHtml).toContain('data-migrate-banner');
+    expect(indexHtml).toContain('data-migrate-banner-action');
+    expect(indexHtml).toContain('data-migrate-banner-dismiss');
+    expect(indexHtml).toContain('data-migrate-banner-copy');
+  });
+
   it('includes Rust data hooks', () => {
     expect(indexHtml).toContain('data-session-start');
     expect(indexHtml).toContain('data-tuner-toggle');
