@@ -8,6 +8,7 @@ use wasm_bindgen_futures::spawn_local;
 use web_sys::{Event, HtmlDialogElement, ServiceWorker, ServiceWorkerRegistration};
 
 use crate::dom;
+use crate::db_migration;
 use crate::share_inbox;
 use crate::state::AppState;
 use crate::storage;
@@ -119,8 +120,14 @@ fn init_install() {
 
   if let Some(btn) = update_action {
     let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
-      dom::set_text("[data-sw-status]", "Reloading...");
-      let _ = dom::window().location().reload();
+      spawn_local(async move {
+        if !migration_allows_update().await {
+          dom::set_text("[data-sw-status]", "Update blocked: migration not verified");
+          return;
+        }
+        dom::set_text("[data-sw-status]", "Reloading...");
+        let _ = dom::window().location().reload();
+      });
     });
     let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
     cb.forget();
@@ -335,12 +342,21 @@ fn wire_update_buttons(reg: ServiceWorkerRegistration, waiting: Rc<RefCell<Optio
     let waiting_clone = waiting.clone();
     let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
       let worker = waiting_clone.borrow().clone().or_else(|| reg_clone.waiting());
-      if let Some(worker) = worker {
+      if worker.is_none() {
+        dom::set_text("[data-sw-status]", "No update ready");
+        return;
+      }
+      let worker = worker.unwrap();
+      spawn_local(async move {
+        if !migration_allows_update().await {
+          dom::set_text("[data-sw-status]", "Update blocked: migration not verified");
+          return;
+        }
         let message = js_sys::Object::new();
         let _ = Reflect::set(&message, &JsValue::from_str("type"), &JsValue::from_str("SKIP_WAITING"));
         let _ = worker.post_message(&message);
         dom::set_text("[data-sw-status]", "Applying update...");
-      }
+      });
     });
     let _ = apply.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
     cb.forget();
@@ -439,6 +455,19 @@ fn request_cache_stats() {
       let _ = Reflect::set(&message, &JsValue::from_str("type"), &JsValue::from_str("CACHE_STATS"));
       let _ = worker.post_message(&message);
     }
+  }
+}
+
+
+async fn migration_allows_update() -> bool {
+  match db_migration::migration_summary().await {
+    Ok(summary) => {
+      if summary.started && !(summary.completed && summary.errors.is_empty() && summary.checksums_ok) {
+        return false;
+      }
+      true
+    }
+    Err(_) => true,
   }
 }
 

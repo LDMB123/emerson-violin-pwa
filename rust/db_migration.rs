@@ -141,6 +141,37 @@ struct MigrationReport {
   logs: Vec<JsonValue>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct MigrationSummary {
+  pub started: bool,
+  pub completed: bool,
+  pub checksums_ok: bool,
+  pub errors: Vec<String>,
+}
+
+pub async fn migration_summary() -> Result<MigrationSummary, JsValue> {
+  db_client::init_db().await?;
+  let state = load_state().await?;
+  if let Some(state) = state {
+    let started = state.started_at > 0.0;
+    let completed = state.completed_at.is_some();
+    let checksums_ok = state.checksums.values().all(|entry| entry.ok);
+    Ok(MigrationSummary {
+      started,
+      completed,
+      checksums_ok,
+      errors: state.errors.clone(),
+    })
+  } else {
+    Ok(MigrationSummary {
+      started: false,
+      completed: false,
+      checksums_ok: true,
+      errors: Vec::new(),
+    })
+  }
+}
+
 pub fn init() {
   if let Some(btn) = dom::query("[data-db-migrate]") {
     let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
