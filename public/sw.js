@@ -4,9 +4,6 @@ const PACK_CACHE = `emerson-violin-packs-${CACHE_VERSION}`;
 const OFFLINE_URL = './offline.html';
 const SHARE_ENDPOINT = './share-target';
 
-const DB_NAME = 'emerson-violin-db';
-const DB_VERSION = 3;
-
 let ASSETS_TO_CACHE = [];
 try {
   importScripts('./sw-assets.js');
@@ -29,55 +26,21 @@ const PRECACHE_URLS = Array.from(new Set([
   OFFLINE_URL,
 ]));
 
-const openDb = () => new Promise((resolve, reject) => {
-  const request = indexedDB.open(DB_NAME, DB_VERSION);
-  request.onupgradeneeded = () => {
-    const db = request.result;
-    if (!db.objectStoreNames.contains('sessions')) {
-      db.createObjectStore('sessions', { keyPath: 'id' });
-    }
-    if (!db.objectStoreNames.contains('recordings')) {
-      db.createObjectStore('recordings', { keyPath: 'id' });
-    }
-    if (!db.objectStoreNames.contains('syncQueue')) {
-      db.createObjectStore('syncQueue', { keyPath: 'id' });
-    }
-    if (!db.objectStoreNames.contains('shareInbox')) {
-      db.createObjectStore('shareInbox', { keyPath: 'id' });
-    }
-  };
-  request.onsuccess = () => resolve(request.result);
-  request.onerror = () => reject(request.error);
-});
-
-const withStore = async (storeName, mode, callback) => {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, mode);
-    const store = tx.objectStore(storeName);
-    const result = callback(store, tx);
-    tx.oncomplete = () => resolve(result);
-    tx.onerror = () => reject(tx.error);
-  });
-};
-
-const addShareEntry = (entry) => withStore('shareInbox', 'readwrite', (store) => {
-  store.put(entry);
-});
-
-const getSyncEntries = () => withStore('syncQueue', 'readonly', (store) => new Promise((resolve) => {
-  const request = store.getAll();
-  request.onsuccess = () => resolve(request.result || []);
-  request.onerror = () => resolve([]);
-}));
-
-const clearSyncEntries = () => withStore('syncQueue', 'readwrite', (store) => {
-  store.clear();
-});
-
 const notifyClients = async (message) => {
   const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   clients.forEach((client) => client.postMessage(message));
+};
+
+const shareToClients = async (entries) => {
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  if (clients.length) {
+    clients.forEach((client) => client.postMessage({ type: 'SHARE_PAYLOAD', entries }));
+    return;
+  }
+  const client = await self.clients.openWindow('./#core');
+  if (client) {
+    client.postMessage({ type: 'SHARE_PAYLOAD', entries });
+  }
 };
 
 self.addEventListener('install', (event) => {
@@ -159,9 +122,10 @@ const handleShareTarget = async (request) => {
   const url = formData.get('url');
   const createdAt = new Date().toISOString();
 
-  await Promise.all(files.map(async (file) => {
-    if (!file || typeof file === 'string') return null;
-    const entry = {
+  const entries = [];
+  for (const file of files) {
+    if (!file || typeof file === 'string') continue;
+    entries.push({
       id: `${createdAt}-${file.name}-${Math.random().toString(16).slice(2)}`,
       name: file.name,
       type: file.type || 'application/octet-stream',
@@ -172,12 +136,24 @@ const handleShareTarget = async (request) => {
       text,
       url,
       blob: file,
-    };
-    await addShareEntry(entry);
-    return entry;
-  }));
+    });
+  }
 
-  await notifyClients({ type: 'SHARE_INBOX_UPDATED' });
+  if (!entries.length && (title || text || url)) {
+    entries.push({
+      id: `${createdAt}-share-${Math.random().toString(16).slice(2)}`,
+      name: title || url || 'Shared item',
+      type: 'text/plain',
+      size: 0,
+      lastModified: Date.now(),
+      createdAt,
+      title,
+      text,
+      url,
+    });
+  }
+
+  await shareToClients(entries);
 
   return Response.redirect('./#core', 303);
 };
@@ -207,19 +183,4 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(networkFirst(request));
-});
-
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'session-sync') {
-    event.waitUntil(
-      getSyncEntries()
-        .then(async (entries) => {
-          if (!entries.length) return 0;
-          await clearSyncEntries();
-          await notifyClients({ type: 'SYNC_COMPLETE', synced: entries.length });
-          return entries.length;
-        })
-        .catch(() => 0)
-    );
-  }
 });

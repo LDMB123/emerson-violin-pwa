@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use js_sys::{Function, Reflect};
+use js_sys::{Array, Function, Reflect};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::spawn_local;
@@ -410,6 +410,19 @@ fn handle_sw_message(data: &JsValue) {
         .unwrap_or(0.0);
       dom::set_text("[data-sw-status]", &format!("Synced {} sessions", synced as i32));
     }
+
+"SHARE_PAYLOAD" => {
+  dom::set_text("[data-sw-status]", "Share payload received");
+  let entries_val = Reflect::get(data, &JsValue::from_str("entries")).ok();
+  let entries = entries_val
+    .map(|val| Array::from(&val))
+    .unwrap_or_else(Array::new);
+  let values: Vec<JsValue> = entries.iter().collect();
+  spawn_local(async move {
+    let _ = storage::ingest_share_entries(values).await;
+    share_inbox::refresh();
+  });
+}
     "SHARE_INBOX_UPDATED" => {
       dom::set_text("[data-sw-status]", "Share inbox updated");
       share_inbox::refresh();
