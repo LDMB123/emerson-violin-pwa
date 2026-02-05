@@ -279,6 +279,16 @@ Why this is best on iPadOS Safari 26.2:
 - SW push handler:
   - show notification
   - on click: focus/open app to `#core`
+  - payload schema (JSON):
+  ```json
+  {
+    "title": "Practice reminder",
+    "body": "Time to practice.",
+    "url": "./#core",
+    "tag": "reminder",
+    "badge": 3
+  }
+  ```
 - Badging:
   - keep badge sources explicit (share inbox count, error queue count, optional push)
   - use feature detection (`setAppBadge` / `clearAppBadge`)
@@ -314,4 +324,3 @@ Why this is best on iPadOS Safari 26.2:
 - Threads build (if used):
   - `crossOriginIsolated` true
   - long-session stability (30–60 min)
-

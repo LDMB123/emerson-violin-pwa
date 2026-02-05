@@ -18,6 +18,21 @@ const ONSET_THRESHOLD: f64 = 18.0;
 const MIN_ONSET_GAP_MS: f64 = 250.0;
 const MEASURES_PER_PAGE: usize = 4;
 
+fn is_online() -> bool {
+  let navigator = dom::window().navigator();
+  Reflect::get(&navigator, &JsValue::from_str("onLine"))
+    .ok()
+    .and_then(|val| val.as_bool())
+    .unwrap_or(true)
+}
+
+fn pdf_pack_cached() -> bool {
+  dom::query("[data-pack-pdf-status]")
+    .and_then(|el| el.get_attribute("data-pack-state"))
+    .map(|state| state == "cached")
+    .unwrap_or(false)
+}
+
 #[derive(Default)]
 struct ScoreFollowState {
   active: bool,
@@ -133,6 +148,20 @@ pub fn init(state: Rc<RefCell<AppState>>) {
     );
   });
   let _ = dom::window().add_event_listener_with_callback("pdf-page", cb.as_ref().unchecked_ref());
+  cb.forget();
+
+  let score_state_for_error = score_state.clone();
+  let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |event: Event| {
+    let detail = Reflect::get(&event, &"detail".into()).ok().unwrap_or(JsValue::UNDEFINED);
+    let message = Reflect::get(&detail, &"message".into())
+      .ok()
+      .and_then(|val| val.as_string())
+      .unwrap_or_else(|| "PDF render failed".to_string());
+    dom::toast("PDF render failed. If offline, cache the PDF offline pack first.");
+    stop_following(&score_state_for_error, "PDF error");
+    dom::set_text("[data-score-status]", &message);
+  });
+  let _ = dom::window().add_event_listener_with_callback("pdf-error", cb.as_ref().unchecked_ref());
   cb.forget();
 
   if !state.borrow().config.features.score_following {
@@ -315,9 +344,20 @@ fn apply_score_entry(score_state: &Rc<RefCell<ScoreFollowState>>, entry: &JsValu
     dom::set_text("[data-score-status]", &format!("PDF ready: {}", title));
     dom::set_text("[data-score-count]", "--");
     dom::set_text("[data-score-current]", "--");
+    if !is_online() && !pdf_pack_cached() {
+      dom::set_text(
+        "[data-score-status]",
+        "Offline PDF pack not cached. Go online and click “Cache PDF offline pack”.",
+      );
+      dom::toast("Offline PDF pack not cached. Go online and cache it first.");
+      return;
+    }
     if let Some(blob) = pdf_blob {
-      pdf_render::load_pdf(&blob);
-      dom::set_text("[data-score-status]", &format!("Loading PDF: {}", title));
+      if pdf_render::load_pdf(&blob) {
+        dom::set_text("[data-score-status]", &format!("Loading PDF: {}", title));
+      } else {
+        dom::set_text("[data-score-status]", "PDF renderer unavailable");
+      }
     }
     {
       let mut score = score_state.borrow_mut();

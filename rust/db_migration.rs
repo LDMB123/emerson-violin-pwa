@@ -222,6 +222,16 @@ pub fn init() {
 
   if let Some(btn) = dom::query("[data-db-migrate-cleanup]") {
     let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+      let confirmed = dom::window()
+        .confirm_with_message(
+          "Purge legacy IndexedDB now? This deletes the old IDB stores after migration verification and cannot be undone. Export a backup first if you might need it.",
+        )
+        .unwrap_or(false);
+      if !confirmed {
+        dom::set_text("[data-db-migrate-status]", "Legacy IndexedDB purge canceled.");
+        refresh_status();
+        return;
+      }
       dom::set_text("[data-db-migrate-status]", "Purging legacy IndexedDB...");
       if let Some(btn) = dom::query("[data-db-migrate-cleanup]") {
         let _ = btn.set_attribute("disabled", "true");
@@ -251,19 +261,41 @@ pub fn init() {
 fn refresh_status() {
   spawn_local(async move {
     match storage::get_migration_summary().await {
-      Ok(summary) => render_summary(&summary),
+      Ok(summary) => {
+        let sqlite_active = storage::is_sqlite_active().await;
+        let legacy_has_data = storage::legacy_idb_has_data().await;
+        render_summary(&summary, legacy_has_data, sqlite_active);
+      }
       Err(_) => {
         dom::set_text("[data-db-migrate-state]", "Migration: Unavailable");
         dom::set_text("[data-db-migrate-checksums]", "Checksums: Unavailable");
         dom::set_text("[data-db-migrate-idb]", "Legacy IDB: Unavailable");
+        dom::set_text("[data-db-mode]", "Unknown");
         set_cleanup_enabled(false);
       }
     }
   });
 }
 
-fn render_summary(summary: &storage::MigrationSummary) {
+fn render_summary(summary: &storage::MigrationSummary, legacy_has_data: bool, sqlite_active: bool) {
   let ready = summary.completed && summary.errors.is_empty() && summary.checksums_ok;
+  let mode = if ready {
+    "SQLite (verified)".to_string()
+  } else if sqlite_active {
+    if legacy_has_data {
+      "SQLite (primary)".to_string()
+    } else {
+      "SQLite (primary, no legacy)".to_string()
+    }
+  } else if summary.started {
+    "IDB fallback (migration pending)".to_string()
+  } else if legacy_has_data {
+    "IDB fallback (legacy active)".to_string()
+  } else {
+    "IDB fallback (SQLite unavailable)".to_string()
+  };
+  dom::set_text("[data-db-mode]", &mode);
+
   let status = if !summary.started {
     "Not started".to_string()
   } else if summary.completed {
@@ -294,15 +326,23 @@ fn render_summary(summary: &storage::MigrationSummary) {
   let idb_status = if let Some(ts) = purged_at {
     format!("Legacy IDB: Purged {}", format_timestamp(ts))
   } else if ready {
-    "Legacy IDB: Ready to purge".to_string()
+    if legacy_has_data {
+      "Legacy IDB: Ready to purge".to_string()
+    } else {
+      "Legacy IDB: Empty (no purge needed)".to_string()
+    }
   } else if summary.started {
     "Legacy IDB: Blocked until verified".to_string()
   } else {
-    "Legacy IDB: Active".to_string()
+    if legacy_has_data {
+      "Legacy IDB: Active".to_string()
+    } else {
+      "Legacy IDB: Empty".to_string()
+    }
   };
   dom::set_text("[data-db-migrate-idb]", &idb_status);
 
-  set_cleanup_enabled(ready && purged_at.is_none());
+  set_cleanup_enabled(ready && purged_at.is_none() && legacy_has_data);
 }
 
 fn set_cleanup_enabled(enabled: bool) {

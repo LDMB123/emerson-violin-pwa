@@ -86,6 +86,7 @@ const cacheUrls = async (cacheName, urls) => {
 
 const DB_NAME = 'emerson-share-inbox';
 const DB_VERSION = 1;
+const SHARE_INBOX_MAX_ENTRIES = 25;
 
 const openDb = () => new Promise((resolve, reject) => {
   const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -113,6 +114,51 @@ const withStore = async (storeName, mode, callback) => {
 const addShareEntry = (entry) => withStore('shareInbox', 'readwrite', (store) => {
   store.put(entry);
 });
+
+const storeShareEntries = (entries) => {
+  if (!Array.isArray(entries) || !entries.length) return Promise.resolve({ pruned: 0 });
+  return withStore('shareInbox', 'readwrite', (store) => new Promise((resolve) => {
+    const safePutAll = (pruned) => {
+      for (const entry of entries) {
+        try { store.put(entry); } catch {}
+      }
+      resolve({ pruned });
+    };
+
+    const countReq = store.count();
+    countReq.onsuccess = () => {
+      const existing = Number(countReq.result || 0);
+      const toDelete = Math.max(0, (existing + entries.length) - SHARE_INBOX_MAX_ENTRIES);
+      if (toDelete <= 0) {
+        safePutAll(0);
+        return;
+      }
+
+      let deleted = 0;
+      const cursorReq = (typeof store.openKeyCursor === 'function')
+        ? store.openKeyCursor()
+        : store.openCursor();
+
+      cursorReq.onsuccess = () => {
+        const cursor = cursorReq.result;
+        if (!cursor) {
+          safePutAll(deleted);
+          return;
+        }
+        if (deleted >= toDelete) {
+          safePutAll(deleted);
+          return;
+        }
+        const key = cursor.primaryKey || cursor.key;
+        try { store.delete(key); } catch {}
+        deleted += 1;
+        cursor.continue();
+      };
+      cursorReq.onerror = () => safePutAll(0);
+    };
+    countReq.onerror = () => safePutAll(0);
+  }));
+};
 
 const listShareEntries = () => withStore('shareInbox', 'readonly', (store) => new Promise((resolve) => {
   const request = store.getAll();
@@ -157,7 +203,16 @@ const notifyClients = async (message) => {
 };
 
 const shareToClients = async (entries) => {
-  await Promise.all(entries.map((entry) => addShareEntry(entry)));
+  let pruned = 0;
+  try {
+    const result = await storeShareEntries(entries);
+    pruned = (result && Number.isFinite(result.pruned)) ? result.pruned : 0;
+  } catch (error) {
+    console.warn('[sw] share staging failed', error);
+  }
+  if (pruned > 0) {
+    await notifyClients({ type: 'SHARE_INBOX_PRUNED', pruned, cap: SHARE_INBOX_MAX_ENTRIES });
+  }
   await ensureShareDelivery(entries);
 };
 
@@ -226,7 +281,7 @@ self.addEventListener('message', (event) => {
             newest = entry.createdAt;
           }
         }
-        const message = { type: 'SHARE_INBOX_STATS', count: entries.length, newest };
+        const message = { type: 'SHARE_INBOX_STATS', count: entries.length, newest, cap: SHARE_INBOX_MAX_ENTRIES };
         if (event.source) {
           try { event.source.postMessage(message); } catch {}
           return;

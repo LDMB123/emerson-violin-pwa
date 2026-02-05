@@ -459,6 +459,16 @@ fn handle_sw_message(data: &JsValue) {
         ),
       );
       if let Some(el) = dom::query("[data-pack-pdf-status]") {
+        let pack_state = if pdf_pack_entries <= 0.0 {
+          "unknown"
+        } else if pack_entries >= pdf_pack_entries {
+          "cached"
+        } else if pack_entries > 0.0 {
+          "partial"
+        } else {
+          "missing"
+        };
+        dom::set_dataset(&el, "packState", pack_state);
         let label = if pack_entries <= 0.0 {
           "Not cached".to_string()
         } else {
@@ -470,6 +480,9 @@ fn handle_sw_message(data: &JsValue) {
     "PACKS_CLEARED" => {
       dom::set_text("[data-sw-status]", "Offline packs cleared");
       dom::set_text("[data-pack-pdf-status]", "Not cached");
+      if let Some(el) = dom::query("[data-pack-pdf-status]") {
+        dom::set_dataset(&el, "packState", "missing");
+      }
     }
     "PACK_STATUS" => {
       let pack = Reflect::get(data, &JsValue::from_str("pack"))
@@ -497,6 +510,16 @@ fn handle_sw_message(data: &JsValue) {
         .and_then(|val| val.as_f64())
         .unwrap_or(0.0);
       if pack == "pdf" {
+        if let Some(el) = dom::query("[data-pack-pdf-status]") {
+          let pack_state = if ok {
+            "cached"
+          } else if cached > 0.0 {
+            "partial"
+          } else {
+            "missing"
+          };
+          dom::set_dataset(&el, "packState", pack_state);
+        }
         let label = if ok {
           format!("Cached ({} files, {:.0} ms)", cached as i32, ms)
         } else {
@@ -509,6 +532,26 @@ fn handle_sw_message(data: &JsValue) {
           )
         };
         dom::set_text("[data-pack-pdf-status]", &label);
+      }
+    }
+    "SHARE_INBOX_PRUNED" => {
+      let pruned = Reflect::get(data, &JsValue::from_str("pruned"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0)
+        .max(0.0) as i32;
+      let cap = Reflect::get(data, &JsValue::from_str("cap"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0)
+        .max(0.0) as i32;
+      if pruned > 0 {
+        dom::set_text("[data-sw-status]", "Share staging trimmed");
+        dom::toast(&format!(
+          "Share staging trimmed: dropped {} old item(s) (cap {}).",
+          pruned, cap
+        ));
+        request_share_inbox_stats();
       }
     }
     "SHARE_INBOX_STATS" => {
@@ -739,6 +782,26 @@ fn init_storage_status() {
     cb.forget();
   }
 
+  refresh_storage_status();
+
+  let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+    if document_visibility_state() == "visible" {
+      refresh_storage_status();
+    }
+  });
+  let _ = dom::document().add_event_listener_with_callback("visibilitychange", cb.as_ref().unchecked_ref());
+  cb.forget();
+}
+
+fn document_visibility_state() -> String {
+  let doc = dom::document();
+  Reflect::get(doc.as_ref(), &JsValue::from_str("visibilityState"))
+    .ok()
+    .and_then(|val| val.as_string())
+    .unwrap_or_else(|| "unknown".to_string())
+}
+
+fn refresh_storage_status() {
   spawn_local(async move {
     let storage_manager = dom::window().navigator().storage();
     if let Ok(persisted) = storage_manager.persisted() {

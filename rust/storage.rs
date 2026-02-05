@@ -516,11 +516,64 @@ pub async fn get_migration_summary() -> Result<MigrationSummary, JsValue> {
   load_migration_summary().await
 }
 
-async fn check_sqlite_ready() -> bool {
-  match load_migration_summary().await {
-    Ok(summary) => migration_ready(&summary),
-    Err(_) => false,
+async fn idb_has_any_data() -> bool {
+  let db = match open_db().await {
+    Ok(db) => db,
+    Err(_) => return false,
+  };
+
+  for store_name in IDB_STORES {
+    let tx = match db.transaction_with_str_and_mode(store_name, IdbTransactionMode::Readonly) {
+      Ok(tx) => tx,
+      Err(_) => continue,
+    };
+    let store = match tx.object_store(store_name) {
+      Ok(store) => store,
+      Err(_) => continue,
+    };
+    let request = match store.count() {
+      Ok(request) => request,
+      Err(_) => continue,
+    };
+    let receiver = request_to_future(request);
+    let count = match receiver.await {
+      Ok(result) => result.ok().and_then(|v| v.as_f64()).unwrap_or(0.0),
+      Err(_) => 0.0,
+    };
+    if count > 0.0 {
+      return true;
+    }
   }
+
+  false
+}
+
+async fn check_sqlite_ready() -> bool {
+  let summary = match load_migration_summary().await {
+    Ok(summary) => summary,
+    Err(_) => return false,
+  };
+
+  if migration_ready(&summary) {
+    return true;
+  }
+
+  // Once a migration has started, stay on legacy storage until it verifies.
+  if summary.started {
+    return false;
+  }
+
+  // Fresh installs should be SQLite-first. If the legacy DB has any data, keep it active until
+  // migration/verification completes.
+  !idb_has_any_data().await
+}
+
+pub async fn is_sqlite_active() -> bool {
+  should_use_sqlite().await
+}
+
+pub async fn legacy_idb_has_data() -> bool {
+  idb_has_any_data().await
 }
 
 
