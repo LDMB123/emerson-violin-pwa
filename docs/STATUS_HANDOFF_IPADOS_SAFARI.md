@@ -218,8 +218,10 @@ Use Safari Web Inspector.
 5. Add on-device “storage pressure drill” page:
   - generate dummy OPFS blobs and validate cleanup/export UX.
 6. Add end-to-end on-device test script/checklist for COOP/COEP + threads build stability.
-7. Decide if the app should auto-migrate on first launch for legacy users (vs user-initiated).
-8. Add a “migration duration estimate” using IDB counts + average per-store batch timing.
+7. ~~Decide if the app should auto-migrate on first launch for legacy users (vs user-initiated).~~
+  - **Decided: keep user-initiated.** CTA banner (Task 4) handles detection, estimation, and prompting. Auto-migration risks blocking first paint and failing silently with no crash-reporting backend. User control is safer for a solo-developer project.
+8. ~~Add a "migration duration estimate" using IDB counts + average per-store batch timing.~~
+  - **Done** (implemented in Task 4 CTA: `legacy_idb_total_count()` + 50 records/sec estimate).
 9. Add a DB integrity drill:
   - intentionally interrupt migration mid-store and verify resume + audit log accuracy.
 10. Remove redundant docs-only commits (optional cleanup):
