@@ -21,7 +21,6 @@ use crate::utils;
 const DB_NAME: &str = "emerson-violin-db";
 pub const DB_VERSION: u32 = 5;
 
-const SQLITE_READY_TTL_MS: f64 = 5000.0;
 const IDB_PURGE_KEY: &str = "sqlite:idb-purged-at";
 const DEVICE_ID_KEY: &str = "device:id";
 const ACTIVE_PROFILE_KEY: &str = "profile:active";
@@ -42,18 +41,7 @@ const IDB_STORES: &[&str] = &[
   "modelCache",
 ];
 
-#[derive(Clone, Copy)]
-struct SqliteGate {
-  last_check: f64,
-  ready: bool,
-}
 
-thread_local! {
-  static SQLITE_GATE: RefCell<SqliteGate> = RefCell::new(SqliteGate {
-    last_check: 0.0,
-    ready: false,
-  });
-}
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -435,27 +423,6 @@ async fn clear_store(store_name: &str) -> Result<(), JsValue> {
 }
 
 
-async fn should_use_sqlite() -> bool {
-  let now = js_sys::Date::now();
-  let cached = SQLITE_GATE.with(|slot| {
-    let gate = slot.borrow();
-    if now - gate.last_check < SQLITE_READY_TTL_MS {
-      Some(gate.ready)
-    } else {
-      None
-    }
-  });
-  if let Some(ready) = cached {
-    return ready;
-  }
-  let ready = check_sqlite_ready().await;
-  SQLITE_GATE.with(|slot| {
-    let mut gate = slot.borrow_mut();
-    gate.last_check = now;
-    gate.ready = ready;
-  });
-  ready
-}
 
 
 fn migration_ready(summary: &MigrationSummary) -> bool {
@@ -516,7 +483,15 @@ pub async fn get_migration_summary() -> Result<MigrationSummary, JsValue> {
   load_migration_summary().await
 }
 
-async fn idb_has_any_data() -> bool {
+
+
+
+
+pub async fn is_sqlite_active() -> bool {
+  true
+}
+
+pub async fn legacy_idb_has_data() -> bool {
   let db = match open_db().await {
     Ok(db) => db,
     Err(_) => return false,
@@ -546,34 +521,6 @@ async fn idb_has_any_data() -> bool {
   }
 
   false
-}
-
-async fn check_sqlite_ready() -> bool {
-  let summary = match load_migration_summary().await {
-    Ok(summary) => summary,
-    Err(_) => return false,
-  };
-
-  if migration_ready(&summary) {
-    return true;
-  }
-
-  // Once a migration has started, stay on legacy storage until it verifies.
-  if summary.started {
-    return false;
-  }
-
-  // Fresh installs should be SQLite-first. If the legacy DB has any data, keep it active until
-  // migration/verification completes.
-  !idb_has_any_data().await
-}
-
-pub async fn is_sqlite_active() -> bool {
-  should_use_sqlite().await
-}
-
-pub async fn legacy_idb_has_data() -> bool {
-  idb_has_any_data().await
 }
 
 pub async fn legacy_idb_total_count() -> usize {
@@ -671,94 +618,48 @@ pub async fn clear_drill_data_sqlite(tables: &[&str]) -> Result<usize, JsValue> 
 }
 
 pub async fn get_sessions() -> Result<Vec<Session>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_sessions().await;
-  }
-  let values = get_all_values("sessions").await?;
-  let mut sessions = Vec::new();
-  for value in values {
-    if let Ok(session) = serde_wasm_bindgen::from_value::<Session>(value) {
-      sessions.push(session);
-    }
-  }
-  Ok(sessions)
+  sqlite_get_sessions().await
 }
 
 
 
 pub async fn save_session(session: &Session) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_session(session).await;
-  }
-  let value = serde_wasm_bindgen::to_value(session)?;
-  put_value("sessions", &value).await
+  sqlite_save_session(session).await
 }
 
 
 
 pub async fn clear_sessions() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("sessions").await;
-    return sqlite_clear_table("sessions").await;
-  }
-  clear_store("sessions").await
+  let _ = clear_store("sessions").await;
+  sqlite_clear_table("sessions").await
 }
 
 
 
 pub async fn get_recordings() -> Result<Vec<Recording>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_recordings().await;
-  }
-  let values = get_all_values("recordings").await?;
-  let mut out = Vec::new();
-  for value in values {
-    if let Some(recording) = recording_from_value(&value) {
-      out.push(recording);
-    }
-  }
-  Ok(out)
+  sqlite_get_recordings().await
 }
 
 
 
 pub async fn save_recording(recording: &Recording) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_recording(recording).await;
-  }
-  let value = recording_to_value(recording)?;
-  put_value("recordings", &value).await
+  sqlite_save_recording(recording).await
 }
 
 
 
 pub async fn delete_recording(id: &str) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    sqlite_delete_recording(id).await?;
-    let _ = delete_value("recordings", id).await;
-    return Ok(());
-  }
-  if let Ok(value) = idb_get_value("recordings", id).await {
-    if let Ok(path_val) = Reflect::get(&value, &"opfs_path".into()) {
-      if let Some(path) = path_val.as_string() {
-        if !is_idb_path(&path) {
-          let _ = delete_recording_blob(&path).await;
-        }
-      }
-    }
-  }
-  delete_value("recordings", id).await
+  sqlite_delete_recording(id).await?;
+  let _ = delete_value("recordings", id).await;
+  Ok(())
 }
 
 
 
 pub async fn clear_recordings() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("recordings").await;
-    let _ = clear_recording_blobs().await;
-    return sqlite_clear_table("recordings").await;
-  }
-  clear_store("recordings").await
+  let _ = clear_store("recordings").await;
+  let _ = clear_recording_blobs().await;
+  sqlite_clear_table("recordings").await
 }
 
 pub async fn delete_recording_assets(recording: &Recording) -> Result<(), JsValue> {
@@ -785,54 +686,31 @@ pub fn sum_opfs_bytes(recordings: &[Recording]) -> f64 {
 
 pub async fn prune_recordings(retention_days: f64) -> Result<(), JsValue> {
   let cutoff = js_sys::Date::now() - (retention_days.max(0.0) * 86_400_000.0);
-  if should_use_sqlite().await {
-    db_client::init_db().await?;
-    let rows = db_client::query(
-      "SELECT id, opfs_path FROM recordings WHERE created_at < ?1",
-      vec![json_number(cutoff)],
-    )
-    .await?;
-    for row in rows {
-      let id = extract_string(&row, "id").unwrap_or_default();
-      if id.is_empty() {
-        continue;
-      }
-      if let Some(path) = extract_string(&row, "opfs_path") {
-        if is_idb_path(&path) {
-          if let Some(key) = idb_key_from_path(&path) {
-            let _ = delete_value("recordings", &key).await;
-          }
-        } else {
-          let _ = delete_recording_blob(&path).await;
-        }
-      }
-      let _ = db_client::exec(
-        "DELETE FROM recordings WHERE id = ?1",
-        vec![JsonValue::String(id)],
-      )
-      .await;
-    }
-    return Ok(());
-  }
-
-  let values = get_all_values("recordings").await?;
-  for value in values {
-    let created_at = js_number_any(&value, &["created_at", "createdAt"]).unwrap_or(0.0);
-    if created_at >= cutoff {
-      continue;
-    }
-    let id = js_string_any(&value, &["id"]).unwrap_or_default();
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT id, opfs_path FROM recordings WHERE created_at < ?1",
+    vec![json_number(cutoff)],
+  )
+  .await?;
+  for row in rows {
+    let id = extract_string(&row, "id").unwrap_or_default();
     if id.is_empty() {
       continue;
     }
-    if let Ok(path_val) = Reflect::get(&value, &"opfs_path".into()) {
-      if let Some(path) = path_val.as_string() {
-        if !is_idb_path(&path) {
-          let _ = delete_recording_blob(&path).await;
+    if let Some(path) = extract_string(&row, "opfs_path") {
+      if is_idb_path(&path) {
+        if let Some(key) = idb_key_from_path(&path) {
+          let _ = delete_value("recordings", &key).await;
         }
+      } else {
+        let _ = delete_recording_blob(&path).await;
       }
     }
-    let _ = delete_value("recordings", &id).await;
+    let _ = db_client::exec(
+      "DELETE FROM recordings WHERE id = ?1",
+      vec![JsonValue::String(id)],
+    )
+    .await;
   }
   Ok(())
 }
@@ -876,314 +754,161 @@ pub async fn prune_recordings_by_size(max_bytes: f64) -> Result<(), JsValue> {
 
 
 pub async fn add_sync_entry(entry: &SyncEntry) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_add_sync_entry(entry).await;
-  }
-  let value = serde_wasm_bindgen::to_value(entry)?;
-  put_value("syncQueue", &value).await
+  sqlite_add_sync_entry(entry).await
 }
 
 
 
 pub async fn clear_sync_queue() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("syncQueue").await;
-    return sqlite_clear_table("sync_queue").await;
-  }
-  clear_store("syncQueue").await
+  let _ = clear_store("syncQueue").await;
+  sqlite_clear_table("sync_queue").await
 }
 
 
 
 pub async fn get_share_inbox() -> Result<Vec<ShareItem>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_share_inbox().await;
-  }
-  let values = get_all_values("shareInbox").await?;
-  let mut out = Vec::new();
-  for value in values {
-    if let Some(item) = share_item_from_value(&value) {
-      out.push(item);
-    }
-  }
-  Ok(out)
+  sqlite_get_share_inbox().await
 }
 
 
 
 pub async fn clear_share_inbox() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("shareInbox").await;
-    let _ = clear_share_blobs().await;
-    return sqlite_clear_table("share_inbox").await;
-  }
-  clear_store("shareInbox").await
+  let _ = clear_store("shareInbox").await;
+  let _ = clear_share_blobs().await;
+  sqlite_clear_table("share_inbox").await
 }
 
 
 
 pub async fn delete_share_item(id: &str) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    sqlite_delete_share_item(id).await?;
-    let _ = delete_value("shareInbox", id).await;
-    return Ok(());
-  }
-  delete_value("shareInbox", id).await
-}
-
-pub async fn get_assignments() -> Result<Vec<JsValue>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_assignments().await;
-  }
-  get_all_values("assignments").await
-}
-
-pub async fn save_assignment(value: &JsValue) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_assignment(value).await;
-  }
-  let _ = ensure_id(value);
-  let _ = ensure_created_at(value, &["created_at", "createdAt"], js_sys::Date::now());
-  put_value("assignments", value).await
-}
-
-pub async fn delete_assignment(id: &str) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = delete_value("assignments", id).await;
-    return sqlite_delete_entry("assignments", id).await;
-  }
-  delete_value("assignments", id).await
-}
-
-pub async fn clear_assignments() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("assignments").await;
-    return sqlite_clear_table("assignments").await;
-  }
-  clear_store("assignments").await
-}
-
-pub async fn get_profiles() -> Result<Vec<JsValue>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_profiles().await;
-  }
-  get_all_values("profiles").await
-}
-
-pub async fn save_profile(value: &JsValue) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_profile(value).await;
-  }
-  let _ = ensure_id(value);
-  let _ = ensure_created_at(value, &["created_at", "createdAt"], js_sys::Date::now());
-  put_value("profiles", value).await
-}
-
-pub async fn delete_profile(id: &str) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = delete_value("profiles", id).await;
-    return sqlite_delete_entry("profiles", id).await;
-  }
-  delete_value("profiles", id).await
-}
-
-pub async fn clear_profiles() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("profiles").await;
-    return sqlite_clear_table("profiles").await;
-  }
-  clear_store("profiles").await
-}
-
-pub async fn get_game_scores() -> Result<Vec<JsValue>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_game_scores().await;
-  }
-  get_all_values("gameScores").await
-}
-
-pub async fn save_game_score(value: &JsValue) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_game_score(value).await;
-  }
-  let _ = ensure_id(value);
-  let _ = ensure_created_at(value, &["created_at", "createdAt", "ended_at", "endedAt"], js_sys::Date::now());
-  put_value("gameScores", value).await
-}
-
-pub async fn clear_game_scores() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("gameScores").await;
-    return sqlite_clear_table("game_scores").await;
-  }
-  clear_store("gameScores").await
-}
-
-pub async fn get_scores() -> Result<Vec<JsValue>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_scores().await;
-  }
-  get_all_values("scoreLibrary").await
-}
-
-pub async fn save_score_entry(value: &JsValue) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_score_entry(value).await;
-  }
-  let _ = ensure_id(value);
-  let _ = ensure_created_at(value, &["created_at", "createdAt"], js_sys::Date::now());
-  put_value("scoreLibrary", value).await
-}
-
-pub async fn delete_score_entry(id: &str) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_delete_score_entry(id).await;
-  }
-  delete_value("scoreLibrary", id).await
-}
-
-pub async fn clear_scores() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("scoreLibrary").await;
-    let _ = clear_score_blobs().await;
-    return sqlite_clear_table("score_library").await;
-  }
-  clear_store("scoreLibrary").await
-}
-
-pub async fn get_ml_traces() -> Result<Vec<JsValue>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_ml_traces().await;
-  }
-  get_all_values("mlTraces").await
-}
-
-pub async fn enqueue_ml_trace(value: &JsValue) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_ml_trace(value).await;
-  }
-  let _ = ensure_id(value);
-  let _ = ensure_created_at(value, &["created_at", "createdAt", "timestamp"], js_sys::Date::now());
-  put_value("mlTraces", value).await
-}
-
-pub async fn clear_ml_traces() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("mlTraces").await;
-    return sqlite_clear_table("ml_traces").await;
-  }
-  clear_store("mlTraces").await
-}
-
-pub async fn prune_ml_traces(limit: usize, max_age_ms: f64) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_prune_ml_traces(limit, max_age_ms).await;
-  }
-  let values = get_all_values("mlTraces").await?;
-  let mut entries: Vec<(String, f64)> = Vec::new();
-  for value in values.iter() {
-    let id = js_string_any(value, &["id"]).unwrap_or_else(utils::create_id);
-    let timestamp = js_number_any(value, &["timestamp", "created_at", "createdAt"]).unwrap_or(0.0);
-    entries.push((id, timestamp));
-  }
-  let cutoff = js_sys::Date::now() - max_age_ms.max(0.0);
-  for (id, ts) in entries.iter() {
-    if *ts > 0.0 && *ts < cutoff {
-      let _ = delete_value("mlTraces", id).await;
-    }
-  }
-  if entries.len() > limit {
-    let mut sorted = entries;
-    sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-    for (id, _) in sorted.into_iter().skip(limit) {
-      let _ = delete_value("mlTraces", &id).await;
-    }
-  }
+  sqlite_delete_share_item(id).await?;
+  let _ = delete_value("shareInbox", id).await;
   Ok(())
 }
 
+pub async fn get_assignments() -> Result<Vec<JsValue>, JsValue> {
+  sqlite_get_assignments().await
+}
+
+pub async fn save_assignment(value: &JsValue) -> Result<(), JsValue> {
+  sqlite_save_assignment(value).await
+}
+
+pub async fn delete_assignment(id: &str) -> Result<(), JsValue> {
+  let _ = delete_value("assignments", id).await;
+  sqlite_delete_entry("assignments", id).await
+}
+
+pub async fn clear_assignments() -> Result<(), JsValue> {
+  let _ = clear_store("assignments").await;
+  sqlite_clear_table("assignments").await
+}
+
+pub async fn get_profiles() -> Result<Vec<JsValue>, JsValue> {
+  sqlite_get_profiles().await
+}
+
+pub async fn save_profile(value: &JsValue) -> Result<(), JsValue> {
+  sqlite_save_profile(value).await
+}
+
+pub async fn delete_profile(id: &str) -> Result<(), JsValue> {
+  let _ = delete_value("profiles", id).await;
+  sqlite_delete_entry("profiles", id).await
+}
+
+pub async fn clear_profiles() -> Result<(), JsValue> {
+  let _ = clear_store("profiles").await;
+  sqlite_clear_table("profiles").await
+}
+
+pub async fn get_game_scores() -> Result<Vec<JsValue>, JsValue> {
+  sqlite_get_game_scores().await
+}
+
+pub async fn save_game_score(value: &JsValue) -> Result<(), JsValue> {
+  sqlite_save_game_score(value).await
+}
+
+pub async fn clear_game_scores() -> Result<(), JsValue> {
+  let _ = clear_store("gameScores").await;
+  sqlite_clear_table("game_scores").await
+}
+
+pub async fn get_scores() -> Result<Vec<JsValue>, JsValue> {
+  sqlite_get_scores().await
+}
+
+pub async fn save_score_entry(value: &JsValue) -> Result<(), JsValue> {
+  sqlite_save_score_entry(value).await
+}
+
+pub async fn delete_score_entry(id: &str) -> Result<(), JsValue> {
+  sqlite_delete_score_entry(id).await
+}
+
+pub async fn clear_scores() -> Result<(), JsValue> {
+  let _ = clear_store("scoreLibrary").await;
+  let _ = clear_score_blobs().await;
+  sqlite_clear_table("score_library").await
+}
+
+pub async fn get_ml_traces() -> Result<Vec<JsValue>, JsValue> {
+  sqlite_get_ml_traces().await
+}
+
+pub async fn enqueue_ml_trace(value: &JsValue) -> Result<(), JsValue> {
+  sqlite_save_ml_trace(value).await
+}
+
+pub async fn clear_ml_traces() -> Result<(), JsValue> {
+  let _ = clear_store("mlTraces").await;
+  sqlite_clear_table("ml_traces").await
+}
+
+pub async fn prune_ml_traces(limit: usize, max_age_ms: f64) -> Result<(), JsValue> {
+  sqlite_prune_ml_traces(limit, max_age_ms).await
+}
+
 pub async fn get_telemetry_queue() -> Result<Vec<JsValue>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_telemetry_queue().await;
-  }
-  get_all_values("telemetryQueue").await
+  sqlite_get_telemetry_queue().await
 }
 
 pub async fn enqueue_telemetry(value: &JsValue) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_telemetry(value).await;
-  }
-  let _ = ensure_id(value);
-  let _ = ensure_created_at(value, &["created_at", "createdAt", "timestamp"], js_sys::Date::now());
-  put_value("telemetryQueue", value).await
+  sqlite_save_telemetry(value).await
 }
 
 pub async fn clear_telemetry_queue() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("telemetryQueue").await;
-    return sqlite_clear_table("telemetry_queue").await;
-  }
-  clear_store("telemetryQueue").await
+  let _ = clear_store("telemetryQueue").await;
+  sqlite_clear_table("telemetry_queue").await
 }
 
 pub async fn get_error_queue() -> Result<Vec<JsValue>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_error_queue().await;
-  }
-  get_all_values("errorQueue").await
+  sqlite_get_error_queue().await
 }
 
 pub async fn enqueue_error(value: &JsValue) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_error(value).await;
-  }
-  let _ = ensure_id(value);
-  let _ = ensure_created_at(value, &["created_at", "createdAt", "timestamp"], js_sys::Date::now());
-  put_value("errorQueue", value).await
+  sqlite_save_error(value).await
 }
 
 pub async fn clear_error_queue() -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    let _ = clear_store("errorQueue").await;
-    return sqlite_clear_table("error_queue").await;
-  }
-  clear_store("errorQueue").await
+  let _ = clear_store("errorQueue").await;
+  sqlite_clear_table("error_queue").await
 }
 
 pub async fn get_model_cache(id: &str) -> Result<Option<JsValue>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_model_cache(id).await;
-  }
-  match idb_get_value("modelCache", id).await {
-    Ok(value) => Ok(Some(value)),
-    Err(_) => Ok(None),
-  }
+  sqlite_get_model_cache(id).await
 }
 
 pub async fn get_model_cache_all() -> Result<Vec<JsValue>, JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_get_model_cache_all().await;
-  }
-  get_all_values("modelCache").await
+  sqlite_get_model_cache_all().await
 }
 
 pub async fn save_model_cache(id: &str, value: &JsValue) -> Result<(), JsValue> {
-  if should_use_sqlite().await {
-    return sqlite_save_model_cache(id, value).await;
-  }
-  let _ = ensure_id(value);
-  let _ = ensure_created_at(value, &["created_at", "createdAt", "updated_at", "updatedAt"], js_sys::Date::now());
-  put_value("modelCache", value).await
+  sqlite_save_model_cache(id, value).await
 }
 
 pub async fn ingest_share_entries(entries: Vec<JsValue>) -> Result<(), JsValue> {
-  if !should_use_sqlite().await {
-    for entry in entries {
-      let _ = put_value("shareInbox", &entry).await;
-    }
-    return Ok(());
-  }
-
   db_client::init_db().await?;
   for entry in entries {
     let id = js_string_any(&entry, &["id"]).unwrap_or_else(utils::create_id);

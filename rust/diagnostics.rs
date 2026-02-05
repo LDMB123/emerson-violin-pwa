@@ -54,7 +54,7 @@ async fn export_diagnostics() {
   }
 
   let migration = storage::get_migration_summary().await.ok();
-  let sqlite_active = storage::is_sqlite_active().await;
+  let sqlite_active = true;
   let legacy_idb_has_data = storage::legacy_idb_has_data().await;
   let idb_purged_at = storage::idb_purged_at();
 

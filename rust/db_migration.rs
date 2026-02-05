@@ -488,7 +488,7 @@ fn refresh_status() {
   spawn_local(async move {
     match storage::get_migration_summary().await {
       Ok(summary) => {
-        let sqlite_active = storage::is_sqlite_active().await;
+        let sqlite_active = true;
         let legacy_has_data = storage::legacy_idb_has_data().await;
         render_summary(&summary, legacy_has_data, sqlite_active);
       }
@@ -503,22 +503,14 @@ fn refresh_status() {
   });
 }
 
-fn render_summary(summary: &storage::MigrationSummary, legacy_has_data: bool, sqlite_active: bool) {
+fn render_summary(summary: &storage::MigrationSummary, legacy_has_data: bool, _sqlite_active: bool) {
   let ready = summary.completed && summary.errors.is_empty() && summary.checksums_ok;
   let mode = if ready {
     "SQLite (verified)".to_string()
-  } else if sqlite_active {
-    if legacy_has_data {
-      "SQLite (primary)".to_string()
-    } else {
-      "SQLite (primary, no legacy)".to_string()
-    }
-  } else if summary.started {
-    "IDB fallback (migration pending)".to_string()
   } else if legacy_has_data {
-    "IDB fallback (legacy active)".to_string()
+    "SQLite (primary)".to_string()
   } else {
-    "IDB fallback (SQLite unavailable)".to_string()
+    "SQLite (primary, no legacy)".to_string()
   };
   dom::set_text("[data-db-mode]", &mode);
 
