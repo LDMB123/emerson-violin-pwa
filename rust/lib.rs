@@ -16,6 +16,9 @@ mod tuner;
 mod utils;
 mod tools;
 mod tone;
+mod perf;
+mod opfs_test;
+mod db_worker;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -42,6 +45,9 @@ pub fn start() {
   share_inbox::init();
   pwa::init(state.clone());
   capabilities::init();
+  perf::init();
+  opfs_test::init();
+  db_worker::init();
 
   let state_clone = state.clone();
   spawn_local(async move {

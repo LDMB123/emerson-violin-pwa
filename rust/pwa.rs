@@ -455,21 +455,49 @@ fn reveal_update_banner() {
 
 fn init_storage_status() {
   spawn_local(async move {
-    if let Ok(estimate) = dom::window().navigator().storage().estimate() {
+    let storage_manager = dom::window().navigator().storage();
+    if let Ok(persisted) = storage_manager.persisted() {
+      match wasm_bindgen_futures::JsFuture::from(persisted).await {
+        Ok(result) => {
+          let label = match result.as_bool() {
+            Some(true) => "Yes",
+            Some(false) => "No",
+            None => "Unknown",
+          };
+          dom::set_text("[data-storage-persisted]", label);
+        }
+        Err(_) => {
+          dom::set_text("[data-storage-persisted]", "Unknown");
+        }
+      }
+    } else {
+      dom::set_text("[data-storage-persisted]", "Unknown");
+    }
+
+    if let Ok(estimate) = storage_manager.estimate() {
       if let Ok(result) = wasm_bindgen_futures::JsFuture::from(estimate).await {
         let usage = js_sys::Reflect::get(&result, &"usage".into()).ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
         let quota = js_sys::Reflect::get(&result, &"quota".into()).ok().and_then(|v| v.as_f64()).unwrap_or(0.0);
         let usage_mb = usage / (1024.0 * 1024.0);
         let quota_mb = quota / (1024.0 * 1024.0);
         let percent = if quota > 0.0 { usage / quota } else { 0.0 };
+        let percent_value = (percent * 100.0).round().clamp(0.0, 100.0);
         dom::set_text("[data-storage-usage]", &format!("{:.1} MB", usage_mb));
         dom::set_text("[data-storage-quota]", &format!("{:.0} MB", quota_mb));
-        dom::set_text("[data-storage-status]", &format!("Storage: {:.0}%", percent * 100.0));
+        dom::set_text("[data-storage-status]", &format!("Storage: {:.0}%", percent_value));
+        let pressure = if percent_value >= 90.0 {
+          "High"
+        } else if percent_value >= 75.0 {
+          "Moderate"
+        } else {
+          "Low"
+        };
+        dom::set_text("[data-storage-pressure]", pressure);
         if let Some(fill) = dom::query("[data-storage-fill]") {
-          dom::set_style(&fill, "width", &format!("{:.0}%", percent * 100.0));
+          dom::set_style(&fill, "width", &format!("{:.0}%", percent_value));
         }
         if let Some(bar) = dom::query("[data-storage-bar]") {
-          dom::set_style(&bar, "width", &format!("{:.0}%", percent * 100.0));
+          dom::set_style(&bar, "width", &format!("{:.0}%", percent_value));
         }
         dom::set_text("[data-offline-ready]", "Offline ready");
       }

@@ -15,6 +15,8 @@
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link data-trunk rel="copy-file" href="manifest.webmanifest" />
+  <link data-trunk rel="copy-file" href="public/opfs-test-worker.js" />
+  <link data-trunk rel="copy-file" href="public/db-worker.js" />
   <link data-trunk rel="rust" href="Cargo.toml" data-target-name="emerson_violin_pwa" />
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/icon-180.png" />
   <link rel="apple-touch-icon" sizes="167x167" href="./assets/icons/icon-167.png" />
@@ -576,6 +578,59 @@
               <button class="btn btn-secondary" type="button" data-share-button>Share link</button>
               <button class="btn btn-ghost" type="button" data-copy-link>Copy link</button>
             </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Device diagnostics</h3>
+              <span class="pill">Perf + OPFS</span>
+            </div>
+            <div class="summary-grid">
+              <div>
+                <p class="summary-label">Perf status</p>
+                <p class="summary-value" data-perf-status>Perf: idle</p>
+              </div>
+              <div>
+                <p class="summary-label">LCP</p>
+                <p class="summary-value" data-perf-lcp>--</p>
+              </div>
+              <div>
+                <p class="summary-label">Input delay max</p>
+                <p class="summary-value" data-perf-inp>--</p>
+              </div>
+              <div>
+                <p class="summary-label">Long task max</p>
+                <p class="summary-value" data-perf-longtask>--</p>
+              </div>
+              <div>
+                <p class="summary-label">Storage persisted</p>
+                <p class="summary-value" data-storage-persisted>Checking…</p>
+              </div>
+              <div>
+                <p class="summary-label">Storage pressure</p>
+                <p class="summary-value" data-storage-pressure>Checking…</p>
+              </div>
+              <div>
+                <p class="summary-label">OPFS support</p>
+                <p class="summary-value" data-opfs-support>Checking…</p>
+              </div>
+              <div>
+                <p class="summary-label">DB worker</p>
+                <p class="summary-value" data-db-worker-status>Idle</p>
+              </div>
+              <div>
+                <p class="summary-label">DB file</p>
+                <p class="summary-value" data-db-worker-file>Unknown</p>
+              </div>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-opfs-test>Run OPFS test</button>
+              <button class="btn btn-ghost" type="button" data-opfs-worker-test>Run OPFS worker test</button>
+              <button class="btn btn-secondary" type="button" data-db-worker-init>Init DB worker</button>
+            </div>
+            <p class="status-line" data-opfs-test-status>OPFS test idle.</p>
+            <p class="status-line" data-opfs-worker-status>Worker test idle.</p>
+            <p class="status-line" data-db-worker-detail>DB worker idle.</p>
           </article>
         </div>
       </section>
