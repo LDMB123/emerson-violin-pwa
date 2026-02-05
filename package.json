@@ -5,13 +5,19 @@
   "type": "module",
   "scripts": {
     "prune:legacy": "node scripts/maintenance/prune-legacy.js",
-    "predev": "node scripts/maintenance/prune-legacy.js && node scripts/build/copy-sqlite-wasm.js",
-    "dev": "trunk serve --port 5173",
-    "prebuild": "node scripts/maintenance/prune-legacy.js && node scripts/build/copy-sqlite-wasm.js",
-    "build": "trunk build --release",
+    "token:budget": "node scripts/maintenance/token-budget.js",
+    "predev": "node scripts/maintenance/prune-legacy.js && node scripts/build/copy-sqlite-wasm.js && mkdir -p dist/.stage",
+    "dev": "NO_COLOR=false RUSTFLAGS=\"-C target-feature=+bulk-memory,+mutable-globals\" trunk serve --port 5173",
+    "predev:threads": "node scripts/maintenance/prune-legacy.js && node scripts/build/copy-sqlite-wasm.js && mkdir -p dist/.stage",
+    "dev:threads": "NO_COLOR=false RUSTUP_TOOLCHAIN=nightly RUSTFLAGS=\"-C target-feature=+atomics,+bulk-memory,+mutable-globals\" trunk serve --features wasm-threads --port 5173",
+    "prebuild": "node scripts/maintenance/prune-legacy.js && node scripts/build/copy-sqlite-wasm.js && mkdir -p dist/.stage",
+    "build": "NO_COLOR=false RUSTFLAGS=\"-C target-feature=+bulk-memory,+mutable-globals\" trunk build --release",
+    "prebuild:threads": "node scripts/maintenance/prune-legacy.js && node scripts/build/copy-sqlite-wasm.js && mkdir -p dist/.stage",
+    "build:threads": "NO_COLOR=false RUSTUP_TOOLCHAIN=nightly RUSTFLAGS=\"-C target-feature=+atomics,+bulk-memory,+mutable-globals\" trunk build --features wasm-threads --release",
     "postbuild": "node scripts/build/build-sw-assets.js --dist",
     "ios:bundle": "node scripts/build/copy-pwa-to-ios.js",
-    "preview": "trunk serve --release --port 5173",
+    "prepreview": "node scripts/maintenance/prune-legacy.js && node scripts/build/copy-sqlite-wasm.js && mkdir -p dist/.stage",
+    "preview": "NO_COLOR=false RUSTFLAGS=\"-C target-feature=+bulk-memory,+mutable-globals\" trunk serve --release --port 5173",
     "prelint": "node scripts/maintenance/prune-legacy.js",
     "lint": "eslint src --no-error-on-unmatched-pattern",
     "test": "vitest run",
@@ -27,6 +33,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@sqlite.org/sqlite-wasm": "^3.51.2-build6"
+    "@sqlite.org/sqlite-wasm": "^3.51.2-build6",
+    "pdfjs-dist": "^4.10.38"
   }
 }

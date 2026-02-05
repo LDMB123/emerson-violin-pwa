@@ -101,7 +101,8 @@ pub fn start(state: &Rc<RefCell<AppState>>) {
   app.metronome.beat = 0;
   let bpm = if app.metronome.bpm <= 0.0 { 90.0 } else { app.metronome.bpm };
   let interval = (60.0 / bpm) * 1000.0;
-  let _audio_ctx = app.metronome.audio_ctx.get_or_insert_with(|| AudioContext::new().unwrap());
+  let audio_ctx = app.metronome.audio_ctx.get_or_insert_with(|| AudioContext::new().unwrap());
+  let _ = audio_ctx.resume();
 
   let state_clone = state.clone();
   let cb = wasm_bindgen::closure::Closure::<dyn FnMut()>::new(move || {
@@ -139,5 +140,7 @@ fn set_toggle_label(active: bool) {
   let label = if active { "Stop metronome" } else { "Start metronome" };
   for button in dom::query_all("[data-metronome-toggle]") {
     dom::set_text_el(&button, label);
+    dom::set_attr(&button, "aria-pressed", if active { "true" } else { "false" });
+    dom::set_dataset(&button, "state", if active { "on" } else { "off" });
   }
 }

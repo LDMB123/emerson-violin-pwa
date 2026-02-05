@@ -72,6 +72,18 @@
       ]
     },
     {
+      "name": "Games",
+      "short_name": "Games",
+      "description": "Jump into practice games",
+      "url": "./#games",
+      "icons": [
+        {
+          "src": "./assets/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "Studio",
       "short_name": "Studio",
       "description": "Jump into tuner and metronome",
@@ -127,7 +139,12 @@
       "accept": {
         "application/json": [".json"],
         "text/csv": [".csv"],
-        "audio/*": [".wav", ".m4a", ".mp3"]
+        "audio/*": [".wav", ".m4a", ".mp3"],
+        "application/pdf": [".pdf"],
+        "application/zip": [".zip"],
+        "application/xml": [".xml", ".musicxml"],
+        "text/xml": [".xml", ".musicxml"],
+        "application/vnd.recordare.musicxml+xml": [".musicxml"]
       },
       "launch_type": "single-client",
       "icons": [
@@ -146,6 +163,18 @@
     },
     {
       "protocol": "web+violin",
+      "url": "./handle-protocol?uri=%s"
+    },
+    {
+      "protocol": "web+emerson-game",
+      "url": "./handle-protocol?uri=%s"
+    },
+    {
+      "protocol": "web+emerson-session",
+      "url": "./handle-protocol?uri=%s"
+    },
+    {
+      "protocol": "web+emerson-teacher",
       "url": "./handle-protocol?uri=%s"
     }
   ],

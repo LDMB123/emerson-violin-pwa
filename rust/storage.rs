@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use futures_channel::oneshot;
-use js_sys::{Array, JSON, Object, Reflect, Function};
+use js_sys::{Array, JSON, Object, Reflect, Function, Uint8Array};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use wasm_bindgen::JsCast;
@@ -22,6 +22,9 @@ pub const DB_VERSION: u32 = 5;
 
 const SQLITE_READY_TTL_MS: f64 = 5000.0;
 const IDB_PURGE_KEY: &str = "sqlite:idb-purged-at";
+const DEVICE_ID_KEY: &str = "device:id";
+const ACTIVE_PROFILE_KEY: &str = "profile:active";
+const ACTIVE_PROFILE_NAME_KEY: &str = "profile:active-name";
 const IDB_STORES: &[&str] = &[
   "sessions",
   "recordings",
@@ -66,6 +69,11 @@ pub struct Recording {
   pub id: String,
   pub created_at: f64,
   pub duration_seconds: f64,
+  pub mime_type: String,
+  pub size_bytes: f64,
+  pub format: String,
+  pub opfs_path: Option<String>,
+  pub profile_id: Option<String>,
   pub blob: Option<Blob>,
 }
 
@@ -335,8 +343,17 @@ pub async fn get_store_batch(
       }
     };
 
-    let value = cursor.value();
-    values_ref.borrow_mut().push(value);
+    match cursor.value() {
+      Ok(value) => {
+        values_ref.borrow_mut().push(value);
+      }
+      Err(_) => {
+        if let Some(tx) = sender.take() {
+          let _ = tx.send(Err(JsValue::from_str("IDB cursor value error")));
+        }
+        return;
+      }
+    }
     if let Ok(key) = cursor.key() {
       if let Some(key_str) = key_to_string(&key) {
         *last_key_ref.borrow_mut() = Some(key_str);
@@ -368,7 +385,7 @@ pub async fn get_store_batch(
   request.set_onerror(Some(onerror.as_ref().unchecked_ref()));
   onerror.forget();
 
-  rx.await.map_err(|_| JsValue::from_str("IDB cursor error"))??
+  rx.await.map_err(|_| JsValue::from_str("IDB cursor error"))?
 }
 
 
@@ -564,6 +581,15 @@ pub async fn delete_recording(id: &str) -> Result<(), JsValue> {
     let _ = delete_value("recordings", id).await;
     return Ok(());
   }
+  if let Ok(value) = idb_get_value("recordings", id).await {
+    if let Ok(path_val) = Reflect::get(&value, &"opfs_path".into()) {
+      if let Some(path) = path_val.as_string() {
+        if !is_idb_path(&path) {
+          let _ = delete_recording_blob(&path).await;
+        }
+      }
+    }
+  }
   delete_value("recordings", id).await
 }
 
@@ -576,6 +602,118 @@ pub async fn clear_recordings() -> Result<(), JsValue> {
     return sqlite_clear_table("recordings").await;
   }
   clear_store("recordings").await
+}
+
+pub async fn delete_recording_assets(recording: &Recording) -> Result<(), JsValue> {
+  delete_recording(&recording.id).await
+}
+
+pub fn sum_opfs_bytes(recordings: &[Recording]) -> f64 {
+  recordings
+    .iter()
+    .filter_map(|rec| {
+      let path = rec.opfs_path.as_ref()?;
+      if is_idb_path(path) {
+        return None;
+      }
+      let size = if rec.size_bytes > 0.0 {
+        rec.size_bytes
+      } else {
+        rec.blob.as_ref().map(|b| b.size() as f64).unwrap_or(0.0)
+      };
+      Some(size)
+    })
+    .sum()
+}
+
+pub async fn prune_recordings(retention_days: f64) -> Result<(), JsValue> {
+  let cutoff = js_sys::Date::now() - (retention_days.max(0.0) * 86_400_000.0);
+  if should_use_sqlite().await {
+    db_client::init_db().await?;
+    let rows = db_client::query(
+      "SELECT id, opfs_path FROM recordings WHERE created_at < ?1",
+      vec![json_number(cutoff)],
+    )
+    .await?;
+    for row in rows {
+      let id = extract_string(&row, "id").unwrap_or_default();
+      if id.is_empty() {
+        continue;
+      }
+      if let Some(path) = extract_string(&row, "opfs_path") {
+        if is_idb_path(&path) {
+          if let Some(key) = idb_key_from_path(&path) {
+            let _ = delete_value("recordings", &key).await;
+          }
+        } else {
+          let _ = delete_recording_blob(&path).await;
+        }
+      }
+      let _ = db_client::exec(
+        "DELETE FROM recordings WHERE id = ?1",
+        vec![JsonValue::String(id)],
+      )
+      .await;
+    }
+    return Ok(());
+  }
+
+  let values = get_all_values("recordings").await?;
+  for value in values {
+    let created_at = js_number_any(&value, &["created_at", "createdAt"]).unwrap_or(0.0);
+    if created_at >= cutoff {
+      continue;
+    }
+    let id = js_string_any(&value, &["id"]).unwrap_or_default();
+    if id.is_empty() {
+      continue;
+    }
+    if let Ok(path_val) = Reflect::get(&value, &"opfs_path".into()) {
+      if let Some(path) = path_val.as_string() {
+        if !is_idb_path(&path) {
+          let _ = delete_recording_blob(&path).await;
+        }
+      }
+    }
+    let _ = delete_value("recordings", &id).await;
+  }
+  Ok(())
+}
+
+pub async fn prune_recordings_by_size(max_bytes: f64) -> Result<(), JsValue> {
+  if max_bytes <= 0.0 {
+    return Ok(());
+  }
+  let mut recordings = get_recordings().await.unwrap_or_default();
+  recordings.sort_by(|a, b| {
+    a.created_at
+      .partial_cmp(&b.created_at)
+      .unwrap_or(std::cmp::Ordering::Equal)
+  });
+  let mut total = sum_opfs_bytes(&recordings);
+  if total <= max_bytes {
+    return Ok(());
+  }
+  for recording in recordings {
+    if total <= max_bytes {
+      break;
+    }
+    if let Some(path) = recording.opfs_path.as_ref() {
+      if is_idb_path(path) {
+        continue;
+      }
+    } else {
+      continue;
+    }
+    let size = if recording.size_bytes > 0.0 {
+      recording.size_bytes
+    } else {
+      recording.blob.as_ref().map(|b| b.size() as f64).unwrap_or(0.0)
+    };
+    let _ = delete_recording_assets(&recording).await;
+    total = (total - size).max(0.0);
+  }
+  Ok(())
 }
 
 
@@ -634,6 +772,251 @@ pub async fn delete_share_item(id: &str) -> Result<(), JsValue> {
     return Ok(());
   }
   delete_value("shareInbox", id).await
+}
+
+pub async fn get_assignments() -> Result<Vec<JsValue>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_assignments().await;
+  }
+  get_all_values("assignments").await
+}
+
+pub async fn save_assignment(value: &JsValue) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_assignment(value).await;
+  }
+  let _ = ensure_id(value);
+  let _ = ensure_created_at(value, &["created_at", "createdAt"], js_sys::Date::now());
+  put_value("assignments", value).await
+}
+
+pub async fn delete_assignment(id: &str) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = delete_value("assignments", id).await;
+    return sqlite_delete_entry("assignments", id).await;
+  }
+  delete_value("assignments", id).await
+}
+
+pub async fn clear_assignments() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("assignments").await;
+    return sqlite_clear_table("assignments").await;
+  }
+  clear_store("assignments").await
+}
+
+pub async fn get_profiles() -> Result<Vec<JsValue>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_profiles().await;
+  }
+  get_all_values("profiles").await
+}
+
+pub async fn save_profile(value: &JsValue) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_profile(value).await;
+  }
+  let _ = ensure_id(value);
+  let _ = ensure_created_at(value, &["created_at", "createdAt"], js_sys::Date::now());
+  put_value("profiles", value).await
+}
+
+pub async fn delete_profile(id: &str) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = delete_value("profiles", id).await;
+    return sqlite_delete_entry("profiles", id).await;
+  }
+  delete_value("profiles", id).await
+}
+
+pub async fn clear_profiles() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("profiles").await;
+    return sqlite_clear_table("profiles").await;
+  }
+  clear_store("profiles").await
+}
+
+pub async fn get_game_scores() -> Result<Vec<JsValue>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_game_scores().await;
+  }
+  get_all_values("gameScores").await
+}
+
+pub async fn save_game_score(value: &JsValue) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_game_score(value).await;
+  }
+  let _ = ensure_id(value);
+  let _ = ensure_created_at(value, &["created_at", "createdAt", "ended_at", "endedAt"], js_sys::Date::now());
+  put_value("gameScores", value).await
+}
+
+pub async fn clear_game_scores() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("gameScores").await;
+    return sqlite_clear_table("game_scores").await;
+  }
+  clear_store("gameScores").await
+}
+
+pub async fn get_scores() -> Result<Vec<JsValue>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_scores().await;
+  }
+  get_all_values("scoreLibrary").await
+}
+
+pub async fn save_score_entry(value: &JsValue) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_score_entry(value).await;
+  }
+  let _ = ensure_id(value);
+  let _ = ensure_created_at(value, &["created_at", "createdAt"], js_sys::Date::now());
+  put_value("scoreLibrary", value).await
+}
+
+pub async fn delete_score_entry(id: &str) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_delete_score_entry(id).await;
+  }
+  delete_value("scoreLibrary", id).await
+}
+
+pub async fn clear_scores() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("scoreLibrary").await;
+    let _ = clear_score_blobs().await;
+    return sqlite_clear_table("score_library").await;
+  }
+  clear_store("scoreLibrary").await
+}
+
+pub async fn get_ml_traces() -> Result<Vec<JsValue>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_ml_traces().await;
+  }
+  get_all_values("mlTraces").await
+}
+
+pub async fn enqueue_ml_trace(value: &JsValue) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_ml_trace(value).await;
+  }
+  let _ = ensure_id(value);
+  let _ = ensure_created_at(value, &["created_at", "createdAt", "timestamp"], js_sys::Date::now());
+  put_value("mlTraces", value).await
+}
+
+pub async fn clear_ml_traces() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("mlTraces").await;
+    return sqlite_clear_table("ml_traces").await;
+  }
+  clear_store("mlTraces").await
+}
+
+pub async fn prune_ml_traces(limit: usize, max_age_ms: f64) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_prune_ml_traces(limit, max_age_ms).await;
+  }
+  let values = get_all_values("mlTraces").await?;
+  let mut entries: Vec<(String, f64)> = Vec::new();
+  for value in values.iter() {
+    let id = js_string_any(value, &["id"]).unwrap_or_else(utils::create_id);
+    let timestamp = js_number_any(value, &["timestamp", "created_at", "createdAt"]).unwrap_or(0.0);
+    entries.push((id, timestamp));
+  }
+  let cutoff = js_sys::Date::now() - max_age_ms.max(0.0);
+  for (id, ts) in entries.iter() {
+    if *ts > 0.0 && *ts < cutoff {
+      let _ = delete_value("mlTraces", id).await;
+    }
+  }
+  if entries.len() > limit {
+    let mut sorted = entries;
+    sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    for (id, _) in sorted.into_iter().skip(limit) {
+      let _ = delete_value("mlTraces", &id).await;
+    }
+  }
+  Ok(())
+}
+
+pub async fn get_telemetry_queue() -> Result<Vec<JsValue>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_telemetry_queue().await;
+  }
+  get_all_values("telemetryQueue").await
+}
+
+pub async fn enqueue_telemetry(value: &JsValue) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_telemetry(value).await;
+  }
+  let _ = ensure_id(value);
+  let _ = ensure_created_at(value, &["created_at", "createdAt", "timestamp"], js_sys::Date::now());
+  put_value("telemetryQueue", value).await
+}
+
+pub async fn clear_telemetry_queue() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("telemetryQueue").await;
+    return sqlite_clear_table("telemetry_queue").await;
+  }
+  clear_store("telemetryQueue").await
+}
+
+pub async fn get_error_queue() -> Result<Vec<JsValue>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_error_queue().await;
+  }
+  get_all_values("errorQueue").await
+}
+
+pub async fn enqueue_error(value: &JsValue) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_error(value).await;
+  }
+  let _ = ensure_id(value);
+  let _ = ensure_created_at(value, &["created_at", "createdAt", "timestamp"], js_sys::Date::now());
+  put_value("errorQueue", value).await
+}
+
+pub async fn clear_error_queue() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("errorQueue").await;
+    return sqlite_clear_table("error_queue").await;
+  }
+  clear_store("errorQueue").await
+}
+
+pub async fn get_model_cache(id: &str) -> Result<Option<JsValue>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_model_cache(id).await;
+  }
+  match idb_get_value("modelCache", id).await {
+    Ok(value) => Ok(Some(value)),
+    Err(_) => Ok(None),
+  }
+}
+
+pub async fn get_model_cache_all() -> Result<Vec<JsValue>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_model_cache_all().await;
+  }
+  get_all_values("modelCache").await
+}
+
+pub async fn save_model_cache(id: &str, value: &JsValue) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_model_cache(id, value).await;
+  }
+  let _ = ensure_id(value);
+  let _ = ensure_created_at(value, &["created_at", "createdAt", "updated_at", "updatedAt"], js_sys::Date::now());
+  put_value("modelCache", value).await
 }
 
 pub async fn ingest_share_entries(entries: Vec<JsValue>) -> Result<(), JsValue> {
@@ -724,6 +1107,15 @@ fn recording_to_value(recording: &Recording) -> Result<JsValue, JsValue> {
   Reflect::set(&obj, &"id".into(), &JsValue::from_str(&recording.id))?;
   Reflect::set(&obj, &"created_at".into(), &JsValue::from_f64(recording.created_at))?;
   Reflect::set(&obj, &"duration_seconds".into(), &JsValue::from_f64(recording.duration_seconds))?;
+  Reflect::set(&obj, &"mime_type".into(), &JsValue::from_str(&recording.mime_type))?;
+  Reflect::set(&obj, &"size_bytes".into(), &JsValue::from_f64(recording.size_bytes))?;
+  Reflect::set(&obj, &"format".into(), &JsValue::from_str(&recording.format))?;
+  if let Some(path) = &recording.opfs_path {
+    Reflect::set(&obj, &"opfs_path".into(), &JsValue::from_str(path))?;
+  }
+  if let Some(profile_id) = &recording.profile_id {
+    Reflect::set(&obj, &"profile_id".into(), &JsValue::from_str(profile_id))?;
+  }
   if let Some(blob) = &recording.blob {
     Reflect::set(&obj, &"blob".into(), blob)?;
   }
@@ -737,10 +1129,36 @@ fn recording_from_value(value: &JsValue) -> Option<Recording> {
   let blob = Reflect::get(value, &"blob".into())
     .ok()
     .and_then(|val| val.dyn_into::<Blob>().ok());
+  let mime_type = Reflect::get(value, &"mime_type".into())
+    .ok()
+    .and_then(|val| val.as_string())
+    .or_else(|| blob.as_ref().map(|b| b.type_()))
+    .unwrap_or_else(|| "audio/webm".to_string());
+  let size_bytes = Reflect::get(value, &"size_bytes".into())
+    .ok()
+    .and_then(|val| val.as_f64())
+    .or_else(|| blob.as_ref().map(|b| b.size() as f64))
+    .unwrap_or(0.0);
+  let format = Reflect::get(value, &"format".into())
+    .ok()
+    .and_then(|val| val.as_string())
+    .filter(|val| !val.is_empty())
+    .unwrap_or_else(|| format_from_mime(&mime_type));
+  let opfs_path = Reflect::get(value, &"opfs_path".into())
+    .ok()
+    .and_then(|val| val.as_string());
+  let profile_id = Reflect::get(value, &"profile_id".into())
+    .ok()
+    .and_then(|val| val.as_string());
   Some(Recording {
     id,
     created_at,
     duration_seconds: duration,
+    mime_type,
+    size_bytes,
+    format,
+    opfs_path,
+    profile_id,
     blob,
   })
 }
@@ -781,7 +1199,7 @@ fn key_to_string(key: &JsValue) -> Option<String> {
   if let Some(text) = key.as_string() {
     return Some(text);
   }
-  JSON.stringify(key).ok().and_then(|val| val.as_string())
+  JSON::stringify(key).ok().and_then(|val| val.as_string())
 }
 
 pub fn local_get(key: &str) -> Option<String> {
@@ -804,9 +1222,39 @@ pub fn local_remove(key: &str) {
   }
 }
 
+pub fn get_or_create_device_id() -> String {
+  if let Some(id) = local_get(DEVICE_ID_KEY).filter(|val| !val.trim().is_empty()) {
+    return id;
+  }
+  let id = utils::create_id();
+  local_set(DEVICE_ID_KEY, &id);
+  id
+}
+
+pub fn get_active_profile_id() -> String {
+  local_get(ACTIVE_PROFILE_KEY)
+    .filter(|val| !val.trim().is_empty())
+    .unwrap_or_else(|| "default".to_string())
+}
+
+pub fn get_active_profile_name() -> String {
+  local_get(ACTIVE_PROFILE_NAME_KEY)
+    .filter(|val| !val.trim().is_empty())
+    .unwrap_or_else(|| "Default".to_string())
+}
+
+pub fn set_active_profile(id: &str, name: &str) {
+  let id = if id.trim().is_empty() { "default" } else { id };
+  let name = if name.trim().is_empty() { "Default" } else { name };
+  local_set(ACTIVE_PROFILE_KEY, id);
+  local_set(ACTIVE_PROFILE_NAME_KEY, name);
+}
+
 
 const OPFS_RECORDINGS_DIR: &str = "recordings";
 const OPFS_SHARE_DIR: &str = "share";
+const OPFS_SCORE_DIR: &str = "scores";
+const OPFS_MODELS_DIR: &str = "models";
 const IDB_PATH_PREFIX: &str = "idb:";
 
 async fn sqlite_get_sessions() -> Result<Vec<Session>, JsValue> {
@@ -860,7 +1308,7 @@ async fn sqlite_save_session(session: &Session) -> Result<(), JsValue> {
 async fn sqlite_get_recordings() -> Result<Vec<Recording>, JsValue> {
   db_client::init_db().await?;
   let rows = db_client::query(
-    "SELECT id, created_at, duration_seconds, opfs_path, payload FROM recordings ORDER BY created_at DESC",
+    "SELECT id, created_at, duration_seconds, mime_type, size_bytes, format, opfs_path, profile_id, payload FROM recordings ORDER BY created_at DESC",
     vec![],
   )
   .await?;
@@ -878,8 +1326,20 @@ async fn sqlite_get_recordings() -> Result<Vec<Recording>, JsValue> {
     let duration = extract_number(&row, "duration_seconds")
       .or_else(|| payload_json.as_ref().and_then(|json| extract_number(json, "duration_seconds")))
       .unwrap_or(0.0);
+    let mime_type = extract_string(&row, "mime_type")
+      .or_else(|| payload_json.as_ref().and_then(|json| extract_string(json, "mime_type")))
+      .unwrap_or_else(|| "audio/webm".to_string());
+    let mut size_bytes = extract_number(&row, "size_bytes")
+      .or_else(|| payload_json.as_ref().and_then(|json| extract_number(json, "size_bytes")))
+      .unwrap_or(0.0);
+    let format = extract_string(&row, "format")
+      .or_else(|| payload_json.as_ref().and_then(|json| extract_string(json, "format")))
+      .filter(|val| !val.is_empty())
+      .unwrap_or_else(|| format_from_mime(&mime_type));
     let opfs_path = extract_string(&row, "opfs_path")
       .or_else(|| payload_json.as_ref().and_then(|json| extract_string(json, "opfs_path")));
+    let profile_id = extract_string(&row, "profile_id")
+      .or_else(|| payload_json.as_ref().and_then(|json| extract_string(json, "profile_id")));
 
     let blob = if let Some(path) = opfs_path.as_deref() {
       if is_idb_path(path) {
@@ -891,10 +1351,21 @@ async fn sqlite_get_recordings() -> Result<Vec<Recording>, JsValue> {
       idb_recording_blob(id.as_str()).await
     };
 
+    if size_bytes <= 0.0 {
+      if let Some(blob) = blob.as_ref() {
+        size_bytes = blob.size() as f64;
+      }
+    }
+
     out.push(Recording {
       id,
       created_at,
       duration_seconds: duration,
+      mime_type,
+      size_bytes,
+      format,
+      opfs_path,
+      profile_id,
       blob,
     });
   }
@@ -905,7 +1376,7 @@ async fn sqlite_save_recording(recording: &Recording) -> Result<(), JsValue> {
   db_client::init_db().await?;
   let mut opfs_path = None;
   if let Some(blob) = recording.blob.as_ref() {
-    opfs_path = save_recording_blob(&recording.id, blob).await;
+    opfs_path = save_recording_blob(&recording.id, &recording.format, blob).await;
     if opfs_path.is_none() {
       let value = recording_to_value(recording)?;
       if put_value("recordings", &value).await.is_ok() {
@@ -914,18 +1385,31 @@ async fn sqlite_save_recording(recording: &Recording) -> Result<(), JsValue> {
     }
   }
 
-  let mime_type = recording
-    .blob
-    .as_ref()
-    .map(|b| b.type_())
-    .filter(|t| !t.is_empty())
-    .unwrap_or_else(|| "audio/webm".to_string());
-  let size_bytes = recording
-    .blob
-    .as_ref()
-    .map(|b| b.size() as f64)
-    .unwrap_or(0.0);
-  let format = format_from_mime(&mime_type);
+  let mime_type = if !recording.mime_type.is_empty() {
+    recording.mime_type.clone()
+  } else {
+    recording
+      .blob
+      .as_ref()
+      .map(|b| b.type_())
+      .filter(|t| !t.is_empty())
+      .unwrap_or_else(|| "audio/webm".to_string())
+  };
+  let size_bytes = if recording.size_bytes > 0.0 {
+    recording.size_bytes
+  } else {
+    recording
+      .blob
+      .as_ref()
+      .map(|b| b.size() as f64)
+      .unwrap_or(0.0)
+  };
+  let format = if !recording.format.is_empty() {
+    recording.format.clone()
+  } else {
+    format_from_mime(&mime_type)
+  };
+  let profile_id = recording.profile_id.clone();
 
   let payload = serde_json::json!({
     "id": &recording.id,
@@ -935,7 +1419,7 @@ async fn sqlite_save_recording(recording: &Recording) -> Result<(), JsValue> {
     "size_bytes": size_bytes,
     "format": &format,
     "opfs_path": &opfs_path,
-    "profile_id": JsonValue::Null,
+    "profile_id": &profile_id,
   })
   .to_string();
 
@@ -949,7 +1433,7 @@ async fn sqlite_save_recording(recording: &Recording) -> Result<(), JsValue> {
       json_number(size_bytes),
       JsonValue::String(format),
       opfs_path.clone().map(JsonValue::String).unwrap_or(JsonValue::Null),
-      JsonValue::Null,
+      profile_id.clone().map(JsonValue::String).unwrap_or(JsonValue::Null),
       JsonValue::String(payload),
     ],
   )
@@ -1067,14 +1551,592 @@ async fn sqlite_delete_share_item(id: &str) -> Result<(), JsValue> {
   .await
 }
 
+async fn sqlite_get_assignments() -> Result<Vec<JsValue>, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT id, created_at, payload FROM assignments ORDER BY created_at DESC",
+    vec![],
+  )
+  .await?;
+  let mut out = Vec::new();
+  for row in rows {
+    if let Some(payload) = extract_string(&row, "payload") {
+      if let Some(mut val) = payload_to_js(&payload) {
+        if let Some(id) = extract_string(&row, "id") {
+          let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
+        }
+        if let Some(created_at) = extract_number(&row, "created_at") {
+          let _ = Reflect::set(&val, &"created_at".into(), &JsValue::from_f64(created_at));
+        }
+        out.push(val);
+        continue;
+      }
+    }
+    let obj = Object::new();
+    if let Some(id) = extract_string(&row, "id") {
+      let _ = Reflect::set(&obj, &"id".into(), &JsValue::from_str(&id));
+    }
+    if let Some(created_at) = extract_number(&row, "created_at") {
+      let _ = Reflect::set(&obj, &"created_at".into(), &JsValue::from_f64(created_at));
+    }
+    out.push(obj.into());
+  }
+  Ok(out)
+}
+
+async fn sqlite_save_assignment(value: &JsValue) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let id = ensure_id(value);
+  let created_at = ensure_created_at(value, &["created_at", "createdAt"], js_sys::Date::now());
+  let payload = payload_string(value);
+  db_client::exec(
+    "INSERT OR REPLACE INTO assignments (id, created_at, payload) VALUES (?1, ?2, ?3)",
+    vec![
+      JsonValue::String(id),
+      json_number(created_at),
+      JsonValue::String(payload),
+    ],
+  )
+  .await
+}
+
+async fn sqlite_get_profiles() -> Result<Vec<JsValue>, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT id, name, created_at, payload FROM profiles ORDER BY created_at DESC",
+    vec![],
+  )
+  .await?;
+  let mut out = Vec::new();
+  for row in rows {
+    if let Some(payload) = extract_string(&row, "payload") {
+      if let Some(mut val) = payload_to_js(&payload) {
+        if let Some(id) = extract_string(&row, "id") {
+          let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
+        }
+        if let Some(name) = extract_string(&row, "name") {
+          let _ = Reflect::set(&val, &"name".into(), &JsValue::from_str(&name));
+        }
+        if let Some(created_at) = extract_number(&row, "created_at") {
+          let _ = Reflect::set(&val, &"created_at".into(), &JsValue::from_f64(created_at));
+        }
+        out.push(val);
+        continue;
+      }
+    }
+    let obj = Object::new();
+    if let Some(id) = extract_string(&row, "id") {
+      let _ = Reflect::set(&obj, &"id".into(), &JsValue::from_str(&id));
+    }
+    if let Some(name) = extract_string(&row, "name") {
+      let _ = Reflect::set(&obj, &"name".into(), &JsValue::from_str(&name));
+    }
+    if let Some(created_at) = extract_number(&row, "created_at") {
+      let _ = Reflect::set(&obj, &"created_at".into(), &JsValue::from_f64(created_at));
+    }
+    out.push(obj.into());
+  }
+  Ok(out)
+}
+
+async fn sqlite_save_profile(value: &JsValue) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let id = ensure_id(value);
+  let created_at = ensure_created_at(value, &["created_at", "createdAt"], js_sys::Date::now());
+  let name = js_string_any(value, &["name"]).unwrap_or_default();
+  let payload = payload_string(value);
+  db_client::exec(
+    "INSERT OR REPLACE INTO profiles (id, name, created_at, payload) VALUES (?1, ?2, ?3, ?4)",
+    vec![
+      JsonValue::String(id),
+      if name.is_empty() { JsonValue::Null } else { JsonValue::String(name) },
+      json_number(created_at),
+      JsonValue::String(payload),
+    ],
+  )
+  .await
+}
+
+async fn sqlite_get_game_scores() -> Result<Vec<JsValue>, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT id, created_at, payload FROM game_scores ORDER BY created_at DESC",
+    vec![],
+  )
+  .await?;
+  let mut out = Vec::new();
+  for row in rows {
+    if let Some(payload) = extract_string(&row, "payload") {
+      if let Some(mut val) = payload_to_js(&payload) {
+        if let Some(id) = extract_string(&row, "id") {
+          let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
+        }
+        if let Some(created_at) = extract_number(&row, "created_at") {
+          let _ = Reflect::set(&val, &"created_at".into(), &JsValue::from_f64(created_at));
+        }
+        out.push(val);
+        continue;
+      }
+    }
+    let obj = Object::new();
+    if let Some(id) = extract_string(&row, "id") {
+      let _ = Reflect::set(&obj, &"id".into(), &JsValue::from_str(&id));
+    }
+    if let Some(created_at) = extract_number(&row, "created_at") {
+      let _ = Reflect::set(&obj, &"created_at".into(), &JsValue::from_f64(created_at));
+    }
+    out.push(obj.into());
+  }
+  Ok(out)
+}
+
+async fn sqlite_save_game_score(value: &JsValue) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let id = ensure_id(value);
+  let created_at = ensure_created_at(
+    value,
+    &["created_at", "createdAt", "ended_at", "endedAt"],
+    js_sys::Date::now(),
+  );
+  let payload = payload_string(value);
+  db_client::exec(
+    "INSERT OR REPLACE INTO game_scores (id, created_at, payload) VALUES (?1, ?2, ?3)",
+    vec![
+      JsonValue::String(id),
+      json_number(created_at),
+      JsonValue::String(payload),
+    ],
+  )
+  .await
+}
+
+async fn sqlite_get_scores() -> Result<Vec<JsValue>, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT id, title, composer, created_at, payload FROM score_library ORDER BY created_at DESC",
+    vec![],
+  )
+  .await?;
+  let mut out = Vec::new();
+  for row in rows {
+    let payload_json = extract_string(&row, "payload")
+      .and_then(|payload| serde_json::from_str::<JsonValue>(&payload).ok());
+    let mut entry = payload_json
+      .as_ref()
+      .and_then(|json| json_to_js(json))
+      .unwrap_or_else(|| Object::new().into());
+
+    if let Some(id) = extract_string(&row, "id") {
+      let _ = Reflect::set(&entry, &"id".into(), &JsValue::from_str(&id));
+    }
+    if let Some(title) = extract_string(&row, "title") {
+      let _ = Reflect::set(&entry, &"title".into(), &JsValue::from_str(&title));
+    }
+    if let Some(composer) = extract_string(&row, "composer") {
+      let _ = Reflect::set(&entry, &"composer".into(), &JsValue::from_str(&composer));
+    }
+    if let Some(created_at) = extract_number(&row, "created_at") {
+      let _ = Reflect::set(&entry, &"created_at".into(), &JsValue::from_f64(created_at));
+    }
+
+    let opfs_path = payload_json
+      .as_ref()
+      .and_then(|json| extract_string(json, "opfs_path"));
+    let blob = if let Some(path) = opfs_path.as_deref() {
+      if is_idb_path(path) {
+        idb_score_blob(
+          extract_string(&row, "id").as_deref().unwrap_or_default(),
+        )
+        .await
+      } else {
+        load_score_blob(path).await
+      }
+    } else {
+      None
+    };
+    if let Some(blob) = blob {
+      let _ = Reflect::set(&entry, &"pdf_blob".into(), &blob);
+    }
+
+    out.push(entry);
+  }
+  Ok(out)
+}
+
+async fn sqlite_save_score_entry(value: &JsValue) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let id = ensure_id(value);
+  let created_at = ensure_created_at(value, &["created_at", "createdAt"], js_sys::Date::now());
+  let title = js_string_any(value, &["title"]).unwrap_or_default();
+  let composer = js_string_any(value, &["composer"]).unwrap_or_default();
+  let source = js_string_any(value, &["source"]).unwrap_or_default();
+  let filename = js_string_any(value, &["filename"]);
+  let measures = js_number_any(value, &["measures"]);
+  let beats = js_number_any(value, &["beats_per_measure", "beatsPerMeasure"]);
+  let tempo = js_number_any(value, &["tempo_bpm", "tempoBpm"]);
+  let xml = js_string_any(value, &["xml"]);
+
+  let pdf_blob = Reflect::get(value, &"pdf_blob".into())
+    .ok()
+    .and_then(|val| val.dyn_into::<Blob>().ok());
+  let mut opfs_path = None;
+  if let Some(blob) = pdf_blob.as_ref() {
+    let name_hint = filename.clone().unwrap_or_else(|| title.clone());
+    opfs_path = save_score_blob(&id, &name_hint, blob).await;
+    if opfs_path.is_none() {
+      if put_value("scoreLibrary", value).await.is_ok() {
+        opfs_path = Some(idb_fallback_path("scoreLibrary", &id));
+      }
+    }
+  }
+
+  let mut map = serde_json::Map::new();
+  map.insert("id".to_string(), JsonValue::String(id.clone()));
+  map.insert("title".to_string(), JsonValue::String(title.clone()));
+  map.insert("created_at".to_string(), json_number(created_at));
+  if !composer.is_empty() {
+    map.insert("composer".to_string(), JsonValue::String(composer.clone()));
+  }
+  if !source.is_empty() {
+    map.insert("source".to_string(), JsonValue::String(source));
+  }
+  if let Some(filename) = filename {
+    map.insert("filename".to_string(), JsonValue::String(filename));
+  }
+  if let Some(measures) = measures {
+    map.insert("measures".to_string(), json_number(measures));
+  }
+  if let Some(beats) = beats {
+    map.insert("beats_per_measure".to_string(), json_number(beats));
+  }
+  if let Some(tempo) = tempo {
+    map.insert("tempo_bpm".to_string(), json_number(tempo));
+  }
+  if let Some(xml) = xml {
+    map.insert("xml".to_string(), JsonValue::String(xml));
+  }
+  if let Some(path) = opfs_path.as_ref() {
+    map.insert("opfs_path".to_string(), JsonValue::String(path.clone()));
+  }
+
+  let payload = serde_json::Value::Object(map);
+  let payload = serde_json::to_string(&payload).unwrap_or_else(|_| "{}".to_string());
+
+  db_client::exec(
+    "INSERT OR REPLACE INTO score_library (id, title, composer, created_at, payload) VALUES (?1, ?2, ?3, ?4, ?5)",
+    vec![
+      JsonValue::String(id),
+      if title.is_empty() { JsonValue::Null } else { JsonValue::String(title) },
+      if composer.is_empty() { JsonValue::Null } else { JsonValue::String(composer) },
+      json_number(created_at),
+      JsonValue::String(payload),
+    ],
+  )
+  .await
+}
+
+async fn sqlite_delete_score_entry(id: &str) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT payload FROM score_library WHERE id = ?1",
+    vec![JsonValue::String(id.to_string())],
+  )
+  .await?;
+  if let Some(row) = rows.first() {
+    if let Some(payload) = extract_string(row, "payload") {
+      if let Ok(json) = serde_json::from_str::<JsonValue>(&payload) {
+        if let Some(path) = extract_string(&json, "opfs_path") {
+          if is_idb_path(&path) {
+            if let Some(key) = idb_key_from_path(&path) {
+              let _ = delete_value("scoreLibrary", &key).await;
+            }
+          } else {
+            let _ = delete_score_blob(&path).await;
+          }
+        }
+      }
+    }
+  }
+  db_client::exec(
+    "DELETE FROM score_library WHERE id = ?1",
+    vec![JsonValue::String(id.to_string())],
+  )
+  .await
+}
+
+async fn sqlite_get_ml_traces() -> Result<Vec<JsValue>, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT id, created_at, payload FROM ml_traces ORDER BY created_at DESC",
+    vec![],
+  )
+  .await?;
+  let mut out = Vec::new();
+  for row in rows {
+    if let Some(payload) = extract_string(&row, "payload") {
+      if let Some(mut val) = payload_to_js(&payload) {
+        if let Some(id) = extract_string(&row, "id") {
+          let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
+        }
+        if let Some(created_at) = extract_number(&row, "created_at") {
+          let _ = Reflect::set(&val, &"created_at".into(), &JsValue::from_f64(created_at));
+        }
+        out.push(val);
+        continue;
+      }
+    }
+    let obj = Object::new();
+    if let Some(id) = extract_string(&row, "id") {
+      let _ = Reflect::set(&obj, &"id".into(), &JsValue::from_str(&id));
+    }
+    if let Some(created_at) = extract_number(&row, "created_at") {
+      let _ = Reflect::set(&obj, &"created_at".into(), &JsValue::from_f64(created_at));
+    }
+    out.push(obj.into());
+  }
+  Ok(out)
+}
+
+async fn sqlite_save_ml_trace(value: &JsValue) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let id = ensure_id(value);
+  let created_at = ensure_created_at(value, &["created_at", "createdAt", "timestamp"], js_sys::Date::now());
+  let payload = payload_string(value);
+  db_client::exec(
+    "INSERT OR REPLACE INTO ml_traces (id, created_at, payload) VALUES (?1, ?2, ?3)",
+    vec![
+      JsonValue::String(id),
+      json_number(created_at),
+      JsonValue::String(payload),
+    ],
+  )
+  .await
+}
+
+async fn sqlite_prune_ml_traces(limit: usize, max_age_ms: f64) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let cutoff = js_sys::Date::now() - max_age_ms.max(0.0);
+  let _ = db_client::exec(
+    "DELETE FROM ml_traces WHERE created_at < ?1",
+    vec![json_number(cutoff)],
+  )
+  .await;
+
+  if limit == 0 {
+    return Ok(());
+  }
+  let rows = db_client::query(
+    "SELECT id FROM ml_traces ORDER BY created_at DESC",
+    vec![],
+  )
+  .await?;
+  if rows.len() <= limit {
+    return Ok(());
+  }
+  for row in rows.into_iter().skip(limit) {
+    let id = extract_string(&row, "id").unwrap_or_default();
+    if id.is_empty() {
+      continue;
+    }
+    let _ = db_client::exec(
+      "DELETE FROM ml_traces WHERE id = ?1",
+      vec![JsonValue::String(id)],
+    )
+    .await;
+  }
+  Ok(())
+}
+
+async fn sqlite_get_telemetry_queue() -> Result<Vec<JsValue>, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT id, created_at, payload FROM telemetry_queue ORDER BY created_at DESC",
+    vec![],
+  )
+  .await?;
+  let mut out = Vec::new();
+  for row in rows {
+    if let Some(payload) = extract_string(&row, "payload") {
+      if let Some(mut val) = payload_to_js(&payload) {
+        if let Some(id) = extract_string(&row, "id") {
+          let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
+        }
+        if let Some(created_at) = extract_number(&row, "created_at") {
+          let _ = Reflect::set(&val, &"created_at".into(), &JsValue::from_f64(created_at));
+        }
+        out.push(val);
+        continue;
+      }
+    }
+    let obj = Object::new();
+    if let Some(id) = extract_string(&row, "id") {
+      let _ = Reflect::set(&obj, &"id".into(), &JsValue::from_str(&id));
+    }
+    if let Some(created_at) = extract_number(&row, "created_at") {
+      let _ = Reflect::set(&obj, &"created_at".into(), &JsValue::from_f64(created_at));
+    }
+    out.push(obj.into());
+  }
+  Ok(out)
+}
+
+async fn sqlite_save_telemetry(value: &JsValue) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let id = ensure_id(value);
+  let created_at = ensure_created_at(value, &["created_at", "createdAt", "timestamp"], js_sys::Date::now());
+  let payload = payload_string(value);
+  db_client::exec(
+    "INSERT OR REPLACE INTO telemetry_queue (id, created_at, payload) VALUES (?1, ?2, ?3)",
+    vec![
+      JsonValue::String(id),
+      json_number(created_at),
+      JsonValue::String(payload),
+    ],
+  )
+  .await
+}
+
+async fn sqlite_get_error_queue() -> Result<Vec<JsValue>, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT id, created_at, payload FROM error_queue ORDER BY created_at DESC",
+    vec![],
+  )
+  .await?;
+  let mut out = Vec::new();
+  for row in rows {
+    if let Some(payload) = extract_string(&row, "payload") {
+      if let Some(mut val) = payload_to_js(&payload) {
+        if let Some(id) = extract_string(&row, "id") {
+          let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
+        }
+        if let Some(created_at) = extract_number(&row, "created_at") {
+          let _ = Reflect::set(&val, &"created_at".into(), &JsValue::from_f64(created_at));
+        }
+        out.push(val);
+        continue;
+      }
+    }
+    let obj = Object::new();
+    if let Some(id) = extract_string(&row, "id") {
+      let _ = Reflect::set(&obj, &"id".into(), &JsValue::from_str(&id));
+    }
+    if let Some(created_at) = extract_number(&row, "created_at") {
+      let _ = Reflect::set(&obj, &"created_at".into(), &JsValue::from_f64(created_at));
+    }
+    out.push(obj.into());
+  }
+  Ok(out)
+}
+
+async fn sqlite_save_error(value: &JsValue) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let id = ensure_id(value);
+  let created_at = ensure_created_at(value, &["created_at", "createdAt", "timestamp"], js_sys::Date::now());
+  let payload = payload_string(value);
+  db_client::exec(
+    "INSERT OR REPLACE INTO error_queue (id, created_at, payload) VALUES (?1, ?2, ?3)",
+    vec![
+      JsonValue::String(id),
+      json_number(created_at),
+      JsonValue::String(payload),
+    ],
+  )
+  .await
+}
+
+async fn sqlite_get_model_cache(id: &str) -> Result<Option<JsValue>, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT payload FROM model_cache WHERE id = ?1",
+    vec![JsonValue::String(id.to_string())],
+  )
+  .await?;
+  let row = match rows.first() {
+    Some(row) => row,
+    None => return Ok(None),
+  };
+  if let Some(payload) = extract_string(row, "payload") {
+    if let Some(mut val) = payload_to_js(&payload) {
+      let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(id));
+      return Ok(Some(val));
+    }
+  }
+  let obj = Object::new();
+  let _ = Reflect::set(&obj, &"id".into(), &JsValue::from_str(id));
+  Ok(Some(obj.into()))
+}
+
+async fn sqlite_get_model_cache_all() -> Result<Vec<JsValue>, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT id, created_at, payload FROM model_cache ORDER BY created_at DESC",
+    vec![],
+  )
+  .await?;
+  let mut out = Vec::new();
+  for row in rows {
+    if let Some(payload) = extract_string(&row, "payload") {
+      if let Some(mut val) = payload_to_js(&payload) {
+        if let Some(id) = extract_string(&row, "id") {
+          let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
+        }
+        if let Some(created_at) = extract_number(&row, "created_at") {
+          let _ = Reflect::set(&val, &"created_at".into(), &JsValue::from_f64(created_at));
+        }
+        out.push(val);
+        continue;
+      }
+    }
+    let obj = Object::new();
+    if let Some(id) = extract_string(&row, "id") {
+      let _ = Reflect::set(&obj, &"id".into(), &JsValue::from_str(&id));
+    }
+    if let Some(created_at) = extract_number(&row, "created_at") {
+      let _ = Reflect::set(&obj, &"created_at".into(), &JsValue::from_f64(created_at));
+    }
+    out.push(obj.into());
+  }
+  Ok(out)
+}
+
+async fn sqlite_save_model_cache(id: &str, value: &JsValue) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  let _ = ensure_id(value);
+  let created_at = ensure_created_at(
+    value,
+    &["created_at", "createdAt", "updated_at", "updatedAt"],
+    js_sys::Date::now(),
+  );
+  let payload = payload_string(value);
+  db_client::exec(
+    "INSERT OR REPLACE INTO model_cache (id, created_at, payload) VALUES (?1, ?2, ?3)",
+    vec![
+      JsonValue::String(id.to_string()),
+      json_number(created_at),
+      JsonValue::String(payload),
+    ],
+  )
+  .await
+}
+
+async fn sqlite_delete_entry(table: &str, id: &str) -> Result<(), JsValue> {
+  db_client::init_db().await?;
+  db_client::exec(
+    &format!("DELETE FROM {} WHERE id = ?1", table),
+    vec![JsonValue::String(id.to_string())],
+  )
+  .await
+}
+
 async fn sqlite_clear_table(table: &str) -> Result<(), JsValue> {
   db_client::init_db().await?;
   db_client::exec(&format!("DELETE FROM {}", table), vec![]).await
 }
 
-pub async fn save_recording_blob(id: &str, blob: &Blob) -> Option<String> {
-  let mime = blob.type_();
-  let filename = recording_filename(id, &mime);
+pub async fn save_recording_blob(id: &str, format_hint: &str, blob: &Blob) -> Option<String> {
+  let ext = recording_extension(format_hint, blob);
+  let filename = recording_filename(id, &ext);
   let path = format!("{}/{}", OPFS_RECORDINGS_DIR, filename);
   if save_blob_to_opfs(&path, blob).await.is_ok() {
     Some(path)
@@ -1093,11 +2155,44 @@ pub async fn save_share_blob(id: &str, name: &str, blob: &Blob) -> Option<String
   }
 }
 
-async fn load_recording_blob(path: &str) -> Option<Blob> {
+async fn save_score_blob(id: &str, name: &str, blob: &Blob) -> Option<String> {
+  let filename = score_filename(id, name);
+  let path = format!("{}/{}", OPFS_SCORE_DIR, filename);
+  if save_blob_to_opfs(&path, blob).await.is_ok() {
+    Some(path)
+  } else {
+    None
+  }
+}
+
+pub async fn save_model_bytes(id: &str, filename: &str, bytes: &[u8]) -> Option<String> {
+  let name = if filename.trim().is_empty() {
+    sanitize_filename(id)
+  } else {
+    sanitize_filename(filename)
+  };
+  let path = format!("{}/{}", OPFS_MODELS_DIR, name);
+  if save_bytes_to_opfs(&path, bytes).await.is_ok() {
+    Some(path)
+  } else {
+    None
+  }
+}
+
+pub async fn load_model_bytes(path: &str) -> Option<Vec<u8>> {
+  let blob = load_blob_from_opfs(path).await.ok()?;
+  blob_to_bytes(&blob).await.ok()
+}
+
+pub async fn load_recording_blob(path: &str) -> Option<Blob> {
   load_blob_from_opfs(path).await.ok()
 }
 
 async fn load_share_blob(path: &str) -> Option<Blob> {
+  load_blob_from_opfs(path).await.ok()
+}
+
+async fn load_score_blob(path: &str) -> Option<Blob> {
   load_blob_from_opfs(path).await.ok()
 }
 
@@ -1109,12 +2204,20 @@ async fn delete_share_blob(path: &str) -> Result<(), JsValue> {
   delete_opfs_file(path).await
 }
 
-async fn clear_recording_blobs() -> Result<(), JsValue> {
+async fn delete_score_blob(path: &str) -> Result<(), JsValue> {
+  delete_opfs_file(path).await
+}
+
+pub async fn clear_recording_blobs() -> Result<(), JsValue> {
   delete_opfs_dir(OPFS_RECORDINGS_DIR).await
 }
 
 async fn clear_share_blobs() -> Result<(), JsValue> {
   delete_opfs_dir(OPFS_SHARE_DIR).await
+}
+
+async fn clear_score_blobs() -> Result<(), JsValue> {
+  delete_opfs_dir(OPFS_SCORE_DIR).await
 }
 
 async fn idb_recording_blob(id: &str) -> Option<Blob> {
@@ -1127,6 +2230,13 @@ async fn idb_share_blob(id: &str) -> Option<Blob> {
   share_item_from_value(&value).and_then(|item| item.blob)
 }
 
+async fn idb_score_blob(id: &str) -> Option<Blob> {
+  let value = idb_get_value("scoreLibrary", id).await.ok()?;
+  Reflect::get(&value, &"pdf_blob".into())
+    .ok()
+    .and_then(|val| val.dyn_into::<Blob>().ok())
+}
+
 async fn idb_get_value(store_name: &str, key: &str) -> Result<JsValue, JsValue> {
   let db = open_db().await?;
   let tx = match db.transaction_with_str_and_mode(store_name, IdbTransactionMode::Readonly) {
@@ -1136,7 +2246,7 @@ async fn idb_get_value(store_name: &str, key: &str) -> Result<JsValue, JsValue> 
   let store = tx.object_store(store_name)?;
   let request = store.get(&JsValue::from_str(key))?;
   let receiver = request_to_future(request);
-  receiver.await.map_err(|_| JsValue::from_str("IDB get error"))??
+  receiver.await.map_err(|_| JsValue::from_str("IDB get error"))?
 }
 
 fn idb_fallback_path(store: &str, id: &str) -> String {
@@ -1175,6 +2285,21 @@ async fn save_blob_to_opfs(path: &str, blob: &Blob) -> Result<(), JsValue> {
   Ok(())
 }
 
+async fn save_bytes_to_opfs(path: &str, bytes: &[u8]) -> Result<(), JsValue> {
+  let root = opfs_root().await?;
+  let (dir, file) = split_path(path);
+  let parent = match dir {
+    Some(dir) => get_directory_handle(&root, dir, true).await?,
+    None => root,
+  };
+  let file_handle = get_file_handle(&parent, file, true).await?;
+  let writable = call_method0(&file_handle, "createWritable").await?;
+  let array = Uint8Array::from(bytes);
+  call_method1(&writable, "write", &array.into()).await?;
+  call_method0(&writable, "close").await?;
+  Ok(())
+}
+
 async fn load_blob_from_opfs(path: &str) -> Result<Blob, JsValue> {
   let root = opfs_root().await?;
   let (dir, file) = split_path(path);
@@ -1185,6 +2310,12 @@ async fn load_blob_from_opfs(path: &str) -> Result<Blob, JsValue> {
   let file_handle = get_file_handle(&parent, file, false).await?;
   let file = call_method0(&file_handle, "getFile").await?;
   file.dyn_into::<Blob>().map_err(|_| JsValue::from_str("OPFS blob cast failed"))
+}
+
+async fn blob_to_bytes(blob: &Blob) -> Result<Vec<u8>, JsValue> {
+  let buffer = JsFuture::from(blob.array_buffer()).await?;
+  let array = Uint8Array::new(&buffer);
+  Ok(array.to_vec())
 }
 
 async fn delete_opfs_file(path: &str) -> Result<(), JsValue> {
@@ -1275,12 +2406,27 @@ async fn call_method2(
   JsFuture::from(promise).await
 }
 
-fn recording_filename(id: &str, mime: &str) -> String {
-  let ext = format_from_mime(mime);
+fn recording_filename(id: &str, ext: &str) -> String {
+  let ext = ext.trim_start_matches('.');
   if ext.is_empty() {
     sanitize_filename(id)
   } else {
     format!("{}.{}", sanitize_filename(id), ext)
+  }
+}
+
+fn recording_extension(format_hint: &str, blob: &Blob) -> String {
+  if !format_hint.is_empty() {
+    if format_hint.contains('/') {
+      return format_from_mime(format_hint);
+    }
+    return format_hint.trim_start_matches('.').to_string();
+  }
+  let mime = blob.type_();
+  if mime.is_empty() {
+    "bin".to_string()
+  } else {
+    format_from_mime(&mime)
   }
 }
 
@@ -1290,6 +2436,16 @@ fn share_filename(id: &str, name: &str) -> String {
     sanitize_filename(id)
   } else {
     format!("{}-{}", sanitize_filename(id), safe)
+  }
+}
+
+fn score_filename(id: &str, name: &str) -> String {
+  let safe = sanitize_filename(name);
+  let base = if safe.is_empty() { sanitize_filename(id) } else { safe };
+  if base.to_lowercase().ends_with(".pdf") {
+    base
+  } else {
+    format!("{}.pdf", base)
   }
 }
 
@@ -1395,3 +2551,33 @@ fn json_number(value: f64) -> JsonValue {
     .unwrap_or_else(|| JsonValue::Number(serde_json::Number::from(0)))
 }
 
+fn ensure_id(value: &JsValue) -> String {
+  let id = js_string_any(value, &["id"]).unwrap_or_else(utils::create_id);
+  let _ = Reflect::set(value, &"id".into(), &JsValue::from_str(&id));
+  id
+}
+
+fn ensure_created_at(value: &JsValue, keys: &[&str], fallback: f64) -> f64 {
+  if let Some(ts) = js_number_any(value, keys) {
+    return ts;
+  }
+  let ts = fallback;
+  let _ = Reflect::set(value, &"created_at".into(), &JsValue::from_f64(ts));
+  ts
+}
+
+fn json_from_js(value: &JsValue) -> JsonValue {
+  serde_wasm_bindgen::from_value(value.clone()).unwrap_or(JsonValue::Null)
+}
+
+fn json_to_js(value: &JsonValue) -> Option<JsValue> {
+  serde_wasm_bindgen::to_value(value).ok()
+}
+
+fn payload_string(value: &JsValue) -> String {
+  serde_json::to_string(&json_from_js(value)).unwrap_or_else(|_| "{}".to_string())
+}
+
+fn payload_to_js(payload: &str) -> Option<JsValue> {
+  serde_json::from_str::<JsonValue>(payload).ok().and_then(|json| json_to_js(&json))
+}

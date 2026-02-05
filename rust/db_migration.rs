@@ -327,7 +327,7 @@ fn format_timestamp(ts: f64) -> String {
 async fn run_migration() -> Result<(), wasm_bindgen::JsValue> {
   db_client::init_db().await?;
 
-  let mut state = load_state().await.unwrap_or_default();
+  let mut state = load_state().await?.unwrap_or_default();
   if state.started_at == 0.0 || state.completed_at.is_some() {
     state = MigrationState {
       source_version: storage::DB_VERSION,
@@ -762,7 +762,7 @@ async fn recording_statement_with_blob(value: &JsValue) -> DbStatement {
   let profile_id = js_string_any(value, &["profile_id", "profileId"]);
 
   let opfs_path = match blob.as_ref() {
-    Some(blob) => storage::save_recording_blob(&id, blob).await,
+    Some(blob) => storage::save_recording_blob(&id, &format, blob).await,
     None => None,
   };
 

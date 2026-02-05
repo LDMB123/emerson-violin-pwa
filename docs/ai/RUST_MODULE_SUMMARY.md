@@ -1,0 +1,35 @@
+# Rust Module Summary (Token-Optimized)
+
+- Purpose: quick map of `rust/` without loading full files
+- Entry: `rust/lib.rs` WASM start, thread pool init, module init order, loads config + sessions + ML state, sets defaults
+- State: `rust/state.rs` AppState + sub-states (Timer, Flow, Tuner, Metronome, Recorder, AudioWorklet, MlCapture)
+- DOM helpers: `rust/dom.rs` query/set helpers, dataset/style, standalone detection
+- Config: `rust/config.rs` fetch `./config.json`, feature flags -> `data-feature-*`, endpoint allowlist, update channel override
+- Storage: `rust/storage.rs` IndexedDB `emerson-violin-db` v4 stores `sessions`, `recordings`, `syncQueue`, `shareInbox`, `mlTraces`, `gameScores`, `scoreLibrary`, `assignments`, `profiles`, `telemetryQueue`, `errorQueue`, `scoreScans`; localStorage helpers; OPFS recording blobs
+- PWA: `rust/pwa.rs` offline indicator, install banner, share target hook, SW update wiring, reminders, update channel, integrity check, storage status
+- Platform: `rust/platform.rs` platform flags, persistent storage request, wake lock, orientation/fullscreen, protocol/launch routing
+- Capabilities: `rust/capabilities.rs` UI capability matrix, device readiness status
+- Session: `rust/session.rs` timer + summary, wake lock, saves sessions + sync queue, ML focus scoring
+- Reflection: `rust/reflection.rs` textarea persistence `session-reflection:*`
+- Flow: `rust/flow.rs` checklist toggle + localStorage `flow-state`
+- Controls: `rust/controls.rs` preference toggles, data-attrs, reset actions, clears sessions/recordings
+- Tuner: `rust/tuner.rs` mic input + pitch detection, UI updates
+- Metronome: `rust/metronome.rs` tap tempo + click scheduler, ML rhythm scoring
+- Recorder: `rust/recorder.rs` MediaRecorder, save to IndexedDB + OPFS, update list, ML focus scoring
+- Tools: `rust/tools.rs` stop-all (tuner/metronome/recorder)
+- Tone: `rust/tone.rs` plays reference note buttons
+- ML core: `rust/ml.rs` thresholds + state, UI render, target recommendations
+- ML capture: `rust/ml_capture.rs` audio capture (worklet/analyser), samples + ML trace queue
+- ML API: `rust/ml_api.rs` exposes `window.EmersonML.v1` (status/scores/get_thresholds/set_thresholds)
+- ML traces: `rust/ml_traces.rs` list + export (JSON/CSV) from IndexedDB traces
+- Audio worklet: `rust/audio_worklet.rs` inline processor, SharedArrayBuffer pipeline, ML backend status
+- Games: `rust/games.rs` rhythm/pitch/bow mini-game, fullscreen + orientation lock, saves scores
+- Game scores: `rust/game_scores.rs` list + export (JSON/CSV)
+- Backup: `rust/backup.rs` encrypted ZIP export + restore, PBKDF2 + AES-GCM, includes recordings
+- Exports: `rust/exports.rs` session JSON/CSV downloads
+- Teacher exports: `rust/teacher_exports.rs` teacher report + zip export (sessions, ML, game scores, traces, assignments, profiles, score library)
+- Share inbox: `rust/share_inbox.rs` list + manage shared files
+- Docs: `rust/docs.rs` loads `public/docs/api.md` and renders to DOM
+- Telemetry: `rust/telemetry.rs` queue + flush to `/api/telemetry`
+- Misc: `rust/utils.rs` `create_id`
+- Not wired in `rust/lib.rs` (check before use): `rust/game_scores.rs`, `rust/pose_capture.rs`, `rust/score_following.rs`, `rust/teacher_exports.rs`

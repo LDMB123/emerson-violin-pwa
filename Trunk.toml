@@ -1,3 +1,8 @@
 [build]
 filehash = false
 public_url = "/"
+inject_scripts = false
+
+[serve]
+disable_csp = true
+headers = { "Cross-Origin-Opener-Policy" = "same-origin", "Cross-Origin-Embedder-Policy" = "require-corp", "Cross-Origin-Resource-Policy" = "same-origin" }

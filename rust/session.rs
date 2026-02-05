@@ -7,9 +7,11 @@ use web_sys::Event;
 
 use crate::dom;
 use crate::ml;
+use crate::platform;
 use crate::reflection;
 use crate::state::AppState;
 use crate::storage::{self, Session, SyncEntry};
+use crate::telemetry;
 
 fn now_ms() -> f64 {
   js_sys::Date::now()
@@ -30,6 +32,7 @@ pub fn init(state: Rc<RefCell<AppState>>) {
 
   if let Some(start_btn) = start.clone() {
     let state = state.clone();
+    let _ = start_btn.remove_attribute("disabled");
     let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
       start_timer(&state);
     });
@@ -39,6 +42,7 @@ pub fn init(state: Rc<RefCell<AppState>>) {
 
   if let Some(pause_btn) = pause.clone() {
     let state = state.clone();
+    let _ = pause_btn.remove_attribute("disabled");
     let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
       pause_timer(&state);
     });
@@ -48,6 +52,7 @@ pub fn init(state: Rc<RefCell<AppState>>) {
 
   if let Some(finish_btn) = finish {
     let state = state.clone();
+    let _ = finish_btn.remove_attribute("disabled");
     let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
       finish_timer(&state);
     });
@@ -78,6 +83,8 @@ fn start_timer(state: &Rc<RefCell<AppState>>) {
   cb.forget();
 
   dom::set_text("[data-session-status]", "Session running");
+  platform::request_wake_lock();
+  telemetry::log_event(state, "session_start", None);
 }
 
 fn pause_timer(state: &Rc<RefCell<AppState>>) {
@@ -93,6 +100,8 @@ fn pause_timer(state: &Rc<RefCell<AppState>>) {
     let _ = dom::window().clear_interval_with_handle(id);
   }
   dom::set_text("[data-session-status]", "Session paused");
+  platform::release_wake_lock();
+  telemetry::log_event(state, "session_pause", None);
   tick(state);
 }
 
@@ -107,6 +116,7 @@ fn finish_timer(state: &Rc<RefCell<AppState>>) {
   let minutes = (elapsed / 60000.0).round();
   app.session_timer.elapsed = 0.0;
   dom::set_text("[data-session-status]", "Session saved");
+  telemetry::log_event(state, "session_finish", None);
   let entry = Session {
     id: crate::utils::create_id(),
     day_key: day_key(),
@@ -146,6 +156,8 @@ fn tick(state: &Rc<RefCell<AppState>>) {
   dom::set_text("[data-session-percent]", &format!("{}%", percent));
   if let Some(el) = dom::query("[data-session-progress]") {
     dom::set_style(&el, "--progress", &format!("{}", percent / 100.0));
+    dom::set_attr(&el, "aria-valuenow", &format!("{:.0}", percent));
+    dom::set_attr(&el, "aria-valuetext", &format!("{:.0}% complete", percent));
   }
 }
 
@@ -168,6 +180,8 @@ pub fn reset_timer(state: &Rc<RefCell<AppState>>) {
   dom::set_text("[data-session-percent]", "0%");
   if let Some(el) = dom::query("[data-session-progress]") {
     dom::set_style(&el, "--progress", "0");
+    dom::set_attr(&el, "aria-valuenow", "0");
+    dom::set_attr(&el, "aria-valuetext", "0% complete");
   }
 }
 
@@ -199,7 +213,15 @@ pub fn update_summary(app: &AppState) {
   dom::set_text("[data-summary-total]", &format!("{}", total.round()));
   dom::set_text("[data-summary-streak]", &format!("{} days", streak));
 
-  let status = if daily_minutes >= 15.0 { "Daily goal complete" } else { "Ready to begin" };
+  let status = if app.session_timer.running {
+    "Session running"
+  } else if app.session_timer.elapsed > 0.0 {
+    "Session paused"
+  } else if daily_minutes >= 15.0 {
+    "Daily goal complete"
+  } else {
+    "Ready to begin"
+  };
   dom::set_text("[data-session-status]", status);
 }
 

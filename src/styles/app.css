@@ -488,6 +488,34 @@ a {
   font-size: 0.9rem;
 }
 
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: rgba(30, 24, 22, 0.9);
+  color: #f6efe9;
+  padding: 12px 16px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  font-size: 0.9rem;
+  max-width: 320px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 50;
+}
+
+.toast[data-state="show"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+[data-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .recordings {
   display: grid;
   gap: 10px;
@@ -513,6 +541,11 @@ a {
   margin: 0;
   display: grid;
   gap: 10px;
+}
+
+.selection-toggle {
+  accent-color: var(--accent);
+  margin-right: 8px;
 }
 
 .resource-list li {
@@ -659,4 +692,343 @@ html[data-high-contrast="true"] {
 
 html[data-calm-bg="true"] {
   background: #f9f7f2;
+}
+
+html[data-compact-mode="true"] .section {
+  padding: 24px 0;
+}
+
+html[data-compact-mode="true"] .grid {
+  gap: 16px;
+}
+
+html[data-dyslexia-mode="true"] {
+  letter-spacing: 0.02em;
+  word-spacing: 0.08em;
+}
+
+html[data-color-blind="true"] .pill,
+html[data-color-blind="true"] .capability-pill,
+html[data-color-blind="true"] .badge {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.45) 0,
+    rgba(255, 255, 255, 0.45) 6px,
+    rgba(255, 255, 255, 0) 6px,
+    rgba(255, 255, 255, 0) 12px
+  );
+}
+
+html[data-color-blind="true"] .progress-fill {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.45) 0,
+    rgba(255, 255, 255, 0.45) 8px,
+    rgba(255, 255, 255, 0) 8px,
+    rgba(255, 255, 255, 0) 16px
+  );
+}
+
+html[data-color-blind="true"] .game-canvas {
+  border-style: dashed;
+}
+
+html[data-feature-games="false"] #games,
+html[data-feature-ml="false"] #ml,
+html[data-feature-teacher="false"] #teacher {
+  display: none;
+}
+
+html[data-feature-games="false"] .top-nav a[href="#games"],
+html[data-feature-ml="false"] .top-nav a[href="#ml"],
+html[data-feature-teacher="false"] .top-nav a[href="#teacher"] {
+  display: none;
+}
+
+.status-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.game-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.game-stage {
+  margin-top: 20px;
+  background: rgba(255, 250, 242, 0.9);
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(29, 111, 111, 0.12);
+  display: grid;
+  gap: 16px;
+}
+
+.map-card .card-body {
+  margin-bottom: 12px;
+}
+
+.map-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.map-node {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 18px;
+  border: 1px solid rgba(229, 162, 136, 0.3);
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+  box-shadow: 0 10px 18px rgba(29, 111, 111, 0.08);
+}
+
+.map-node[data-state="locked"] {
+  opacity: 0.6;
+  filter: grayscale(0.2);
+}
+
+.map-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-node-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.map-node .btn[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.score-visual {
+  margin-top: 12px;
+  background: rgba(255, 251, 247, 0.9);
+  border: 1px dashed rgba(229, 162, 136, 0.4);
+  border-radius: 16px;
+  padding: 8px 12px;
+}
+
+.score-visual svg {
+  width: 100%;
+  height: 64px;
+  display: block;
+}
+
+.score-empty {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.model-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.model-entry {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  border: 1px solid rgba(229, 162, 136, 0.25);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.model-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.game-hud {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hud-block {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 8px 14px;
+  display: grid;
+  gap: 2px;
+  min-width: 120px;
+  text-align: center;
+  border: 1px solid rgba(29, 111, 111, 0.1);
+}
+
+.hud-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+
+.hud-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.game-canvas {
+  width: 100%;
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255, 244, 232, 0.9), rgba(255, 255, 255, 0.95));
+  border: 1px solid rgba(29, 111, 111, 0.12);
+  touch-action: none;
+}
+
+.coach-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 236, 220, 0.85);
+  border-radius: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(213, 106, 63, 0.2);
+}
+
+.coach-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 1.5rem;
+}
+
+.coach-title {
+  font-weight: 700;
+}
+
+.teacher-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.profile-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px dashed rgba(29, 111, 111, 0.2);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(240, 164, 75, 0.2);
+  display: grid;
+  place-items: center;
+}
+
+.profile-name {
+  font-weight: 700;
+}
+
+.profile-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.inline-field {
+  display: grid;
+  gap: 6px;
+  align-items: center;
+}
+
+.inline-field .text-field {
+  min-width: 140px;
+}
+
+.plan-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.plan-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(29, 111, 111, 0.12);
+}
+
+.reminder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.reminder-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.backup-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.text-field {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(29, 111, 111, 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  font: inherit;
+}
+
+.text-field:focus {
+  outline: 2px solid rgba(29, 111, 111, 0.4);
+  outline-offset: 2px;
+}
+
+.doc-panel {
+  max-height: 220px;
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 14px;
+  padding: 12px;
+  border: 1px solid rgba(29, 111, 111, 0.12);
+}
+
+.doc-panel h2, .doc-panel h3 {
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+.doc-panel ul {
+  margin: 6px 0 0 18px;
 }

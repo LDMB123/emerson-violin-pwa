@@ -1,4 +1,5 @@
-# Reports
+# Archived Reports (Pointer)
 
-- `qa/` QA test plan, issue log, screenshots, perf bundles
-- `qa/README.md` QA index + report list
+Canonical file: `docs/reports/README.md`
+
+This archived file is a pointer to avoid duplicate content.

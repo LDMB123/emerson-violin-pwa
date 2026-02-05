@@ -36,6 +36,10 @@ if (!(await exists(src))) {
 await fs.rm(dest, { recursive: true, force: true });
 await fs.mkdir(path.dirname(dest), { recursive: true });
 await fs.cp(src, dest, { recursive: true });
+const stageDir = path.join(dest, ".stage");
+if (await exists(stageDir)) {
+  await fs.rm(stageDir, { recursive: true, force: true });
+}
 
 const offlineFallback = path.resolve(repoRoot, "public/offline.html");
 const offlineTarget = path.join(dest, "offline.html");

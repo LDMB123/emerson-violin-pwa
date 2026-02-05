@@ -141,6 +141,7 @@ pub fn start(state: &Rc<RefCell<AppState>>) {
 
     let mut app = state_clone.borrow_mut();
     let audio_ctx = AudioContext::new().unwrap();
+    let _ = audio_ctx.resume();
     let source = audio_ctx.create_media_stream_source(&stream).unwrap();
     let analyser = audio_ctx.create_analyser().unwrap();
     analyser.set_fft_size(2048);
@@ -239,5 +240,7 @@ fn set_toggle_label(active: bool) {
   let label = if active { "Stop tuner" } else { "Start tuner" };
   for button in dom::query_all("[data-tuner-toggle]") {
     dom::set_text_el(&button, label);
+    dom::set_attr(&button, "aria-pressed", if active { "true" } else { "false" });
+    dom::set_dataset(&button, "state", if active { "on" } else { "off" });
   }
 }

@@ -1,3 +1,5 @@
-# QA Screenshots (2026-02-03)
+# Screenshots 2026-02-03 (Pointer)
 
-Place generated screenshots for this run here.
+Canonical file: `docs/reports/qa/screenshots/2026-02-03/README.md`
+
+This archived file is a pointer to avoid duplicate content.

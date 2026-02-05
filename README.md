@@ -27,4 +27,5 @@ npm run dev
 
 - `docs/README.md` documentation index
 - `docs/rebuild/` IA + UX + architecture notes
-- `docs/stack-architecture.md` first-principles stack summary
+- `docs/rebuild/05-architecture.md` canonical stack architecture
+- `docs/stack-architecture.md` pointer to canonical architecture doc

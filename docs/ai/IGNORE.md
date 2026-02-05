@@ -4,8 +4,21 @@
 - `.worktrees/` local worktree checkouts
 - `dist/`, `test-results/`, `playwright-report/`, `coverage/` build/test artifacts
 - `target/` Rust build artifacts
+- `package-lock.json`, `Cargo.lock` lockfiles unless dependency work
 - `public/assets/mockups/` optional PWA screenshots
 - `docs/assets/mockups/` archived UI mockups
+- `docs/_archived/` legacy docs archive
+- `docs/reports/qa/` QA reports unless audit work
+- `docs/rebuild/27-ui-ux-audit.md` use `docs/ai/REBUILD_UX_SUMMARY.md` unless full audit needed
+- `docs/rebuild/05-architecture.md` use `docs/ai/REBUILD_ARCHITECTURE_SUMMARY.md` unless full arch work
+- `docs/feature-inventory.md` use `docs/ai/FEATURE_INVENTORY_SUMMARY.md` unless legacy audit needed
+- `docs/_archived/legacy-docs/strategy/` use `docs/ai/LEGACY_STRATEGY_SUMMARY.md` unless legacy strategy work
+- `docs/reports/qa/*.md` use `docs/ai/QA_REPORTS_SUMMARY.md` unless QA work
 - `docs/reports/qa/screenshots/` generated QA images
+- `native/ios/EmersonViolinShell/Resources/pwa/` iOS shell PWA mirror unless native shell work
+- `native/ios/README.md` use `docs/ai/NATIVE_IOS_SUMMARY.md` unless native shell work
+- `public/docs/api.md` use `docs/ai/API_DOC_SUMMARY.md` unless API doc work
+- `.claude/OPTIMIZATION_START_HERE.md` use `docs/ai/CLAUDE_OPTIMIZATION_SUMMARY.md`
+- `.claude/compression-schedule.md` use `docs/ai/CLAUDE_COMPRESSION_SCHEDULE_SUMMARY.md`
 - `public/assets/icons/` icon binaries unless manifest work
 - `public/assets/illustrations/` large illustrations unless UI asset work needed

@@ -81,6 +81,10 @@ fn start_worker() {
         dom::set_text("[data-db-worker-status]", "Failed");
         dom::set_text("[data-db-worker-detail]", &message);
       }
+      DbResponse::ExecResult { .. } | DbResponse::QueryResult { .. } | DbResponse::BatchResult { .. } => {
+        dom::set_text("[data-db-worker-status]", "Ready");
+        dom::set_text("[data-db-worker-detail]", "DB worker ready");
+      }
     }
 
     worker_clone.terminate();

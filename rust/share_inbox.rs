@@ -1,7 +1,9 @@
 use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::JsFuture;
 use web_sys::Event;
 
 use crate::dom;
+use crate::file_access;
 use crate::storage::{self, ShareItem};
 
 pub fn init() {
@@ -90,6 +92,26 @@ fn render_list(items: &[ShareItem]) {
         let _ = link.set_attribute("href", &url);
       }
       li.append_child(&link).ok();
+
+      let save_btn = dom::document().create_element("button").unwrap();
+      save_btn.set_class_name("btn btn-ghost");
+      save_btn.set_text_content(Some("Save to Files"));
+      let blob_clone = blob.clone();
+      let name_clone = item.name.clone();
+      let mime_clone = item.mime.clone();
+      let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+        let blob_clone = blob_clone.clone();
+        let name_clone = name_clone.clone();
+        let mime_clone = mime_clone.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+          if let Some(bytes) = blob_to_bytes(&blob_clone).await {
+            let _ = file_access::save_or_download_force(&name_clone, &mime_clone, &bytes).await;
+          }
+        });
+      });
+      save_btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref()).ok();
+      cb.forget();
+      li.append_child(&save_btn).ok();
     }
 
     let del = dom::document().create_element("button").unwrap();
@@ -109,6 +131,17 @@ fn render_list(items: &[ShareItem]) {
 
     list.append_child(&li).ok();
   }
+}
+
+async fn blob_to_bytes(blob: &web_sys::Blob) -> Option<Vec<u8>> {
+  let array_buffer = js_sys::Reflect::get(blob, &"arrayBuffer".into()).ok()?;
+  let func = array_buffer.dyn_into::<js_sys::Function>().ok()?;
+  let promise = func.call0(blob).ok()?.dyn_into::<js_sys::Promise>().ok()?;
+  let buffer = JsFuture::from(promise).await.ok()?.dyn_into::<js_sys::ArrayBuffer>().ok()?;
+  let uint = js_sys::Uint8Array::new(&buffer);
+  let mut data = vec![0u8; uint.length() as usize];
+  uint.copy_to(&mut data);
+  Some(data)
 }
 
 fn set_count(count: usize) {

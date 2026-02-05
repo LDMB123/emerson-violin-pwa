@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#D56A3F" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none';" />
 
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -15,9 +16,23 @@
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link data-trunk rel="copy-file" href="manifest.webmanifest" />
+  <link data-trunk rel="copy-file" href="wasm-init.js" />
+  <link data-trunk rel="copy-file" href="fallback-session.js" />
+  <link data-trunk rel="copy-file" href="public/config.json" />
+  <link data-trunk rel="copy-file" href="public/pwa-manifest.json" />
+  <link data-trunk rel="copy-file" href="public/offline.html" />
+  <link data-trunk rel="copy-file" href="public/pose.js" />
+  <link data-trunk rel="copy-file" href="public/pdf.js" />
+  <link data-trunk rel="copy-file" href="public/sw.js" />
+  <link data-trunk rel="copy-file" href="public/sw-assets.js" />
   <link data-trunk rel="copy-file" href="public/opfs-test-worker.js" />
   <link data-trunk rel="copy-file" href="public/db-worker.js" />
   <link data-trunk rel="copy-dir" href="public/sqlite" />
+  <link data-trunk rel="copy-dir" href="public/assets" />
+  <link data-trunk rel="copy-dir" href="public/docs" />
+  <link data-trunk rel="copy-dir" href="public/models" />
+  <link rel="preload" href="./config.json" as="fetch" crossorigin />
+  <script type="module" src="./wasm-init.js?js=emerson-violin-pwa.js&wasm=emerson-violin-pwa_bg.wasm"></script>
   <link data-trunk rel="rust" href="Cargo.toml" data-target-name="emerson_violin_pwa" />
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/icon-180.png" />
   <link rel="apple-touch-icon" sizes="167x167" href="./assets/icons/icon-167.png" />
@@ -32,6 +47,9 @@
   <link data-trunk rel="css" href="src/styles/tokens.css" />
   <link data-trunk rel="css" href="src/styles/app.css" />
   <link data-trunk rel="css" href="src/styles/scroll-animations.css" />
+  <script src="./fallback-session.js" defer></script>
+  <script src="./pose.js" defer></script>
+  <script type="module" src="./pdf.js" defer></script>
 </head>
 <body>
   <a href="#overview" class="skip-link">Skip to main content</a>
@@ -43,6 +61,7 @@
   </div>
 
   <div id="app" class="app-shell">
+    <div class="toast" data-toast data-state="hide" aria-live="polite"></div>
     <aside class="banner install-banner" data-install-banner hidden>
       <div>
         <p class="banner-title">Install Emerson Studio</p>
@@ -64,6 +83,16 @@
         <button class="btn btn-ghost" type="button" data-update-dismiss>Later</button>
       </div>
     </aside>
+    <aside class="banner error-banner" data-error-banner hidden>
+      <div>
+        <p class="banner-title">Errors waiting</p>
+        <p class="banner-copy">Review the error queue before syncing.</p>
+      </div>
+      <div class="banner-actions">
+        <a class="btn btn-primary" href="#support">Review</a>
+        <button class="btn btn-ghost" type="button" data-error-banner-dismiss>Later</button>
+      </div>
+    </aside>
 
     <header class="topbar">
       <div class="brand">
@@ -79,23 +108,30 @@
         <a href="#overview" data-nav-link>Overview</a>
         <a href="#flow" data-nav-link>Flow</a>
         <a href="#studio" data-nav-link>Studio</a>
+        <a href="#games" data-nav-link>Games</a>
         <a href="#ml" data-nav-link>ML Lab</a>
+        <a href="#teacher" data-nav-link>Teacher</a>
         <a href="#core" data-nav-link>Core</a>
         <a href="#support" data-nav-link>Support</a>
         <a href="#controls" data-nav-link>Controls</a>
       </nav>
 
       <div class="status-stack">
-        <div class="status-chip" data-offline-indicator data-state="online">Online</div>
-        <div class="status-chip" data-platform-status>Device: checking...</div>
-        <div class="status-chip" data-install-status>Install status: Not installed.</div>
-        <div class="status-chip" data-ml-status>ML: standing by</div>
+        <div class="status-actions">
+          <button class="btn btn-ghost" type="button" data-sound-toggle aria-pressed="true">Sound on</button>
+          <button class="btn btn-ghost" type="button" data-voice-toggle aria-pressed="true">Coach voice</button>
+        </div>
+        <div class="status-chip" data-offline-indicator data-state="online" aria-live="polite">Online</div>
+        <div class="status-chip" data-platform-status aria-live="polite">Device: checking...</div>
+        <div class="status-chip" data-install-status aria-live="polite">Install status: Not installed.</div>
+        <div class="status-chip" data-install-note aria-live="polite"></div>
+        <div class="status-chip" data-ml-status aria-live="polite">ML: standing by</div>
         <div class="status-meter">
           <span class="status-label">Storage</span>
           <div class="meter-bar" role="presentation">
-            <span class="meter-fill" data-storage-bar></span>
+            <span class="meter-fill" data-storage-bar role="progressbar" aria-label="Storage used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></span>
           </div>
-          <small data-storage-status>Storage: checking...</small>
+          <small data-storage-status aria-live="polite">Storage: checking...</small>
         </div>
       </div>
     </header>
@@ -109,16 +145,16 @@
             <p class="section-subtitle">Start clean, track the flow, and leave with a clear win.</p>
           </div>
           <div class="section-actions">
-            <button class="btn btn-primary" type="button" data-session-start>Start session</button>
-            <button class="btn btn-secondary" type="button" data-session-pause>Pause</button>
-            <button class="btn btn-ghost" type="button" data-session-finish>Finish and log</button>
+            <button class="btn btn-primary" type="button" data-session-start disabled>Start session</button>
+            <button class="btn btn-secondary" type="button" data-session-pause disabled>Pause</button>
+            <button class="btn btn-ghost" type="button" data-session-finish disabled>Finish and log</button>
           </div>
         </div>
 
         <div class="grid overview-grid">
           <article class="card hero-card">
             <div class="hero-header">
-              <div class="progress-ring" data-session-progress style="--progress: 0;">
+              <div class="progress-ring" data-session-progress style="--progress: 0;" role="progressbar" aria-label="Session progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                 <svg viewBox="0 0 120 120" aria-hidden="true">
                   <circle class="ring-track" cx="60" cy="60" r="52" />
                   <circle class="ring-fill" cx="60" cy="60" r="52" />
@@ -131,7 +167,7 @@
               <div class="hero-meta">
                 <p class="meta-label">Session timer</p>
                 <p class="meta-value" data-session-timer>00:00</p>
-                <p class="meta-sub" data-session-status>Ready to begin</p>
+                <p class="meta-sub" data-session-status aria-live="polite">Ready to begin</p>
               </div>
             </div>
             <div class="hero-stats">
@@ -301,7 +337,7 @@
           <article class="card tool-card" id="studio-tuner">
             <div class="card-head">
               <h3>Smart tuner</h3>
-              <span class="pill" data-tuner-status>Idle</span>
+              <span class="pill" data-tuner-status aria-live="polite">Idle</span>
             </div>
             <div class="tuner-readout">
               <div>
@@ -343,7 +379,7 @@
           <article class="card tool-card" id="studio-metronome">
             <div class="card-head">
               <h3>Metronome</h3>
-              <span class="pill" data-metronome-status>Stopped</span>
+              <span class="pill" data-metronome-status aria-live="polite">Stopped</span>
             </div>
             <div class="metronome-controls">
               <div class="metronome-meta">
@@ -364,16 +400,41 @@
           <article class="card tool-card" id="studio-recorder">
             <div class="card-head">
               <h3>Recorder</h3>
-              <span class="pill" data-recorder-status>Idle</span>
+              <span class="pill" data-recorder-status aria-live="polite">Idle</span>
+              <span class="badge badge-soft" data-recorder-filter-badge>All profiles</span>
             </div>
             <p class="tool-hint">Record short takes to review tone and rhythm.</p>
             <div class="button-row">
               <button class="btn btn-primary" type="button" data-recorder-toggle>Start recording</button>
               <button class="btn btn-ghost" type="button" data-recorder-clear>Clear list</button>
+              <button class="btn btn-ghost" type="button" data-recorder-export-json data-offline-disable>Export list JSON</button>
+              <button class="btn btn-ghost" type="button" data-recorder-export-csv data-offline-disable>Export list CSV</button>
+              <button class="btn btn-ghost" type="button" data-recorder-export-files data-offline-disable>Save list to Files</button>
+              <button class="btn btn-ghost" type="button" data-recorder-export-selected data-offline-disable>Export selected</button>
+              <button class="btn btn-ghost" type="button" data-recorder-export-selected-csv data-offline-disable>Export selected CSV</button>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-ghost" type="button" data-recorder-select-all>Select all</button>
+              <button class="btn btn-ghost" type="button" data-recorder-clear-selection>Clear selection</button>
+            </div>
+            <div class="toggle-row">
+              <span class="note">Show current profile only</span>
+              <label class="toggle" for="setting-recorder-profile">
+                <input type="checkbox" id="setting-recorder-profile" data-recorder-profile-only />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <span class="note">Always save recorder exports to Files</span>
+              <label class="toggle" for="setting-save-recorder">
+                <input type="checkbox" id="setting-save-recorder" data-save-files-section="recorder" />
+                <span class="toggle-ui"></span>
+              </label>
             </div>
             <ul class="recording-list resource-list" data-recorder-list>
               <li class="empty">No recordings yet.</li>
             </ul>
+            <small class="muted" data-recorder-export-status>Export ready.</small>
           </article>
 
           <article class="card tool-card" id="studio-tones">
@@ -389,6 +450,153 @@
               <button class="btn btn-secondary" type="button" data-tone-play data-tone-note="E5">Play E5</button>
             </div>
           </article>
+        </div>
+      </section>
+
+      <section class="section" id="games" data-section data-reveal>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Games</p>
+            <h2>Practice Arcade</h2>
+            <p class="section-subtitle">Touch-first games that reinforce Suzuki Book 1 technique.</p>
+          </div>
+          <div class="section-actions">
+            <label class="inline-field">
+              <span class="muted">Profile</span>
+              <select class="text-field" data-profile-select>
+                <option value="default">Default</option>
+              </select>
+            </label>
+            <button class="btn btn-ghost" type="button" data-game-zen aria-pressed="false">Zen off</button>
+            <button class="btn btn-ghost" type="button" data-game-pause>Pause game</button>
+          </div>
+        </div>
+
+        <div class="grid game-grid">
+          <article class="card game-card" data-game-card>
+            <div class="card-head">
+              <h3>Rhythm Grid</h3>
+              <span class="pill">Skill: Rhythm</span>
+            </div>
+            <p class="card-body">Hit the pulse on time. Accuracy-first scoring with soft streaks.</p>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-game-start data-game-type="rhythm">Start game</button>
+              <button class="btn btn-ghost" type="button" data-game-settings data-game-type="rhythm">Settings</button>
+            </div>
+          </article>
+
+          <article class="card game-card" data-game-card>
+            <div class="card-head">
+              <h3>Pitch Target</h3>
+              <span class="pill">Skill: Intonation</span>
+            </div>
+            <p class="card-body">Aim for precise cent targets with adaptive difficulty.</p>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-game-start data-game-type="pitch">Start game</button>
+              <button class="btn btn-ghost" type="button" data-game-settings data-game-type="pitch">Settings</button>
+            </div>
+          </article>
+
+          <article class="card game-card" data-game-card>
+            <div class="card-head">
+              <h3>Bow Path</h3>
+              <span class="pill">Skill: Bowing</span>
+            </div>
+            <p class="card-body">Trace bow lanes with touch and haptic timing cues.</p>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-game-start data-game-type="bow">Start game</button>
+              <button class="btn btn-ghost" type="button" data-game-settings data-game-type="bow">Settings</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Score history</h3>
+              <span class="pill" data-game-score-count>0 scores</span>
+              <span class="badge badge-soft" data-game-score-filter-badge>All scores</span>
+            </div>
+            <p class="card-body">Recent game results stored on device.</p>
+            <ul class="resource-list" data-game-score-list>
+              <li class="empty">No game scores yet.</li>
+            </ul>
+            <div class="field-row">
+              <label>
+                <span class="note">From</span>
+                <input class="text-field" type="date" data-game-score-filter-start />
+              </label>
+              <label>
+                <span class="note">To</span>
+                <input class="text-field" type="date" data-game-score-filter-end />
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-game-score-refresh>Refresh scores</button>
+              <button class="btn btn-ghost" type="button" data-game-score-export data-offline-disable>Export JSON</button>
+              <button class="btn btn-ghost" type="button" data-game-score-export-files data-offline-disable>Save JSON to Files</button>
+              <button class="btn btn-ghost" type="button" data-game-score-export-selected data-offline-disable>Export selected JSON</button>
+              <button class="btn btn-ghost" type="button" data-game-score-export-csv data-offline-disable>Export CSV</button>
+              <button class="btn btn-ghost" type="button" data-game-score-export-csv-files data-offline-disable>Save CSV to Files</button>
+              <button class="btn btn-ghost" type="button" data-game-score-export-selected-csv data-offline-disable>Export selected CSV</button>
+              <button class="btn btn-ghost" type="button" data-game-score-clear>Clear scores</button>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-ghost" type="button" data-game-score-select-all>Select all</button>
+              <button class="btn btn-ghost" type="button" data-game-score-clear-selection>Clear selection</button>
+            </div>
+            <small class="muted">Exports include current filters only.</small>
+            <div class="toggle-row">
+              <span class="note">Export current profile only</span>
+              <label class="toggle" for="setting-game-score-profile">
+                <input type="checkbox" id="setting-game-score-profile" data-game-score-profile-only />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <span class="note">Always save game exports to Files</span>
+              <label class="toggle" for="setting-save-game">
+                <input type="checkbox" id="setting-save-game" data-save-files-section="game-scores" />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+            <small class="muted" data-game-score-status>Export ready.</small>
+          </article>
+
+          <article class="card map-card">
+            <div class="card-head">
+              <h3>Practice map</h3>
+              <span class="pill" data-map-stars>0 stars</span>
+            </div>
+            <p class="card-body">Unlock Suzuki Book 1 nodes with game mastery stars.</p>
+            <ul class="map-list" data-map-list>
+              <li class="empty">Play a game to unlock the map.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="game-stage">
+          <div class="game-hud">
+            <div class="hud-block">
+              <span class="hud-label">Score</span>
+              <span class="hud-value" data-game-score>0</span>
+            </div>
+            <div class="hud-block">
+              <span class="hud-label">Streak</span>
+              <span class="hud-value" data-game-streak>0</span>
+            </div>
+            <div class="hud-block">
+              <span class="hud-label">Timing</span>
+              <span class="hud-value" data-game-timing>--</span>
+            </div>
+          </div>
+          <canvas class="game-canvas" width="960" height="540" data-game-canvas aria-label="Game canvas"></canvas>
+          <div class="coach-card" data-game-coach>
+            <div class="coach-avatar" aria-hidden="true">🐼</div>
+            <div>
+              <p class="coach-title">Coach</p>
+              <p class="coach-tip" data-game-tip>Tap to the beat. Aim for a clean, centered hit.</p>
+            </div>
+            <button class="btn btn-ghost" type="button" data-game-voice aria-pressed="true">Voice on</button>
+          </div>
         </div>
       </section>
 
@@ -431,7 +639,7 @@
             <div class="summary-row">
               <div>
                 <p class="stat-label">WASM</p>
-                <p class="stat-value" data-wasm-status>Checking...</p>
+                <p class="stat-value" data-wasm-status aria-live="polite">Checking...</p>
               </div>
               <div>
                 <p class="stat-label">Inference latency</p>
@@ -442,6 +650,48 @@
                 <p class="stat-value" data-ml-samples>0</p>
               </div>
             </div>
+            <div class="button-row">
+              <button class="btn btn-ghost" type="button" data-diagnostics-export data-offline-disable>Export diagnostics</button>
+            </div>
+            <small class="muted" data-diagnostics-status>Diagnostics ready.</small>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Low-latency audio</h3>
+              <span class="pill" data-audio-worklet-status>Idle</span>
+            </div>
+            <p class="card-body">AudioWorklet + SharedArrayBuffer pipeline for ML capture.</p>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-audio-worklet-start>Start pipeline</button>
+              <button class="btn btn-ghost" type="button" data-audio-worklet-stop>Stop</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>ML capture</h3>
+              <span class="pill" data-ml-stream-status>Idle</span>
+            </div>
+            <p class="card-body">Stream audio into ML traces (YIN pitch + onset variance).</p>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-ml-stream-start>Start capture</button>
+              <button class="btn btn-ghost" type="button" data-ml-stream-stop>Stop</button>
+            </div>
+            <p class="muted" data-ml-stream-note>Capture uses mic input; keep the device steady.</p>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Pose capture</h3>
+              <span class="pill" data-pose-status>Idle</span>
+            </div>
+            <p class="card-body">Camera-based posture signal (stubbed confidence for now).</p>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-pose-start>Start pose</button>
+              <button class="btn btn-ghost" type="button" data-pose-stop>Stop</button>
+            </div>
+            <p class="muted">Samples: <span data-pose-samples>0</span></p>
           </article>
 
           <article class="card">
@@ -469,9 +719,266 @@
               <h3>Model registry</h3>
               <span class="pill" data-model-count>0 models</span>
             </div>
+            <p class="muted" data-model-status>No active model</p>
+            <p class="muted" data-model-output>Output: --</p>
             <ul class="model-list" data-model-list>
               <li class="empty">No model manifest loaded.</li>
             </ul>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Calibration</h3>
+              <span class="pill" data-ml-calibrate-status>Idle</span>
+            </div>
+            <p class="card-body">Run a short calibration to tune ML thresholds for the active profile.</p>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-ml-calibrate-start>Start calibration</button>
+            </div>
+            <div class="progress-bar">
+              <span class="progress-fill" data-ml-calibrate-progress style="width: 0%;"></span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>ML trace log</h3>
+              <span class="pill" data-ml-trace-count>0 traces</span>
+              <span class="badge badge-soft" data-ml-trace-filter-badge>All traces</span>
+            </div>
+            <p class="card-body">Recent pitch/rhythm trace samples stored on device.</p>
+            <ul class="resource-list" data-ml-trace-list>
+              <li class="empty">No traces yet.</li>
+            </ul>
+            <div class="field-row">
+              <label>
+                <span class="note">From</span>
+                <input class="text-field" type="date" data-ml-trace-filter-start />
+              </label>
+              <label>
+                <span class="note">To</span>
+                <input class="text-field" type="date" data-ml-trace-filter-end />
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-ml-trace-refresh>Refresh traces</button>
+              <button class="btn btn-ghost" type="button" data-ml-trace-export data-offline-disable>Export traces JSON</button>
+              <button class="btn btn-ghost" type="button" data-ml-trace-export-files data-offline-disable>Save JSON to Files</button>
+              <button class="btn btn-ghost" type="button" data-ml-trace-export-selected data-offline-disable>Export selected JSON</button>
+              <button class="btn btn-ghost" type="button" data-ml-trace-export-csv data-offline-disable>Export traces CSV</button>
+              <button class="btn btn-ghost" type="button" data-ml-trace-export-csv-files data-offline-disable>Save CSV to Files</button>
+              <button class="btn btn-ghost" type="button" data-ml-trace-export-selected-csv data-offline-disable>Export selected CSV</button>
+              <button class="btn btn-ghost" type="button" data-ml-trace-clear>Clear traces</button>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-ghost" type="button" data-ml-trace-select-all>Select all</button>
+              <button class="btn btn-ghost" type="button" data-ml-trace-clear-selection>Clear selection</button>
+            </div>
+            <small class="muted">Exports include current filters only.</small>
+            <div class="toggle-row">
+              <span class="note">Always save ML exports to Files</span>
+              <label class="toggle" for="setting-save-ml">
+                <input type="checkbox" id="setting-save-ml" data-save-files-section="ml-traces" />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+            <small class="muted" data-ml-trace-status>Export ready.</small>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Score following</h3>
+              <span class="pill" data-score-status>Idle</span>
+            </div>
+            <p class="card-body">Load a MusicXML or PDF score and follow along using rhythm onsets.</p>
+            <div class="reminder-grid backup-grid">
+              <label>
+                <span class="muted">MusicXML or PDF</span>
+                <input class="text-field" type="file" accept=".xml,.musicxml,.pdf" data-score-file />
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-score-load data-offline-disable>Load score</button>
+              <button class="btn btn-ghost" type="button" data-score-open-files data-offline-disable>Open from Files</button>
+              <button class="btn btn-ghost" type="button" data-score-start>Start following</button>
+              <button class="btn btn-ghost" type="button" data-score-stop>Stop</button>
+            </div>
+            <div class="summary-row">
+              <div>
+                <p class="stat-label">Measures</p>
+                <p class="stat-value" data-score-count>--</p>
+              </div>
+              <div>
+                <p class="stat-label">Current</p>
+                <p class="stat-value" data-score-current>--</p>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <span class="progress-fill" data-score-progress style="width: 0%;"></span>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-ghost" type="button" data-score-pdf-prev>Prev page</button>
+              <button class="btn btn-ghost" type="button" data-score-pdf-next>Next page</button>
+            </div>
+            <div class="score-visual" data-score-visual>
+              <div class="score-empty">No score visual yet.</div>
+            </div>
+            <small class="muted" data-score-page>--</small>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Score library</h3>
+              <span class="pill" data-score-library-count>0 scores</span>
+            </div>
+            <p class="card-body">Saved MusicXML scores ready for quick follow.</p>
+            <ul class="resource-list" data-score-library-list>
+              <li class="empty">No scores loaded yet.</li>
+            </ul>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-score-library-refresh>Refresh library</button>
+              <button class="btn btn-ghost" type="button" data-score-library-clear>Clear library</button>
+              <button class="btn btn-ghost" type="button" data-score-library-export-zip data-offline-disable>Export library ZIP</button>
+            </div>
+            <div class="toggle-grid">
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Include MusicXML</p>
+                  <p class="muted">Export MusicXML files in the ZIP.</p>
+                </div>
+                <label class="toggle" for="setting-score-library-xml">
+                  <input type="checkbox" id="setting-score-library-xml" data-score-library-include-xml checked />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Include PDF</p>
+                  <p class="muted">Export PDF files in the ZIP.</p>
+                </div>
+                <label class="toggle" for="setting-score-library-pdf">
+                  <input type="checkbox" id="setting-score-library-pdf" data-score-library-include-pdf checked />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Always save library exports to Files</p>
+                  <p class="muted">Use the Files picker for ZIP exports.</p>
+                </div>
+                <label class="toggle" for="setting-save-score-library">
+                  <input type="checkbox" id="setting-save-score-library" data-save-files-section="score-library" />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+            </div>
+            <small class="muted" data-score-library-status>Library ready.</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="teacher" data-section data-reveal>
+        <div class="section-head">
+          <div>
+            <p class="section-kicker">Teacher</p>
+            <h2>Studio Dashboard</h2>
+            <p class="section-subtitle">Profiles, assignments, and weekly check-ins for Suzuki Book 1.</p>
+          </div>
+          <div class="section-actions">
+            <button class="btn btn-secondary" type="button" data-teacher-export data-offline-disable>Export report</button>
+            <button class="btn btn-ghost" type="button" data-teacher-export-files data-offline-disable>Save report to Files</button>
+            <button class="btn btn-ghost" type="button" data-teacher-zip data-offline-disable>Download ZIP</button>
+            <button class="btn btn-ghost" type="button" data-teacher-zip-files data-offline-disable>Save ZIP to Files</button>
+          </div>
+        </div>
+        <small class="muted" data-teacher-export-status>Export ready.</small>
+        <div class="toggle-row">
+          <span class="note">Always save teacher exports to Files</span>
+          <label class="toggle" for="setting-save-teacher">
+            <input type="checkbox" id="setting-save-teacher" data-save-files-section="teacher" />
+            <span class="toggle-ui"></span>
+          </label>
+        </div>
+
+        <div class="grid teacher-grid">
+          <article class="card">
+            <div class="card-head">
+              <h3>Weekly plan</h3>
+              <span class="pill">Suzuki Book 1</span>
+            </div>
+            <ul class="plan-list" data-teacher-plan>
+              <li>
+                <span class="plan-title">Warm-up strings</span>
+                <span class="plan-meta">Mon - 10 min</span>
+              </li>
+              <li>
+                <span class="plan-title">Twinkle rhythm</span>
+                <span class="plan-meta">Wed - 12 min</span>
+              </li>
+              <li>
+                <span class="plan-title">Bow path drill</span>
+                <span class="plan-meta">Fri - 8 min</span>
+              </li>
+            </ul>
+            <ul class="plan-list" data-assignment-list>
+              <li class="empty">No assignments yet.</li>
+            </ul>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-assignment-builder>Create assignment</button>
+              <button class="btn btn-ghost" type="button" data-assignment-export>Export assignments</button>
+              <button class="btn btn-ghost" type="button" data-assignment-export-selected data-offline-disable>Export selected</button>
+              <button class="btn btn-ghost" type="button" data-assignment-export-selected-csv data-offline-disable>Export selected CSV</button>
+            </div>
+            <small class="muted" data-assignment-status>Export ready.</small>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Student profiles</h3>
+              <span class="pill">Local only</span>
+            </div>
+            <p class="muted">Active profile: <span data-profile-active>Default</span></p>
+            <ul class="profile-list" data-profile-list>
+              <li class="profile-card">
+                <div class="profile-avatar" aria-hidden="true">👤</div>
+                <div>
+                  <p class="profile-name">Add student</p>
+                  <p class="profile-meta">Up to 10 profiles</p>
+                </div>
+                <button class="btn btn-ghost" type="button" data-profile-add>Add</button>
+              </li>
+            </ul>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-profile-add>Add profile</button>
+              <button class="btn btn-ghost" type="button" data-profile-export data-offline-disable>Export profiles</button>
+              <button class="btn btn-ghost" type="button" data-profile-export-csv data-offline-disable>Export profiles CSV</button>
+              <button class="btn btn-ghost" type="button" data-profile-export-selected data-offline-disable>Export selected</button>
+              <button class="btn btn-ghost" type="button" data-profile-export-selected-csv data-offline-disable>Export selected CSV</button>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-ghost" type="button" data-profile-select-all>Select all</button>
+              <button class="btn btn-ghost" type="button" data-profile-clear-selection>Clear selection</button>
+            </div>
+            <div class="toggle-row">
+              <span class="note">Always save profile exports to Files</span>
+              <label class="toggle" for="setting-save-profiles">
+                <input type="checkbox" id="setting-save-profiles" data-save-files-section="profiles" />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+            <small class="muted" data-profile-status>Export ready.</small>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Weekly assessment</h3>
+              <span class="pill">Check-in</span>
+            </div>
+            <p class="card-body">Run a short weekly assessment to unlock the next map node.</p>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-assessment-start>Start assessment</button>
+              <button class="btn btn-ghost" type="button" data-assessment-review>Review results</button>
+            </div>
           </article>
         </div>
       </section>
@@ -500,6 +1007,10 @@
                 <p class="stat-label">Quota</p>
                 <p class="stat-value" data-storage-quota>--</p>
               </div>
+              <div>
+                <p class="stat-label">OPFS usage</p>
+                <p class="stat-value" data-opfs-usage>--</p>
+              </div>
             </div>
             <div class="storage-meter">
               <span class="storage-fill" data-storage-fill></span>
@@ -509,7 +1020,7 @@
           <article class="card">
             <div class="card-head">
               <h3>Service worker</h3>
-              <span class="pill" data-sw-status>Checking...</span>
+              <span class="pill" data-sw-status aria-live="polite">Checking...</span>
             </div>
             <p class="card-body">Control updates and refresh the offline cache.</p>
             <div class="button-row">
@@ -520,14 +1031,152 @@
 
           <article class="card">
             <div class="card-head">
+              <h3>Update channel</h3>
+              <span class="pill" data-update-channel-status>Stable</span>
+            </div>
+            <p class="card-body">Choose a channel for update checks on this device.</p>
+            <div class="reminder-grid backup-grid">
+              <label>
+                <span class="muted">Channel</span>
+                <select class="text-field" data-update-channel-select>
+                  <option value="stable">Stable</option>
+                  <option value="beta">Beta</option>
+                </select>
+              </label>
+            </div>
+            <p class="muted">Last check: <span data-update-channel-last-check>Never</span></p>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-update-channel-save>Save channel</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
               <h3>Weekly export</h3>
               <span class="pill">JSON summary</span>
             </div>
             <p class="card-body">Generate a lightweight summary for parents or coaches.</p>
             <div class="button-row">
-              <button class="btn btn-primary" type="button" data-export-summary>Export weekly summary</button>
-              <button class="btn btn-ghost" type="button" data-export-session>Export latest session</button>
+              <button class="btn btn-primary" type="button" data-export-summary data-offline-disable>Export weekly summary</button>
+              <button class="btn btn-ghost" type="button" data-export-summary-files data-offline-disable>Save to Files</button>
+              <button class="btn btn-ghost" type="button" data-export-session data-offline-disable>Export latest session</button>
+              <button class="btn btn-ghost" type="button" data-export-session-files data-offline-disable>Save session to Files</button>
+              <button class="btn btn-ghost" type="button" data-export-csv data-offline-disable>Export CSV</button>
+              <button class="btn btn-ghost" type="button" data-export-csv-files data-offline-disable>Save CSV to Files</button>
             </div>
+            <div class="toggle-row">
+              <span class="note">Always save weekly exports to Files</span>
+              <label class="toggle" for="setting-save-weekly">
+                <input type="checkbox" id="setting-save-weekly" data-save-files-section="weekly" />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+            <small class="muted" data-export-status>Export ready.</small>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Encrypted backup</h3>
+              <span class="pill" data-backup-status>Ready</span>
+            </div>
+            <p class="card-body">Create a ZIP backup with AES-GCM encryption (PIN required).</p>
+            <div class="reminder-grid backup-grid">
+              <label>
+                <span class="muted">PIN</span>
+                <input class="text-field" type="password" inputmode="numeric" minlength="4" data-backup-pin />
+              </label>
+              <label>
+                <span class="muted">Confirm PIN</span>
+                <input class="text-field" type="password" inputmode="numeric" minlength="4" data-backup-confirm />
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-backup-export data-offline-disable>Export encrypted backup</button>
+              <button class="btn btn-ghost" type="button" data-backup-export-files data-offline-disable>Save backup to Files</button>
+            </div>
+            <div class="toggle-row">
+              <span class="note">Always save backups to Files</span>
+              <label class="toggle" for="setting-save-backup">
+                <input type="checkbox" id="setting-save-backup" data-save-files-section="backup" />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Restore backup</h3>
+              <span class="pill" data-restore-status>Idle</span>
+            </div>
+            <small class="muted" data-restore-status-note>Restore ready.</small>
+            <p class="card-body">Import an encrypted ZIP backup (sessions + ML data).</p>
+            <div class="reminder-grid backup-grid">
+              <label>
+                <span class="muted">Backup file</span>
+                <input class="text-field" type="file" accept=".zip" data-restore-file />
+              </label>
+              <label>
+                <span class="muted">PIN</span>
+                <input class="text-field" type="password" inputmode="numeric" minlength="4" data-restore-pin />
+              </label>
+            </div>
+            <div class="toggle-grid">
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Sessions</p>
+                  <p class="muted">Restore practice history.</p>
+                </div>
+                <label class="toggle" for="restore-sessions">
+                  <input type="checkbox" id="restore-sessions" data-restore-sessions checked />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Assignments</p>
+                  <p class="muted">Restore teacher assignments.</p>
+                </div>
+                <label class="toggle" for="restore-assignments">
+                  <input type="checkbox" id="restore-assignments" data-restore-assignments checked />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Profiles</p>
+                  <p class="muted">Restore student profiles.</p>
+                </div>
+                <label class="toggle" for="restore-profiles">
+                  <input type="checkbox" id="restore-profiles" data-restore-profiles checked />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Recordings</p>
+                  <p class="muted">Restore audio files.</p>
+                </div>
+                <label class="toggle" for="restore-recordings">
+                  <input type="checkbox" id="restore-recordings" data-restore-recordings checked />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">ML data</p>
+                  <p class="muted">Restore ML metrics and traces.</p>
+                </div>
+                <label class="toggle" for="restore-ml">
+                  <input type="checkbox" id="restore-ml" data-restore-ml checked />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-restore-run data-offline-disable>Restore backup</button>
+              <button class="btn btn-ghost" type="button" data-restore-open-files data-offline-disable>Open backup from Files</button>
+            </div>
+            <small class="muted" data-restore-preview>Preview: --</small>
           </article>
 
           <article class="card">
@@ -542,6 +1191,40 @@
             <div class="button-row">
               <button class="btn btn-secondary" type="button" data-share-inbox-refresh>Refresh inbox</button>
               <button class="btn btn-ghost" type="button" data-share-inbox-clear>Clear inbox</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Telemetry queue</h3>
+              <span class="pill" data-telemetry-queue-count>0 events</span>
+            </div>
+            <p class="card-body">Queued analytics payloads waiting for upload.</p>
+            <ul class="resource-list" data-telemetry-queue-list>
+              <li class="empty">Telemetry queue empty.</li>
+            </ul>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-telemetry-queue-refresh>Refresh queue</button>
+              <button class="btn btn-secondary" type="button" data-telemetry-queue-flush>Flush now</button>
+              <button class="btn btn-ghost" type="button" data-telemetry-queue-export>Export JSON</button>
+              <button class="btn btn-ghost" type="button" data-telemetry-queue-clear>Clear queue</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Error queue</h3>
+              <span class="pill" data-error-queue-count>0 errors</span>
+            </div>
+            <p class="card-body">Captured errors waiting for upload.</p>
+            <ul class="resource-list" data-error-queue-list>
+              <li class="empty">Error queue empty.</li>
+            </ul>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-error-queue-refresh>Refresh queue</button>
+              <button class="btn btn-secondary" type="button" data-error-queue-flush>Flush now</button>
+              <button class="btn btn-ghost" type="button" data-error-queue-export>Export JSON</button>
+              <button class="btn btn-ghost" type="button" data-error-queue-clear>Clear queue</button>
             </div>
           </article>
         </div>
@@ -578,6 +1261,16 @@
             <div class="button-row">
               <button class="btn btn-secondary" type="button" data-share-button>Share link</button>
               <button class="btn btn-ghost" type="button" data-copy-link>Copy link</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Offline docs</h3>
+              <span class="pill">API + schema</span>
+            </div>
+            <div class="doc-panel" data-docs-content>
+              <p class="muted">Loading docs…</p>
             </div>
           </article>
 
@@ -630,15 +1323,11 @@
               <button class="btn btn-secondary" type="button" data-db-worker-init>Init DB worker</button>
               <button class="btn btn-ghost" type="button" data-db-migrate>Run SQLite migration</button>
               <button class="btn btn-ghost" type="button" data-db-migrate-report>Export migration report</button>
-              <button class="btn btn-ghost" type="button" data-db-migrate-cleanup>Clear legacy IDB</button>
             </div>
             <p class="status-line" data-opfs-test-status>OPFS test idle.</p>
             <p class="status-line" data-opfs-worker-status>Worker test idle.</p>
             <p class="status-line" data-db-worker-detail>DB worker idle.</p>
             <p class="status-line" data-db-migrate-status>Migration idle.</p>
-            <p class="status-line" data-db-migrate-state>Migration: Unknown.</p>
-            <p class="status-line" data-db-migrate-checksums>Checksums: Unknown.</p>
-            <p class="status-line" data-db-migrate-idb>Legacy IDB: Unknown.</p>
           </article>
         </div>
       </section>
@@ -655,10 +1344,56 @@
         <div class="grid controls-grid">
           <article class="card">
             <div class="card-head">
+              <h3>Reminders</h3>
+              <span class="pill">Push</span>
+            </div>
+            <p class="card-body">Set a practice reminder schedule. Works when online.</p>
+            <div class="reminder-grid">
+              <label>
+                <span class="note">Time</span>
+                <input type="time" value="17:00" data-reminder-time />
+              </label>
+              <label>
+                <span class="note">Days</span>
+                <select data-reminder-days>
+                  <option value="weekdays">Weekdays</option>
+                  <option value="daily">Daily</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-primary" type="button" data-reminder-enable>Enable reminders</button>
+              <button class="btn btn-ghost" type="button" data-reminder-disable>Disable</button>
+            </div>
+            <small class="muted" data-reminder-status>Reminders off</small>
+          </article>
+          <article class="card">
+            <div class="card-head">
               <h3>Accessibility</h3>
               <span class="pill">Local settings</span>
             </div>
             <div class="toggle-grid">
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Compact mode</p>
+                  <p class="muted">Tighter layout on smaller screens.</p>
+                </div>
+                <label class="toggle" for="setting-compact-mode">
+                  <input type="checkbox" id="setting-compact-mode" />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Dyslexia mode</p>
+                  <p class="muted">Increase letter spacing + simplify shapes.</p>
+                </div>
+                <label class="toggle" for="setting-dyslexia-mode">
+                  <input type="checkbox" id="setting-dyslexia-mode" />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
               <div class="toggle-row">
                 <div>
                   <p class="note">Large text</p>
@@ -676,6 +1411,16 @@
                 </div>
                 <label class="toggle" for="setting-high-contrast">
                   <input type="checkbox" id="setting-high-contrast" />
+                  <span class="toggle-ui"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <p class="note">Color-blind patterns</p>
+                  <p class="muted">Add patterns for status and game cues.</p>
+                </div>
+                <label class="toggle" for="setting-color-blind">
+                  <input type="checkbox" id="setting-color-blind" />
                   <span class="toggle-ui"></span>
                 </label>
               </div>
@@ -711,6 +1456,69 @@
             <div class="button-row">
               <button class="btn btn-secondary" type="button" data-reset-data>Reset progress</button>
               <button class="btn btn-ghost" type="button" data-clear-recordings>Clear recordings</button>
+              <button class="btn btn-ghost" type="button" data-import-files data-offline-disable>Import JSON/CSV</button>
+              <button class="btn btn-ghost" type="button" data-import-undo>Undo last import</button>
+              <button class="btn btn-ghost" type="button" data-import-log-export data-offline-disable>Export import log</button>
+              <button class="btn btn-ghost" type="button" data-import-queue-apply data-offline-disable>Apply queued imports</button>
+            </div>
+            <div class="toggle-row">
+              <span class="note">Save exports to Files</span>
+              <label class="toggle" for="setting-save-files">
+                <input type="checkbox" id="setting-save-files" data-save-files-toggle />
+                <span class="toggle-ui"></span>
+              </label>
+            </div>
+            <small class="muted" data-save-files-note>Uses the system file picker when available.</small>
+            <small class="muted" data-import-status>Import ready.</small>
+            <small class="muted" data-import-undo-status>No import undo available.</small>
+            <small class="muted" data-import-queue-status>No queued imports.</small>
+            <ul class="resource-list" data-import-log>
+              <li class="empty">No imports yet.</li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Data lock</h3>
+              <span class="pill" data-encryption-status>Unlocked</span>
+            </div>
+            <p class="card-body">Protect local data with a PIN. Keep it safe — it cannot be recovered.</p>
+            <div class="reminder-grid">
+              <label>
+                <span class="note">PIN</span>
+                <input class="text-field" type="password" minlength="4" data-encryption-pin />
+              </label>
+              <label>
+                <span class="note">Confirm</span>
+                <input class="text-field" type="password" minlength="4" data-encryption-confirm />
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-encryption-set>Set PIN</button>
+              <button class="btn btn-ghost" type="button" data-encryption-unlock>Unlock</button>
+              <button class="btn btn-ghost" type="button" data-encryption-lock>Lock</button>
+            </div>
+            <small class="muted" data-encryption-note>PIN not set.</small>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <h3>Storage cleanup</h3>
+              <span class="pill" data-cleanup-status>Ready</span>
+            </div>
+            <p class="card-body">Prune old recordings and cap OPFS usage.</p>
+            <div class="reminder-grid">
+              <label>
+                <span class="note">Retention days</span>
+                <input class="text-field" type="number" min="1" max="365" value="90" data-cleanup-retention />
+              </label>
+              <label>
+                <span class="note">Max OPFS MB</span>
+                <input class="text-field" type="number" min="128" max="4096" value="512" data-cleanup-max-mb />
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="btn btn-secondary" type="button" data-cleanup-run>Run cleanup</button>
             </div>
           </article>
 
@@ -736,6 +1544,86 @@
                 <span>Persistent storage</span>
                 <span class="capability-pill" data-capability="storage" data-state="warn">Checking</span>
               </li>
+              <li>
+                <span>Camera</span>
+                <span class="capability-pill" data-capability="camera" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Wake Lock</span>
+                <span class="capability-pill" data-capability="wake-lock" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Haptics</span>
+                <span class="capability-pill" data-capability="haptics" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Share API</span>
+                <span class="capability-pill" data-capability="share" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Notifications</span>
+                <span class="capability-pill" data-capability="notifications" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Device Motion</span>
+                <span class="capability-pill" data-capability="motion" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Badging</span>
+                <span class="capability-pill" data-capability="badge" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Media Session</span>
+                <span class="capability-pill" data-capability="media-session" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>File System Access</span>
+                <span class="capability-pill" data-capability="file-system" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>File Handling</span>
+                <span class="capability-pill" data-capability="file-handling" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Protocol Handling</span>
+                <span class="capability-pill" data-capability="protocol" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Share Target</span>
+                <span class="capability-pill" data-capability="share-target" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>WebCodecs</span>
+                <span class="capability-pill" data-capability="webcodecs" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Audio Worklet</span>
+                <span class="capability-pill" data-capability="audio-worklet" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>SharedArrayBuffer</span>
+                <span class="capability-pill" data-capability="sab" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>OffscreenCanvas</span>
+                <span class="capability-pill" data-capability="offscreen-canvas" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>OPFS</span>
+                <span class="capability-pill" data-capability="opfs" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Storage Buckets</span>
+                <span class="capability-pill" data-capability="storage-buckets" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Fullscreen</span>
+                <span class="capability-pill" data-capability="fullscreen" data-state="warn">Checking</span>
+              </li>
+              <li>
+                <span>Orientation Lock</span>
+                <span class="capability-pill" data-capability="orientation-lock" data-state="warn">Checking</span>
+              </li>
             </ul>
           </article>
         </div>
@@ -745,10 +1633,26 @@
     <footer class="footer">Emerson Violin Studio - Offline-ready command center.</footer>
   </div>
 
-  <dialog class="install-guide" id="install-guide">
+  <dialog class="dialog" data-import-preview-dialog aria-modal="true" aria-labelledby="import-preview-title">
+    <div class="dialog-header">
+      <div>
+        <p class="section-kicker">Import preview</p>
+        <h3 id="import-preview-title">Review incoming data</h3>
+      </div>
+      <button class="btn btn-ghost" type="button" data-import-preview-cancel>Cancel</button>
+    </div>
+    <ul class="dialog-list" data-import-preview-list></ul>
+    <p class="muted" data-import-preview-notes>Confirm to apply changes.</p>
+    <div class="button-row">
+      <button class="btn btn-primary" type="button" data-import-preview-confirm>Import now</button>
+      <button class="btn btn-ghost" type="button" data-import-preview-cancel>Cancel</button>
+    </div>
+  </dialog>
+
+  <dialog class="install-guide" id="install-guide" aria-modal="true" aria-labelledby="install-guide-title">
     <div class="install-card">
       <div class="card-head">
-        <h3>Install on your device</h3>
+        <h3 id="install-guide-title">Install on your device</h3>
         <span class="pill">Add to Home Screen</span>
       </div>
       <ol class="step-list">

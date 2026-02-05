@@ -173,7 +173,7 @@ async fn opfs_async_self_test() -> Result<usize, String> {
   let writable = call_method0(&file_handle, "createWritable").await?;
 
   let payload = js_sys::Uint8Array::from(&[1, 2, 3, 4, 5, 6, 7, 8][..]);
-  call_method1(&writable, "write", &payload.into()).await?;
+  call_method1(&writable, "write", &payload.clone().into()).await?;
   call_method0(&writable, "close").await?;
 
   let file = call_method0(&file_handle, "getFile").await?;

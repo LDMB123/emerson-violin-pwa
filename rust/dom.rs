@@ -71,3 +71,22 @@ pub fn is_standalone() -> bool {
     .unwrap_or(false);
   standalone || ios
 }
+
+pub fn is_ios() -> bool {
+  let window = window();
+  let ua = window.navigator().user_agent().unwrap_or_default().to_lowercase();
+  ua.contains("iphone") || ua.contains("ipad") || ua.contains("ipod")
+}
+
+pub fn toast(message: &str) {
+  if let Some(el) = query("[data-toast]") {
+    el.set_text_content(Some(message));
+    set_dataset(&el, "state", "show");
+    let el = el.clone();
+    let cb = wasm_bindgen::closure::Closure::<dyn FnMut()>::new(move || {
+      set_dataset(&el, "state", "hide");
+    });
+    let _ = window().set_timeout_with_callback_and_timeout_and_arguments_0(cb.as_ref().unchecked_ref(), 2400);
+    cb.forget();
+  }
+}
