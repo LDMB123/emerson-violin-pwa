@@ -9,6 +9,7 @@ use web_sys::{Event, MessageEvent, Worker, WorkerOptions, WorkerType};
 
 use crate::db_messages::{DbRequest, DbResponse, DbStatement};
 use crate::db_schema::{migrations, SCHEMA_SQL, SCHEMA_VERSION};
+use crate::dom;
 use crate::storage_pressure;
 use crate::utils;
 
@@ -17,8 +18,49 @@ struct DbClient {
   pending: Rc<RefCell<HashMap<String, oneshot::Sender<DbResponse>>>>,
 }
 
+const MAX_LATENCY_SAMPLES: usize = 256;
+
+thread_local! {
+  static LATENCY_SAMPLES: RefCell<Vec<f64>> = RefCell::new(Vec::new());
+}
+
 thread_local! {
   static CLIENT: RefCell<Option<DbClient>> = RefCell::new(None);
+}
+
+fn percentile(sorted: &[f64], quantile: f64) -> f64 {
+  if sorted.is_empty() {
+    return 0.0;
+  }
+  let q = quantile.clamp(0.0, 1.0);
+  let idx = ((sorted.len() - 1) as f64 * q).round() as usize;
+  sorted.get(idx).copied().unwrap_or(0.0)
+}
+
+fn record_latency(ms: f64) {
+  if !ms.is_finite() || ms <= 0.0 {
+    return;
+  }
+  LATENCY_SAMPLES.with(|cell| {
+    let mut samples = cell.borrow_mut();
+    samples.push(ms);
+    if samples.len() > MAX_LATENCY_SAMPLES {
+      let drop = samples.len() - MAX_LATENCY_SAMPLES;
+      samples.drain(0..drop);
+    }
+
+    let mut sorted = samples.clone();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let count = sorted.len();
+    let p50 = percentile(&sorted, 0.50);
+    let p95 = percentile(&sorted, 0.95);
+    let p99 = percentile(&sorted, 0.99);
+
+    dom::set_text("[data-db-latency-count]", &format!("{}", count));
+    dom::set_text("[data-db-latency-p50]", &format!("{:.0} ms", p50));
+    dom::set_text("[data-db-latency-p95]", &format!("{:.0} ms", p95));
+    dom::set_text("[data-db-latency-p99]", &format!("{:.0} ms", p99));
+  });
 }
 
 fn ensure_client() -> Result<(Worker, Rc<RefCell<HashMap<String, oneshot::Sender<DbResponse>>>>), JsValue> {
@@ -70,6 +112,7 @@ fn ensure_client() -> Result<(Worker, Rc<RefCell<HashMap<String, oneshot::Sender
 
 async fn send_request(request: DbRequest) -> Result<DbResponse, JsValue> {
   let (worker, pending) = ensure_client()?;
+  let start = dom::window().performance().map(|p| p.now()).unwrap_or(js_sys::Date::now());
   let request_id = request.request_id().to_string();
   let (tx, rx) = oneshot::channel();
   pending.borrow_mut().insert(request_id.clone(), tx);
@@ -81,7 +124,11 @@ async fn send_request(request: DbRequest) -> Result<DbResponse, JsValue> {
   }
 
   match rx.await {
-    Ok(response) => Ok(response),
+    Ok(response) => {
+      let end = dom::window().performance().map(|p| p.now()).unwrap_or(js_sys::Date::now());
+      record_latency((end - start).max(0.0));
+      Ok(response)
+    }
     Err(_) => Err(JsValue::from_str("DB response dropped")),
   }
 }
