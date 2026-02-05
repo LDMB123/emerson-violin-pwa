@@ -15,6 +15,7 @@ use web_sys::{
 
 use crate::dom;
 use crate::db_client;
+use crate::storage_pressure;
 use crate::utils;
 
 const DB_NAME: &str = "emerson-violin-db";
@@ -123,10 +124,21 @@ fn request_to_future(request: IdbRequest) -> oneshot::Receiver<Result<JsValue, J
   onsuccess.forget();
 
   let error_sender = sender.clone();
-  let onerror = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::once(move |_event: Event| {
+  let onerror = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::once(move |event: Event| {
     if let Some(tx) = error_sender.borrow_mut().take() {
-      let error = JsValue::from_str("IDB request failed");
-      let _ = tx.send(Err(error));
+      let target = event.target().and_then(|t| t.dyn_into::<IdbRequest>().ok());
+      if let Some(req) = target {
+        if let Ok(err) = Reflect::get(req.as_ref(), &"error".into()) {
+          if !err.is_null() && !err.is_undefined() {
+            if storage_pressure::is_quota_error(&err) {
+              storage_pressure::record_error("idb", &err);
+            }
+            let _ = tx.send(Err(err));
+            return;
+          }
+        }
+      }
+      let _ = tx.send(Err(JsValue::from_str("IDB request failed")));
     }
   });
   request.set_onerror(Some(onerror.as_ref().unchecked_ref()));
@@ -2279,9 +2291,24 @@ async fn save_blob_to_opfs(path: &str, blob: &Blob) -> Result<(), JsValue> {
     None => root,
   };
   let file_handle = get_file_handle(&parent, file, true).await?;
-  let writable = call_method0(&file_handle, "createWritable").await?;
-  call_method1(&writable, "write", &blob.clone().into()).await?;
-  call_method0(&writable, "close").await?;
+  let writable = call_method0(&file_handle, "createWritable")
+    .await
+    .map_err(|err| {
+      storage_pressure::record_error("opfs.createWritable", &err);
+      err
+    })?;
+  call_method1(&writable, "write", &blob.clone().into())
+    .await
+    .map_err(|err| {
+      storage_pressure::record_error("opfs.write", &err);
+      err
+    })?;
+  call_method0(&writable, "close")
+    .await
+    .map_err(|err| {
+      storage_pressure::record_error("opfs.close", &err);
+      err
+    })?;
   Ok(())
 }
 
@@ -2293,10 +2320,25 @@ async fn save_bytes_to_opfs(path: &str, bytes: &[u8]) -> Result<(), JsValue> {
     None => root,
   };
   let file_handle = get_file_handle(&parent, file, true).await?;
-  let writable = call_method0(&file_handle, "createWritable").await?;
+  let writable = call_method0(&file_handle, "createWritable")
+    .await
+    .map_err(|err| {
+      storage_pressure::record_error("opfs.createWritable", &err);
+      err
+    })?;
   let array = Uint8Array::from(bytes);
-  call_method1(&writable, "write", &array.into()).await?;
-  call_method0(&writable, "close").await?;
+  call_method1(&writable, "write", &array.into())
+    .await
+    .map_err(|err| {
+      storage_pressure::record_error("opfs.write", &err);
+      err
+    })?;
+  call_method0(&writable, "close")
+    .await
+    .map_err(|err| {
+      storage_pressure::record_error("opfs.close", &err);
+      err
+    })?;
   Ok(())
 }
 

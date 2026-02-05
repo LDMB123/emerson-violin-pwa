@@ -9,6 +9,7 @@ use web_sys::{Event, MessageEvent, Worker, WorkerOptions, WorkerType};
 
 use crate::db_messages::{DbRequest, DbResponse, DbStatement};
 use crate::db_schema::{migrations, SCHEMA_SQL, SCHEMA_VERSION};
+use crate::storage_pressure;
 use crate::utils;
 
 struct DbClient {
@@ -100,7 +101,12 @@ pub async fn init_db() -> Result<(), JsValue> {
         Err(JsValue::from_str(&detail))
       }
     }
-    DbResponse::Error { message, .. } => Err(JsValue::from_str(&message)),
+    DbResponse::Error { message, quota, name, .. } => {
+      if quota {
+        storage_pressure::record_quota_message("sqlite", name.as_deref(), &message);
+      }
+      Err(JsValue::from_str(&message))
+    }
     _ => Err(JsValue::from_str("Unexpected DB response")),
   }
 }
@@ -119,7 +125,12 @@ pub async fn exec(sql: &str, params: Vec<serde_json::Value>) -> Result<(), JsVal
         Err(JsValue::from_str("DB exec failed"))
       }
     }
-    DbResponse::Error { message, .. } => Err(JsValue::from_str(&message)),
+    DbResponse::Error { message, quota, name, .. } => {
+      if quota {
+        storage_pressure::record_quota_message("sqlite", name.as_deref(), &message);
+      }
+      Err(JsValue::from_str(&message))
+    }
     _ => Err(JsValue::from_str("Unexpected DB exec response")),
   }
 }
@@ -132,7 +143,12 @@ pub async fn query(sql: &str, params: Vec<serde_json::Value>) -> Result<Vec<serd
   };
   match send_request(request).await? {
     DbResponse::QueryResult { rows, .. } => Ok(rows),
-    DbResponse::Error { message, .. } => Err(JsValue::from_str(&message)),
+    DbResponse::Error { message, quota, name, .. } => {
+      if quota {
+        storage_pressure::record_quota_message("sqlite", name.as_deref(), &message);
+      }
+      Err(JsValue::from_str(&message))
+    }
     _ => Err(JsValue::from_str("Unexpected DB query response")),
   }
 }
@@ -154,7 +170,12 @@ pub async fn batch(statements: Vec<DbStatement>, transaction: bool) -> Result<()
         Err(JsValue::from_str("DB batch failed"))
       }
     }
-    DbResponse::Error { message, .. } => Err(JsValue::from_str(&message)),
+    DbResponse::Error { message, quota, name, .. } => {
+      if quota {
+        storage_pressure::record_quota_message("sqlite", name.as_deref(), &message);
+      }
+      Err(JsValue::from_str(&message))
+    }
     _ => Err(JsValue::from_str("Unexpected DB batch response")),
   }
 }

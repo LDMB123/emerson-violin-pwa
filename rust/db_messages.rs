@@ -95,6 +95,14 @@ pub enum DbResponse {
   Error {
     request_id: String,
     message: String,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    code: Option<i32>,
+    #[serde(default)]
+    quota: bool,
+    #[serde(default)]
+    ms: f64,
   },
 }
 

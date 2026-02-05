@@ -42,6 +42,7 @@ mod profiles;
 mod assignments;
 mod ml_calibration;
 mod storage_cleanup;
+mod storage_pressure;
 mod game_map;
 mod ml_models;
 mod ml_infer;

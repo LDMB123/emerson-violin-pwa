@@ -155,10 +155,18 @@ self.onmessage = async (event) => {
       return;
     }
   } catch (err) {
+    const message = String(err?.message || err);
+    const name = err?.name || err?.constructor?.name || '';
+    const code = typeof err?.code === 'number' ? err.code : null;
+    const quota = name === 'QuotaExceededError' || code === 22 || /quota/i.test(message);
     self.postMessage({
       type: 'DB_ERROR',
       request_id: requestId,
-      message: String(err?.message || err),
+      message,
+      name: name || null,
+      code,
+      quota,
+      ms: performance.now() - start,
     });
   }
 };
