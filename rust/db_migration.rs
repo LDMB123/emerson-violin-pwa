@@ -6,7 +6,7 @@ use serde_json::{Number as JsonNumber, Value as JsonValue};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{Blob, Event};
+use web_sys::{Blob, Event, HtmlElement};
 
 use crate::db_client;
 use crate::db_messages::DbStatement;
@@ -17,6 +17,22 @@ use crate::utils;
 
 const MIGRATION_ID: &str = "active";
 const BATCH_SIZE: usize = 200;
+const CTA_DISMISSED_KEY: &str = "migrate:cta-dismissed";
+
+fn cta_dismissed() -> bool {
+  dom::window()
+    .local_storage()
+    .ok()
+    .flatten()
+    .and_then(|ls| ls.get_item(CTA_DISMISSED_KEY).ok().flatten())
+    .is_some()
+}
+
+fn dismiss_cta() {
+  if let Ok(Some(ls)) = dom::window().local_storage() {
+    let _ = ls.set_item(CTA_DISMISSED_KEY, &format!("{:.0}", js_sys::Date::now()));
+  }
+}
 
 #[derive(Clone, Copy)]
 enum StoreKind {
@@ -253,10 +269,76 @@ pub fn init() {
     cb.forget();
   }
 
+  // Migration CTA banner actions
+  if let Some(btn) = dom::query("[data-migrate-banner-action]") {
+    let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+      show_banner(false);
+      if let Some(migrate_btn) = dom::query("[data-db-migrate]") {
+        let _ = migrate_btn.dyn_ref::<HtmlElement>().map(|el| el.click());
+      }
+    });
+    let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
+    cb.forget();
+  }
+
+  if let Some(btn) = dom::query("[data-migrate-banner-dismiss]") {
+    let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+      dismiss_cta();
+      show_banner(false);
+    });
+    let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
+    cb.forget();
+  }
+
   refresh_status();
 }
 
+pub fn check_migration_cta() {
+  spawn_local(async move {
+    if cta_dismissed() {
+      return;
+    }
 
+    if !storage::legacy_idb_has_data().await {
+      return;
+    }
+
+    if let Ok(summary) = storage::get_migration_summary().await {
+      if summary.completed && summary.checksums_ok && summary.errors.is_empty() {
+        return;
+      }
+    }
+
+    let total = storage::legacy_idb_total_count().await;
+    if total == 0 {
+      return;
+    }
+
+    let est_seconds = (total as f64 / 50.0).ceil().max(1.0);
+    let estimate = if est_seconds < 60.0 {
+      format!("{:.0} seconds", est_seconds)
+    } else {
+      format!("{:.0} minutes", (est_seconds / 60.0).ceil())
+    };
+
+    let copy = format!(
+      "{} practice records can be upgraded to a faster local database. Estimated time: {}.",
+      total, estimate
+    );
+    dom::set_text("[data-migrate-banner-copy]", &copy);
+    show_banner(true);
+  });
+}
+
+fn show_banner(visible: bool) {
+  if let Some(el) = dom::query("[data-migrate-banner]") {
+    if visible {
+      let _ = el.remove_attribute("hidden");
+    } else {
+      let _ = el.set_attribute("hidden", "");
+    }
+  }
+}
 
 fn refresh_status() {
   spawn_local(async move {
