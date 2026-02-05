@@ -159,6 +159,7 @@ pub fn init() {
         if let Some(btn) = dom::query("[data-db-migrate]") {
           let _ = btn.remove_attribute("disabled");
         }
+        refresh_status();
       });
     });
     let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
@@ -187,8 +188,111 @@ pub fn init() {
     let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
     cb.forget();
   }
+
+  if let Some(btn) = dom::query("[data-db-migrate-cleanup]") {
+    let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+      dom::set_text("[data-db-migrate-status]", "Purging legacy IndexedDB...");
+      if let Some(btn) = dom::query("[data-db-migrate-cleanup]") {
+        let _ = btn.set_attribute("disabled", "true");
+      }
+      spawn_local(async move {
+        let result = storage::purge_idb_after_migration().await;
+        match result {
+          Ok(count) => {
+            dom::set_text("[data-db-migrate-status]", &format!("Legacy IndexedDB cleared ({} stores)", count));
+          }
+          Err(err) => {
+            dom::set_text("[data-db-migrate-status]", &format!("Legacy IndexedDB cleanup failed: {}", err.as_string().unwrap_or_default()));
+          }
+        }
+        refresh_status();
+      });
+    });
+    let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
+    cb.forget();
+  }
+
+  refresh_status();
 }
 
+
+
+fn refresh_status() {
+  spawn_local(async move {
+    match storage::get_migration_summary().await {
+      Ok(summary) => render_summary(&summary),
+      Err(_) => {
+        dom::set_text("[data-db-migrate-state]", "Migration: Unavailable");
+        dom::set_text("[data-db-migrate-checksums]", "Checksums: Unavailable");
+        dom::set_text("[data-db-migrate-idb]", "Legacy IDB: Unavailable");
+        set_cleanup_enabled(false);
+      }
+    }
+  });
+}
+
+fn render_summary(summary: &storage::MigrationSummary) {
+  let ready = summary.completed && summary.errors.is_empty() && summary.checksums_ok;
+  let status = if !summary.started {
+    "Not started".to_string()
+  } else if summary.completed {
+    if ready {
+      "Complete (verified)".to_string()
+    } else {
+      "Complete (issues)".to_string()
+    }
+  } else {
+    let last = summary
+      .last_store
+      .as_deref()
+      .unwrap_or("in progress");
+    format!("In progress ({})", last)
+  };
+  dom::set_text("[data-db-migrate-state]", &format!("Migration: {}", status));
+
+  let checks = if !summary.started {
+    "Checksums: n/a".to_string()
+  } else if summary.checksums_ok {
+    "Checksums: OK".to_string()
+  } else {
+    "Checksums: Failed".to_string()
+  };
+  dom::set_text("[data-db-migrate-checksums]", &checks);
+
+  let purged_at = storage::idb_purged_at();
+  let idb_status = if let Some(ts) = purged_at {
+    format!("Legacy IDB: Purged {}", format_timestamp(ts))
+  } else if ready {
+    "Legacy IDB: Ready to purge".to_string()
+  } else if summary.started {
+    "Legacy IDB: Blocked until verified".to_string()
+  } else {
+    "Legacy IDB: Active".to_string()
+  };
+  dom::set_text("[data-db-migrate-idb]", &idb_status);
+
+  set_cleanup_enabled(ready && purged_at.is_none());
+}
+
+fn set_cleanup_enabled(enabled: bool) {
+  if let Some(btn) = dom::query("[data-db-migrate-cleanup]") {
+    if enabled {
+      let _ = btn.remove_attribute("disabled");
+    } else {
+      let _ = btn.set_attribute("disabled", "true");
+    }
+  }
+}
+
+fn format_timestamp(ts: f64) -> String {
+  if ts <= 0.0 {
+    return "Unknown".to_string();
+  }
+  Date::new(&JsValue::from_f64(ts))
+    .to_iso_string()
+    .as_string()
+    .unwrap_or_else(|| "Unknown".to_string())
+}
 async fn run_migration() -> Result<(), wasm_bindgen::JsValue> {
   db_client::init_db().await?;
 

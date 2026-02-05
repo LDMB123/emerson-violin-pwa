@@ -630,11 +630,15 @@
               <button class="btn btn-secondary" type="button" data-db-worker-init>Init DB worker</button>
               <button class="btn btn-ghost" type="button" data-db-migrate>Run SQLite migration</button>
               <button class="btn btn-ghost" type="button" data-db-migrate-report>Export migration report</button>
+              <button class="btn btn-ghost" type="button" data-db-migrate-cleanup>Clear legacy IDB</button>
             </div>
             <p class="status-line" data-opfs-test-status>OPFS test idle.</p>
             <p class="status-line" data-opfs-worker-status>Worker test idle.</p>
             <p class="status-line" data-db-worker-detail>DB worker idle.</p>
             <p class="status-line" data-db-migrate-status>Migration idle.</p>
+            <p class="status-line" data-db-migrate-state>Migration: Unknown.</p>
+            <p class="status-line" data-db-migrate-checksums>Checksums: Unknown.</p>
+            <p class="status-line" data-db-migrate-idb>Legacy IDB: Unknown.</p>
           </article>
         </div>
       </section>

@@ -21,6 +21,22 @@ const DB_NAME: &str = "emerson-violin-db";
 pub const DB_VERSION: u32 = 5;
 
 const SQLITE_READY_TTL_MS: f64 = 5000.0;
+const IDB_PURGE_KEY: &str = "sqlite:idb-purged-at";
+const IDB_STORES: &[&str] = &[
+  "sessions",
+  "recordings",
+  "syncQueue",
+  "shareInbox",
+  "mlTraces",
+  "gameScores",
+  "scoreLibrary",
+  "assignments",
+  "profiles",
+  "telemetryQueue",
+  "errorQueue",
+  "scoreScans",
+  "modelCache",
+];
 
 #[derive(Clone, Copy)]
 struct SqliteGate {
@@ -68,6 +84,17 @@ pub struct SyncEntry {
   pub id: String,
   pub created_at: f64,
   pub payload: Session,
+}
+
+
+#[derive(Debug, Clone)]
+pub struct MigrationSummary {
+  pub started: bool,
+  pub completed: bool,
+  pub updated_at: f64,
+  pub last_store: Option<String>,
+  pub errors: Vec<String>,
+  pub checksums_ok: bool,
 }
 
 fn request_to_future(request: IdbRequest) -> oneshot::Receiver<Result<JsValue, JsValue>> {
@@ -347,7 +374,10 @@ pub async fn get_store_batch(
 
 async fn put_value(store_name: &str, value: &JsValue) -> Result<(), JsValue> {
   let db = open_db().await?;
-  let tx = db.transaction_with_str_and_mode(store_name, IdbTransactionMode::Readwrite)?;
+  let tx = match db.transaction_with_str_and_mode(store_name, IdbTransactionMode::Readwrite) {
+    Ok(tx) => tx,
+    Err(_) => return Ok(()),
+  };
   let store = tx.object_store(store_name)?;
   let request = store.put(value)?;
   let receiver = request_to_future(request);
@@ -398,44 +428,78 @@ async fn should_use_sqlite() -> bool {
   ready
 }
 
-async fn check_sqlite_ready() -> bool {
-  if db_client::init_db().await.is_err() {
-    return false;
-  }
-  let rows = match db_client::query(
-    "SELECT completed_at, errors_json, checksums_json FROM migration_state WHERE id = ?1",
-    vec![JsonValue::String("active".to_string())],
-  )
-  .await
-  {
-    Ok(rows) => rows,
-    Err(_) => return false,
-  };
-  let row = match rows.first() {
-    Some(row) => row,
-    None => return false,
-  };
-  let completed_at = extract_number(row, "completed_at").unwrap_or(0.0);
-  if completed_at <= 0.0 {
-    return false;
-  }
-  let errors_json = extract_string(row, "errors_json").unwrap_or_else(|| "[]".to_string());
-  let errors: Vec<String> = serde_json::from_str(&errors_json).unwrap_or_default();
-  if !errors.is_empty() {
-    return false;
-  }
-  let checksums_json = extract_string(row, "checksums_json").unwrap_or_else(|| "{}".to_string());
-  if let Ok(map) = serde_json::from_str::<serde_json::Map<String, JsonValue>>(&checksums_json) {
-    for value in map.values() {
-      if value.get("ok").and_then(|val| val.as_bool()) == Some(false) {
-        return false;
-      }
-    }
-  }
-  true
+
+fn migration_ready(summary: &MigrationSummary) -> bool {
+  summary.completed && summary.errors.is_empty() && summary.checksums_ok
 }
 
+async fn load_migration_summary() -> Result<MigrationSummary, JsValue> {
+  db_client::init_db().await?;
+  let rows = db_client::query(
+    "SELECT started_at, updated_at, last_store, errors_json, checksums_json, completed_at FROM migration_state WHERE id = ?1",
+    vec![JsonValue::String("active".to_string())],
+  )
+  .await?;
+
+  let row = match rows.first() {
+    Some(row) => row,
+    None => {
+      return Ok(MigrationSummary {
+        started: false,
+        completed: false,
+        updated_at: 0.0,
+        last_store: None,
+        errors: Vec::new(),
+        checksums_ok: false,
+      });
+    }
+  };
+
+  let started_at = extract_number(row, "started_at").unwrap_or(0.0);
+  let updated_at = extract_number(row, "updated_at").unwrap_or(0.0);
+  let last_store = extract_string(row, "last_store");
+  let completed_at = extract_number(row, "completed_at").unwrap_or(0.0);
+
+  let errors_json = extract_string(row, "errors_json").unwrap_or_else(|| "[]".to_string());
+  let errors: Vec<String> = serde_json::from_str(&errors_json).unwrap_or_default();
+
+  let checksums_json = extract_string(row, "checksums_json").unwrap_or_else(|| "{}".to_string());
+  let mut checksums_ok = false;
+  if let Ok(map) = serde_json::from_str::<serde_json::Map<String, JsonValue>>(&checksums_json) {
+    if !map.is_empty() {
+      checksums_ok = map
+        .values()
+        .all(|val| val.get("ok").and_then(|ok| ok.as_bool()).unwrap_or(false));
+    }
+  }
+
+  Ok(MigrationSummary {
+    started: started_at > 0.0,
+    completed: completed_at > 0.0,
+    updated_at,
+    last_store,
+    errors,
+    checksums_ok,
+  })
+}
+
+pub async fn get_migration_summary() -> Result<MigrationSummary, JsValue> {
+  load_migration_summary().await
+}
+
+async fn check_sqlite_ready() -> bool {
+  match load_migration_summary().await {
+    Ok(summary) => migration_ready(&summary),
+    Err(_) => false,
+  }
+}
+
+
+
 pub async fn get_sessions() -> Result<Vec<Session>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_sessions().await;
+  }
   let values = get_all_values("sessions").await?;
   let mut sessions = Vec::new();
   for value in values {
@@ -446,16 +510,32 @@ pub async fn get_sessions() -> Result<Vec<Session>, JsValue> {
   Ok(sessions)
 }
 
+
+
 pub async fn save_session(session: &Session) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_session(session).await;
+  }
   let value = serde_wasm_bindgen::to_value(session)?;
   put_value("sessions", &value).await
 }
 
+
+
 pub async fn clear_sessions() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("sessions").await;
+    return sqlite_clear_table("sessions").await;
+  }
   clear_store("sessions").await
 }
 
+
+
 pub async fn get_recordings() -> Result<Vec<Recording>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_recordings().await;
+  }
   let values = get_all_values("recordings").await?;
   let mut out = Vec::new();
   for value in values {
@@ -466,29 +546,64 @@ pub async fn get_recordings() -> Result<Vec<Recording>, JsValue> {
   Ok(out)
 }
 
+
+
 pub async fn save_recording(recording: &Recording) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_save_recording(recording).await;
+  }
   let value = recording_to_value(recording)?;
   put_value("recordings", &value).await
 }
 
+
+
 pub async fn delete_recording(id: &str) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    sqlite_delete_recording(id).await?;
+    let _ = delete_value("recordings", id).await;
+    return Ok(());
+  }
   delete_value("recordings", id).await
 }
 
+
+
 pub async fn clear_recordings() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("recordings").await;
+    let _ = clear_recording_blobs().await;
+    return sqlite_clear_table("recordings").await;
+  }
   clear_store("recordings").await
 }
 
+
+
 pub async fn add_sync_entry(entry: &SyncEntry) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_add_sync_entry(entry).await;
+  }
   let value = serde_wasm_bindgen::to_value(entry)?;
   put_value("syncQueue", &value).await
 }
 
+
+
 pub async fn clear_sync_queue() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("syncQueue").await;
+    return sqlite_clear_table("sync_queue").await;
+  }
   clear_store("syncQueue").await
 }
 
+
+
 pub async fn get_share_inbox() -> Result<Vec<ShareItem>, JsValue> {
+  if should_use_sqlite().await {
+    return sqlite_get_share_inbox().await;
+  }
   let values = get_all_values("shareInbox").await?;
   let mut out = Vec::new();
   for value in values {
@@ -499,13 +614,110 @@ pub async fn get_share_inbox() -> Result<Vec<ShareItem>, JsValue> {
   Ok(out)
 }
 
+
+
 pub async fn clear_share_inbox() -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    let _ = clear_store("shareInbox").await;
+    let _ = clear_share_blobs().await;
+    return sqlite_clear_table("share_inbox").await;
+  }
   clear_store("shareInbox").await
 }
 
+
+
 pub async fn delete_share_item(id: &str) -> Result<(), JsValue> {
+  if should_use_sqlite().await {
+    sqlite_delete_share_item(id).await?;
+    let _ = delete_value("shareInbox", id).await;
+    return Ok(());
+  }
   delete_value("shareInbox", id).await
 }
+
+pub async fn ingest_share_entries(entries: Vec<JsValue>) -> Result<(), JsValue> {
+  if !should_use_sqlite().await {
+    for entry in entries {
+      let _ = put_value("shareInbox", &entry).await;
+    }
+    return Ok(());
+  }
+
+  db_client::init_db().await?;
+  for entry in entries {
+    let id = js_string_any(&entry, &["id"]).unwrap_or_else(utils::create_id);
+    let name = js_string_any(&entry, &["name"]).unwrap_or_else(|| "shared-file".to_string());
+    let mime = js_string_any(&entry, &["mime", "type"])
+      .unwrap_or_else(|| "application/octet-stream".to_string());
+    let blob = js_blob_any(&entry);
+    let size = js_number_any(&entry, &["size"]).or_else(|| blob.as_ref().map(|b| b.size() as f64)).unwrap_or(0.0);
+    let created_at = js_date_any(&entry, &["created_at", "createdAt", "created"]).unwrap_or_else(js_sys::Date::now);
+    let title = js_string_any(&entry, &["title"]);
+    let text = js_string_any(&entry, &["text"]);
+    let url = js_string_any(&entry, &["url"]);
+    let last_modified = js_number_any(&entry, &["lastModified"]).unwrap_or(0.0);
+
+    let mut opfs_path = None;
+    if let Some(blob) = blob.as_ref() {
+      opfs_path = save_share_blob(&id, &name, blob).await;
+      if opfs_path.is_none() {
+        if put_value("shareInbox", &entry).await.is_ok() {
+          opfs_path = Some(idb_fallback_path("shareInbox", &id));
+        }
+      }
+    }
+
+    let payload = serde_json::json!({
+      "id": &id,
+      "name": &name,
+      "size": size,
+      "mime": &mime,
+      "created_at": created_at,
+      "title": title,
+      "text": text,
+      "url": url,
+      "last_modified": last_modified,
+      "opfs_path": &opfs_path,
+    })
+    .to_string();
+
+    db_client::exec(
+      "INSERT OR REPLACE INTO share_inbox (id, name, size, mime, created_at, payload) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+      vec![
+        JsonValue::String(id),
+        JsonValue::String(name),
+        json_number(size),
+        JsonValue::String(mime),
+        json_number(created_at),
+        JsonValue::String(payload),
+      ],
+    )
+    .await?;
+  }
+
+  Ok(())
+}
+
+pub async fn purge_idb_after_migration() -> Result<usize, JsValue> {
+  let summary = get_migration_summary().await?;
+  if !migration_ready(&summary) {
+    return Err(JsValue::from_str("Migration not verified"));
+  }
+
+  let mut cleared = 0usize;
+  for store in IDB_STORES {
+    let _ = clear_store(store).await;
+    cleared += 1;
+  }
+  local_set(IDB_PURGE_KEY, &format!("{}", js_sys::Date::now()));
+  Ok(cleared)
+}
+
+pub fn idb_purged_at() -> Option<f64> {
+  local_get(IDB_PURGE_KEY).and_then(|val| val.parse::<f64>().ok())
+}
+
 
 fn recording_to_value(recording: &Recording) -> Result<JsValue, JsValue> {
   let obj = Object::new();
@@ -696,8 +908,9 @@ async fn sqlite_save_recording(recording: &Recording) -> Result<(), JsValue> {
     opfs_path = save_recording_blob(&recording.id, blob).await;
     if opfs_path.is_none() {
       let value = recording_to_value(recording)?;
-      let _ = put_value("recordings", &value).await;
-      opfs_path = Some(idb_fallback_path("recordings", &recording.id));
+      if put_value("recordings", &value).await.is_ok() {
+        opfs_path = Some(idb_fallback_path("recordings", &recording.id));
+      }
     }
   }
 
@@ -916,7 +1129,10 @@ async fn idb_share_blob(id: &str) -> Option<Blob> {
 
 async fn idb_get_value(store_name: &str, key: &str) -> Result<JsValue, JsValue> {
   let db = open_db().await?;
-  let tx = db.transaction_with_str_and_mode(store_name, IdbTransactionMode::Readonly)?;
+  let tx = match db.transaction_with_str_and_mode(store_name, IdbTransactionMode::Readonly) {
+    Ok(tx) => tx,
+    Err(_) => return Err(JsValue::from_str("IDB store missing")),
+  };
   let store = tx.object_store(store_name)?;
   let request = store.get(&JsValue::from_str(key))?;
   let receiver = request_to_future(request);
@@ -988,6 +1204,16 @@ async fn delete_opfs_dir(name: &str) -> Result<(), JsValue> {
   let _ = Reflect::set(&options, &JsValue::from_str("recursive"), &JsValue::from_bool(true));
   let _ = call_method2(&root, "removeEntry", &JsValue::from_str(name), &options.into()).await?;
   Ok(())
+}
+
+
+pub fn opfs_supported() -> bool {
+  let navigator = dom::window().navigator();
+  let storage = Reflect::get(&navigator, &JsValue::from_str("storage")).ok();
+  storage
+    .and_then(|storage| Reflect::get(&storage, &JsValue::from_str("getDirectory")).ok())
+    .map(|val| val.is_function())
+    .unwrap_or(false)
 }
 
 async fn opfs_root() -> Result<JsValue, JsValue> {
