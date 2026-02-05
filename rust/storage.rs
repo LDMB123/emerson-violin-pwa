@@ -2,12 +2,13 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use futures_channel::oneshot;
-use js_sys::{Array, Object, Reflect};
+use js_sys::{Array, JSON, Object, Reflect};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::{
-  Blob, Event, IdbDatabase, IdbObjectStoreParameters, IdbOpenDbRequest, IdbRequest, IdbTransactionMode,
+  Blob, Event, IdbCursorWithValue, IdbDatabase, IdbKeyRange, IdbObjectStoreParameters, IdbOpenDbRequest,
+  IdbRequest, IdbTransactionMode,
 };
 
 use crate::dom;
@@ -171,6 +172,117 @@ pub async fn get_store_values(store_name: &str) -> Result<Vec<JsValue>, JsValue>
   get_all_values(store_name).await
 }
 
+pub async fn get_store_count(store_name: &str) -> Result<u32, JsValue> {
+  let db = open_db().await?;
+  let tx = db.transaction_with_str_and_mode(store_name, IdbTransactionMode::Readonly)?;
+  let store = tx.object_store(store_name)?;
+  let request = store.count()?;
+  let receiver = request_to_future(request);
+  let result = receiver.await.map_err(|_| JsValue::from_str("IDB count error"))??;
+  let count = result.as_f64().unwrap_or(0.0) as u32;
+  Ok(count)
+}
+
+pub struct StoreBatch {
+  pub values: Vec<JsValue>,
+  pub last_key: Option<String>,
+}
+
+pub async fn get_store_batch(
+  store_name: &str,
+  start_key: Option<String>,
+  limit: usize,
+) -> Result<StoreBatch, JsValue> {
+  let limit = limit.max(1);
+  let db = open_db().await?;
+  let tx = db.transaction_with_str_and_mode(store_name, IdbTransactionMode::Readonly)?;
+  let store = tx.object_store(store_name)?;
+  let request = match start_key {
+    Some(key) => {
+      let range = IdbKeyRange::lower_bound_with_open(&JsValue::from_str(&key), true)?;
+      store.open_cursor_with_range(&range)?
+    }
+    None => store.open_cursor()?,
+  };
+
+  let (tx, rx) = oneshot::channel::<Result<StoreBatch, JsValue>>();
+  let sender = Rc::new(RefCell::new(Some(tx)));
+  let values = Rc::new(RefCell::new(Vec::new()));
+  let last_key = Rc::new(RefCell::new(None::<String>));
+
+  let success_sender = sender.clone();
+  let values_ref = values.clone();
+  let last_key_ref = last_key.clone();
+  let onsuccess = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |event: Event| {
+    let sender_opt = success_sender.clone();
+    let mut sender = sender_opt.borrow_mut();
+    if sender.is_none() {
+      return;
+    }
+    let target = event
+      .target()
+      .and_then(|t| t.dyn_into::<IdbRequest>().ok());
+    let cursor_val = target
+      .and_then(|req| req.result().ok())
+      .unwrap_or(JsValue::NULL);
+
+    if cursor_val.is_null() {
+      if let Some(tx) = sender.take() {
+        let batch = StoreBatch {
+          values: values_ref.borrow().clone(),
+          last_key: last_key_ref.borrow().clone(),
+        };
+        let _ = tx.send(Ok(batch));
+      }
+      return;
+    }
+
+    let cursor = match cursor_val.dyn_into::<IdbCursorWithValue>() {
+      Ok(cursor) => cursor,
+      Err(_) => {
+        if let Some(tx) = sender.take() {
+          let _ = tx.send(Err(JsValue::from_str("IDB cursor error")));
+        }
+        return;
+      }
+    };
+
+    let value = cursor.value();
+    values_ref.borrow_mut().push(value);
+    if let Ok(key) = cursor.key() {
+      if let Some(key_str) = key_to_string(&key) {
+        *last_key_ref.borrow_mut() = Some(key_str);
+      }
+    }
+
+    if values_ref.borrow().len() >= limit {
+      if let Some(tx) = sender.take() {
+        let batch = StoreBatch {
+          values: values_ref.borrow().clone(),
+          last_key: last_key_ref.borrow().clone(),
+        };
+        let _ = tx.send(Ok(batch));
+      }
+      return;
+    }
+
+    let _ = cursor.continue_();
+  });
+  request.set_onsuccess(Some(onsuccess.as_ref().unchecked_ref()));
+  onsuccess.forget();
+
+  let error_sender = sender.clone();
+  let onerror = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::once(move |_event: Event| {
+    if let Some(tx) = error_sender.borrow_mut().take() {
+      let _ = tx.send(Err(JsValue::from_str("IDB cursor error")));
+    }
+  });
+  request.set_onerror(Some(onerror.as_ref().unchecked_ref()));
+  onerror.forget();
+
+  rx.await.map_err(|_| JsValue::from_str("IDB cursor error"))??
+}
+
 
 async fn put_value(store_name: &str, value: &JsValue) -> Result<(), JsValue> {
   let db = open_db().await?;
@@ -330,6 +442,13 @@ fn share_item_from_value(value: &JsValue) -> Option<ShareItem> {
     created_at,
     blob,
   })
+}
+
+fn key_to_string(key: &JsValue) -> Option<String> {
+  if let Some(text) = key.as_string() {
+    return Some(text);
+  }
+  JSON.stringify(key).ok().and_then(|val| val.as_string())
 }
 
 pub fn local_get(key: &str) -> Option<String> {

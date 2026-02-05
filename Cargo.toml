@@ -79,6 +79,8 @@ web-sys = { version = "0.3", features = [
   "IdbDatabase",
   "IdbOpenDbRequest",
   "IdbRequest",
+  "IdbCursorWithValue",
+  "IdbKeyRange",
   "IdbTransaction",
   "IdbObjectStore",
   "IdbObjectStoreParameters",

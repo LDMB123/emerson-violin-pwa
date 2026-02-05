@@ -1,6 +1,6 @@
 use crate::db_messages::DbMigration;
 
-pub const SCHEMA_VERSION: u32 = 2;
+pub const SCHEMA_VERSION: u32 = 3;
 
 // Keep PRAGMA user_version and meta.schema_version aligned with SCHEMA_VERSION.
 pub const SCHEMA_SQL: &str = r#"
@@ -129,8 +129,10 @@ CREATE TABLE IF NOT EXISTS migration_state (
   updated_at REAL NOT NULL,
   last_store TEXT,
   last_index INTEGER,
+  last_key TEXT,
   counts_json TEXT NOT NULL,
   errors_json TEXT NOT NULL,
+  checksums_json TEXT NOT NULL DEFAULT '{}',
   completed_at REAL
 );
 
@@ -143,14 +145,15 @@ CREATE TABLE IF NOT EXISTS migration_log (
   created_at REAL NOT NULL
 );
 
-PRAGMA user_version = 2;
-INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '2');
+PRAGMA user_version = 3;
+INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '3');
 "#;
 
 pub fn migrations() -> Vec<DbMigration> {
-  vec![DbMigration {
-    version: 2,
-    sql: r#"
+  vec![
+    DbMigration {
+      version: 2,
+      sql: r#"
 CREATE TABLE IF NOT EXISTS migration_state (
   id TEXT PRIMARY KEY,
   source_version INTEGER NOT NULL,
@@ -175,7 +178,20 @@ CREATE TABLE IF NOT EXISTS migration_log (
 PRAGMA user_version = 2;
 INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '2');
 "#
-      .trim()
-      .to_string(),
-  }]
+        .trim()
+        .to_string(),
+    },
+    DbMigration {
+      version: 3,
+      sql: r#"
+ALTER TABLE migration_state ADD COLUMN last_key TEXT;
+ALTER TABLE migration_state ADD COLUMN checksums_json TEXT NOT NULL DEFAULT '{}';
+
+PRAGMA user_version = 3;
+INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '3');
+"#
+        .trim()
+        .to_string(),
+    },
+  ]
 }
