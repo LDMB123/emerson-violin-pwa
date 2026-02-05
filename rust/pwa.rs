@@ -8,6 +8,7 @@ use wasm_bindgen_futures::spawn_local;
 use web_sys::{Event, HtmlDialogElement, ServiceWorker, ServiceWorkerRegistration};
 
 use crate::dom;
+use crate::db_client;
 use crate::db_migration;
 use crate::platform;
 use crate::share_inbox;
@@ -47,6 +48,30 @@ fn update_offline_indicator() {
     dom::set_text_el(&indicator, label);
     dom::set_dataset(&indicator, "state", if online { "online" } else { "offline" });
   }
+  update_pdf_hint();
+}
+
+fn update_pdf_hint() {
+  let hint = match dom::query("[data-score-pdf-pack-hint]") {
+    Some(el) => el,
+    None => return,
+  };
+
+  let navigator = dom::window().navigator();
+  let online = Reflect::get(&navigator, &JsValue::from_str("onLine"))
+    .ok()
+    .and_then(|val| val.as_bool())
+    .unwrap_or(true);
+  if online {
+    set_hidden(&hint, true);
+    return;
+  }
+
+  let pack_state = dom::query("[data-pack-pdf-status]")
+    .and_then(|el| el.get_attribute("data-pack-state"))
+    .unwrap_or_default();
+  let show = pack_state != "cached";
+  set_hidden(&hint, !show);
 }
 
 fn init_install() {
@@ -125,6 +150,11 @@ fn init_install() {
       spawn_local(async move {
         if !migration_allows_update().await {
           dom::set_text("[data-sw-status]", "Update blocked: migration not verified");
+          return;
+        }
+        if db_client::init_db().await.is_err() {
+          dom::set_text("[data-sw-status]", "Update blocked: DB worker unavailable");
+          dom::toast("Update blocked: DB worker unavailable.");
           return;
         }
         dom::set_text("[data-sw-status]", "Reloading...");
@@ -382,6 +412,11 @@ fn wire_update_buttons(reg: ServiceWorkerRegistration, waiting: Rc<RefCell<Optio
           dom::set_text("[data-sw-status]", "Update blocked: migration not verified");
           return;
         }
+        if db_client::init_db().await.is_err() {
+          dom::set_text("[data-sw-status]", "Update blocked: DB worker unavailable");
+          dom::toast("Update blocked: DB worker unavailable.");
+          return;
+        }
         let message = js_sys::Object::new();
         let _ = Reflect::set(&message, &JsValue::from_str("type"), &JsValue::from_str("SKIP_WAITING"));
         let _ = worker.post_message(&message);
@@ -476,6 +511,7 @@ fn handle_sw_message(data: &JsValue) {
         };
         dom::set_text_el(&el, &label);
       }
+      update_pdf_hint();
     }
     "PACKS_CLEARED" => {
       dom::set_text("[data-sw-status]", "Offline packs cleared");
@@ -483,6 +519,7 @@ fn handle_sw_message(data: &JsValue) {
       if let Some(el) = dom::query("[data-pack-pdf-status]") {
         dom::set_dataset(&el, "packState", "missing");
       }
+      update_pdf_hint();
     }
     "PACK_STATUS" => {
       let pack = Reflect::get(data, &JsValue::from_str("pack"))
@@ -532,6 +569,7 @@ fn handle_sw_message(data: &JsValue) {
           )
         };
         dom::set_text("[data-pack-pdf-status]", &label);
+        update_pdf_hint();
       }
     }
     "SHARE_INBOX_PRUNED" => {
@@ -550,6 +588,27 @@ fn handle_sw_message(data: &JsValue) {
         dom::toast(&format!(
           "Share staging trimmed: dropped {} old item(s) (cap {}).",
           pruned, cap
+        ));
+        request_share_inbox_stats();
+      }
+    }
+    "SHARE_INBOX_SKIPPED" => {
+      let skipped = Reflect::get(data, &JsValue::from_str("skipped"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0)
+        .max(0.0) as i32;
+      let cap_bytes = Reflect::get(data, &JsValue::from_str("capBytes"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0)
+        .max(0.0);
+      if skipped > 0 {
+        let cap_mb = (cap_bytes / (1024.0 * 1024.0)).round().max(0.0) as i32;
+        dom::set_text("[data-sw-status]", "Share staging skipped large items");
+        dom::toast(&format!(
+          "Skipped staging {} large item(s) (> {} MB). Keep the app open to import them reliably.",
+          skipped, cap_mb
         ));
         request_share_inbox_stats();
       }

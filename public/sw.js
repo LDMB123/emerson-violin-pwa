@@ -87,6 +87,7 @@ const cacheUrls = async (cacheName, urls) => {
 const DB_NAME = 'emerson-share-inbox';
 const DB_VERSION = 1;
 const SHARE_INBOX_MAX_ENTRIES = 25;
+const SHARE_INBOX_MAX_ENTRY_BYTES = 10 * 1024 * 1024; // Skip staging huge blobs to avoid quota blowups.
 
 const openDb = () => new Promise((resolve, reject) => {
   const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -117,18 +118,23 @@ const addShareEntry = (entry) => withStore('shareInbox', 'readwrite', (store) =>
 
 const storeShareEntries = (entries) => {
   if (!Array.isArray(entries) || !entries.length) return Promise.resolve({ pruned: 0 });
+  const skipped = entries.filter((entry) => entry && entry.blob && Number(entry.size) > SHARE_INBOX_MAX_ENTRY_BYTES);
+  const toStore = entries.filter((entry) => !(entry && entry.blob && Number(entry.size) > SHARE_INBOX_MAX_ENTRY_BYTES));
+  if (!toStore.length) {
+    return Promise.resolve({ pruned: 0, skipped: skipped.length, capBytes: SHARE_INBOX_MAX_ENTRY_BYTES });
+  }
   return withStore('shareInbox', 'readwrite', (store) => new Promise((resolve) => {
     const safePutAll = (pruned) => {
-      for (const entry of entries) {
+      for (const entry of toStore) {
         try { store.put(entry); } catch {}
       }
-      resolve({ pruned });
+      resolve({ pruned, skipped: skipped.length, capBytes: SHARE_INBOX_MAX_ENTRY_BYTES });
     };
 
     const countReq = store.count();
     countReq.onsuccess = () => {
       const existing = Number(countReq.result || 0);
-      const toDelete = Math.max(0, (existing + entries.length) - SHARE_INBOX_MAX_ENTRIES);
+      const toDelete = Math.max(0, (existing + toStore.length) - SHARE_INBOX_MAX_ENTRIES);
       if (toDelete <= 0) {
         safePutAll(0);
         return;
@@ -204,14 +210,21 @@ const notifyClients = async (message) => {
 
 const shareToClients = async (entries) => {
   let pruned = 0;
+  let skipped = 0;
+  let capBytes = 0;
   try {
     const result = await storeShareEntries(entries);
     pruned = (result && Number.isFinite(result.pruned)) ? result.pruned : 0;
+    skipped = (result && Number.isFinite(result.skipped)) ? result.skipped : 0;
+    capBytes = (result && Number.isFinite(result.capBytes)) ? result.capBytes : 0;
   } catch (error) {
     console.warn('[sw] share staging failed', error);
   }
   if (pruned > 0) {
     await notifyClients({ type: 'SHARE_INBOX_PRUNED', pruned, cap: SHARE_INBOX_MAX_ENTRIES });
+  }
+  if (skipped > 0) {
+    await notifyClients({ type: 'SHARE_INBOX_SKIPPED', skipped, capBytes });
   }
   await ensureShareDelivery(entries);
 };
@@ -281,7 +294,13 @@ self.addEventListener('message', (event) => {
             newest = entry.createdAt;
           }
         }
-        const message = { type: 'SHARE_INBOX_STATS', count: entries.length, newest, cap: SHARE_INBOX_MAX_ENTRIES };
+        const message = {
+          type: 'SHARE_INBOX_STATS',
+          count: entries.length,
+          newest,
+          cap: SHARE_INBOX_MAX_ENTRIES,
+          capBytes: SHARE_INBOX_MAX_ENTRY_BYTES,
+        };
         if (event.source) {
           try { event.source.postMessage(message); } catch {}
           return;

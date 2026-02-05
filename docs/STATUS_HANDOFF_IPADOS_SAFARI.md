@@ -67,6 +67,7 @@ Repo: `/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa`
   - SW stores share payloads in SW-local IDB.
   - SW can report staging stats and can be cleared from the app UI.
   - Staging has an entry-count retention cap to prevent unbounded growth while the app is closed.
+  - Large shared blobs are not staged (size cap) to avoid quota blowups; they are delivered to the client immediately and require the app to be opened promptly.
 
 Key files:
 - `/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/public/sw.js`
@@ -216,9 +217,10 @@ Use Safari Web Inspector.
   - detect legacy data and prompt “Run migration now” with a clear time/size estimate.
 5. Add on-device “storage pressure drill” page:
   - generate dummy OPFS blobs and validate cleanup/export UX.
-6. Add a share-target staging payload size cap (MB) in SW in addition to entry count.
-7. Add end-to-end on-device test script/checklist for COOP/COEP + threads build stability.
-8. Add a release gate: block SW update if DB worker init fails (avoid UI/DB mismatch).
-9. Decide if the app should auto-migrate on first launch for legacy users (vs user-initiated).
-10. Tighten PDF UX:
-  - show a persistent hint in the score UI when offline and the PDF pack is not cached.
+6. Add end-to-end on-device test script/checklist for COOP/COEP + threads build stability.
+7. Decide if the app should auto-migrate on first launch for legacy users (vs user-initiated).
+8. Add a “migration duration estimate” using IDB counts + average per-store batch timing.
+9. Add a DB integrity drill:
+  - intentionally interrupt migration mid-store and verify resume + audit log accuracy.
+10. Remove redundant docs-only commits (optional cleanup):
+  - squash/merge as desired before shipping.
