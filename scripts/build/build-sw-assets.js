@@ -42,7 +42,8 @@ const addDir = (sourceDir, options) => {
 if (distMode) {
   addDir('dist', {
     urlPrefix: '',
-    include: /\.(?:html|js|css|json|webmanifest|woff2?|png|jpe?g|svg|webp|gif|wav|mp3|m4a|ogg|wasm)$/i,
+    include: /\.(?:html|js|mjs|css|json|webmanifest|woff2?|png|jpe?g|svg|webp|gif|wav|mp3|m4a|ogg|wasm|bcmap|pfb|ttf|otf)$/i,
+    excludeDirs: ['assets/mockups'],
   });
 } else {
   assets.add('./index.html');

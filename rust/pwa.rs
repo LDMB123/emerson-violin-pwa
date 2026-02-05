@@ -279,6 +279,8 @@ fn init_service_worker() {
     dom::set_text("[data-sw-status]", "Service worker not supported");
     set_button_disabled("[data-sw-update]", true);
     set_button_disabled("[data-sw-apply]", true);
+    set_button_disabled("[data-pack-pdf-cache]", true);
+    set_button_disabled("[data-pack-clear]", true);
     return;
   }
   let sw_container = navigator.service_worker();
@@ -315,6 +317,7 @@ fn init_service_worker() {
         reveal_update_banner();
       }
       wire_update_buttons(reg.clone(), waiting.clone());
+      wire_pack_buttons();
       watch_for_updates(reg.clone(), waiting.clone());
       request_cache_stats();
       request_share_inbox();
@@ -322,8 +325,30 @@ fn init_service_worker() {
       dom::set_text("[data-sw-status]", "Service worker failed");
       set_button_disabled("[data-sw-update]", true);
       set_button_disabled("[data-sw-apply]", true);
+      set_button_disabled("[data-pack-pdf-cache]", true);
+      set_button_disabled("[data-pack-clear]", true);
     }
   });
+}
+
+fn wire_pack_buttons() {
+  if let Some(btn) = dom::query("[data-pack-pdf-cache]") {
+    let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+      dom::set_text("[data-pack-pdf-status]", "Caching...");
+      request_pack_cache("pdf");
+    });
+    let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
+    cb.forget();
+  }
+
+  if let Some(btn) = dom::query("[data-pack-clear]") {
+    let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+      dom::set_text("[data-pack-pdf-status]", "Clearing...");
+      request_clear_packs();
+    });
+    let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
+    cb.forget();
+  }
 }
 
 fn wire_update_buttons(reg: ServiceWorkerRegistration, waiting: Rc<RefCell<Option<ServiceWorker>>>) {
@@ -409,17 +434,74 @@ fn handle_sw_message(data: &JsValue) {
         .ok()
         .and_then(|val| val.as_f64())
         .unwrap_or(0.0);
+      let pack_entries = Reflect::get(data, &JsValue::from_str("packEntries"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0);
       let precache_entries = Reflect::get(data, &JsValue::from_str("precacheEntries"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0);
+      let pdf_pack_entries = Reflect::get(data, &JsValue::from_str("pdfPackEntries"))
         .ok()
         .and_then(|val| val.as_f64())
         .unwrap_or(0.0);
       dom::set_text(
         "[data-sw-status]",
-        &format!("Cache ready ({} / {} items)", cache_entries as i32, precache_entries as i32),
+        &format!(
+          "Cache ready (shell {} / {}, packs {})",
+          cache_entries as i32,
+          precache_entries as i32,
+          pack_entries as i32
+        ),
       );
+      if let Some(el) = dom::query("[data-pack-pdf-status]") {
+        let label = if pack_entries <= 0.0 {
+          "Not cached".to_string()
+        } else {
+          format!("{} / {} files", pack_entries as i32, pdf_pack_entries as i32)
+        };
+        dom::set_text_el(&el, &label);
+      }
     }
     "PACKS_CLEARED" => {
       dom::set_text("[data-sw-status]", "Offline packs cleared");
+      dom::set_text("[data-pack-pdf-status]", "Not cached");
+    }
+    "PACK_STATUS" => {
+      let pack = Reflect::get(data, &JsValue::from_str("pack"))
+        .ok()
+        .and_then(|val| val.as_string())
+        .unwrap_or_default();
+      let cached = Reflect::get(data, &JsValue::from_str("cached"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0);
+      let expected = Reflect::get(data, &JsValue::from_str("expected"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0);
+      let ok = Reflect::get(data, &JsValue::from_str("ok"))
+        .ok()
+        .and_then(|val| val.as_bool())
+        .unwrap_or(false);
+      let ms = Reflect::get(data, &JsValue::from_str("ms"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0);
+      if pack == "pdf" {
+        let label = if ok {
+          format!("Cached ({} files, {:.0} ms)", cached as i32, ms)
+        } else {
+          format!(
+            "Partial ({} / {} files, {:.0} ms)",
+            cached as i32,
+            expected as i32,
+            ms
+          )
+        };
+        dom::set_text("[data-pack-pdf-status]", &label);
+      }
     }
     "SYNC_COMPLETE" => {
       let synced = Reflect::get(data, &JsValue::from_str("synced"))
@@ -470,6 +552,33 @@ fn request_share_inbox() {
       let _ = worker.post_message(&message);
     }
   }
+}
+
+fn request_pack_cache(pack: &str) {
+  let sw = dom::window().navigator().service_worker();
+  if let Ok(controller) = Reflect::get(&sw, &JsValue::from_str("controller")) {
+    if let Ok(worker) = controller.dyn_into::<ServiceWorker>() {
+      let message = js_sys::Object::new();
+      let _ = Reflect::set(&message, &JsValue::from_str("type"), &JsValue::from_str("CACHE_PACK"));
+      let _ = Reflect::set(&message, &JsValue::from_str("pack"), &JsValue::from_str(pack));
+      let _ = worker.post_message(&message);
+      return;
+    }
+  }
+  dom::set_text("[data-pack-pdf-status]", "Service worker unavailable");
+}
+
+fn request_clear_packs() {
+  let sw = dom::window().navigator().service_worker();
+  if let Ok(controller) = Reflect::get(&sw, &JsValue::from_str("controller")) {
+    if let Ok(worker) = controller.dyn_into::<ServiceWorker>() {
+      let message = js_sys::Object::new();
+      let _ = Reflect::set(&message, &JsValue::from_str("type"), &JsValue::from_str("CLEAR_PACKS"));
+      let _ = worker.post_message(&message);
+      return;
+    }
+  }
+  dom::set_text("[data-pack-pdf-status]", "Service worker unavailable");
 }
 
 fn acknowledge_share_entries(ids: Vec<String>) {
