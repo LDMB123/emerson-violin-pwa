@@ -1,151 +1,164 @@
-# Offline PWA Audit — iPad mini 6 (A15) • iPadOS 26.2 • Safari 26.2
-Date: 2026-02-05
-Scope: Current repository state (code + configs). Read-only audit.
+# Offline PWA Audit — iPad mini 6 (A15) · iPadOS 26.2 · Safari 26.2
+Date: 2026-02-05  
+Scope: Repository state (code + configs) on `codex/audit-rust-transition-ipados`.
 
 ## 1) Executive Summary (1 page)
 
-**Overall**: The app is already Rust/Wasm-first with a Service Worker and an offline shell. Structured data lives in IndexedDB (IDB) v5 and binaries live in OPFS (recordings + model files) with IDB blob fallback. There is no SQLite implementation in the current repo. The current PWA implementation is close to the desired “minimal JS” model, but it is **not yet aligned** with the iPadOS Safari constraints around background sync, storage pressure, and OPFS high-performance IO in a dedicated worker. Performance instrumentation is mostly absent at runtime.
+**Current state**: The app is already **Rust/Wasm-first** with a Service Worker and an offline app shell. Structured data is in an **in-progress transition** from **IndexedDB v5** to **SQLite persisted in OPFS**, accessed through a **dedicated DB worker** (`public/db-worker.js` + Rust client). Large binaries (recordings, shared blobs, model files) live in **OPFS files**, with narrow IDB fallback where required. The Service Worker is deliberately minimal and optimized for Safari iPadOS realities (termination, eviction).
 
-**Key findings**
-- **No SQLite in repo**: Searches for `sqlite`, `sql.js`, `wa-sqlite`, `sqlite3.wasm`, `rusqlite`, `sqlx` yielded zero results. Current storage is IDB + OPFS. See `rust/storage.rs`, `public/sw.js`.
-- **Service Worker**: `public/sw.js` uses cache-first for shell assets and `offline.html` fallback. Update logic exists with `skipWaiting` + a limited integrity check. A `sync` event handler exists but Safari does not support Background Sync, so this path is ineffective on iPadOS.
-- **OPFS**: Used for recordings and model files in `rust/storage.rs`, but operations are via async File System Access on the main thread. No `createSyncAccessHandle()` and no dedicated DB worker.
-- **Storage pressure**: `navigator.storage.estimate()` and `storage.persist()` are used, but there is no `storage.persisted()` check and no explicit `QuotaExceededError` handling.
-- **Install-first UX**: iPadOS-specific install guidance exists; install banners are in Rust (`rust/pwa.rs`).
-- **Cross-origin isolation**: COOP/COEP headers are configured in `public/_headers` and `Trunk.toml`.
-- **Performance instrumentation**: No runtime `PerformanceObserver` / Event Timing / LCP collection in app code. There are QA scripts and docs, but not live instrumentation in the shipped app.
+**What is already aligned with iPadOS Safari constraints**
+- **No Background Sync dependence**: Sync and migrations are foreground-only.
+- **Storage quota awareness**: `navigator.storage.estimate()` + persistence UX (`persisted()` + a user-gesture `persist()` button) is present.
+- **QuotaExceeded surfacing**: quota-like errors are detected and a user-facing “storage pressure” state is set.
+- **OPFS + high-performance IO path exists**: SQLite runs in OPFS via the SQLite OPFS VFS; OPFS test harness exists (main thread + worker).
+- **Update safety**: applying SW updates is gated on DB migration verification to avoid “new UI / old schema” footguns.
 
-**Implications for the Rust-first transition**
-- The plan is not a “transition from SQLite” but a **migration from IDB to SQLite in OPFS**.
-- The biggest near-term risks on iPadOS Safari are **storage eviction**, **lack of Background Sync**, and **OPFS main-thread IO**.
-- The transition should prioritize a **dedicated worker with OPFS SyncAccessHandle** for DB IO and a **foreground-only sync model**.
+**Primary gaps / risks (still relevant)**
+- **Dual-store complexity**: IDB + SQLite coexist during migration; any missed code path can reintroduce double-writes or drift.
+- **Eviction and storage pressure remain real**: persistent storage requests are best-effort on iPadOS; recovery/export must stay first-class.
+- **Push reminders are client-wired but require a server**: `/api/push/*` endpoints are configured but not implemented in this repo.
+- **On-device validation must be treated as mandatory**: Safari behavior differs from desktop; long-session tests are required.
 
-## 2) Architecture Diagram
+**What I would do next**
+1. Finish cutover hardening: make SQLite the only structured-data truth after verification, and purge IDB (except SW share-target staging).
+2. Add explicit on-device stability checks for Wasm threads build and long-running OPFS/SQLite operations.
+3. Implement or integrate the push backend contract so reminders are end-to-end real.
+
+## 2) Architecture Overview
 
 ```mermaid
 flowchart LR
-  A[Index.html + CSS Shell] --> B[Wasm: Rust Modules]
-  B --> C[IndexedDB v5]
-  B --> D[OPFS Filesystem]
-  B --> E[localStorage]
-  A --> F[Service Worker]
-  F --> G[Cache Storage: shell + assets]
-  F --> H[Network API allowlist]
-  B --> H
-  F --> I[Push Notifications]
+  UI["UI (index.html + CSS)"] --> WASM["Wasm (Rust app)"]
+  UI --> SW["Service Worker (public/sw.js)"]
 
-  C:::store
-  D:::store
-  E:::store
-  G:::store
+  SW --> Caches["Cache Storage\n(shell cache + optional packs)"]
+  SW --> SWIDB["SW IDB (share-target staging only)"]
+
+  WASM --> IDB["IndexedDB v5\n(migration source / fallback)"]
+  WASM --> DBW["Dedicated DB Worker\n(public/db-worker.js)"]
+  DBW --> SQLite["SQLite (OPFS)\n(emerson.db)"]
+  WASM --> OPFS["OPFS files\n(recordings, models, share blobs)"]
+  WASM --> LS["localStorage\n(small preferences/status)"]
+
+  SW --> Push["push + notificationclick\n(when configured)"]
 
   classDef store fill:#f7f3ef,stroke:#cbb9a8,color:#3f2d22;
+  class Caches,SWIDB,IDB,SQLite,OPFS,LS store;
 ```
 
-**File evidence**
-- Shell: `index.html`
-- Wasm entry: `wasm-init.js`, `rust/lib.rs`
-- Storage: `rust/storage.rs`
-- Service Worker: `public/sw.js`
-- Manifest: `manifest.webmanifest`
-- COOP/COEP: `public/_headers`, `Trunk.toml`
+**Where truth lives (today)**
+- **Structured data**: SQLite in OPFS is the intended truth, but reads/writes are **gated** until migration is verified. During migration the app may still read/write IDB for correctness and rollback.
+- **Binary data**: OPFS files (with metadata in SQLite when migrated; IDB blob fallback retained for edge cases).
+- **App shell + immutable assets**: Cache Storage.
+- **Share-target ingress**: minimal SW-local IDB staging, delivered to the app on next open.
 
-## 3) Offline/PWA Behavior Map
+## 3) Offline / PWA Behavior Map
 
 ### Cold start offline path
-1. If SW is active + cache intact:
-   - `public/sw.js` serves cache-first shell.
-   - `offline.html` used only if cache miss on navigation.
-2. If SW missing or cache evicted:
-   - Browser loads `offline.html` (if cached) or a generic browser error.
-3. App state:
-   - Rust loads sessions and other data from IDB on boot (`rust/lib.rs`, `rust/storage.rs`).
+1. If SW is installed and the **boot cache** is present:
+   - Navigation requests use a **network-first** strategy with offline fallback (`offline.html`).
+   - Static assets (CSS/JS/fonts/audio/sqlite wasm) are served **cache-first** from the boot cache.
+2. If the SW is missing or boot cache was evicted:
+   - Navigation falls back to Safari’s offline error (best-effort `offline.html` if present).
+3. Optional content:
+   - PDF assets are **not** in the boot cache. They are fetched from the **pack cache** if the user explicitly cached the PDF pack.
 
 ### Caching strategy
-- **Precache**: `public/sw.js` uses `sw-assets.js` + `public/pwa-manifest.json` + explicit entries.
-- **Runtime**: Cache-first for all GET requests; allowlisted network endpoints can be cached.
-- **No stale-while-revalidate**: Updates rely on SW update flow.
+- Boot cache: `emerson-violin-shell-v204`
+  - Small allowlist of assets required to boot offline.
+  - Excludes optional heavy packs (notably `./assets/pdf/*`).
+- Pack cache: `emerson-violin-packs-v204`
+  - Filled on-demand via SW message `CACHE_PACK` (`pdf` pack is supported).
+- `/api/*`: **network-only** in SW (no caching).
 
 ### Update strategy + UX
-- Update banner shown by Rust (`rust/pwa.rs`).
-- `SKIP_WAITING` posted to SW; `controllerchange` triggers reload.
-- Integrity check compares hashes for `index.html`, `manifest.webmanifest`, `config.json` only; can rollback to previous cache if hash mismatch.
+- App checks updates with `ServiceWorkerRegistration.update()` via UI.
+- When an update is installed and waiting:
+  - The app shows “Update ready. Apply to refresh.”
+  - Clicking apply posts `SKIP_WAITING` to the waiting SW and reloads on controller change.
+- **Safety gate**: apply/reload is blocked when a DB migration has started but is not verified (prevents mixed versions).
 
 ### SW lifecycle risks on iPadOS
-- SWs are frequently terminated; long tasks can be cut short.
-- Background Sync is not available; `sync` handler in `public/sw.js` will not run on Safari.
-- Update can race with DB changes (no coordinated schema/asset handshake).
+- SW work must be bounded: iPadOS may terminate SW mid-task.
+- Pack caching is implemented as “best effort”, counting successes without aggressive retries.
+- Any long-running work (migration, sync) is kept in the foreground app, not in SW.
 
-## 4) Storage Map
+## 4) Storage Map (Current vs Target)
 
-| Domain / Entity | Read/Write Frequency | Approx Size & Growth | Consistency Needs | Current Storage | Pain Points / Risks | Proposed Target Storage |
+| Domain/entity | Read/write frequency | Approx size & growth | Consistency needs | Current storage location(s) | Pain points / risks | Proposed target storage |
 |---|---|---|---|---|---|---|
-| Sessions | R/W per session | Small, grows linearly | High (user history) | IDB `sessions` | IDB per-op open cost | SQLite (OPFS) |
-| Recordings metadata | R/W per recording | Medium | High | IDB `recordings` | OPFS + IDB duality | SQLite (OPFS) |
-| Recording blobs | Large writes | Very large | Medium | OPFS files (+ IDB blob fallback) | Main-thread OPFS IO | OPFS + SQLite metadata |
-| Share inbox | Sporadic | Small | Medium | IDB `shareInbox` | SW/IDB duplication | SQLite (OPFS) |
-| ML traces | Frequent | Medium growth | Medium | IDB `mlTraces` | No quota handling | SQLite (OPFS) |
-| Game scores | Frequent | Small | Medium | IDB `gameScores` | IDB latency | SQLite (OPFS) |
-| Score library | Medium | Medium | High | IDB `scoreLibrary` | IDB schema drift | SQLite (OPFS) |
-| Assignments | Medium | Small | High | IDB `assignments` | None noted | SQLite (OPFS) |
-| Profiles | Medium | Small | High | IDB `profiles` | None noted | SQLite (OPFS) |
-| Telemetry queue | Frequent | Small | Low | IDB `telemetryQueue` | Background sync unavailable | SQLite (OPFS) or in-memory + flush |
-| Error queue | Frequent | Small | Medium | IDB `errorQueue` | Background sync unavailable | SQLite (OPFS) |
-| Score scans | Medium | Medium | Medium | IDB `scoreScans` | None noted | SQLite (OPFS) |
-| Model cache metadata | Medium | Medium | Medium | IDB `modelCache` | File/metadata mismatch risk | SQLite (OPFS) |
-| Model binaries | Large | Large | Medium | OPFS `/models` | Main-thread IO | OPFS + SQLite metadata |
-| Local preferences | Frequent | Small | Low | localStorage | Key sprawl | localStorage or SQLite (if critical) |
-| App shell assets | Read-only | Medium+ | Low | Cache Storage | Eviction risk | Cache Storage |
+| Sessions | R/W per session | Small, linear | High | IDB `sessions` and/or SQLite `sessions` | Dual-store drift during migration | SQLite (OPFS) |
+| Recordings (metadata) | R/W per recording | Medium | High | IDB `recordings` and/or SQLite `recordings` | Metadata/blob mismatch | SQLite (OPFS) |
+| Recordings (audio blobs) | Large writes | Very large | Medium | OPFS files (+ narrow IDB fallback) | Eviction/pressure, write failures | OPFS files + SQLite metadata |
+| Share inbox items | Sporadic | Small-medium | Medium | App share inbox table + SW staging IDB | Two inboxes (staging vs app) | SQLite `share_inbox` + OPFS blobs; SW IDB staging only |
+| ML traces | Frequent | Medium growth | Medium | IDB and/or SQLite `ml_traces` | Growth → quota pressure | SQLite + pruning |
+| Game scores | Frequent | Small | Medium | IDB and/or SQLite `game_scores` | None major | SQLite |
+| Score library | Medium | Medium | High | IDB and/or SQLite `score_library` | Migration correctness | SQLite |
+| Assignments | Medium | Small | High | IDB and/or SQLite `assignments` | Migration correctness | SQLite |
+| Profiles | Medium | Small | High | IDB and/or SQLite `profiles` | Migration correctness | SQLite |
+| Telemetry queue | Frequent | Small | Low | IDB and/or SQLite `telemetry_queue` | No background sync on Safari | SQLite or memory + flush on foreground |
+| Error queue | Frequent | Small | Medium | IDB and/or SQLite `error_queue` | Must survive crashes | SQLite |
+| Model cache metadata | Medium | Medium | Medium | IDB and/or SQLite `model_cache` | File/metadata mismatch | SQLite |
+| Model binaries | Large | Large | Medium | OPFS `/models` | Pressure/eviction | OPFS + SQLite metadata |
+| App shell assets | Read-only | Medium | Low | Cache Storage | Eviction risk | Cache Storage (minimized) |
 
-## 5) Safari / iPadOS Constraints Checklist
+## 5) Safari/iPadOS Constraints Checklist
 
-- Background Sync: **Present in code but ineffective on Safari** (SW `sync` handler exists). Must not rely on it.
-- Storage estimate/persist: **Present** (`storage.estimate()` + `storage.persist()`), **missing persisted() check**.
-- OPFS feasibility: **Present**, but **no SyncAccessHandle + no worker**.
-- Push/badging: **Present** (push subscription + SW push handler + app badge API usage).
-- On-device testing plan: **Missing** (no explicit checklist in repo for OPFS/SW/threads on iPadOS 26.2).
+- Background Sync: `PASS` (not used for critical workflows).
+- Storage estimate: `PASS` (`navigator.storage.estimate()` is used and surfaced).
+- Storage persist strategy: `PASS` (`persisted()` shown; `persist()` requested automatically + user-gesture button).
+- QuotaExceeded handling: `PASS` (quota-like errors are detected and surfaced).
+- OPFS + worker IO: `PASS` (SQLite OPFS worker; OPFS test harness present).
+- Share-target staging: `PASS` (minimal SW IDB staging only).
+- Push/badging: `PARTIAL` (client + SW handlers exist; backend not in this repo).
+- On-device testing plan: `PARTIAL` (test harness exists; checklist/docs must be kept current).
 
 ## 6) Top 10 Risks
-1. **Background Sync dependency**: SW `sync` handler won’t run on Safari.
-2. **Storage eviction**: No proactive eviction handling or persisted() checks.
-3. **OPFS on main thread**: Large OPFS writes can block UI.
-4. **IDB schema drift**: IDB schema duplicated in Rust and SW.
-5. **Update + DB mismatch**: SW update not coordinated with DB schema/migration.
-6. **Large precache payload**: Cache size may trigger eviction.
-7. **Lack of runtime perf telemetry**: No LCP/Event Timing in production.
-8. **Manual cache versioning**: Risk of stale cache if CACHE_VERSION not bumped.
-9. **Push permission UX**: iOS permission friction; failure mode not surfaced.
-10. **No explicit QuotaExceeded handling**: Writes could fail silently.
+
+1. Storage eviction under pressure despite persistence requests.
+2. Dual-store drift (IDB vs SQLite) during the migration window.
+3. OPFS behavior differences on-device (latency, failure modes, pressure).
+4. Safari SW termination during pack caching or share-target delivery.
+5. Update timing: serving new UI while migration state is incomplete.
+6. QuotaExceeded failures during large binary writes and/or pack caching.
+7. Wasm threads instability on iPadOS Safari (threads build).
+8. Push permission UX (installed-only behavior, user denial).
+9. Long-session memory pressure (jetsam) when handling large blobs.
+10. User recovery: export/import must remain robust when storage is damaged.
 
 ## 7) Top 10 Opportunities
-1. Move structured data to **SQLite in OPFS** with worker-based IO.
-2. Centralize DB schema + migrations in Rust (single source of truth).
-3. Replace Background Sync with **foreground sync + resume hooks**.
-4. Add lightweight perf telemetry (LCP, INP, Event Timing).
-5. Reduce cache footprint; split optional assets into on-demand.
-6. Implement **migration audit log** for support diagnostics.
-7. Use **Navigation API** (if supported) to simplify routing.
-8. Exploit Safari 26.2 HTML primitives to reduce JS.
-9. Add explicit **storage pressure UX** (warnings + cleanup suggestions).
-10. Validate OPFS on device with a dedicated test harness.
+
+1. Complete “SQLite as the only structured-data truth” and purge IDB (except SW staging).
+2. Tighten SW cache to the smallest viable boot set, with optional packs only.
+3. Expand on-device diagnostics exports (storage estimates, DB schema version, migration state).
+4. Add an explicit “threads build stability test” harness on-device.
+5. Add stronger storage-pressure heuristics (auto cleanup + user guidance).
+6. Add explicit pack requirements to the PDF viewer UX (“pack needed for offline PDF”).
+7. Reduce boundary crossings with larger DB batches and UI-ready query shapes.
+8. Improve migration verification (sampling + checksums per domain).
+9. Add durable “migration audit log export” for support.
+10. Integrate a push backend and treat reminders as a real feature (not a stub).
 
 ## 8) What I Would Change First (Ordered)
-1. Remove/disable Background Sync path; move sync to foreground/resume.
-2. Add storage pressure detection + persisted() check + user-facing warnings.
-3. Build OPFS worker harness using SyncAccessHandle and test on iPad mini 6.
-4. Add runtime PerformanceObserver telemetry (LCP, Event Timing, long tasks).
-5. Reduce cache size and separate optional assets from core precache.
-6. Define SQLite schema + migration plan in Rust, with audit log.
-7. Implement DB worker boundary API and batch operations.
-8. Coordinate SW update with DB schema version and safe reload.
-9. Add structured backup/export to Files for recovery.
-10. Remove IDB usage from SW (once SQLite is in place).
+
+1. Finalize migration cutover and remove IDB for primary data (keep SW staging only).
+2. Add an explicit on-device “long session” stress checklist (OPFS + SQLite + memory).
+3. Ship the push backend contract (public key, subscribe, schedule) or remove the “Push” label from UI until it exists.
+4. Make offline pack behavior obvious in UI (pack cached vs not cached, failure reasons).
+5. Tighten recovery flows: export snapshot + import validation + clear storage paths.
 
 ## 9) Evidence (Key Files)
-- Service Worker: `public/sw.js`
-- PWA install + updates + storage estimate: `rust/pwa.rs`
-- Storage implementation: `rust/storage.rs`
-- OPFS usage: `rust/storage.rs`, `rust/recorder.rs`
-- Persistent storage request: `rust/platform.rs`
-- Manifest: `manifest.webmanifest`
+
+- Service worker: `public/sw.js`
+- SW asset manifest build: `scripts/build/build-sw-assets.js`
+- Shell + UX controls: `index.html`
+- PWA UX + SW handshake: `rust/pwa.rs`
+- Reminders (push client): `rust/reminders.rs`
+- SQLite schema + migrations: `rust/db_schema.rs`
+- DB worker: `public/db-worker.js`
+- DB client + metrics: `rust/db_client.rs`
+- Migration gating + reporting: `rust/db_migration.rs`
+- Storage + IDB fallback: `rust/storage.rs`
+- Quota pressure surfacing: `rust/storage_pressure.rs`
 - COOP/COEP headers: `public/_headers`, `Trunk.toml`
+

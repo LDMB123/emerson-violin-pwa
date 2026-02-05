@@ -12,6 +12,7 @@ use crate::storage;
 const RETENTION_KEY: &str = "cleanup:retention-days";
 const MAX_MB_KEY: &str = "cleanup:max-mb";
 const AUTO_LAST_KEY: &str = "cleanup:last-run";
+const PRESSURE_LAST_KEY: &str = "cleanup:pressure-last-run";
 const DEFAULT_RETENTION_DAYS: f64 = 90.0;
 const DEFAULT_MAX_MB: f64 = 512.0;
 
@@ -76,5 +77,32 @@ pub fn run_auto() {
     let _ = storage::prune_recordings(retention_days).await;
     let _ = storage::prune_recordings_by_size(max_mb * 1024.0 * 1024.0).await;
     let _ = storage::prune_ml_traces(1200, 30.0 * 86_400_000.0).await;
+  });
+}
+
+pub fn run_pressure() {
+  spawn_local(async move {
+    let now = js_sys::Date::now();
+    let last = storage::local_get(PRESSURE_LAST_KEY)
+      .and_then(|value| value.parse::<f64>().ok())
+      .unwrap_or(0.0);
+    // Avoid repeated cleanup loops while Safari is under storage pressure.
+    if now - last < 3_600_000.0 {
+      return;
+    }
+    storage::local_set(PRESSURE_LAST_KEY, &format!("{}", now));
+
+    let retention_days = storage::local_get(RETENTION_KEY)
+      .and_then(|value| value.parse::<f64>().ok())
+      .unwrap_or(DEFAULT_RETENTION_DAYS);
+    let max_mb = storage::local_get(MAX_MB_KEY)
+      .and_then(|value| value.parse::<f64>().ok())
+      .unwrap_or(DEFAULT_MAX_MB);
+
+    dom::set_text("[data-cleanup-status]", "Auto cleanup...");
+    let _ = storage::prune_recordings(retention_days).await;
+    let _ = storage::prune_recordings_by_size(max_mb * 1024.0 * 1024.0).await;
+    let _ = storage::prune_ml_traces(1200, 30.0 * 86_400_000.0).await;
+    dom::set_text("[data-cleanup-status]", "Auto cleanup complete");
   });
 }

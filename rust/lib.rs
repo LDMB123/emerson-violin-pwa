@@ -18,6 +18,7 @@ mod score_following;
 mod score_library;
 mod pdf_render;
 mod pwa;
+mod reminders;
 mod recorder;
 mod share_inbox;
 mod reflection;
@@ -109,6 +110,7 @@ fn boot(state: Rc<RefCell<AppState>>) {
   exports::init(state.clone());
   share_inbox::init();
   pwa::init(state.clone());
+  reminders::init(state.clone());
   capabilities::init();
   platform::init();
   audio_worklet::init(state.clone());

@@ -1,289 +1,317 @@
-# Rust-First Transition Plan — iPad mini 6 (A15) • iPadOS 26.2 • Safari 26.2
-Date: 2026-02-05
-Goal: Move most logic + data layer into Rust/Wasm with minimal JS, optimize only for iPadOS Safari 26.2.
+# Rust-First Transition Plan — iPad mini 6 (A15) · iPadOS 26.2 · Safari 26.2
+Date: 2026-02-05  
+Goal: Move “most of the app” into Rust/Wasm with minimal JS, optimized only for iPadOS Safari 26.2.
+
+This plan assumes:
+- Secure context (https/localhost) is guaranteed.
+- No backward compatibility is required.
+- No Background Sync / Periodic Background Sync is available in Safari (foreground-only sync/migration).
 
 ## SECTION 1 — Target Architecture (Recommended + Alternatives)
 
 ### Recommended (Primary)
-**SQLite file in OPFS, accessed via SyncAccessHandle inside a Dedicated Worker.**
-- **Single source of truth**: SQLite database stored in OPFS.
-- **DB worker**: Dedicated Worker owns DB file and IO using `createSyncAccessHandle()`.
-- **Rust-first**: Rust/Wasm contains data layer + business logic. JS is a thin wrapper to:
-  - create worker
-  - open OPFS SyncAccessHandle
-  - pass handle into Wasm via `wasm-bindgen`
-- **Cache Storage**: only app shell + immutable assets required for offline boot.
-- **Large binaries**: OPFS files; SQLite stores metadata + hashes + paths.
-- **IndexedDB**: removed as primary store; only retained temporarily for migration.
+**SQLite database file persisted in OPFS, owned by a Dedicated Worker.**
+- Single structured-data truth: SQLite file `emerson.db` in OPFS.
+- DB worker: `public/db-worker.js` owns SQLite + OPFS IO.
+- Rust/Wasm owns business logic and storage semantics:
+  - DB client: `rust/db_client.rs`
+  - Schema: `rust/db_schema.rs`
+  - Migration orchestration: `rust/db_migration.rs`
+  - Storage facade + IDB fallback: `rust/storage.rs`
+- Cache Storage only for:
+  - boot shell and immutable assets
+  - optional packs (example: PDF pack)
+- Large binaries:
+  - OPFS files
+  - SQLite stores metadata + OPFS path/hashes
+- IndexedDB:
+  - allowed only as a **temporary migration source** and as **SW share-target staging**
 
-Why this is best for iPadOS 26.2:
-- OPFS + SyncAccessHandle in a worker gives **predictable latency** and reduces main-thread pressure.
-- SQLite provides **consistent queries**, **schema migrations**, and strong integrity checks.
-- A15 is strong enough for local SQL queries; moving IDB ops off the main thread reduces UI jank.
+Why this is best on iPadOS Safari 26.2:
+- Dedicated worker keeps DB IO off the main thread.
+- OPFS is the fastest reliable local IO primitive available.
+- SQLite gives strong migrations + query power and predictable performance on A15.
 
-### Alternative A (If OPFS SyncAccessHandle is unstable)
-**SQLite over IndexedDB-backed VFS** (e.g., wa-sqlite idb VFS).
-- Pros: No SyncAccessHandle requirement.
-- Cons: IDB latency and transaction overhead; less predictable on iPadOS.
-- Still a single SQLite interface, but performance and IO stability are inferior.
+**Status in this repo**: already largely implemented (worker + schema + migration gating + perf + storage pressure surfacing). Remaining work is mainly cutover/purge hardening, push backend integration, and long-session on-device validation.
 
-### Alternative B (If SQL is not needed)
+### Alternative A (Fallback if OPFS SQLite is unstable on-device)
+**SQLite over IndexedDB-backed VFS.**
+- Pros: avoids OPFS/SyncAccessHandle edge cases.
+- Cons: IDB latency and transaction overhead; less predictable under iPadOS pressure.
+- Use only if OPFS SQLite shows correctness or stability problems during on-device tests.
+
+### Alternative B (Fallback if SQL is truly not needed)
 **Rust domain layer over IndexedDB (no SQLite).**
-- Pros: Minimal new dependencies, less migration work.
-- Cons: IDB performance, schema complexity, and consistency constraints remain.
-- Harder to add robust migrations, query optimizations, and integrity checks.
+- Pros: fewer moving parts.
+- Cons: weaker migrations/integrity, higher per-op overhead, and harder query optimization.
 
-**Recommendation remains OPFS SQLite**; alternatives are fallback-only.
+## SECTION 2 — Roadmap Phases (Actionable)
 
----
+### Phase 0 — Baseline Instrumentation and Guardrails
+**Scope**: make failures visible and measurable on-device.
+- Tasks (code)
+  - Perf observers + surfaced metrics: `rust/perf.rs`, `index.html`.
+  - DB round-trip latency percentiles: `rust/db_client.rs`, `index.html`.
+  - Storage estimate + persistence UX: `rust/pwa.rs`, `rust/platform.rs`, `index.html`.
+  - QuotaExceeded surfacing: `rust/storage_pressure.rs`, `rust/storage.rs`, `public/db-worker.js`.
+- Risks & mitigations
+  - Risk: telemetry overhead.
+  - Mitigation: keep sampling small, avoid per-frame observers.
+- Success criteria (measurable)
+  - On iPad mini 6: cold start metrics visible; DB p50/p95/p99 populated.
+  - Quota-like errors show “storage pressure” UI.
+- Rollback
+  - Keep instrumentation behind simple feature flags if needed.
+- Complexity: M
 
-## SECTION 2 — Roadmap Phases
+### Phase 1 — Service Worker Minimize-and-Protect
+**Scope**: reliable offline boot without cache bloat.
+- Tasks (code)
+  - Boot cache vs optional packs: `public/sw.js`, `scripts/build/build-sw-assets.js`, `index.html`, `rust/pwa.rs`.
+  - Network-only `/api/*` to avoid caching dynamic calls: `public/sw.js`.
+  - Share-target staging limited to SW-only IDB: `public/sw.js`.
+- Risks & mitigations
+  - Risk: pack caching partial failures under SW termination.
+  - Mitigation: best-effort caching with visible counts + user-triggered retries.
+- Success criteria
+  - Offline installed cold start succeeds after one online run.
+  - PDF viewer works offline only after pack is cached (expected and visible).
+- Rollback
+  - Collapse packs back into boot cache (not recommended due to eviction).
+- Complexity: M
 
-### Phase 0 — Baseline + Feature Validation
-**Scope**: Measurements + Safari capability validation.
-- Tasks:
-  - Add runtime performance telemetry (LCP, Event Timing, Long Tasks) using `PerformanceObserver` in Rust (via `web-sys`).
-  - Add storage pressure checks: `storage.estimate()`, `storage.persisted()`.
-  - Implement a small on-device OPFS test harness (write/read/rename/delete) with results logged to UI.
-  - Verify `createSyncAccessHandle()` on iPad mini 6.
-- Risks & Mitigations:
-  - Risk: Telemetry overhead → keep sampling low and minimal.
-  - Risk: OPFS differences on device → on-device test harness.
-- Success criteria:
-  - Baseline metrics captured on device (cold start, LCP, DB ops).
-  - OPFS capability confirmed and measured.
-- Rollback:
-  - Feature flags for telemetry + OPFS harness.
-- Complexity: **M**
+### Phase 2 — SQLite OPFS Worker + Rust DB API (Single Interface)
+**Scope**: one DB interface with strong schema/migrations.
+- Tasks (code)
+  - SQLite OPFS worker: `public/db-worker.js`.
+  - Rust DB messaging contract: `rust/db_messages.rs`.
+  - Schema + PRAGMA tuning: `rust/db_schema.rs`.
+  - Worker lifecycle + init: `rust/db_worker.rs`.
+- Risks & mitigations
+  - Risk: OPFS behavior differences on-device.
+  - Mitigation: run OPFS tests on iPad; keep IDB fallback until proven.
+- Success criteria
+  - DB init works reliably on-device and survives reloads.
+  - Query/write latency meets budgets (see Section 7).
+- Rollback
+  - Fallback to Alternative A (SQLite-over-IDB VFS).
+- Complexity: H
 
-### Phase 1 — DB Worker Scaffold (No Migration Yet)
-**Scope**: Introduce dedicated DB worker and SQLite engine without user data.
-- Tasks:
-  - Add `public/db-worker.js` (minimal) to:
-    - open OPFS root
-    - create SyncAccessHandle
-    - load Wasm + initialize DB
-  - Add Rust module `rust/db_worker.rs` for DB entry points.
-  - Choose SQLite implementation strategy:
-    - Rust-compiled SQLite + custom VFS that calls JS SyncAccessHandle functions, OR
-    - wasm sqlite distribution embedded and accessed via Rust FFI.
-  - Implement DB file creation and a simple schema table (`schema_version`).
-- Risks & Mitigations:
-  - Risk: OPFS handle not transferable → create handle inside worker.
-  - Risk: wasm + SyncAccessHandle integration complexity → spike + fallback to Alternative A.
-- Success criteria:
-  - SQLite DB file created in OPFS.
-  - Simple read/write query works in worker.
-- Rollback:
-  - Disable DB worker feature flag.
-- Complexity: **H**
+### Phase 3 — Foreground Migration: IDB v5 → SQLite (Resumable + Verified)
+**Scope**: migrate without data loss and only cut over after verification.
+- Tasks (code)
+  - Migration state + audit log tables: `rust/db_schema.rs`.
+  - Orchestrator + resume checkpoints: `rust/db_migration.rs`.
+  - Verification: counts + checksums gating: `rust/storage.rs` and migration summary.
+  - Migration report export: `rust/db_migration.rs`, `index.html`.
+- Risks & mitigations
+  - Risk: partial migrations under storage pressure or app reload.
+  - Mitigation: resumable checkpoints, idempotent writes, log export.
+- Success criteria
+  - Migration completes on iPad with realistic data volume.
+  - `checksums_ok` flips true and stays true across reloads.
+- Rollback
+  - Keep IDB as read-only fallback until at least one stable release.
+- Complexity: H
 
-### Phase 2 — Rust Data Layer API + Schema
-**Scope**: Rust-first DB API with SQLite schema.
-- Tasks:
-  - Define schema covering all IDB stores (sessions, recordings, mlTraces, etc.).
-  - Implement Rust API surface (see Section 4).
-  - Add batched operations and pagination.
-  - Implement OPFS binary storage for recordings + models with hashes in SQLite.
-- Risks & Mitigations:
-  - Risk: Schema mismatch with current IDB data → detailed mapping + migration staging.
-  - Risk: Performance regressions → add query benchmarks in worker.
-- Success criteria:
-  - DB API supports read/write for all entities.
-  - Latency target for queries met (see Section 7).
-- Rollback:
-  - Keep reads from IDB until migration complete.
-- Complexity: **H**
+### Phase 4 — Cutover + IDB Purge (One Truth)
+**Scope**: once verified, SQLite becomes authoritative and IDB is removed except SW staging.
+- Tasks (code)
+  - Enforce “SQLite-only” on verified devices: centralize `should_use_sqlite()` and ensure all reads/writes go through SQLite.
+  - Purge IDB stores after verification:
+    - Keep only SW staging DB `emerson-share-inbox` (SW local).
+    - Remove app IDB stores (`emerson-violin-db`) after successful cutover.
+  - Add a visible “DB mode” indicator:
+    - `SQLite (verified)` vs `IDB fallback (migration pending)`.
+- Risks & mitigations
+  - Risk: edge-case code path still writes IDB, reintroducing drift.
+  - Mitigation: audit `rust/storage.rs` for any IDB write path not gated; add assertions in debug builds.
+- Success criteria
+  - After verification, IDB is no longer used for primary domains.
+  - Share-target staging still works.
+- Rollback
+  - Keep a release that can read both stores until field confidence is high.
+- Complexity: M
 
-### Phase 3 — Migration Pipeline (Foreground, Resumable)
-**Scope**: Move data from IDB → SQLite.
-- Tasks:
-  - Add migration orchestrator in worker: detect IDB version and migrate in chunks.
-  - Build migration audit log table (timestamp, counts, errors, last key).
-  - Provide user backup export (JSON/CSV + binary file list).
-- Risks & Mitigations:
-  - Risk: Partial migration → resumable checkpoints + audit log.
-  - Risk: UI blocking → migrate in small batches with yielding.
-- Success criteria:
-  - Migration completes on device under storage pressure.
-  - Audit log validates counts and checksums.
-- Rollback:
-  - Keep IDB untouched until verification is complete.
-- Complexity: **H**
+### Phase 5 — Push Reminders (Installed-Only, Foreground Scheduled)
+**Scope**: make “Reminders” real without relying on Background Sync.
+- Tasks (code)
+  - Client wiring (installed-only, gesture-permission): `rust/reminders.rs`.
+  - SW handlers: `public/sw.js` for `push` + `notificationclick`.
+  - Badging (optional, feature-detected): `rust/platform.rs` + SW → window message.
+- Backend contract (not in this repo)
+  - `GET /api/push/public-key` returns a VAPID public key (string or `{ publicKey }`).
+  - `POST /api/push/subscribe` stores subscription for `deviceId`.
+  - `POST /api/push/schedule` stores schedule (`time`, `days`, `tzOffsetMinutes`, `enabled`).
+- Risks & mitigations
+  - Risk: iPadOS Safari push permission friction.
+  - Mitigation: prompt only after user presses Enable; require install.
+- Success criteria
+  - On an installed web app: enable → permission → server schedule → push delivered.
+- Rollback
+  - Disable reminders UI if backend unavailable (feature flag).
+- Complexity: M (client), H (backend)
 
-### Phase 4 — Cutover + Cleanup
-**Scope**: Switch read/write to SQLite and remove IDB usage.
-- Tasks:
-  - Update app to use DB worker API for all reads/writes.
-  - Remove IDB schema in SW and Rust.
-  - Update SW cache update handshake to be aware of DB schema version.
-- Risks & Mitigations:
-  - Risk: Incomplete migration on device → fallback to IDB read-only mode.
-- Success criteria:
-  - All data operations use SQLite.
-  - IDB no longer used in runtime.
-- Rollback:
-  - Keep a versioned build that can read IDB in case of field failures.
-- Complexity: **M**
-
----
+### Phase 6 — Wasm Threads (Optional) + On-Device Stability Gates
+**Scope**: use threads only when stable and measurable on A15.
+- Tasks (code)
+  - Threads build: `npm run build:threads` (`--features wasm-threads` + atomics flags).
+  - Runtime gating already exists: `rust/lib.rs` checks `crossOriginIsolated` + `SharedArrayBuffer`.
+  - Add a stress test path (recommended):
+    - DB batch + OPFS IO under load.
+    - Long session (30–60 min) on-device.
+- Risks & mitigations
+  - Risk: Safari instability with threads + memory growth.
+  - Mitigation: keep a non-threads build as the primary; treat threads build as opt-in until proven.
+- Success criteria
+  - No crashes/hangs on iPad mini 6 in long-session test.
+- Rollback
+  - Ship only the non-threads build.
+- Complexity: M
 
 ## SECTION 3 — Data Migration Strategy (Critical)
 
 ### Detect existing data layout versions
-- Read IDB `emerson-violin-db` version and store list.
-- Store migration state in SQLite table `migration_state`:
-  - `id`, `source_version`, `started_at`, `last_key`, `counts`, `errors`, `completed_at`.
+- Identify IDB database/version: `emerson-violin-db` v5 (`rust/storage.rs`).
+- Persist migration state in SQLite:
+  - `migration_state` + `migration_log` tables (`rust/db_schema.rs`).
 
-### Resumable migration
-- Perform migration in **foreground** only (no background sync).
-- Batch size tuned for A15 (e.g., 200–500 records per batch).
+### Resumable migration design (foreground-only)
+- Migrate by store in small batches.
 - After each batch:
-  - Update `migration_state`.
-  - Yield to UI.
+  - update `migration_state.last_store / last_key / last_index`
+  - append `migration_log` entries for notable events
+- Never delete IDB data until verification passes.
 
 ### Verification plan
-- **Checksums**: For each table, store a rolling hash of IDs and sizes.
-- **Invariants**:
-  - No duplicate IDs.
-  - Recordings with `opfs_path` must exist in OPFS.
-- **Sampling**: Validate 1–5% of rows with full field comparison.
-- **Migration audit log**: Persisted in SQLite for support visibility.
+- Counts per domain: expected vs migrated.
+- Checksums:
+  - stable hashing over IDs + critical fields.
+- Sampling:
+  - spot-compare payload equality on a small percentage of rows.
+- Persist a migration audit log export:
+  - “what happened, where it stopped, why it failed”.
 
-### Backups
-- Provide user export:
-  - Metadata: JSON/CSV from SQLite.
-  - Binary: OPFS file list + optional ZIP (if feasible).
+### Backups and recovery
+- Provide export snapshot:
+  - structured data: SQLite export (JSON/CSV) plus migration report
+  - binaries: OPFS file listing plus optional ZIP for user transfer (size-gated)
 - Provide import flow:
-  - Validate schema version.
-  - Merge or replace logic with clear UX.
-
----
+  - schema version check
+  - merge vs replace policy (explicit UX)
 
 ## SECTION 4 — Rust/Wasm Boundary Design (Minimal JS)
 
-### Rust API surface (stable)
-- `db_init()`
-- `db_open()`
-- `db_migrate()`
-- `apply_batch(ops)`
-- `query_page(query, page, size)`
-- `search(query, limit)`
-- `export_snapshot()`
-- `import_snapshot(data)`
-- `sync_outbox()`
+### Stable Rust API surface (worker-facing)
+- `db_init(schema_sql, migrations, schema_version)`
+- `exec(sql, params)`
+- `query(sql, params) -> rows`
+- `batch(statements, transaction)`
+- `migration_summary() -> { counts, errors, checksums_ok }`
 
 ### Minimize boundary crossings
-- Batch writes and reads.
-- Return UI-ready objects where feasible.
-- Avoid per-row calls.
+- Prefer `DB_BATCH` for grouped writes (single postMessage).
+- Prefer paged queries returning UI-ready shapes.
 
-### Serialization strategy
-- Small payloads: JSON (simple and readable).
-- Larger payloads: binary `postcard`/`bincode` via `Uint8Array` for speed + size.
+### Serialization choices
+- UI payloads: JSON rows (simple, small).
+- Large/binary payloads: OPFS files; Rust passes paths/hashes, not blob bytes.
 
 ### Worker messaging protocol
-- Envelope:
-  - `id`, `op`, `payload`, `timeout_ms`
-- Response:
-  - `id`, `ok`, `result` or `error`
+- Request envelope: `type`, `request_id`, payload.
+- Response envelope: `type`, `request_id`, `ok`, timing, optional error fields.
 - Backpressure:
-  - Queue length limit
-  - Reject when full
-- Cancellation:
-  - `abort` message by `id`
-
-### Wasm threads (if used)
-- **Headers required**: COOP/COEP already configured in `public/_headers` and `Trunk.toml`.
-- **Build flags**: `-C target-feature=+atomics,+bulk-memory,+mutable-globals` and `--features wasm-threads`.
-- **Memory model**:
-  - Prefer fixed memory with threads for stability.
-  - If growable memory is needed, add a fallback single-threaded build.
-- **On-device stability tests**:
-  - Stress test with max parallel queries + OPFS IO.
-  - Long session test (30+ minutes) to detect thread crashes.
-
----
+  - keep a bounded in-flight queue in `rust/db_client.rs`.
+- Timeouts/cancellation:
+  - implement request timeout on the Rust side for UI responsiveness.
 
 ## SECTION 5 — Offline/PWA Strategy (Safari 26.2)
 
 ### SW caching strategy
-- Use **cache-first** for app shell + immutable assets only.
-- Move large optional assets to on-demand fetch (not precached).
-- Version caches by build hash and keep only the latest + one fallback.
+- Boot cache only for offline boot essentials.
+- Packs (PDF) cached explicitly via user action.
+- `/api/*` never cached.
 
-### Update UX
-- Keep current banner flow (`Update ready`).
-- Add DB version check before applying update.
-- If DB migration pending, block reload and show a “Finish migration” prompt.
+### Update UX and “safe reload”
+- Do not reload into a new version while migration is mid-flight.
+- Prefer: “finish migration → then apply update”.
 
 ### SW + DB handshake
-- App writes `db_schema_version` to localStorage/SQLite.
-- SW includes `app_schema_version` in cache metadata.
-- If mismatch: prevent update until migration completes.
+- The app is the source of truth for “migration verified”.
+- SW update apply is gated by `migration_allows_update()` in Rust.
 
----
+## SECTION 6 — Exploit Safari 26.2 Features to Reduce JS
 
-## SECTION 6 — Safari 26.2 Features to Reduce JS
-
-### Declarative HTML/CSS replacements
-- Continue use of `<dialog>` and `:target` routing.
-- Replace JS-driven toggles with native `<details>` + CSS where possible.
-- Use native form validation instead of JS (when appropriate).
-
-### Navigation API
-- If supported in Safari 26.2, move hash routing to Navigation API for clearer state transitions.
-- Add feature detection; fallback to current hash routing if unavailable.
-
-### Performance APIs
-- Implement `PerformanceObserver` for:
-  - LCP
-  - Event Timing (input delay)
-  - Long tasks
-- Expose metrics in a debug panel for on-device testing.
-
----
+- Use `<dialog>` for modals and confirmations (already used).
+- Prefer native input types (`time`, `number`) for controls.
+- Use `PerformanceObserver` for LCP/Event Timing/Long Tasks (already wired).
+- Consider Navigation API only if it reduces complexity vs hash routing (feature-detect).
 
 ## SECTION 7 — Performance Plan (A15 + iPad constraints)
 
 ### Budgets (targets)
-- Cold start (installed, offline): **< 1.5s** to first interactive UI.
-- LCP: **< 2.0s** (offline), **< 2.5s** (online).
-- DB query latency (UI → worker → UI): p50 **< 8ms**, p95 **< 25ms**, p99 **< 60ms**.
-- Batch write throughput: **> 2,000 ops/sec** in worker.
-- Memory: steady-state **< 300MB** (avoid jetsam).
+- Installed offline cold start: < 1.5s to usable UI.
+- LCP (offline): < 2.0s.
+- DB request latency (UI → worker → UI):
+  - p50 < 8ms
+  - p95 < 25ms
+  - p99 < 60ms
+- Memory steady-state: keep comfortably below jetsam thresholds by:
+  - avoiding large in-memory caches
+  - streaming where possible
 
-### Optimizations
-- Batch reads/writes and avoid per-item IDB calls.
-- Use prepared statements and indexes in SQLite.
-- Virtualize large lists to reduce DOM cost.
-- Avoid main-thread OPFS operations.
-- Minimize JS/Wasm crossings.
+### Concrete optimizations
+- SQLite:
+  - keep indexes aligned with UI query patterns
+  - use WAL + NORMAL sync (already set)
+  - batch writes
+- UI:
+  - avoid main-thread OPFS work
+  - incremental rendering for large lists
+- Boundary:
+  - reduce postMessage chatter; batch by intent
 
----
+## SECTION 8 — Push + Badging + App-like UX (When Appropriate)
 
-## SECTION 8 — Push + Badging + App-like UX
+- Push reminders:
+  - require install + explicit user gesture
+  - schedule only while app is open (server call); do not rely on Background Sync
+- SW push handler:
+  - show notification
+  - on click: focus/open app to `#core`
+- Badging:
+  - keep badge sources explicit (share inbox count, error queue count, optional push)
+  - use feature detection (`setAppBadge` / `clearAppBadge`)
 
-- Request push permission only after explicit user gesture.
-- Minimal push payloads; use push to **prompt opening the app** (not background sync).
-- Maintain badge counts in Rust with a single source of truth.
+## SECTION 9 — Testing Strategy (Must Include On-Device)
 
----
+### Rust unit tests
+- Domain logic tests for migration hashing, schema versioning, and invariants.
 
-## SECTION 9 — Testing Strategy (Includes On-Device)
+### Integration tests
+- Migration:
+  - simulate IDB dataset and validate SQLite counts + checksums.
 
-### Rust tests
-- Unit tests for domain logic.
-- Integration tests for DB schema + migrations.
+### E2E offline tests (Playwright, where possible)
+- Install flow (where automation can reach it).
+- Offline cold start after first-run caching.
+- Update path with migration in progress (ensure apply update is blocked).
 
-### E2E (offline)
-- Install flow + offline cold start.
-- Update + migration path (offline → online).
-- OPFS file persistence across reloads.
-
-### On-device Safari testing checklist
-- OPFS SyncAccessHandle read/write under load.
-- DB worker stability during long sessions.
-- Cache eviction simulation (fill storage + confirm behavior).
-- Push permission, push delivery, badge updates.
+### On-device Safari checklist (Web Inspector)
+- SW:
+  - cache entries exist in boot cache
+  - pack cache fill works and reports counts
+  - `/api/*` not cached
+- OPFS:
+  - OPFS test passes (main thread + worker)
+  - SQLite file persists across reloads
+- DB:
+  - DB latency p50/p95/p99 stable under load
+  - migration can resume after force-close/reopen
+- Storage pressure:
+  - `estimate()` reflects growth
+  - quota-like failures surface a user-visible warning
+- Threads build (if used):
+  - `crossOriginIsolated` true
+  - long-session stability (30–60 min)
 

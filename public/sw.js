@@ -65,18 +65,22 @@ const PRECACHE_URLS = Array.from(new Set([
 const cacheUrls = async (cacheName, urls) => {
   const cache = await caches.open(cacheName);
   let ok = 0;
+  let failed = 0;
   for (const url of urls) {
     try {
       const response = await fetch(url, { cache: 'reload' });
       if (response && response.ok) {
         await cache.put(url, response.clone());
         ok += 1;
+      } else {
+        failed += 1;
       }
     } catch {
       // Ignore individual failures; iPadOS may kill SW installs if we retry too aggressively.
+      failed += 1;
     }
   }
-  return ok;
+  return { ok, failed };
 };
 
 
@@ -122,6 +126,10 @@ const deleteShareEntries = (ids) => {
     ids.forEach((id) => store.delete(id));
   });
 };
+
+const clearShareInbox = () => withStore('shareInbox', 'readwrite', (store) => {
+  store.clear();
+});
 
 const postShareEntries = (client, entries) => {
   if (!client) return;
@@ -182,13 +190,14 @@ self.addEventListener('message', (event) => {
     const urls = PACKS[pack] || [];
     event.waitUntil((async () => {
       const start = performance.now();
-      const cached = await cacheUrls(PACK_CACHE, urls);
+      const result = await cacheUrls(PACK_CACHE, urls);
       await notifyClients({
         type: 'PACK_STATUS',
         pack,
-        ok: cached === urls.length,
-        cached,
+        ok: result.ok === urls.length,
+        cached: result.ok,
         expected: urls.length,
+        failed: result.failed,
         ms: performance.now() - start,
       });
     })());
@@ -204,6 +213,38 @@ self.addEventListener('message', (event) => {
           return;
         }
         return ensureShareDelivery(entries);
+      })
+    );
+    return;
+  }
+  if (data.type === 'SHARE_INBOX_STATS') {
+    event.waitUntil(
+      listShareEntries().then((entries) => {
+        let newest = '';
+        for (const entry of entries) {
+          if (entry && entry.createdAt && typeof entry.createdAt === 'string' && entry.createdAt > newest) {
+            newest = entry.createdAt;
+          }
+        }
+        const message = { type: 'SHARE_INBOX_STATS', count: entries.length, newest };
+        if (event.source) {
+          try { event.source.postMessage(message); } catch {}
+          return;
+        }
+        return notifyClients(message);
+      })
+    );
+    return;
+  }
+  if (data.type === 'CLEAR_SHARE_INBOX') {
+    event.waitUntil(
+      clearShareInbox().then(() => {
+        const message = { type: 'SHARE_INBOX_CLEARED' };
+        if (event.source) {
+          try { event.source.postMessage(message); } catch {}
+          return;
+        }
+        return notifyClients(message);
       })
     );
     return;
@@ -337,6 +378,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  if (url.pathname.includes('/api/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   const destination = request.destination;
 
   if (request.mode === 'navigate' || destination === 'document') {
@@ -350,4 +396,58 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(networkFirst(request));
+});
+
+self.addEventListener('push', (event) => {
+  event.waitUntil((async () => {
+    let payload = {};
+    try {
+      if (event.data) {
+        payload = JSON.parse(event.data.text());
+      }
+    } catch {
+      payload = {};
+    }
+    const title = (payload && payload.title) ? payload.title : 'Practice reminder';
+    const body = (payload && (payload.body || payload.message)) ? (payload.body || payload.message) : 'Time to practice.';
+    const url = (payload && payload.url) ? payload.url : './#core';
+    const options = {
+      body,
+      tag: payload && payload.tag ? payload.tag : 'reminder',
+      renotify: true,
+      icon: './assets/icons/icon-192.png',
+      data: { url },
+    };
+    try {
+      await self.registration.showNotification(title, options);
+    } catch {}
+
+    const count = payload && Number.isFinite(payload.badge) ? payload.badge : 0;
+    if (typeof self.registration.setAppBadge === 'function' && count > 0) {
+      try { await self.registration.setAppBadge(count); } catch {}
+    } else if (typeof self.registration.clearAppBadge === 'function' && count === 0) {
+      try { await self.registration.clearAppBadge(); } catch {}
+    }
+    if (count > 0) {
+      await notifyClients({ type: 'PUSH_BADGE', count });
+    }
+  })());
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification && event.notification.data && event.notification.data.url ? event.notification.data.url : './#core';
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (client && 'focus' in client) {
+        try { await client.focus(); } catch {}
+        if (client && 'navigate' in client) {
+          try { await client.navigate(url); } catch {}
+        }
+        return;
+      }
+    }
+    await self.clients.openWindow(url);
+  })());
 });

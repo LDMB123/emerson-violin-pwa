@@ -1184,20 +1184,22 @@
             <small class="muted" data-restore-preview>Preview: --</small>
           </article>
 
-          <article class="card">
-            <div class="card-head">
-              <h3>Share inbox</h3>
-              <span class="pill" data-share-inbox-count>0 items</span>
-            </div>
-            <p class="card-body">Files shared into the studio appear here for review.</p>
-            <ul class="resource-list" data-share-inbox-list>
-              <li class="empty">No shared files yet.</li>
-            </ul>
-            <div class="button-row">
-              <button class="btn btn-secondary" type="button" data-share-inbox-refresh>Refresh inbox</button>
-              <button class="btn btn-ghost" type="button" data-share-inbox-clear>Clear inbox</button>
-            </div>
-          </article>
+	          <article class="card">
+	            <div class="card-head">
+	              <h3>Share inbox</h3>
+	              <span class="pill" data-share-inbox-count>0 items</span>
+	            </div>
+	            <p class="card-body">Files shared into the studio appear here for review.</p>
+	            <p class="muted">SW staging: <span data-share-staging-count>--</span> <span data-share-staging-newest></span></p>
+	            <ul class="resource-list" data-share-inbox-list>
+	              <li class="empty">No shared files yet.</li>
+	            </ul>
+	            <div class="button-row">
+	              <button class="btn btn-secondary" type="button" data-share-inbox-refresh>Refresh inbox</button>
+	              <button class="btn btn-ghost" type="button" data-share-inbox-clear>Clear inbox</button>
+	              <button class="btn btn-ghost" type="button" data-share-staging-clear>Clear SW staging</button>
+	            </div>
+	          </article>
 
           <article class="card">
             <div class="card-head">
@@ -1582,14 +1584,18 @@
                 <span>Share API</span>
                 <span class="capability-pill" data-capability="share" data-state="warn">Checking</span>
               </li>
-              <li>
-                <span>Notifications</span>
-                <span class="capability-pill" data-capability="notifications" data-state="warn">Checking</span>
-              </li>
-              <li>
-                <span>Device Motion</span>
-                <span class="capability-pill" data-capability="motion" data-state="warn">Checking</span>
-              </li>
+	              <li>
+	                <span>Notifications</span>
+	                <span class="capability-pill" data-capability="notifications" data-state="warn">Checking</span>
+	              </li>
+	              <li>
+	                <span>Web Push</span>
+	                <span class="capability-pill" data-capability="push" data-state="warn">Checking</span>
+	              </li>
+	              <li>
+	                <span>Device Motion</span>
+	                <span class="capability-pill" data-capability="motion" data-state="warn">Checking</span>
+	              </li>
               <li>
                 <span>Badging</span>
                 <span class="capability-pill" data-capability="badge" data-state="warn">Checking</span>
@@ -1622,14 +1628,22 @@
                 <span>Audio Worklet</span>
                 <span class="capability-pill" data-capability="audio-worklet" data-state="warn">Checking</span>
               </li>
-              <li>
-                <span>SharedArrayBuffer</span>
-                <span class="capability-pill" data-capability="sab" data-state="warn">Checking</span>
-              </li>
-              <li>
-                <span>OffscreenCanvas</span>
-                <span class="capability-pill" data-capability="offscreen-canvas" data-state="warn">Checking</span>
-              </li>
+	              <li>
+	                <span>SharedArrayBuffer</span>
+	                <span class="capability-pill" data-capability="sab" data-state="warn">Checking</span>
+	              </li>
+	              <li>
+	                <span>Cross-origin isolated</span>
+	                <span class="capability-pill" data-capability="coi" data-state="warn">Checking</span>
+	              </li>
+	              <li>
+	                <span>Wasm threads</span>
+	                <span class="capability-pill" data-capability="wasm-threads" data-state="warn">Checking</span>
+	              </li>
+	              <li>
+	                <span>OffscreenCanvas</span>
+	                <span class="capability-pill" data-capability="offscreen-canvas" data-state="warn">Checking</span>
+	              </li>
               <li>
                 <span>OPFS</span>
                 <span class="capability-pill" data-capability="opfs" data-state="warn">Checking</span>

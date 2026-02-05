@@ -9,9 +9,11 @@ use web_sys::{Event, HtmlDialogElement, ServiceWorker, ServiceWorkerRegistration
 
 use crate::dom;
 use crate::db_migration;
+use crate::platform;
 use crate::share_inbox;
 use crate::state::AppState;
 use crate::storage;
+use crate::storage_cleanup;
 
 const INSTALL_DISMISSED_KEY: &str = "shell:install-dismissed";
 
@@ -308,9 +310,9 @@ fn init_service_worker() {
     dom::set_text("[data-sw-status]", "Registering service worker...");
     let promise = sw_register.register("./sw.js");
     let reg = wasm_bindgen_futures::JsFuture::from(promise).await.ok();
-    if let Some(reg) = reg.and_then(|val| val.dyn_into::<ServiceWorkerRegistration>().ok()) {
-      dom::set_text("[data-sw-status]", "Service worker active");
-      let waiting = Rc::new(RefCell::new(reg.waiting()));
+      if let Some(reg) = reg.and_then(|val| val.dyn_into::<ServiceWorkerRegistration>().ok()) {
+        dom::set_text("[data-sw-status]", "Service worker active");
+        let waiting = Rc::new(RefCell::new(reg.waiting()));
       if waiting.borrow().is_some() {
         dom::set_text("[data-sw-status]", "Update ready. Apply to refresh.");
         set_button_disabled("[data-sw-apply]", false);
@@ -321,6 +323,7 @@ fn init_service_worker() {
       watch_for_updates(reg.clone(), waiting.clone());
       request_cache_stats();
       request_share_inbox();
+      request_share_inbox_stats();
     } else {
       dom::set_text("[data-sw-status]", "Service worker failed");
       set_button_disabled("[data-sw-update]", true);
@@ -481,6 +484,10 @@ fn handle_sw_message(data: &JsValue) {
         .ok()
         .and_then(|val| val.as_f64())
         .unwrap_or(0.0);
+      let failed = Reflect::get(data, &JsValue::from_str("failed"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0);
       let ok = Reflect::get(data, &JsValue::from_str("ok"))
         .ok()
         .and_then(|val| val.as_bool())
@@ -494,14 +501,46 @@ fn handle_sw_message(data: &JsValue) {
           format!("Cached ({} files, {:.0} ms)", cached as i32, ms)
         } else {
           format!(
-            "Partial ({} / {} files, {:.0} ms)",
+            "Partial ({} / {} files, {} failed, {:.0} ms)",
             cached as i32,
             expected as i32,
+            failed as i32,
             ms
           )
         };
         dom::set_text("[data-pack-pdf-status]", &label);
       }
+    }
+    "SHARE_INBOX_STATS" => {
+      let count = Reflect::get(data, &JsValue::from_str("count"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0)
+        .max(0.0) as i32;
+      dom::set_text("[data-share-staging-count]", &format!("{} items", count));
+      let newest = Reflect::get(data, &JsValue::from_str("newest"))
+        .ok()
+        .and_then(|val| val.as_string())
+        .unwrap_or_default();
+      if newest.is_empty() {
+        dom::set_text("[data-share-staging-newest]", "");
+      } else {
+        let date = js_sys::Date::new(&JsValue::from_str(&newest));
+        let label: String = date.to_locale_string("en-US", &js_sys::Object::new()).into();
+        dom::set_text("[data-share-staging-newest]", &format!("(last {})", label));
+      }
+    }
+    "SHARE_INBOX_CLEARED" => {
+      dom::set_text("[data-share-staging-count]", "0 items");
+      dom::set_text("[data-share-staging-newest]", "");
+    }
+    "PUSH_BADGE" => {
+      let count = Reflect::get(data, &JsValue::from_str("count"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0)
+        .max(0.0) as usize;
+      platform::set_badge_source("push", count);
     }
     "SYNC_COMPLETE" => {
       let synced = Reflect::get(data, &JsValue::from_str("synced"))
@@ -525,6 +564,7 @@ fn handle_sw_message(data: &JsValue) {
       Ok(_) => {
         acknowledge_share_entries(ids);
         dom::set_text("[data-sw-status]", "Share inbox updated");
+        request_share_inbox_stats();
         share_inbox::refresh();
       }
       Err(_) => {
@@ -549,6 +589,17 @@ fn request_share_inbox() {
     if let Ok(worker) = controller.dyn_into::<ServiceWorker>() {
       let message = js_sys::Object::new();
       let _ = Reflect::set(&message, &JsValue::from_str("type"), &JsValue::from_str("REQUEST_SHARE_INBOX"));
+      let _ = worker.post_message(&message);
+    }
+  }
+}
+
+fn request_share_inbox_stats() {
+  let sw = dom::window().navigator().service_worker();
+  if let Ok(controller) = Reflect::get(&sw, &JsValue::from_str("controller")) {
+    if let Ok(worker) = controller.dyn_into::<ServiceWorker>() {
+      let message = js_sys::Object::new();
+      let _ = Reflect::set(&message, &JsValue::from_str("type"), &JsValue::from_str("SHARE_INBOX_STATS"));
       let _ = worker.post_message(&message);
     }
   }
@@ -727,6 +778,9 @@ fn init_storage_status() {
           "Low"
         };
         dom::set_text("[data-storage-pressure]", pressure);
+        if percent_value >= 90.0 {
+          storage_cleanup::run_pressure();
+        }
         if let Some(fill) = dom::query("[data-storage-fill]") {
           dom::set_style(&fill, "width", &format!("{:.0}%", percent_value));
         }

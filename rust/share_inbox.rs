@@ -1,9 +1,11 @@
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
+use js_sys::{Object, Reflect};
 use web_sys::Event;
 
 use crate::dom;
 use crate::file_access;
+use crate::platform;
 use crate::storage::{self, ShareItem};
 
 pub fn init() {
@@ -15,6 +17,8 @@ pub fn init() {
 
   if let Some(btn) = dom::query("[data-share-inbox-refresh]") {
     let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+      request_sw_share_inbox();
+      request_sw_share_inbox_stats();
       refresh();
     });
     let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
@@ -27,6 +31,15 @@ pub fn init() {
         let _ = storage::clear_share_inbox().await;
         refresh();
       });
+    });
+    let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
+    cb.forget();
+  }
+
+  if let Some(btn) = dom::query("[data-share-staging-clear]") {
+    let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+      send_sw_message("CLEAR_SHARE_INBOX");
+      request_sw_share_inbox_stats();
     });
     let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
     cb.forget();
@@ -47,6 +60,7 @@ fn render_error() {
     list.set_inner_html("<li class=\"empty\">Share inbox unavailable.</li>");
   }
   set_count(0);
+  platform::set_badge_source("share_inbox", 0);
 }
 
 fn render_list(items: &[ShareItem]) {
@@ -56,6 +70,7 @@ fn render_list(items: &[ShareItem]) {
   };
   list.set_inner_html("");
   set_count(items.len());
+  platform::set_badge_source("share_inbox", items.len());
   if items.is_empty() {
     list.set_inner_html("<li class=\"empty\">No shared files yet.</li>");
     return;
@@ -162,4 +177,24 @@ fn format_size(bytes: f64) -> String {
 fn format_date(timestamp: f64) -> String {
   let date = js_sys::Date::new(&wasm_bindgen::JsValue::from_f64(timestamp));
   date.to_locale_string("en-US", &js_sys::Object::new()).into()
+}
+
+fn request_sw_share_inbox() {
+  send_sw_message("REQUEST_SHARE_INBOX");
+}
+
+fn request_sw_share_inbox_stats() {
+  send_sw_message("SHARE_INBOX_STATS");
+}
+
+fn send_sw_message(msg_type: &str) {
+  let sw = dom::window().navigator().service_worker();
+  let controller = Reflect::get(&sw, &"controller".into()).ok();
+  let controller = match controller.and_then(|val| val.dyn_into::<web_sys::ServiceWorker>().ok()) {
+    Some(controller) => controller,
+    None => return,
+  };
+  let message = Object::new();
+  let _ = Reflect::set(&message, &"type".into(), &msg_type.into());
+  let _ = controller.post_message(&message);
 }

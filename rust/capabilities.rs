@@ -38,6 +38,11 @@ pub fn init() {
       "haptics" => Reflect::has(&navigator, &JsValue::from_str("vibrate")).unwrap_or(false),
       "share" => Reflect::has(&navigator, &JsValue::from_str("share")).unwrap_or(false),
       "notifications" => Reflect::has(&dom::window(), &JsValue::from_str("Notification")).unwrap_or(false),
+      "push" => {
+        Reflect::has(&navigator, &JsValue::from_str("serviceWorker")).unwrap_or(false)
+          && Reflect::has(&window, &JsValue::from_str("PushManager")).unwrap_or(false)
+          && Reflect::has(&window, &JsValue::from_str("Notification")).unwrap_or(false)
+      }
       "motion" => Reflect::has(&dom::window(), &JsValue::from_str("DeviceMotionEvent")).unwrap_or(false),
       "badge" => {
         Reflect::has(&navigator, &JsValue::from_str("setAppBadge")).unwrap_or(false)
@@ -57,6 +62,25 @@ pub fn init() {
       }
       "audio-worklet" => Reflect::has(&window, &JsValue::from_str("AudioWorkletNode")).unwrap_or(false),
       "sab" => Reflect::has(&window, &JsValue::from_str("SharedArrayBuffer")).unwrap_or(false),
+      "coi" => Reflect::get(&window, &JsValue::from_str("crossOriginIsolated"))
+        .ok()
+        .and_then(|val| val.as_bool())
+        .unwrap_or(false),
+      "wasm-threads" => {
+        #[cfg(feature = "wasm-threads")]
+        {
+          let coi = Reflect::get(&window, &JsValue::from_str("crossOriginIsolated"))
+            .ok()
+            .and_then(|val| val.as_bool())
+            .unwrap_or(false);
+          let sab = Reflect::has(&window, &JsValue::from_str("SharedArrayBuffer")).unwrap_or(false);
+          coi && sab
+        }
+        #[cfg(not(feature = "wasm-threads"))]
+        {
+          false
+        }
+      }
       "offscreen-canvas" => Reflect::has(&window, &JsValue::from_str("OffscreenCanvas")).unwrap_or(false),
       "opfs" => storage_manager
         .as_ref()
