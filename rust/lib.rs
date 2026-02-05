@@ -140,6 +140,7 @@ fn boot(state: Rc<RefCell<AppState>>) {
   diagnostics::init();
   db_worker::init();
   db_migration::init();
+  db_migration::init_integrity_drill();
   perf::init();
   opfs_test::init();
 

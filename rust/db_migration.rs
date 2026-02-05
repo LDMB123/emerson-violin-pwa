@@ -340,6 +340,159 @@ fn show_banner(visible: bool) {
   }
 }
 
+// ── Integrity drill ─────────────────────────────────────────────────
+
+async fn run_integrity_drill() -> Result<String, wasm_bindgen::JsValue> {
+  db_client::init_db().await?;
+
+  // Save existing migration state so we can restore after drill
+  let saved_state = load_state().await?;
+
+  // Clean any prior drill data from IDB + SQLite
+  storage::clear_drill_data().await?;
+  storage::clear_drill_data_sqlite().await?;
+
+  // Seed 3 dummy records per IDB store
+  let seeded = storage::seed_drill_data(3).await?;
+
+  // Partial migration: reset state, migrate only first 2 stores, then interrupt
+  let mut state = MigrationState {
+    source_version: storage::DB_VERSION,
+    started_at: now_ms(),
+    updated_at: now_ms(),
+    last_store: None,
+    last_index: None,
+    last_key: None,
+    counts: HashMap::new(),
+    errors: Vec::new(),
+    checksums: HashMap::new(),
+    completed_at: None,
+  };
+  upsert_state(&state).await?;
+
+  let mut stores_done = 0usize;
+  for spec in STORE_SPECS {
+    migrate_store(*spec, &mut state).await?;
+    stores_done += 1;
+    if stores_done >= 2 {
+      // Interrupt — save incomplete state
+      state.updated_at = now_ms();
+      upsert_state(&state).await?;
+      break;
+    }
+  }
+
+  // Verify state is incomplete (no completed_at)
+  let loaded = load_state().await?;
+  let incomplete = loaded
+    .as_ref()
+    .map(|s| s.completed_at.is_none())
+    .unwrap_or(true);
+
+  // Resume: run full migration — should pick up from interrupted state
+  let _ = run_migration().await;
+
+  // Verify completion
+  let final_state = load_state().await?;
+  let completed = final_state
+    .as_ref()
+    .map(|s| s.completed_at.is_some())
+    .unwrap_or(false);
+  let checksums_ok = final_state
+    .as_ref()
+    .map(|s| s.checksums.values().all(|e| e.ok))
+    .unwrap_or(false);
+  let no_errors = final_state
+    .as_ref()
+    .map(|s| s.errors.is_empty())
+    .unwrap_or(false);
+
+  // Check for duplicates via SQL
+  let mut duplicates_found = false;
+  let tables = [
+    "sessions",
+    "recordings",
+    "sync_queue",
+    "share_inbox",
+    "ml_traces",
+    "game_scores",
+    "score_library",
+    "assignments",
+    "profiles",
+    "telemetry_queue",
+    "error_queue",
+    "score_scans",
+    "model_cache",
+  ];
+  for table in tables {
+    let pattern = format!("{}%", storage::DRILL_PREFIX);
+    let rows = db_client::query(
+      &format!(
+        "SELECT id, COUNT(*) as cnt FROM {} WHERE id LIKE ?1 GROUP BY id HAVING cnt > 1",
+        table
+      ),
+      vec![JsonValue::String(pattern)],
+    )
+    .await?;
+    if !rows.is_empty() {
+      duplicates_found = true;
+      break;
+    }
+  }
+
+  // Cleanup drill data from IDB + SQLite
+  storage::clear_drill_data().await?;
+  storage::clear_drill_data_sqlite().await?;
+
+  // Restore original migration state
+  if let Some(original) = saved_state {
+    upsert_state(&original).await?;
+  }
+
+  // Report
+  let pass = incomplete && completed && checksums_ok && no_errors && !duplicates_found;
+  let status = if pass { "PASS" } else { "FAIL" };
+  let detail = format!(
+    "seeded={}, interrupted_after={}, incomplete={}, completed={}, checksums={}, errors={}, duplicates={}",
+    seeded, stores_done, incomplete, completed, checksums_ok, no_errors, !duplicates_found
+  );
+  Ok(format!("{}: {}", status, detail))
+}
+
+pub fn init_integrity_drill() {
+  if let Some(btn) = dom::query("[data-db-integrity-drill]") {
+    let cb =
+      wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event: Event| {
+        dom::set_text("[data-db-integrity-drill-status]", "Running integrity drill...");
+        if let Some(btn) = dom::query("[data-db-integrity-drill]") {
+          let _ = btn.set_attribute("disabled", "true");
+        }
+        spawn_local(async move {
+          match run_integrity_drill().await {
+            Ok(result) => {
+              dom::set_text("[data-db-integrity-drill-status]", &result);
+            }
+            Err(err) => {
+              let msg = err
+                .as_string()
+                .unwrap_or_else(|| "Unknown error".to_string());
+              dom::set_text(
+                "[data-db-integrity-drill-status]",
+                &format!("FAIL: {}", msg),
+              );
+            }
+          }
+          if let Some(btn) = dom::query("[data-db-integrity-drill]") {
+            let _ = btn.remove_attribute("disabled");
+          }
+          refresh_status();
+        });
+      });
+    let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
+    cb.forget();
+  }
+}
+
 fn refresh_status() {
   spawn_local(async move {
     match storage::get_migration_summary().await {

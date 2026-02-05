@@ -586,6 +586,105 @@ pub async fn legacy_idb_total_count() -> usize {
   total
 }
 
+// ── Integrity drill helpers ─────────────────────────────────────────
+
+pub const DRILL_PREFIX: &str = "__drill_";
+
+pub async fn seed_drill_data(count_per_store: usize) -> Result<usize, JsValue> {
+  let mut total = 0usize;
+  for store in IDB_STORES {
+    for i in 0..count_per_store {
+      let id = format!("{}{}-{}", DRILL_PREFIX, store, i);
+      let obj = js_sys::Object::new();
+      let _ = js_sys::Reflect::set(&obj, &"id".into(), &JsValue::from_str(&id));
+      let _ = js_sys::Reflect::set(
+        &obj,
+        &"created_at".into(),
+        &JsValue::from_f64(js_sys::Date::now()),
+      );
+      let _ = js_sys::Reflect::set(
+        &obj,
+        &"name".into(),
+        &JsValue::from_str(&format!("drill-{}", i)),
+      );
+      let _ = js_sys::Reflect::set(&obj, &"payload".into(), &JsValue::from_str("{}"));
+      put_value(store, &obj.into()).await?;
+      total += 1;
+    }
+  }
+  Ok(total)
+}
+
+pub async fn clear_drill_data() -> Result<usize, JsValue> {
+  let mut removed = 0usize;
+  for store in IDB_STORES {
+    let batch = get_store_batch(store, None, 1000).await?;
+    for value in batch.values.iter() {
+      if let Ok(id_val) = js_sys::Reflect::get(value, &"id".into()) {
+        if let Some(id) = id_val.as_string() {
+          if id.starts_with(DRILL_PREFIX) {
+            delete_value(store, &id).await?;
+            removed += 1;
+          }
+        }
+      }
+    }
+  }
+  Ok(removed)
+}
+
+pub async fn clear_drill_data_sqlite() -> Result<usize, JsValue> {
+  let mut removed = 0usize;
+  let tables = [
+    "sessions",
+    "recordings",
+    "sync_queue",
+    "share_inbox",
+    "ml_traces",
+    "game_scores",
+    "score_library",
+    "assignments",
+    "profiles",
+    "telemetry_queue",
+    "error_queue",
+    "score_scans",
+    "model_cache",
+  ];
+  for table in tables {
+    let pattern = format!("{}%", DRILL_PREFIX);
+    let rows = db_client::query(
+      &format!("SELECT COUNT(*) as cnt FROM {} WHERE id LIKE ?1", table),
+      vec![JsonValue::String(pattern.clone())],
+    )
+    .await?;
+    let count = rows
+      .first()
+      .and_then(|r| r.get("cnt"))
+      .and_then(|v| v.as_f64())
+      .unwrap_or(0.0) as usize;
+    if count > 0 {
+      db_client::exec(
+        &format!("DELETE FROM {} WHERE id LIKE ?1", table),
+        vec![JsonValue::String(pattern)],
+      )
+      .await?;
+      removed += count;
+    }
+  }
+  // Also clear drill migration state
+  let _ = db_client::exec(
+    "DELETE FROM migration_state WHERE id = ?1",
+    vec![JsonValue::String("drill".to_string())],
+  )
+  .await;
+  let _ = db_client::exec(
+    "DELETE FROM migration_log WHERE migration_id = ?1",
+    vec![JsonValue::String("drill".to_string())],
+  )
+  .await;
+  Ok(removed)
+}
+
 pub async fn get_sessions() -> Result<Vec<Session>, JsValue> {
   if should_use_sqlite().await {
     return sqlite_get_sessions().await;
