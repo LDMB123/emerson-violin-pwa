@@ -661,6 +661,33 @@ fn reveal_update_banner() {
 }
 
 fn init_storage_status() {
+  if let Some(btn) = dom::query("[data-storage-persist-request]") {
+    let cb = wasm_bindgen::closure::Closure::<dyn FnMut(Event)>::new(move |_event| {
+      dom::set_text("[data-storage-persisted]", "Requesting...");
+      spawn_local(async move {
+        let storage_manager = dom::window().navigator().storage();
+        if let Ok(persist) = storage_manager.persist() {
+          match wasm_bindgen_futures::JsFuture::from(persist).await {
+            Ok(result) => {
+              let granted = result.as_bool().unwrap_or(false);
+              dom::set_text("[data-storage-persisted]", if granted { "Yes" } else { "No" });
+              dom::toast(if granted { "Persistent storage granted." } else { "Persistent storage not granted." });
+              return;
+            }
+            Err(_) => {
+              dom::set_text("[data-storage-persisted]", "Unknown");
+            }
+          }
+        } else {
+          dom::set_text("[data-storage-persisted]", "Unsupported");
+        }
+        dom::toast("Storage persistence request failed.");
+      });
+    });
+    let _ = btn.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
+    cb.forget();
+  }
+
   spawn_local(async move {
     let storage_manager = dom::window().navigator().storage();
     if let Ok(persisted) = storage_manager.persisted() {
