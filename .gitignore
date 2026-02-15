@@ -2,6 +2,7 @@
 server.log
 localtunnel.log
 dist/
+dist-build/
 test-results/
 playwright-report/
 coverage/

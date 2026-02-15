@@ -3,11 +3,17 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 const rootDir = process.cwd();
-const args = new Set(process.argv.slice(2));
+const argv = process.argv.slice(2);
+const args = new Set(argv);
 const distMode = args.has('--dist');
+const distDirArgIndex = argv.indexOf('--dist-dir');
+const distDir = distDirArgIndex !== -1 && argv[distDirArgIndex + 1]
+  ? argv[distDirArgIndex + 1]
+  : 'dist';
+const distRoot = path.join(rootDir, distDir);
 
 const outputs = distMode
-  ? [path.join(rootDir, 'dist', 'sw-assets.js')]
+  ? [path.join(distRoot, 'sw-assets.js')]
   : [path.join(rootDir, 'public', 'sw-assets.js')];
 
 const assets = new Set(['./']);
@@ -40,7 +46,7 @@ const addDir = (sourceDir, options) => {
 };
 
 if (distMode) {
-  addDir('dist', {
+  addDir(distDir, {
     urlPrefix: '',
     include: /\.(?:html|js|mjs|css|json|webmanifest|woff2?|png|jpe?g|svg|webp|gif|wav|mp3|m4a|ogg|wasm|bcmap|pfb|ttf|otf)$/i,
     excludeDirs: ['assets/mockups'],
@@ -95,8 +101,8 @@ if (distMode) {
     include: /\.(?:mjs|js|wasm)$/i,
   });
 
-  const distDir = path.join(rootDir, 'dist');
-  if (fs.existsSync(distDir)) {
+  const devDistDir = path.join(rootDir, 'dist');
+  if (fs.existsSync(devDistDir)) {
     addDir('dist', {
       urlPrefix: '',
       include: /\.(?:html|js|css|json|webmanifest|woff2?|png|jpe?g|svg|webp|gif|wav|mp3|m4a|ogg|wasm)$/i,
@@ -116,7 +122,7 @@ const resolveLocalPath = (asset) => {
   if (!asset || asset === './') return null;
   const trimmed = asset.startsWith('./') ? asset.slice(2) : asset;
   if (distMode) {
-    return path.join(rootDir, 'dist', trimmed);
+    return path.join(distRoot, trimmed);
   }
   if (trimmed.startsWith('src/styles/')) {
     return path.join(rootDir, trimmed);
@@ -153,7 +159,7 @@ const manifestOutput = {
 };
 
 const manifestTarget = distMode
-  ? path.join(rootDir, 'dist', 'pwa-manifest.json')
+  ? path.join(distRoot, 'pwa-manifest.json')
   : path.join(rootDir, 'public', 'pwa-manifest.json');
 
 fs.mkdirSync(path.dirname(manifestTarget), { recursive: true });

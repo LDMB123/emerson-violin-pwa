@@ -37,6 +37,12 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Install Playwright browser
+        run: npx playwright install chromium
+
+      - name: Visual regression tests
+        run: npm run test:visual
+
       - name: Rust check
         run: cargo check
 
