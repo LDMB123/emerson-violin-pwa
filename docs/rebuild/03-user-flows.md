@@ -1,5 +1,7 @@
 # User Flows
 
+Last updated: 2026-02-15
+
 ## Flow A: Daily Session
 1. Open app → Overview.
 2. Tap "Start session" → timer starts.

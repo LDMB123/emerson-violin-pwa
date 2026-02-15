@@ -1,4 +1,6 @@
-# Memory Audit (2026-02-03)
+# Memory Audit
+
+Last updated: 2026-02-15
 
 ## Summary
 - Scope: tuner, metronome, game timers, performance telemetry, and global event listeners.

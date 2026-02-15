@@ -1,5 +1,7 @@
 # Motion Spec
 
+Last updated: 2026-02-15
+
 ## Purpose
 - Reinforce progression through the session flow.
 - Provide subtle feedback on section entry without distraction.

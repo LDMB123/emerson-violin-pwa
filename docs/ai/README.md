@@ -2,6 +2,7 @@
 
 Token-optimized project context for AI tooling.
 
+- Start with `../HANDOFF.md` for current takeover and operational workflow.
 - Start with `FAST_PATH.md` for a 60-second map.
 - Start with `PROJECT_CONTEXT.md` for the product + architecture summary.
 - Use `FILE_MAP.md` to locate key files fast.

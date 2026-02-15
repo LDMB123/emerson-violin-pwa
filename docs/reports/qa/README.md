@@ -1,5 +1,7 @@
 # QA Reports
 
+Last updated: 2026-02-15
+
 Legacy iPadOS QA logs were archived to `docs/_archived/legacy-docs/reports/qa/`.
 - `build-budgets.md` bundle size budgets enforced in postbuild
 - `bundle-audit.md` bundle composition notes

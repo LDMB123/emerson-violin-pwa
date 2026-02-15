@@ -1,5 +1,7 @@
 # Design Tokens
 
+Last updated: 2026-02-15
+
 ## Palette
 - `--color-bg`: #F6F2EC
 - `--color-bg-alt`: #EFE7DD

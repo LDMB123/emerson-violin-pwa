@@ -1,5 +1,7 @@
 # Design System
 
+Last updated: 2026-02-15
+
 ## Typography
 - Display: Fraunces variable for headings.
 - Body: Nunito variable for UI and body copy.

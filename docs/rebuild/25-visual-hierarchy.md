@@ -1,5 +1,7 @@
 # Visual Hierarchy
 
+Last updated: 2026-02-15
+
 ## Primary Layer
 - Brand title and session snapshot.
 - Primary CTAs (Start session, Start tuner, Start metronome).

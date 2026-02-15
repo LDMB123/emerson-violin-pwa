@@ -1,5 +1,7 @@
 # Architecture Overview
 
+Last updated: 2026-02-15
+
 ## Frontend Shell
 - Single-page shell in `index.html` with hash-based views.
 - Anchor navigation + CSS `:target`/`:has` for routing (no JS router).

@@ -1,5 +1,7 @@
 # Data Model
 
+Last updated: 2026-02-15
+
 ## IndexedDB (emerson-violin-db v3)
 
 ### `sessions`

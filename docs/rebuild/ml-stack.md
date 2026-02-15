@@ -1,4 +1,6 @@
-# Emerson Violin Studio ML Stack (2026)
+# ML Stack
+
+Last updated: 2026-02-15
 
 ## Goals
 - On-device inference for pitch, rhythm, and focus coaching

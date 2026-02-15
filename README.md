@@ -1,6 +1,6 @@
 # Emerson Violin Studio (PWA)
 
-Offline-first command center for focused practice: guided session flow, live tools (tuner, metronome, recorder), ML lab telemetry, and parent/coach support views.
+Offline-first Rust/WASM + web shell for violin practice workflows.
 
 ## Quick Start
 
@@ -9,23 +9,45 @@ npm install
 npm run dev
 ```
 
+Open `http://localhost:5173`.
+
 ## Requirements
 
-- Node.js 20+
-- Rust toolchain + `wasm32-unknown-unknown` target
-- Trunk (`cargo install trunk`)
+- Node.js `>=20`
+- Rust toolchain
+- `wasm32-unknown-unknown` target: `rustup target add wasm32-unknown-unknown`
+- Trunk: `cargo install trunk`
 
-## Commands
+## Common Commands
 
-- `npm run dev` start Trunk dev server
-- `npm run build` build production assets
-- `npm run preview` run Trunk in release mode
-- `npm test` run unit tests
-- `npm run lint` run eslint (shell assets)
+```bash
+# development
+npm run dev
+npm run dev:threads
 
-## Docs
+# production build + post-build optimizations
+npm run build
+npm run build:wasm-opt
+npm run build:budgets
 
-- `docs/README.md` documentation index
-- `docs/rebuild/` IA + UX + architecture notes
-- `docs/rebuild/05-architecture.md` canonical stack architecture
-- `docs/stack-architecture.md` pointer to canonical architecture doc
+# quality gates
+npm run lint
+npm test
+npm run token:budget
+```
+
+## Repository Map
+
+- `rust/` core application logic compiled to WASM
+- `src/` shell styles/assets and web-facing source
+- `public/` static runtime assets and manifest/service-worker inputs
+- `tests/` unit and e2e coverage
+- `scripts/` build/dev/maintenance/qa tooling
+- `docs/` architecture, plans, QA reports, and handoff docs
+- `native/ios/` iOS shell bundle and mirrored PWA assets
+
+## Handoff Docs
+
+- `docs/HANDOFF.md` current takeover guide
+- `docs/README.md` complete documentation index
+- `scripts/README.md` script catalog

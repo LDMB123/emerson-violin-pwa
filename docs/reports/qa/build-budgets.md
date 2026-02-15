@@ -1,5 +1,7 @@
 # Build Budgets
 
+Last updated: 2026-02-15
+
 These budgets are enforced in `postbuild` via `scripts/build/check-budgets.js`.
 
 ## Gzip Budgets

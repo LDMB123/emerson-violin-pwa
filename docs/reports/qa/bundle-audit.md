@@ -1,4 +1,6 @@
-# Bundle Audit (2026-02-04)
+# Bundle Audit
+
+Last updated: 2026-02-15
 
 ## Summary
 - Initial JS (gzip): 8.7 KB (`emerson-violin-pwa.js`)

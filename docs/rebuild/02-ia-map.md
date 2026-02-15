@@ -1,5 +1,7 @@
 # Information Architecture Map
 
+Last updated: 2026-02-15
+
 ## Top Level (Single Command Center)
 - Overview
 - Session Flow

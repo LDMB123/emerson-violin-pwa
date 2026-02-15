@@ -1,12 +1,28 @@
-# Scripts
+# Scripts Index
 
-- `build/build-sw-assets.js` generate `public/sw-assets.js` (dev) or `dist/sw-assets.js` (build)
-- `build/check-budgets.js` validate build size budgets
-- `build/budgets.json` perf budget thresholds
-- `build/copy-pwa-to-ios.js` copy `dist/` into `native/ios/EmersonViolinShell/Resources/pwa`
-- `dev/start-preview.sh` start simple HTTP preview server
-- `qa/qa-screenshots.mjs` capture QA screenshots into `docs/reports/qa/screenshots/`
-- `qa/perf-report.js` convert perf JSON into a markdown report
-- `qa/perf-bundle.js` bundle perf JSON + report + build meta + screenshots
-- `maintenance/cleanup-organization.sh` repo cleanup + archive helpers
-- `maintenance/prune-legacy.js` remove legacy coaching/teaching/games code + assets
+## Build (`scripts/build/`)
+
+- `build-sw-assets.js` build service-worker asset manifest for `public/` or `dist/`
+- `copy-sqlite-wasm.js` stage SQLite WASM runtime
+- `optimize-wasm.js` run `wasm-opt -Oz` when Binaryen is available
+- `check-budgets.js` enforce bundle/build budgets from `budgets.json`
+- `copy-pwa-to-ios.js` copy `dist/` into iOS shell resources
+- `update-ios-plist.js` update iOS content-version metadata
+
+## Dev (`scripts/dev/`)
+
+- `start-preview.sh` run static preview server for built output
+
+## QA (`scripts/qa/`)
+
+- `qa-screenshots.mjs` capture QA screenshots to `docs/reports/qa/screenshots/`
+- `perf-report.js` convert perf JSON into Markdown
+- `perf-bundle.js` package perf JSON, report, metadata, and screenshots
+
+## Maintenance (`scripts/maintenance/`)
+
+- `prune-legacy.js` remove legacy code paths/assets before build/lint/dev
+- `token-budget.js` report token footprint and ignored paths
+- `stash-audit.js` inspect worktree diff and summarize changes
+- `install-hooks.sh` install local git hooks
+- `cleanup-organization.sh` repository cleanup/archive helper

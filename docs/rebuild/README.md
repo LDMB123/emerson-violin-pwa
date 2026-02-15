@@ -1,5 +1,7 @@
 # Rebuild Prep Pack
 
+Last updated: 2026-02-15
+
 This folder is the single source of truth for the rebuild. Keep these docs updated as features ship.
 
 ## Index
