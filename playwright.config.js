@@ -16,10 +16,12 @@ export default defineConfig({
         {
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
+            testIgnore: /pwa-validation/,
         },
         {
             name: 'iPad Safari',
             use: { ...devices['iPad Pro 11'] },
+            testIgnore: /pwa-validation/,
         },
         {
             name: 'sw-enabled',
