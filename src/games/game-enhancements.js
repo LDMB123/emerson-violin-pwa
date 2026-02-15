@@ -282,7 +282,6 @@ const injectHeaderControls = (view) => {
     timer.textContent = '00:00';
     timer.setAttribute('aria-live', 'polite');
     timer.dataset.gameTimer = 'true';
-    timer.dataset.gameTimer = 'true';
 
     const resetButton = document.createElement('button');
     resetButton.className = 'icon-btn';

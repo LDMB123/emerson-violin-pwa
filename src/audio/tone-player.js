@@ -28,6 +28,8 @@ const DEFAULT_MAP = {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
+
 const normalizeNote = (note) => {
     if (!note) return null;
     if (NOTE_FREQUENCIES[note]) return note;
@@ -44,6 +46,7 @@ export const createTonePlayer = () => {
     }
     let context = null;
     let sequenceToken = 0;
+    let playbackEnabled = isSoundEnabled();
     const active = new Set();
 
     const ensureContext = async () => {
@@ -57,6 +60,9 @@ export const createTonePlayer = () => {
     };
 
     const scheduleTone = async (frequency, { duration = 0.45, volume = 0.18, type = 'sine' } = {}) => {
+        if (!playbackEnabled) {
+            return false;
+        }
         const ctx = await ensureContext();
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
@@ -79,15 +85,18 @@ export const createTonePlayer = () => {
             gainNode.disconnect();
         };
         await wait((safeDuration + 0.04) * 1000);
+        return true;
     };
 
     const playNote = async (note, options = {}) => {
         const normalized = normalizeNote(note);
         if (!normalized) return false;
+        if (!playbackEnabled) {
+            return false;
+        }
         const frequency = NOTE_FREQUENCIES[normalized];
         if (!frequency) return false;
-        await scheduleTone(frequency, options);
-        return true;
+        return scheduleTone(frequency, options);
     };
 
     const stopAll = () => {
@@ -112,12 +121,27 @@ export const createTonePlayer = () => {
         const token = ++sequenceToken;
         const beatMs = 60000 / Math.max(tempo, 1);
         for (const note of notes) {
+            if (!playbackEnabled) {
+                stopAll();
+                return false;
+            }
             if (token !== sequenceToken) return false;
             await playNote(note, { duration, volume, type });
             await wait(Math.max(0, beatMs * gap));
         }
         return true;
     };
+
+    const syncSoundState = () => {
+        playbackEnabled = isSoundEnabled();
+        if (!playbackEnabled) {
+            stopAll();
+        }
+    };
+
+    document.addEventListener('panda:sounds-change', syncSoundState);
+
+    syncSoundState();
 
     return {
         playNote,

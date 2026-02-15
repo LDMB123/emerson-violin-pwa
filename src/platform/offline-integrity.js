@@ -24,7 +24,12 @@ const CRITICAL_ASSETS = [
     './assets/icons/icon-192.png',
     './assets/illustrations/mascot-happy.png',
     './assets/audio/violin-a4.wav',
+    './assets/audio/violin-g3.wav',
+    './assets/audio/violin-d4.wav',
+    './assets/audio/violin-e5.wav',
     './assets/audio/metronome-90.wav',
+    './assets/audio/metronome-60.wav',
+    './assets/audio/metronome-120.wav',
 ];
 
 const defaultMetrics = () => ({

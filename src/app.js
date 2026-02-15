@@ -136,7 +136,7 @@ const registerServiceWorker = () => {
     });
 };
 
-const boot = () => {
+const boot = async () => {
     if (document.prerendering) {
         document.addEventListener('prerenderingchange', boot, { once: true });
         return;
@@ -147,7 +147,7 @@ const boot = () => {
     loadModule('ipadosCapabilities');
     loadModule('inputCapabilities');
     loadModule('progress');
-    loadModule('persist');
+    await loadModule('persist');
     loadIdle('installGuide');
     loadIdle('mlScheduler');
     loadIdle('mlAccelerator');

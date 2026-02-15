@@ -113,6 +113,11 @@ const updateProgressTrack = (el, percent, text) => {
     }
 };
 
+const toTrackerTimestamp = (value) => {
+    const parsed = Number.isFinite(Number(value)) ? Number(value) : Date.now();
+    return BigInt(Math.floor(parsed));
+};
+
 const updateAppBadge = async (streak) => {
     if (!('setAppBadge' in navigator)) return;
     try {
@@ -241,7 +246,7 @@ const buildProgress = async (events) => {
         }
     }
 
-    const now = Date.now();
+    const now = toTrackerTimestamp(Date.now());
     if (bestGameScore('pitch-quest') >= 85) tracker.unlock('pitch_perfect', now);
     if (bestGameScore('rhythm-dash') >= 85) tracker.unlock('rhythm_master', now);
     if (bestGameScore('ear-trainer') >= 90) tracker.unlock('ear_training', now);
@@ -303,16 +308,16 @@ const buildProgress = async (events) => {
     }
 
     if (practiceEvents.length > 0) {
-        tracker.unlock('first_note', Date.now());
+        tracker.unlock('first_note', toTrackerTimestamp(Date.now()));
     }
 
     events
         .filter((event) => event.type === 'achievement')
         .forEach((event) => {
-            tracker.unlock(event.id, event.timestamp || Date.now());
-        });
+        tracker.unlock(event.id, toTrackerTimestamp(event.timestamp));
+    });
 
-    tracker.check_progress(progress, Date.now());
+    tracker.check_progress(progress, toTrackerTimestamp(Date.now()));
 
     const skills = {
         pitch: skillProfile.pitch,
