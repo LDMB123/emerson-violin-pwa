@@ -101,7 +101,7 @@ const cacheFirst = async (request) => {
     try {
         const response = await fetch(request);
         if (response && response.ok) {
-            cache.put(request, response.clone());
+            await cache.put(request, response.clone());
         }
         return response;
     } catch {
