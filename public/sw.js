@@ -97,7 +97,7 @@ const respondWithRange = async (request) => {
 const cacheFirst = async (request) => {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request);
-    if (cached) return cached;
+    if (cached) return cached.clone();
     try {
         const response = await fetch(request);
         if (response && response.ok) {
@@ -123,7 +123,7 @@ const staleWhileRevalidate = async (request, event) => {
         if (event) {
             event.waitUntil(fetchPromise.catch(() => {}));
         }
-        return cached;
+        return cached.clone();
     }
     try {
         return await fetchPromise;
@@ -172,7 +172,7 @@ const handleNavigation = async (event) => {
 
     if (cached) {
         event.waitUntil(updateAppShell(fetchPromise));
-        return cached;
+        return cached.clone();
     }
 
     try {
