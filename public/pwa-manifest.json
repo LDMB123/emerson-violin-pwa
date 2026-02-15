@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-02-15T15:55:58.704Z",
+  "generatedAt": "2026-02-15T16:14:29.357Z",
   "entries": [
     {
       "path": "./assets/audio/metronome-120.wav",
@@ -895,7 +895,7 @@
     },
     {
       "path": "./pwa-manifest.json",
-      "sha256": "7841ba5979db43c5bcbda873f729378a3b048a3f91c48b5ea65de48aebdc4f74"
+      "sha256": "293f0f28a95cbbfa0c53e948bda6f5af43c02f0aa639b6d6a3a1c6f6fc63e0b8"
     },
     {
       "path": "./sqlite/index.mjs",
