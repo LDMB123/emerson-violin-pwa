@@ -34,7 +34,7 @@ fn start_worker() {
     return;
   }
 
-  let mut options = WorkerOptions::new();
+  let options = WorkerOptions::new();
   options.set_type(WorkerType::Module);
   options.set_name("emerson-db-worker");
   let worker = match Worker::new_with_options("./db-worker.js", &options) {

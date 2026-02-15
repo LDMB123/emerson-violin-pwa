@@ -52,7 +52,8 @@ const parseInitialAssets = async (distRoot) => {
     const styleHrefs = styleMatches.map((match) => match[1]);
 
     const resolveAsset = (assetPath) => {
-        const cleaned = assetPath.replace(/^\.\//, '').replace(/^\//, '');
+        const withoutQuery = assetPath.split('?')[0].split('#')[0];
+        const cleaned = withoutQuery.replace(/^\.\//, '').replace(/^\//, '');
         return path.join(distRoot, cleaned);
     };
 

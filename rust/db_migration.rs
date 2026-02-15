@@ -960,46 +960,6 @@ fn session_statement(value: &JsValue) -> DbStatement {
   }
 }
 
-fn recording_statement(value: &JsValue) -> DbStatement {
-  let json = js_to_json(value);
-  let id = js_string_any(value, &["id"]).unwrap_or_else(|| extract_id(&json));
-  let created_at = js_number_any(value, &["created_at", "createdAt"]).unwrap_or_else(|| extract_created_at(&json));
-  let duration = js_number_any(value, &["duration_seconds", "durationSeconds"]).unwrap_or(0.0);
-  let mime_type = js_string_any(value, &["mime_type", "mimeType"]).unwrap_or_else(|| "audio/webm".to_string());
-  let size_bytes = js_number_any(value, &["size_bytes", "sizeBytes"]).unwrap_or(0.0);
-  let format = js_string_any(value, &["format"]).unwrap_or_else(|| "unknown".to_string());
-  let opfs_path = js_string_any(value, &["opfs_path", "opfsPath"]);
-  let profile_id = js_string_any(value, &["profile_id", "profileId"]);
-
-  let payload = serde_json::json!({
-    "id": &id,
-    "created_at": created_at,
-    "duration_seconds": duration,
-    "mime_type": &mime_type,
-    "size_bytes": size_bytes,
-    "format": &format,
-    "opfs_path": &opfs_path,
-    "profile_id": &profile_id,
-  })
-  .to_string();
-
-  DbStatement {
-    sql: "INSERT OR REPLACE INTO recordings (id, created_at, duration_seconds, mime_type, size_bytes, format, opfs_path, profile_id, payload) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)"
-      .to_string(),
-    params: vec![
-      JsonValue::String(id),
-      json_number(created_at),
-      json_number(duration),
-      JsonValue::String(mime_type),
-      json_number(size_bytes),
-      JsonValue::String(format),
-      optional_json_string(opfs_path),
-      optional_json_string(profile_id),
-      JsonValue::String(payload),
-    ],
-  }
-}
-
 async fn recording_statement_with_blob(value: &JsValue) -> DbStatement {
   let json = js_to_json(value);
   let id = js_string_any(value, &["id"]).unwrap_or_else(|| extract_id(&json));
@@ -1069,36 +1029,6 @@ fn sync_queue_statement(value: &JsValue) -> DbStatement {
     sql: "INSERT OR REPLACE INTO sync_queue (id, created_at, payload) VALUES (?1, ?2, ?3)".to_string(),
     params: vec![
       JsonValue::String(id),
-      json_number(created_at),
-      JsonValue::String(payload),
-    ],
-  }
-}
-
-fn share_inbox_statement(value: &JsValue) -> DbStatement {
-  let json = js_to_json(value);
-  let id = js_string_any(value, &["id"]).unwrap_or_else(|| extract_id(&json));
-  let name = js_string_any(value, &["name"]).unwrap_or_default();
-  let size = js_number_any(value, &["size"]).unwrap_or(0.0);
-  let mime = js_string_any(value, &["mime", "type"]).unwrap_or_else(|| "application/octet-stream".to_string());
-  let created_at = js_number_any(value, &["created_at", "createdAt"]).unwrap_or_else(|| extract_created_at(&json));
-  let payload = serde_json::json!({
-    "id": &id,
-    "name": &name,
-    "size": size,
-    "mime": &mime,
-    "created_at": created_at,
-  })
-  .to_string();
-
-  DbStatement {
-    sql: "INSERT OR REPLACE INTO share_inbox (id, name, size, mime, created_at, payload) VALUES (?1, ?2, ?3, ?4, ?5, ?6)"
-      .to_string(),
-    params: vec![
-      JsonValue::String(id),
-      JsonValue::String(name),
-      json_number(size),
-      JsonValue::String(mime),
       json_number(created_at),
       JsonValue::String(payload),
     ],

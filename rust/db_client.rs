@@ -68,7 +68,7 @@ fn ensure_client() -> Result<(Worker, Rc<RefCell<HashMap<String, oneshot::Sender
     if slot.borrow().is_none() {
       let pending: Rc<RefCell<HashMap<String, oneshot::Sender<DbResponse>>>> =
         Rc::new(RefCell::new(HashMap::new()));
-      let mut options = WorkerOptions::new();
+      let options = WorkerOptions::new();
       options.set_type(WorkerType::Module);
       options.set_name("emerson-db-core");
       let worker = Worker::new_with_options("./db-worker.js", &options)?;

@@ -239,6 +239,7 @@ async fn open_db() -> Result<IdbDatabase, JsValue> {
   }
 }
 
+#[allow(dead_code)]
 async fn get_all_values(store_name: &str) -> Result<Vec<JsValue>, JsValue> {
   let db = open_db().await?;
   let tx = match db.transaction_with_str_and_mode(store_name, IdbTransactionMode::Readonly) {
@@ -253,6 +254,7 @@ async fn get_all_values(store_name: &str) -> Result<Vec<JsValue>, JsValue> {
   Ok(array.iter().collect())
 }
 
+#[allow(dead_code)]
 pub async fn get_store_values(store_name: &str) -> Result<Vec<JsValue>, JsValue> {
   get_all_values(store_name).await
 }
@@ -487,6 +489,7 @@ pub async fn get_migration_summary() -> Result<MigrationSummary, JsValue> {
 
 
 
+#[allow(dead_code)]
 pub async fn is_sqlite_active() -> bool {
   true
 }
@@ -896,6 +899,7 @@ pub async fn clear_error_queue() -> Result<(), JsValue> {
   sqlite_clear_table("error_queue").await
 }
 
+#[allow(dead_code)]
 pub async fn get_model_cache(id: &str) -> Result<Option<JsValue>, JsValue> {
   sqlite_get_model_cache(id).await
 }
@@ -1443,7 +1447,7 @@ async fn sqlite_get_assignments() -> Result<Vec<JsValue>, JsValue> {
   let mut out = Vec::new();
   for row in rows {
     if let Some(payload) = extract_string(&row, "payload") {
-      if let Some(mut val) = payload_to_js(&payload) {
+      if let Some(val) = payload_to_js(&payload) {
         if let Some(id) = extract_string(&row, "id") {
           let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
         }
@@ -1492,7 +1496,7 @@ async fn sqlite_get_profiles() -> Result<Vec<JsValue>, JsValue> {
   let mut out = Vec::new();
   for row in rows {
     if let Some(payload) = extract_string(&row, "payload") {
-      if let Some(mut val) = payload_to_js(&payload) {
+      if let Some(val) = payload_to_js(&payload) {
         if let Some(id) = extract_string(&row, "id") {
           let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
         }
@@ -1549,7 +1553,7 @@ async fn sqlite_get_game_scores() -> Result<Vec<JsValue>, JsValue> {
   let mut out = Vec::new();
   for row in rows {
     if let Some(payload) = extract_string(&row, "payload") {
-      if let Some(mut val) = payload_to_js(&payload) {
+      if let Some(val) = payload_to_js(&payload) {
         if let Some(id) = extract_string(&row, "id") {
           let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
         }
@@ -1603,7 +1607,7 @@ async fn sqlite_get_scores() -> Result<Vec<JsValue>, JsValue> {
   for row in rows {
     let payload_json = extract_string(&row, "payload")
       .and_then(|payload| serde_json::from_str::<JsonValue>(&payload).ok());
-    let mut entry = payload_json
+    let entry = payload_json
       .as_ref()
       .and_then(|json| json_to_js(json))
       .unwrap_or_else(|| Object::new().into());
@@ -1756,7 +1760,7 @@ async fn sqlite_get_ml_traces() -> Result<Vec<JsValue>, JsValue> {
   let mut out = Vec::new();
   for row in rows {
     if let Some(payload) = extract_string(&row, "payload") {
-      if let Some(mut val) = payload_to_js(&payload) {
+      if let Some(val) = payload_to_js(&payload) {
         if let Some(id) = extract_string(&row, "id") {
           let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
         }
@@ -1839,7 +1843,7 @@ async fn sqlite_get_telemetry_queue() -> Result<Vec<JsValue>, JsValue> {
   let mut out = Vec::new();
   for row in rows {
     if let Some(payload) = extract_string(&row, "payload") {
-      if let Some(mut val) = payload_to_js(&payload) {
+      if let Some(val) = payload_to_js(&payload) {
         if let Some(id) = extract_string(&row, "id") {
           let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
         }
@@ -1888,7 +1892,7 @@ async fn sqlite_get_error_queue() -> Result<Vec<JsValue>, JsValue> {
   let mut out = Vec::new();
   for row in rows {
     if let Some(payload) = extract_string(&row, "payload") {
-      if let Some(mut val) = payload_to_js(&payload) {
+      if let Some(val) = payload_to_js(&payload) {
         if let Some(id) = extract_string(&row, "id") {
           let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
         }
@@ -1927,6 +1931,7 @@ async fn sqlite_save_error(value: &JsValue) -> Result<(), JsValue> {
   .await
 }
 
+#[allow(dead_code)]
 async fn sqlite_get_model_cache(id: &str) -> Result<Option<JsValue>, JsValue> {
   db_client::init_db().await?;
   let rows = db_client::query(
@@ -1939,7 +1944,7 @@ async fn sqlite_get_model_cache(id: &str) -> Result<Option<JsValue>, JsValue> {
     None => return Ok(None),
   };
   if let Some(payload) = extract_string(row, "payload") {
-    if let Some(mut val) = payload_to_js(&payload) {
+    if let Some(val) = payload_to_js(&payload) {
       let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(id));
       return Ok(Some(val));
     }
@@ -1959,7 +1964,7 @@ async fn sqlite_get_model_cache_all() -> Result<Vec<JsValue>, JsValue> {
   let mut out = Vec::new();
   for row in rows {
     if let Some(payload) = extract_string(&row, "payload") {
-      if let Some(mut val) = payload_to_js(&payload) {
+      if let Some(val) = payload_to_js(&payload) {
         if let Some(id) = extract_string(&row, "id") {
           let _ = Reflect::set(&val, &"id".into(), &JsValue::from_str(&id));
         }
@@ -2061,6 +2066,7 @@ pub async fn save_model_bytes(id: &str, filename: &str, bytes: &[u8]) -> Option<
   }
 }
 
+#[allow(dead_code)]
 pub async fn load_model_bytes(path: &str) -> Option<Vec<u8>> {
   let blob = load_blob_from_opfs(path).await.ok()?;
   blob_to_bytes(&blob).await.ok()
@@ -2224,6 +2230,7 @@ async fn load_blob_from_opfs(path: &str) -> Result<Blob, JsValue> {
   file.dyn_into::<Blob>().map_err(|_| JsValue::from_str("OPFS blob cast failed"))
 }
 
+#[allow(dead_code)]
 async fn blob_to_bytes(blob: &Blob) -> Result<Vec<u8>, JsValue> {
   let buffer = JsFuture::from(blob.array_buffer()).await?;
   let array = Uint8Array::new(&buffer);

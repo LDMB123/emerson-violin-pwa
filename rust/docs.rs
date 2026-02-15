@@ -23,6 +23,10 @@ pub fn init() {
         return;
       }
     };
+    if !resp.ok() {
+      dom::set_text("[data-docs-content]", "Docs unavailable.");
+      return;
+    }
     let text = match resp.text() {
       Ok(promise) => promise,
       Err(_) => {

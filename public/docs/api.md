@@ -151,3 +151,33 @@
 
 - `web+emerson-game://?type=rhythm`
 - `web+emerson-session://?id=...`
+
+## HTTP API Contracts (v1)
+
+All shell-managed endpoints are same-origin and versioned by path. Current defaults:
+
+- `POST /api/telemetry`
+  - Body: JSON array of events (`name`, `timestamp`, `deviceId`, `appVersion`, optional `payload`)
+  - Success: `2xx` with empty body or JSON ack
+  - Failure: non-`2xx` keeps events queued for retry with backoff
+- `POST /api/errors`
+  - Body: JSON array of error events (`type`, `message`, `timestamp`, optional stack metadata)
+  - Success: `2xx`
+  - Failure: non-`2xx` keeps errors queued for retry with backoff
+- `GET /api/push/public-key`
+  - Response: raw VAPID key string OR JSON `{ "publicKey": "<base64url>" }`
+- `POST /api/push/subscribe`
+  - Body: `{ "deviceId": string, "subscription": PushSubscription }`
+  - Success: `2xx`
+- `POST /api/push/schedule`
+  - Body: `{ "deviceId": string, "enabled": boolean, "time": "HH:mm", "days": "daily|weekdays|weekends|..." , "tzOffsetMinutes": number }`
+  - Success: `2xx`
+- `POST /api/pwa/update`
+  - Reserved endpoint for update orchestration / update metadata callbacks.
+
+## API Guardrails
+
+- Enforce `Content-Type: application/json` for POST endpoints.
+- Require server-side schema validation and reject malformed payloads with `400`.
+- Apply per-device and per-IP rate limits to telemetry/error ingestion.
+- Keep push endpoints authenticated or origin-gated in production environments.

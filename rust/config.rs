@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
+use web_sys::Url;
 
 use crate::dom;
 use crate::storage;
@@ -48,6 +49,14 @@ pub struct AppConfig {
   pub channels: Channels,
 }
 
+const DEFAULT_TELEMETRY_ENDPOINT: &str = "/api/telemetry";
+const DEFAULT_ERRORS_ENDPOINT: &str = "/api/errors";
+const DEFAULT_PUSH_SUBSCRIBE_ENDPOINT: &str = "/api/push/subscribe";
+const DEFAULT_PUSH_SCHEDULE_ENDPOINT: &str = "/api/push/schedule";
+const DEFAULT_PUSH_PUBLIC_KEY_ENDPOINT: &str = "/api/push/public-key";
+const DEFAULT_UPDATE_ENDPOINT: &str = "/api/pwa/update";
+const DEFAULT_UPDATE_CHANNEL: &str = "stable";
+
 impl Default for AppConfig {
   fn default() -> Self {
     Self {
@@ -64,14 +73,16 @@ impl Default for AppConfig {
         webcodecs: true,
       },
       endpoints: Endpoints {
-        telemetry: "/api/telemetry".into(),
-        errors: "/api/errors".into(),
-        push_subscribe: "/api/push/subscribe".into(),
-        push_schedule: "/api/push/schedule".into(),
-        push_public_key: "/api/push/public-key".into(),
-        update: "/api/pwa/update".into(),
+        telemetry: DEFAULT_TELEMETRY_ENDPOINT.into(),
+        errors: DEFAULT_ERRORS_ENDPOINT.into(),
+        push_subscribe: DEFAULT_PUSH_SUBSCRIBE_ENDPOINT.into(),
+        push_schedule: DEFAULT_PUSH_SCHEDULE_ENDPOINT.into(),
+        push_public_key: DEFAULT_PUSH_PUBLIC_KEY_ENDPOINT.into(),
+        update: DEFAULT_UPDATE_ENDPOINT.into(),
       },
-      channels: Channels { update: "stable".into() },
+      channels: Channels {
+        update: DEFAULT_UPDATE_CHANNEL.into(),
+      },
     }
   }
 }
@@ -87,6 +98,9 @@ pub async fn load() -> AppConfig {
     Ok(resp) => resp,
     Err(_) => return default_config(),
   };
+  if !resp.ok() {
+    return default_config();
+  }
   let text = match resp.text() {
     Ok(promise) => promise,
     Err(_) => return default_config(),
@@ -97,6 +111,7 @@ pub async fn load() -> AppConfig {
   };
   let raw = text.as_string().unwrap_or_default();
   let mut config = serde_json::from_str(&raw).unwrap_or_default();
+  sanitize_endpoints(&mut config);
   apply_channel_override(&mut config);
   config
 }
@@ -126,13 +141,70 @@ pub fn endpoint_allowlist(config: &AppConfig) -> Vec<String> {
 fn apply_channel_override(config: &mut AppConfig) {
   if let Some(channel) = storage::local_get("shell:update-channel") {
     if !channel.is_empty() {
-      config.channels.update = channel;
+      config.channels.update = sanitize_channel(&channel);
     }
   }
 }
 
 fn default_config() -> AppConfig {
   let mut config = AppConfig::default();
+  sanitize_endpoints(&mut config);
   apply_channel_override(&mut config);
   config
+}
+
+fn sanitize_endpoints(config: &mut AppConfig) {
+  config.endpoints.telemetry = sanitize_endpoint(&config.endpoints.telemetry, DEFAULT_TELEMETRY_ENDPOINT);
+  config.endpoints.errors = sanitize_endpoint(&config.endpoints.errors, DEFAULT_ERRORS_ENDPOINT);
+  config.endpoints.push_subscribe =
+    sanitize_endpoint(&config.endpoints.push_subscribe, DEFAULT_PUSH_SUBSCRIBE_ENDPOINT);
+  config.endpoints.push_schedule =
+    sanitize_endpoint(&config.endpoints.push_schedule, DEFAULT_PUSH_SCHEDULE_ENDPOINT);
+  config.endpoints.push_public_key =
+    sanitize_endpoint(&config.endpoints.push_public_key, DEFAULT_PUSH_PUBLIC_KEY_ENDPOINT);
+  config.endpoints.update = sanitize_endpoint(&config.endpoints.update, DEFAULT_UPDATE_ENDPOINT);
+  config.channels.update = sanitize_channel(&config.channels.update);
+}
+
+fn sanitize_endpoint(raw: &str, fallback: &str) -> String {
+  let trimmed = raw.trim();
+  if trimmed.is_empty() {
+    return fallback.to_string();
+  }
+
+  let origin = dom::window().location().origin().unwrap_or_default();
+  let url = match Url::new_with_base(trimmed, &origin) {
+    Ok(url) => url,
+    Err(_) => return fallback.to_string(),
+  };
+  let protocol = url.protocol();
+  if protocol != "http:" && protocol != "https:" {
+    return fallback.to_string();
+  }
+  if !origin.is_empty() && url.origin() != origin {
+    return fallback.to_string();
+  }
+  let path = url.pathname();
+  if path.is_empty() || !path.starts_with('/') {
+    return fallback.to_string();
+  }
+  let query = url.search();
+  format!("{}{}", path, query)
+}
+
+fn sanitize_channel(raw: &str) -> String {
+  let trimmed = raw.trim();
+  if trimmed.is_empty() {
+    return DEFAULT_UPDATE_CHANNEL.to_string();
+  }
+  let filtered: String = trimmed
+    .chars()
+    .filter(|ch| ch.is_ascii_alphanumeric() || *ch == '-' || *ch == '_' || *ch == '.')
+    .take(32)
+    .collect();
+  if filtered.is_empty() {
+    DEFAULT_UPDATE_CHANNEL.to_string()
+  } else {
+    filtered
+  }
 }

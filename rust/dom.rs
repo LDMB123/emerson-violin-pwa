@@ -72,12 +72,6 @@ pub fn is_standalone() -> bool {
   standalone || ios
 }
 
-pub fn is_ios() -> bool {
-  let window = window();
-  let ua = window.navigator().user_agent().unwrap_or_default().to_lowercase();
-  ua.contains("iphone") || ua.contains("ipad") || ua.contains("ipod")
-}
-
 pub fn toast(message: &str) {
   if let Some(el) = query("[data-toast]") {
     el.set_text_content(Some(message));

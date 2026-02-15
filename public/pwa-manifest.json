@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-02-05T04:56:43.039Z",
+  "generatedAt": "2026-02-15T15:55:58.704Z",
   "entries": [
     {
       "path": "./assets/audio/metronome-120.wav",
@@ -108,6 +108,10 @@
     {
       "path": "./assets/illustrations/mascot-happy.png",
       "sha256": "83ff29c5dadefe933a77a1f0be1a5aaa35df2330eea91cd56d336e3112ebc3e3"
+    },
+    {
+      "path": "./assets/mockups/screen_home_1769391215723.png",
+      "sha256": "fcaa15eab38e22767066fef8f364a845a4299dc7aec06b0cf8369d20fa73ec97"
     },
     {
       "path": "./assets/pdf/cmaps/78-EUC-H.bcmap",
@@ -847,15 +851,23 @@
     },
     {
       "path": "./config.json",
-      "sha256": "b825083eaf548c8224c89e90891d659e8dcd452e0c26004cb955fe0910bb5c78"
+      "sha256": "a75e23d69b55de3c3c7f230bad58c01d1c6cea90cb39360518392f3ae030c208"
+    },
+    {
+      "path": "./db-worker.js",
+      "sha256": "53d9d1c2f4c4be4d8edfe204aeb0751c1c777605276482430eccdeb1752327f8"
     },
     {
       "path": "./docs/api.md",
-      "sha256": "a1919bc6121b3ca5edc912fb790cc9cd2d4d6d784badd4183281a2560f709470"
+      "sha256": "3039dc42917a4f924dbf1a92344f15d2d7e5b57c5e77f74506b0d93c41818f49"
+    },
+    {
+      "path": "./fallback-session.js",
+      "sha256": "347a50e4ae590ee9abbe2226f59d00c0dc4387ac9a27243acfa11d09a73852c4"
     },
     {
       "path": "./index.html",
-      "sha256": "291de2ab6dc0454be0fb9d5290c1484966c4b380c7ef4c29346c7df84bd5d47a"
+      "sha256": "6e60d932d6e79ae74ef0777c30576f5e3da661878d8f720b04350bc9bbdeadec"
     },
     {
       "path": "./manifest.webmanifest",
@@ -870,8 +882,12 @@
       "sha256": "61e6abf63eff3bf95fc65c878b02806257015662adb5358f51bd93266d16c6ae"
     },
     {
+      "path": "./opfs-test-worker.js",
+      "sha256": "6af12b657b48f36754c39cdbe913df78fc6d3387ed1d328c1716c873935c101c"
+    },
+    {
       "path": "./pdf.js",
-      "sha256": "fd1ff0293c9cc2238dd3813e581fc34eceafb2de478b5d45e9f5bab78268ceec"
+      "sha256": "ace97952f9412f1b15efeb9343e0cf7f0a7b54199aa6924995db1deb832f3b9d"
     },
     {
       "path": "./pose.js",
@@ -879,7 +895,23 @@
     },
     {
       "path": "./pwa-manifest.json",
-      "sha256": "460c1f2b547cdca178dc7757721636f728ca2f6e0c539a6727682b3a0f759303"
+      "sha256": "7841ba5979db43c5bcbda873f729378a3b048a3f91c48b5ea65de48aebdc4f74"
+    },
+    {
+      "path": "./sqlite/index.mjs",
+      "sha256": "044a5844df842a96908eb9aa5542896ae6df174c23866f2c8573ded2ea5df9a2"
+    },
+    {
+      "path": "./sqlite/sqlite3-opfs-async-proxy.js",
+      "sha256": "eddca1c43e34e0f69c477d1e1154ad229c3bfcb33dc49392b70201402bec2dc7"
+    },
+    {
+      "path": "./sqlite/sqlite3-worker1.mjs",
+      "sha256": "40b871be67f36d7912b00ce493cc85b2a735920c5e6544f7e16361a1668d7503"
+    },
+    {
+      "path": "./sqlite/sqlite3.wasm",
+      "sha256": "2d8049756d9d3765f3afac6eb4766457152fb5f417d2febe2836ee3c2223b3e2"
     },
     {
       "path": "./src/assets/fonts/fraunces-vf.woff2",
@@ -891,7 +923,7 @@
     },
     {
       "path": "./src/styles/app.css",
-      "sha256": "9cafcb3e321bd3c1777306b2e7a0a7eb360b1614cf1fd8b482f5f68b8a4322c8"
+      "sha256": "3a9e6acb6622ba30a3e48f835f39eac949aba38658138d8344003995a646ce66"
     },
     {
       "path": "./src/styles/scroll-animations.css",
@@ -900,6 +932,18 @@
     {
       "path": "./src/styles/tokens.css",
       "sha256": "09f0d45ded6ed60f743988682e83329fde57bcd705c510cc2b023ab9cd1eb211"
+    },
+    {
+      "path": "./sw-assets.js",
+      "sha256": "462791fdecd7a1e746e3040f43cd3ac258c5f2013044913c310f2c27dd4ea159"
+    },
+    {
+      "path": "./sw.js",
+      "sha256": "86d89bbd759de922873b398fc9b429de150f2c9058c0a6401f88b2ba6a08b046"
+    },
+    {
+      "path": "./wasm-init.js",
+      "sha256": "6e9699af7ef70c5e169b0b3dbbb437860d7ff55ccdbb45ca89bfe578fd3f7126"
     }
   ]
 }

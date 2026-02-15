@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v204';
+const CACHE_VERSION = 'v205';
 const CACHE_NAME = `emerson-violin-shell-${CACHE_VERSION}`;
 const PACK_CACHE = `emerson-violin-packs-${CACHE_VERSION}`;
 const OFFLINE_URL = './offline.html';
@@ -39,17 +39,19 @@ const isBootAsset = (url) => {
   if (url.startsWith('./snippets/')) return true;
   if (url.startsWith('./models/')) return true;
 
-  if (url.startsWith('./assets/audio/')) return true;
   if (url.startsWith('./assets/fonts/')) return true;
   if (url.startsWith('./assets/icons/')) return true;
-  if (url.startsWith('./assets/badges/')) return true;
-  if (url.startsWith('./assets/illustrations/')) return true;
 
   return false;
 };
 
 const PACKS = {
   pdf: ASSETS_TO_CACHE.filter((url) => typeof url === 'string' && url.startsWith('./assets/pdf/')),
+  media: ASSETS_TO_CACHE.filter((url) =>
+    typeof url === 'string'
+      && (url.startsWith('./assets/audio/')
+        || url.startsWith('./assets/badges/')
+        || url.startsWith('./assets/illustrations/'))),
 };
 
 const BOOT_ASSETS = ASSETS_TO_CACHE.filter(isBootAsset);
@@ -340,6 +342,7 @@ self.addEventListener('message', (event) => {
         packEntries: packEntries.length,
         precacheEntries: PRECACHE_URLS.length,
         pdfPackEntries: (PACKS.pdf || []).length,
+        mediaPackEntries: (PACKS.media || []).length,
       }))
     );
   }
@@ -447,6 +450,10 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  if (url.origin !== self.location.origin) {
+    event.respondWith(fetch(request));
+    return;
+  }
   if (url.pathname.includes('/assets/pdf/')) {
     event.respondWith(cacheFirstPack(request));
     return;
