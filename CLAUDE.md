@@ -8,6 +8,7 @@ Progressive Web App for violin tuning and practice assistance.
 npm install
 npm run dev    # Development server
 npm run build  # Production build
+npm run lint   # Lint source files
 npm run preview # Preview build
 ```
 
@@ -17,7 +18,7 @@ Violin tuner PWA with real-time pitch detection using Web Audio API.
 
 ## Key Technologies
 
-- Framework: [Tech stack TBD - check package.json]
+- Framework: Vite 6 + vanilla JavaScript (ES modules)
 - Audio: Web Audio API
 - PWA: Service Workers, Web App Manifest
 
@@ -26,8 +27,16 @@ Violin tuner PWA with real-time pitch detection using Web Audio API.
 ```bash
 npm run dev      # Start development
 npm run build    # Build for production
+npm run test     # Run unit tests
 npm run lint     # Run linter
-npm run type-check # TypeScript validation
+```
+
+For QA checks:
+
+```bash
+npm run lint
+npm test
+npx playwright test tests/e2e
 ```
 
 ## Gotchas

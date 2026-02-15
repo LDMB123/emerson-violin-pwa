@@ -48,11 +48,17 @@ npm run dev
 # Build for production
 npm run build
 
+# Lint source
+npm run lint
+
 # Run tests
 npm test
 
 # Watch mode testing
 npm run test:watch
+
+# Run iPad Safari QA suite
+npx playwright test tests/e2e
 
 # Preview production build
 npm run preview
@@ -75,6 +81,7 @@ npm run preview
 
 - `predev` / `prebuild`: Builds song HTML and service worker assets
 - `postbuild`: Updates service worker with dist assets
+- `scripts/qa-screenshots.mjs`: Captures iPad Safari QA screenshots (WebKit)
 - All builds automatically generate required static content
 
 ## Status

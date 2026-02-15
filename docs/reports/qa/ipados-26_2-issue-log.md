@@ -209,3 +209,4 @@ Tracking modernization, offline-first, UX, and stability issues. Each entry incl
 | 203 | Readability | Some glass surfaces remained too transparent for dense text blocks. | Increased glass opacity and ensured default text color on glass. | src/styles/app.css |
 | 204 | Readability | Song titles used a lighter custom brown, lowering contrast in some cards. | Unified song title color with primary text token. | src/styles/app.css |
 | 205 | Offline update | Final full-page polish required cache refresh for offline installs. | Bumped SW cache version after global readability pass. | public/sw.js, sw.js |
+| 206 | Docs | QA documentation and command references still included stale legacy references. | Updated `README.md`, `CLAUDE.md`, and `docs/reports/qa/changelog.md` to match current iPad Safari-only platform configuration. | README.md, CLAUDE.md, docs/reports/qa/changelog.md |
