@@ -60,7 +60,8 @@ jobs:
         run: npm test
 
       - name: Install Playwright browsers
-        run: npx playwright install chromium webkit
+        run: |
+          npx playwright install --with-deps chromium webkit
 
       - name: Visual regression tests
         run: npm run test:visual
