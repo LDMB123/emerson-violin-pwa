@@ -90,6 +90,8 @@ test('progress path has no BigInt conversion errors and can serve critical audio
     expect(onlineChecks.every((check) => check.status === 200 && check.ok)).toBe(true);
 
     if (testInfo.project.name === 'iPad Safari') {
+        // WebKit/iPad Safari in Playwright can throw `TypeError: Load failed` for cached audio fetches
+        // despite assets being present in the service-worker cache; validate cache presence directly.
         const cacheChecks = await page.evaluate(async (assets) => {
             const cacheNames = await caches.keys();
             const pandaCache = cacheNames.find((name) => name.startsWith('panda-violin-local-'));
