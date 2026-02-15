@@ -18,8 +18,19 @@ jobs:
 
       - name: Install system tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y binaryen
+          if ! command -v wasm-opt >/dev/null 2>&1; then
+            for attempt in 1 2 3; do
+              echo "Installing binaryen (attempt ${attempt}/3)"
+              if timeout 180s sudo apt-get update \
+                && timeout 180s sudo apt-get install -y --no-install-recommends binaryen; then
+                break
+              fi
+              echo "binaryen install attempt ${attempt} failed; retrying..."
+              sleep 5
+            done
+          else
+            echo "binaryen already available (wasm-opt found)"
+          fi
 
       - uses: dtolnay/rust-toolchain@stable
         with:
