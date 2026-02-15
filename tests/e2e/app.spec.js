@@ -18,7 +18,8 @@ test.describe('Emerson Violin Studio (Rust-first shell)', () => {
   });
 
   test('navigates to the controls section', async ({ page }) => {
-    await page.click('a[href="#controls"]');
+    await page.click('.nav-more > summary');
+    await page.click('.more-panel a[href="#controls"]');
     await page.waitForURL('**/#controls');
     await expect(page.locator('#controls')).toBeVisible();
   });
