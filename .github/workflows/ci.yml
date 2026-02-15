@@ -26,7 +26,18 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Install Trunk
-        run: cargo install trunk --locked
+        run: |
+          set -euo pipefail
+          TRUNK_VERSION="v0.21.14"
+          TRUNK_ARCHIVE="trunk-$(uname -m)-unknown-linux-gnu.tar.gz"
+          TRUNK_URL="https://github.com/thedodd/trunk/releases/download/${TRUNK_VERSION}/${TRUNK_ARCHIVE}"
+          CHECKSUM_URL="${TRUNK_URL}.sha256"
+          curl -fsSL "${TRUNK_URL}" -o /tmp/trunk.tar.gz
+          curl -fsSL "${CHECKSUM_URL}" -o /tmp/trunk.tar.gz.sha256
+          echo "$(cat /tmp/trunk.tar.gz.sha256)  /tmp/trunk.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/trunk.tar.gz -C /tmp
+          sudo mv /tmp/trunk /usr/local/bin/trunk
+          trunk --version
 
       - name: Install dependencies
         run: npm ci
