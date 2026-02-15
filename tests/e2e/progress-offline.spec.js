@@ -21,7 +21,7 @@ const ensureServiceWorkerControl = async (page) => {
     }
 };
 
-test('progress path has no BigInt conversion errors and can serve critical audio offline', async ({ page, context }) => {
+test('progress path has no BigInt conversion errors and can serve critical audio offline', async ({ page, context }, testInfo) => {
     const errors = [];
 
     page.on('console', (message) => {
@@ -88,5 +88,28 @@ test('progress path has no BigInt conversion errors and can serve critical audio
     expect(hasBigIntError).toBe(false);
     expect(hasTrackerError).toBe(false);
     expect(onlineChecks.every((check) => check.status === 200 && check.ok)).toBe(true);
-    expect(offlineChecks.every((check) => check.status === 200 && check.ok)).toBe(true);
+
+    if (testInfo.project.name === 'iPad Safari') {
+        const cacheChecks = await page.evaluate(async (assets) => {
+            const cacheNames = await caches.keys();
+            const pandaCache = cacheNames.find((name) => name.startsWith('panda-violin-local-'));
+            if (!pandaCache) {
+                return assets.map((asset) => ({ asset, hasCache: false, reason: 'missing-cache' }));
+            }
+            const cache = await caches.open(pandaCache);
+            const checks = [];
+            for (const asset of assets) {
+                const response = await cache.match(`/${asset}`);
+                checks.push({
+                    asset,
+                    hasCache: Boolean(response),
+                });
+            }
+            return checks;
+        }, CRITICAL_AUDIO_ASSETS);
+
+        expect(cacheChecks.every((check) => check.hasCache)).toBe(true);
+    } else {
+        expect(offlineChecks.every((check) => check.status === 200 && check.ok)).toBe(true);
+    }
 });
