@@ -1,3 +1,13 @@
+# Deprecated Handoff Snapshot (Read This First)
+
+This file is a historical snapshot and is **not** the active takeover guide.
+
+- Active handoff: `docs/HANDOFF.md`
+- Active docs index: `docs/README.md`
+- This snapshot reflects an older workstream state from `2026-02-05`.
+
+---
+
 # Project Status / Handoff — iPad mini 6 (A15) · iPadOS 26.2 · Safari 26.2
 Date: 2026-02-05  
 Repo: `/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa`
