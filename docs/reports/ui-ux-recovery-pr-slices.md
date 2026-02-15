@@ -73,3 +73,4 @@ This file defines the recommended 3-PR rollout for the student-first UI/UX recov
 3. PR3
 
 Do not squash across PR boundaries; each PR is designed to isolate rollback risk.
+
