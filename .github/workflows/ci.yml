@@ -59,8 +59,8 @@ jobs:
       - name: Unit tests
         run: npm test
 
-      - name: Install Playwright browser
-        run: npx playwright install chromium
+      - name: Install Playwright browsers
+        run: npx playwright install chromium webkit
 
       - name: Visual regression tests
         run: npm run test:visual
