@@ -1,6 +1,6 @@
 # Accessibility Audit
 
-Last updated: 2026-02-15
+Captured on: 2026-02-03
 
 ## Summary
 - Scope: core navigation, settings, tuner, lesson pack, and rewards flows.

@@ -18,6 +18,7 @@ Applies to Markdown docs under `docs/`, plus repository-level onboarding docs (`
 - First line must be a single H1: `# Title`.
 - Second metadata line should be: `Last updated: YYYY-MM-DD`.
 - Prefer concise, stable titles without dates in the heading itself.
+- For immutable snapshots (for example dated QA reports), use `Captured on: YYYY-MM-DD` instead of `Last updated`.
 
 ## Section Structure
 
@@ -45,6 +46,7 @@ Applies to Markdown docs under `docs/`, plus repository-level onboarding docs (`
 - Run validation after doc updates:
 
 ```bash
-npm run lint
 npm test
 ```
+
+- Docs-only note: `npm run lint` triggers `prelint` and runs `scripts/maintenance/prune-legacy.js` (workspace-modifying side effect). Use it only when that behavior is intended.
