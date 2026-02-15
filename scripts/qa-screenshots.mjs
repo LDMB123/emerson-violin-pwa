@@ -1,14 +1,12 @@
-import { chromium, webkit } from '@playwright/test';
+import { webkit } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const baseUrl = process.env.QA_BASE_URL || 'http://127.0.0.1:4173/';
 const headful = process.env.QA_HEADFUL === '1';
-const preferredChannel = process.env.QA_CHANNEL;
 const outputRoot = path.resolve('qa', 'screenshots');
 
 const viewports = [
-  { name: 'iphone', width: 390, height: 844, deviceScaleFactor: 2, isMobile: true },
   { name: 'ipad', width: 1024, height: 1366, deviceScaleFactor: 2, isMobile: false },
 ];
 
@@ -29,40 +27,6 @@ const ensureDir = async (dir) => {
   await fs.mkdir(dir, { recursive: true });
 };
 
-const findChromiumExecutable = async () => {
-  const home = process.env.HOME;
-  if (!home) return null;
-  const cacheDir = path.join(home, 'Library', 'Caches', 'ms-playwright');
-  let entries = [];
-  try {
-    entries = await fs.readdir(cacheDir);
-  } catch {
-    return null;
-  }
-  const shellDirs = entries
-    .filter((name) => name.startsWith('chromium_headless_shell-'))
-    .sort()
-    .reverse();
-
-  const platform =
-    process.platform === 'darwin'
-      ? process.arch === 'arm64'
-        ? 'mac-arm64'
-        : 'mac-x64'
-      : process.platform;
-
-  for (const dir of shellDirs) {
-    const candidate = path.join(cacheDir, dir, `chrome-headless-shell-${platform}`, 'chrome-headless-shell');
-    try {
-      await fs.access(candidate);
-      return candidate;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-};
-
 const captureView = async (page, route, outputPath) => {
   await page.goto(`${baseUrl}${route.hash}`, { waitUntil: 'load' });
   await page.waitForTimeout(300);
@@ -80,27 +44,14 @@ const captureView = async (page, route, outputPath) => {
 
 const run = async () => {
   await ensureDir(outputRoot);
-  const executablePath = await findChromiumExecutable();
   let browser;
   const launchOptions = {
     headless: !headful,
   };
   try {
-    if (preferredChannel) {
-      browser = await chromium.launch({ channel: preferredChannel, ...launchOptions });
-    } else if (executablePath) {
-      browser = await chromium.launch({ executablePath, ...launchOptions });
-    } else {
-      browser = await chromium.launch({ ...launchOptions });
-    }
+    browser = await webkit.launch({ ...launchOptions });
   } catch (error) {
-    console.warn('[QA] Falling back to system Chrome', error?.message || error);
-    try {
-      browser = await chromium.launch({ channel: 'chrome', ...launchOptions });
-    } catch (fallbackError) {
-      console.warn('[QA] Falling back to WebKit', fallbackError?.message || fallbackError);
-      browser = await webkit.launch({ headless: !headful });
-    }
+    throw new Error(`[QA] Failed to launch WebKit browser: ${error?.message || error}`);
   }
 
   for (const viewport of viewports) {
