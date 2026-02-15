@@ -101,6 +101,7 @@ const buildRow = (recording, index) => {
             if (!source) return;
             stopPlayback();
             playbackAudio.src = source.url;
+            if (!isSoundEnabled()) return;
             playbackAudio.play().catch(() => {});
             if (source.revoke) {
                 playbackUrl = source.url;

@@ -471,6 +471,7 @@ const bindMediaSession = () => {
         navigator.mediaSession.setActionHandler('play', async () => {
             if (!isSoundEnabled()) return;
             if (currentAudio) {
+                if (!isSoundEnabled()) return;
                 await currentAudio.play().catch(() => {});
             }
         });
@@ -529,9 +530,10 @@ const bindAudioFocus = () => {
     }, { passive: true });
 };
 
+const resolveSoundState = () => (soundToggle ? soundToggle.checked : isSoundEnabled());
+
 const updateSoundState = () => {
-    if (!soundToggle) return;
-    const enabled = soundToggle.checked;
+    const enabled = resolveSoundState();
     if (document.documentElement) {
         document.documentElement.dataset.sounds = enabled ? 'on' : 'off';
     }
@@ -546,8 +548,10 @@ const updateSoundState = () => {
 };
 
 const bindSoundToggle = () => {
-    if (!soundToggle) return;
-    soundToggle.addEventListener('change', updateSoundState);
+    if (soundToggle) {
+        soundToggle.checked = isSoundEnabled();
+        soundToggle.addEventListener('change', updateSoundState);
+    }
     updateSoundState();
 };
 

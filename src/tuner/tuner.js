@@ -258,6 +258,7 @@ if (toneButtons.length) {
                 setStatus('Sounds are off. Turn on Sounds to hear this tone.');
                 return;
             }
+            if (!isSoundEnabled()) return;
             sample.currentTime = 0;
             sample.play().catch(() => {});
         });

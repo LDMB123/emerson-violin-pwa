@@ -2,6 +2,8 @@ const DB_NAME = 'panda-violin-db';
 const DB_VERSION = 2;
 const STORE = 'kv';
 const BLOB_STORE = 'blobs';
+const BLOB_FALLBACK_PREFIX = 'panda-violin:blob-fallback:';
+const BLOB_FALLBACK_LIMIT = 1.8_000_000;
 
 const hasIndexedDB = typeof indexedDB !== 'undefined';
 let dbPromise = null;
@@ -53,6 +55,52 @@ const fallbackRemove = (key) => {
         localStorage.removeItem(key);
     } catch (error) {
         console.warn('[Storage] localStorage remove failed', error);
+    }
+};
+
+const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        if (reader.result) resolve(reader.result);
+        else reject(new Error('[Storage] Unable to serialize blob to data URL.'));
+    };
+    reader.onerror = () => reject(reader.error || new Error('[Storage] Unable to serialize blob to data URL.'));
+    reader.readAsDataURL(blob);
+});
+
+const dataUrlToBlob = async (dataUrl) => {
+    const response = await fetch(dataUrl);
+    return response.blob();
+};
+
+const fallbackSetBlob = async (key, blob) => {
+    try {
+        const dataUrl = await blobToDataUrl(blob);
+        if (typeof dataUrl === 'string' && dataUrl.length > BLOB_FALLBACK_LIMIT) return false;
+        localStorage.setItem(`${BLOB_FALLBACK_PREFIX}${key}`, dataUrl);
+        return true;
+    } catch (error) {
+        console.warn('[Storage] blob fallback set failed', error);
+        return false;
+    }
+};
+
+const fallbackGetBlob = async (key) => {
+    try {
+        const raw = localStorage.getItem(`${BLOB_FALLBACK_PREFIX}${key}`);
+        if (!raw) return null;
+        return dataUrlToBlob(raw);
+    } catch (error) {
+        console.warn('[Storage] blob fallback get failed', error);
+        return null;
+    }
+};
+
+const fallbackRemoveBlob = (key) => {
+    try {
+        localStorage.removeItem(`${BLOB_FALLBACK_PREFIX}${key}`);
+    } catch (error) {
+        console.warn('[Storage] blob fallback remove failed', error);
     }
 };
 
@@ -158,37 +206,48 @@ export const removeJSON = async (key) => {
 export const getBlob = async (key) => {
     if (!key) return null;
     const db = await openDB();
-    if (!db) return null;
     try {
-        return await getBlobFromDB(db, key);
+        if (db) return await getBlobFromDB(db, key);
     } catch (error) {
         console.warn('[Storage] IndexedDB blob get failed', error);
-        return null;
+    }
+
+    const fallback = await fallbackGetBlob(key);
+    if (fallback) return fallback;
+
+    return null;
+};
+
+const clearBlobFallback = async (key) => {
+    if (!key) return;
+    fallbackRemoveBlob(key);
+    try {
+        const db = await openDB();
+        if (!db) return;
+        await removeBlobFromDB(db, key);
+    } catch (error) {
+        // ignore to avoid duplicate cleanup failures during environment changes
     }
 };
 
 export const setBlob = async (key, blob) => {
     if (!key || !blob) return false;
     const db = await openDB();
-    if (!db) return false;
     try {
+        if (!db) throw new Error('[Storage] IndexedDB unavailable');
         await setBlobInDB(db, key, blob);
         return true;
     } catch (error) {
         console.warn('[Storage] IndexedDB blob set failed', error);
+        const fallbackStored = await fallbackSetBlob(key, blob);
+        if (fallbackStored) return true;
         return false;
     }
 };
 
 export const removeBlob = async (key) => {
     if (!key) return;
-    const db = await openDB();
-    if (!db) return;
-    try {
-        await removeBlobFromDB(db, key);
-    } catch (error) {
-        console.warn('[Storage] IndexedDB blob remove failed', error);
-    }
+    await clearBlobFallback(key);
 };
 
 export const supportsIndexedDB = hasIndexedDB;

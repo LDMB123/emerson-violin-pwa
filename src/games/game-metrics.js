@@ -14,11 +14,8 @@ const formatCountdown = (seconds) => {
     return `${minutes.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
 };
 
-const soundToggle = document.querySelector('#setting-sounds');
-
 const isSoundEnabled = () => {
-    if (!soundToggle) return true;
-    return soundToggle.checked;
+    return document.documentElement?.dataset?.sounds !== 'off';
 };
 
 let tonePlayer = null;
@@ -1503,7 +1500,15 @@ const bindEarTrainer = () => {
         currentTone = tonePool[Math.floor(Math.random() * tonePool.length)];
         const audio = currentTone ? audioMap[currentTone] : null;
         if (audio) {
+            if (!isSoundEnabled()) {
+                setQuestion('Sounds are off. Turn on Sounds to play.');
+                return;
+            }
             audio.currentTime = 0;
+            if (!isSoundEnabled()) {
+                setQuestion('Sounds are off. Turn on Sounds to play.');
+                return;
+            }
             audio.play().catch(() => {});
         }
         const total = rounds || 10;
@@ -2515,6 +2520,10 @@ const bindDuetChallenge = () => {
             resolve();
             return;
         }
+        if (!isSoundEnabled()) {
+            resolve();
+            return;
+        }
         audio.addEventListener('ended', finish);
         audio.currentTime = 0;
         audio.play().catch(() => {
@@ -2721,7 +2730,15 @@ const bindTuningTime = () => {
             }
             const audio = audioMap[note];
             if (audio) {
+                if (!isSoundEnabled()) {
+                    if (statusEl) statusEl.textContent = 'Sounds are off. Enable Sounds to hear the tone.';
+                    return;
+                }
                 audio.currentTime = 0;
+                if (!isSoundEnabled()) {
+                    if (statusEl) statusEl.textContent = 'Sounds are off. Enable Sounds to hear the tone.';
+                    return;
+                }
                 audio.play().catch(() => {});
             }
             tunedNotes.add(note);

@@ -203,6 +203,7 @@ const bindRecordingPlayback = () => {
                 playbackAudio.addEventListener('ended', () => stopPlayback(), { once: true });
             }
             syncPlaybackSound();
+            if (!isSoundEnabled()) return;
             playbackAudio.play().catch(() => {});
         });
     });
