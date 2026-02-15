@@ -1,4 +1,4 @@
-import { chromium, webkit } from 'playwright';
+import { chromium, webkit } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
