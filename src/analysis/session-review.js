@@ -3,6 +3,18 @@ import { getJSON, getBlob } from '../persistence/storage.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import {
+    todayDay,
+    starString,
+    coachMessageFor,
+    buildChart,
+    chartCaptionFor,
+    filterSongEvents,
+    getRecentEvents,
+    computeTotalMinutes,
+    computeAverageAccuracy,
+    extractAccuracyValues,
+} from '../utils/session-review-utils.js';
 
 let wasmModule = null;
 const getCore = async () => {
@@ -16,8 +28,6 @@ const getCore = async () => {
 
 const EVENT_KEY = 'panda-violin:events:v1';
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const chartLine = document.querySelector('[data-analysis="chart-line"]');
 const chartPoints = document.querySelector('[data-analysis="chart-points"]');
@@ -35,7 +45,6 @@ let currentRecordings = [];
 
 playbackAudio.preload = 'none';
 
-const todayDay = () => Math.floor(Date.now() / 86400000);
 const updatePlaybackButtons = (enabled) => {
     recordingEls.forEach((el) => {
         const button = el.querySelector('.recording-play');
@@ -83,45 +92,6 @@ const resolveRecordingSource = async (recording) => {
 };
 
 
-const starString = (score) => {
-    const stars = clamp(Math.round(score / 20), 1, 5);
-    return '★★★★★'.slice(0, stars) + '☆☆☆☆☆'.slice(stars);
-};
-
-const coachMessageFor = (skill) => {
-    switch (skill) {
-        case 'pitch':
-            return 'Great bowing arm! Try to keep your pitch steady through the middle section.';
-        case 'rhythm':
-            return 'Keep the pulse steady. Tap the rhythm before you play.';
-        case 'bow_control':
-            return 'Smooth bow path. Relax your hand and keep the bow straight.';
-        case 'posture':
-            return 'Tall spine and relaxed shoulders. Keep your wrists soft.';
-        case 'reading':
-            return 'Slow down and name each note before playing.';
-        default:
-            return 'Nice work today! Keep your tempo steady.';
-    }
-};
-
-const buildChart = (values) => {
-    const width = 320;
-    const height = 180;
-    const padding = 20;
-    if (!values.length) return null;
-    const step = values.length > 1 ? (width - padding * 2) / (values.length - 1) : 0;
-    const points = values.map((val, index) => {
-        const x = padding + step * index;
-        const y = padding + (1 - val / 100) * (height - padding * 2);
-        return { x, y };
-    });
-    const path = points
-        .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-        .join(' ');
-    return { path, points };
-};
-
 const updateChart = (values) => {
     if (!chartLine || !chartPoints || !chartCaption) return;
     const chart = buildChart(values);
@@ -136,13 +106,14 @@ const updateChart = (values) => {
         chartPoints.appendChild(circle);
     });
     const latest = values[values.length - 1];
-    chartCaption.textContent = latest >= 80 ? 'Great job!' : latest >= 60 ? 'Nice work!' : 'Keep practicing!';
+    chartCaption.textContent = chartCaptionFor(latest);
 };
 
 const updateRecordings = (events, songMap, recordings) => {
     const recentRecordings = Array.isArray(recordings) ? recordings.slice(0, 2) : [];
     currentRecordings = recentRecordings;
-    const recent = events.filter((event) => event.type === 'song').slice(-2).reverse();
+    const songEvents = filterSongEvents(events);
+    const recent = getRecentEvents(songEvents, 2);
     recordingEls.forEach((el, index) => {
         const playButton = el.querySelector('.recording-play');
         const saveButton = el.querySelector('.recording-save');
