@@ -1,0 +1,104 @@
+<section class="view" id="view-analysis" aria-label="Session Review">
+        <div class="view-header">
+          <a href="#view-progress" class="back-btn">← Back</a>
+          <h2>Session Review</h2>
+        </div>
+        <div class="analysis-layout">
+          <div class="analysis-chart glass">
+            <h3>Practice Quality Over Time</h3>
+            <svg class="analysis-chart-svg" viewBox="0 0 320 180" aria-hidden="true">
+              <path class="analysis-chart-line" data-analysis="chart-line" d="M20 140 L80 110 L140 120 L200 90 L260 80 L300 60"></path>
+              <g class="analysis-chart-points" data-analysis="chart-points">
+                <circle cx="20" cy="140" r="6"></circle>
+                <circle cx="80" cy="110" r="6"></circle>
+                <circle cx="140" cy="120" r="6"></circle>
+                <circle cx="200" cy="90" r="6"></circle>
+                <circle cx="260" cy="80" r="6"></circle>
+                <circle cx="300" cy="60" r="6"></circle>
+              </g>
+            </svg>
+            <div class="analysis-chart-caption" data-analysis="chart-caption">Good job!</div>
+          </div>
+
+          <div class="analysis-coach glass">
+            <div class="analysis-coach-message" data-analysis="coach-message" aria-live="polite">
+              Great bowing arm! Try to keep your tempo steady in the middle section.
+            </div>
+            <div class="analysis-coach-message" data-analysis="coach-message-alt">
+              Deep bow, then monitor your tempo.
+            </div>
+            <div class="analysis-coach-avatar">
+              <picture>
+                <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
+                <img src="./assets/illustrations/mascot-celebrate.png" alt="Smart Coach" loading="lazy" decoding="async">
+              </picture>
+              <span>Smart Coach</span>
+            </div>
+          </div>
+
+          <div class="analysis-recordings glass">
+            <h3>Recent Plays</h3>
+            <div class="analysis-recording" data-analysis="recording">
+              <button class="recording-play" type="button" aria-label="Play recording">▶</button>
+              <div class="recording-info">
+                <div class="recording-title" data-analysis="recording-title">Recording 1</div>
+                <div class="recording-sub" data-analysis="recording-sub">Twinkle Twinkle</div>
+              </div>
+              <button class="recording-save" type="button" aria-label="Save recording">⬇</button>
+            </div>
+            <div class="analysis-recording" data-analysis="recording">
+              <button class="recording-play" type="button" aria-label="Play recording">▶</button>
+              <div class="recording-info">
+                <div class="recording-title" data-analysis="recording-title">Recording 2</div>
+                <div class="recording-sub" data-analysis="recording-sub">Scale in G</div>
+              </div>
+              <button class="recording-save" type="button" aria-label="Save recording">⬇</button>
+            </div>
+          </div>
+
+          <div class="analysis-skill-grid glass">
+            <h3>Skill Grid</h3>
+            <div class="skill-grid">
+              <div class="skill-cell" data-analysis="skill" data-skill="bowing">
+                <span class="skill-icon">🏹</span>
+                <div>
+                  <div class="skill-name">Bowing</div>
+                  <div class="skill-stars" data-analysis="skill-stars" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
+                </div>
+              </div>
+              <div class="skill-cell" data-analysis="skill" data-skill="fingering">
+                <span class="skill-icon">✋</span>
+                <div>
+                  <div class="skill-name">Fingering</div>
+                  <div class="skill-stars" data-analysis="skill-stars" role="img" aria-label="3 out of 5 stars">★★★☆☆</div>
+                </div>
+              </div>
+              <div class="skill-cell" data-analysis="skill" data-skill="rhythm">
+                <span class="skill-icon">🥁</span>
+                <div>
+                  <div class="skill-name">Rhythm</div>
+                  <div class="skill-stars" data-analysis="skill-stars" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
+                </div>
+              </div>
+              <div class="skill-cell" data-analysis="skill" data-skill="intonation">
+                <span class="skill-icon">🎯</span>
+                <div>
+                  <div class="skill-name">Intonation</div>
+                  <div class="skill-stars" data-analysis="skill-stars" role="img" aria-label="3 out of 5 stars">★★★☆☆</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="analysis-stats">
+            <div class="analysis-stat glass" data-analysis="stat-minutes">
+              <div class="analysis-stat-label">Minutes practiced</div>
+              <div class="analysis-stat-value" data-analysis="minutes">0 min</div>
+            </div>
+            <div class="analysis-stat glass" data-analysis="stat-accuracy">
+              <div class="analysis-stat-label">Accuracy</div>
+              <div class="analysis-stat-value" data-analysis="accuracy">0%</div>
+            </div>
+          </div>
+        </div>
+      </section>

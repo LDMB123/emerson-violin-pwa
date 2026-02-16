@@ -1,0 +1,144 @@
+<section class="view" id="view-coach" aria-label="Practice Coach">
+        <div class="view-header">
+          <a href="#view-home" class="back-btn">← Back</a>
+          <h2>Practice Coach</h2>
+        </div>
+
+        <div class="coach-layout">
+          <div class="coach-card glass">
+            <div class="coach-card-header">
+              <span class="coach-title-pill">Practice Coach</span>
+              <div class="coach-status">
+                <span class="coach-status-icon">🎤</span>
+                <span class="coach-status-text">Active</span>
+              </div>
+            </div>
+            <div class="coach-stars" data-coach="stars" role="img" aria-label="Coach rating: 4 out of 5 stars">★★★★☆</div>
+            <div class="coach-hero">
+              <picture>
+                <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
+                <img src="./assets/illustrations/mascot-focus.png" alt="Coach" class="coach-mascot" loading="lazy" decoding="async" width="1024" height="1024">
+              </picture>
+              <div class="coach-bubble" data-progress="coach-speech" aria-live="polite">Let's start with some warm-ups! Play each string slowly.</div>
+            </div>
+            <div class="coach-metrics">
+              <div class="coach-metric">
+                <div class="coach-meter" aria-hidden="true">
+                  <div class="coach-meter-ring"></div>
+                  <div class="coach-meter-needle"></div>
+                  <div class="coach-meter-note">A4</div>
+                </div>
+                <span class="coach-metric-label">Real-time pitch detection</span>
+              </div>
+              <div class="coach-metric">
+                <div class="coach-wave" aria-hidden="true">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+                <span class="coach-metric-label">Live tuner</span>
+              </div>
+            </div>
+            <div class="coach-actions">
+              <button class="btn btn-secondary" type="button" data-coach-action="retry">Try Again</button>
+              <button class="btn btn-primary" type="button" data-coach-action="next">Next Exercise</button>
+              <a class="btn btn-ghost" href="#view-progress">Progress</a>
+            </div>
+          </div>
+
+          <div class="practice-area">
+            <div class="lesson-plan glass" data-lesson-plan="coach">
+              <h3>Next Lesson Plan</h3>
+              <div class="lesson-grid">
+                <div class="lesson-item">
+                  <span class="lesson-label">Focus Skill</span>
+                  <strong data-lesson="skill">Pitch</strong>
+                </div>
+                <div class="lesson-item">
+                  <span class="lesson-label">Recommended Game</span>
+                  <strong data-lesson="game">Pitch Quest</strong>
+                </div>
+                <div class="lesson-item">
+                  <span class="lesson-label">Metronome Target</span>
+                  <strong data-lesson="bpm">90 BPM</strong>
+                </div>
+                <div class="lesson-item">
+                  <span class="lesson-label">Total Time</span>
+                  <strong data-lesson="total">15 min</strong>
+                </div>
+              </div>
+              <ul class="lesson-steps" data-lesson-steps="" aria-label="Lesson steps" aria-live="polite"></ul>
+              <a class="btn btn-secondary" data-lesson="cta" href="#view-games">Start this plan</a>
+            </div>
+
+            <div class="practice-focus glass">
+            <h3>Focus Sprint</h3>
+            <input type="checkbox" id="focus-timer" class="state-checkbox focus-toggle" aria-label="Toggle focus timer">
+            <input type="checkbox" id="goal-step-focus-5" class="state-checkbox focus-log" data-minutes="5" data-persist="false" aria-hidden="true" tabindex="-1" hidden="">
+            <input type="checkbox" id="goal-step-focus-10" class="state-checkbox focus-log" data-minutes="10" data-persist="false" aria-hidden="true" tabindex="-1" hidden="">
+            <input type="checkbox" id="goal-step-focus-15" class="state-checkbox focus-log" data-minutes="15" data-persist="false" aria-hidden="true" tabindex="-1" hidden="">
+            <fieldset class="focus-presets">
+              <legend class="sr-only">Focus duration</legend>
+              <label class="focus-chip">
+                <input type="radio" name="focus-duration" id="focus-5" checked="">
+                <span>5 min</span>
+              </label>
+              <label class="focus-chip">
+                <input type="radio" name="focus-duration" id="focus-10">
+                <span>10 min</span>
+              </label>
+              <label class="focus-chip">
+                <input type="radio" name="focus-duration" id="focus-15">
+                <span>15 min</span>
+              </label>
+            </fieldset>
+            <div class="focus-ring" aria-hidden="true"></div>
+            <div class="focus-meta">
+              <span class="focus-duration">Choose a timer and tap Start.</span>
+            <span class="focus-status" aria-live="polite">Tap Start to begin</span>
+            </div>
+            <div class="focus-controls">
+              <label for="focus-timer" class="btn btn-primary btn-start">Start</label>
+              <label for="focus-timer" class="btn btn-secondary btn-stop">Stop</label>
+              </div>
+              <p class="focus-hint">Use this visual timer as a gentle guide.</p>
+            </div>
+
+            <div class="practice-card glass">
+            <h3>Pitch Check</h3>
+            <p>Use the reference tones to tune by ear before you practice.</p>
+            <a class="btn btn-secondary" href="#view-tuner">Open Tuner</a>
+          </div>
+
+            <div class="practice-card glass">
+            <h3>Practice Tools</h3>
+            <p>Metronome loops, drone tones, and posture checklists in one place.</p>
+            <a class="btn btn-secondary" href="#view-trainer">Open Tools</a>
+          </div>
+
+            <div class="session-goals glass">
+            <h3>Today's Goals</h3>
+              <ol class="game-checklist goal-checklist" data-goal-list="">
+                <li class="game-check-item" data-goal-item="warmup">
+                  <input type="checkbox" id="goal-warmup" data-minutes="3">
+                  <label for="goal-warmup"><span class="note-chip" data-goal-chip="">3 min</span> <span data-goal-label="">Warm-up open strings</span></label>
+                </li>
+                <li class="game-check-item" data-goal-item="scale">
+                  <input type="checkbox" id="goal-scale" data-minutes="4">
+                  <label for="goal-scale"><span class="note-chip" data-goal-chip="">4 min</span> <span data-goal-label="">Slow scale focus</span></label>
+                </li>
+                <li class="game-check-item" data-goal-item="rhythm">
+                  <input type="checkbox" id="goal-rhythm" data-minutes="3">
+                  <label for="goal-rhythm"><span class="note-chip" data-goal-chip="">3 min</span> <span data-goal-label="">Metronome rhythm drill</span></label>
+                </li>
+                <li class="game-check-item" data-goal-item="ear">
+                  <input type="checkbox" id="goal-ear" data-minutes="2">
+                  <label for="goal-ear"><span class="note-chip" data-goal-chip="">2 min</span> <span data-goal-label="">Match pitches by ear</span></label>
+                </li>
+                <li class="game-check-item" data-goal-item="song">
+                  <input type="checkbox" id="goal-song" data-minutes="3">
+                  <label for="goal-song"><span class="note-chip" data-goal-chip="">3 min</span> <span data-goal-label="">Play one song slowly</span></label>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </section>

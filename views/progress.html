@@ -1,0 +1,221 @@
+<section class="view" id="view-progress" aria-label="Progress">
+        <div class="view-header">
+          <a href="#view-home" class="back-btn">← Back</a>
+          <h2>My Progress</h2>
+        </div>
+
+        <div class="progress-layout">
+          <div class="progress-hero glass">
+            <picture>
+              <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
+              <img src="./assets/illustrations/mascot-celebrate.png" alt="Great job!" class="progress-mascot" loading="lazy" decoding="async">
+            </picture>
+            <div class="streak-display">
+              <span class="streak-fire" aria-hidden="true">🔥</span>
+              <span class="streak-number" data-progress="streak-days">0</span>
+              <span class="streak-label">Day Streak!</span>
+            </div>
+          </div>
+
+          <div class="skill-radar glass">
+            <h3>Skill Mastery</h3>
+            <div class="radar-chart">
+              <svg class="radar-svg" viewBox="0 0 200 200" width="200" height="200" aria-hidden="true">
+                <g class="radar-grid">
+                  <polygon points="100.0,80.0 119.0,93.8 111.8,116.2 88.2,116.2 81.0,93.8" fill="none" stroke="rgba(255,255,255,0.2)"></polygon>
+                  <polygon points="100.0,60.0 138.0,87.6 123.5,132.4 76.5,132.4 62.0,87.6" fill="none" stroke="rgba(255,255,255,0.2)"></polygon>
+                  <polygon points="100.0,40.0 157.1,81.5 135.3,148.5 64.7,148.5 42.9,81.5" fill="none" stroke="rgba(255,255,255,0.2)"></polygon>
+                  <polygon points="100.0,20.0 176.1,75.3 147.0,164.7 53.0,164.7 23.9,75.3" fill="none" stroke="rgba(255,255,255,0.2)"></polygon>
+                </g>
+                <polygon class="radar-shape" data-radar="shape" points="100.0,60.0 138.0,87.6 123.5,132.4 76.5,132.4 62.0,87.6" fill="rgba(255,107,91,0.3)" stroke="#FF6B5B" stroke-width="2"></polygon>
+                <g class="radar-points">
+                  <circle class="radar-point" data-skill="pitch" cx="100.0" cy="60.0" r="6" fill="#FF6B5B"></circle>
+                  <circle class="radar-point" data-skill="rhythm" cx="138.0" cy="87.6" r="6" fill="#FF6B5B"></circle>
+                  <circle class="radar-point" data-skill="bow_control" cx="123.5" cy="132.4" r="6" fill="#FF6B5B"></circle>
+                  <circle class="radar-point" data-skill="posture" cx="76.5" cy="132.4" r="6" fill="#FF6B5B"></circle>
+                  <circle class="radar-point" data-skill="reading" cx="62.0" cy="87.6" r="6" fill="#FF6B5B"></circle>
+                </g>
+              </svg>
+            </div>
+            <div class="skill-legend">
+              <span class="skill-item">🎯 Pitch</span>
+              <span class="skill-item">🥁 Rhythm</span>
+              <span class="skill-item">🏹 Bowing</span>
+              <span class="skill-item">🧘 Posture</span>
+              <span class="skill-item">📖 Reading</span>
+            </div>
+          </div>
+
+          <div class="lesson-plan glass" data-lesson-plan="progress">
+            <h3>Next Lesson Plan</h3>
+            <p class="lesson-intro">Based on recent sessions, here’s the focus for your next practice.</p>
+            <div class="lesson-grid">
+              <div class="lesson-item">
+                <span class="lesson-label">Focus Skill</span>
+                <strong data-lesson="skill">Pitch</strong>
+              </div>
+              <div class="lesson-item">
+                <span class="lesson-label">Recommended Game</span>
+                <strong data-lesson="game">Pitch Quest</strong>
+              </div>
+              <div class="lesson-item">
+                <span class="lesson-label">Metronome Target</span>
+                <strong data-lesson="bpm">90 BPM</strong>
+              </div>
+              <div class="lesson-item">
+                <span class="lesson-label">Total Time</span>
+                <strong data-lesson="total">15 min</strong>
+              </div>
+            </div>
+            <ul class="lesson-steps" data-lesson-steps="" aria-label="Lesson steps" aria-live="polite"></ul>
+            <a class="btn btn-primary" data-lesson="cta" href="#view-games">Start now</a>
+          </div>
+
+          <div class="achievements-panel glass">
+            <h3>Achievement Badges</h3>
+            <div class="badges-grid">
+              <div class="badge-item locked" data-achievement="first_note">
+                <div class="badge-art">
+                  <span class="badge-fallback">♪</span>
+                  <span class="badge-lock">🔒</span>
+                </div>
+                <span class="badge-name">First Note</span>
+              </div>
+              <div class="badge-item locked" data-achievement="streak_7">
+                <div class="badge-art">
+                  <picture>
+                    <source srcset="./assets/badges/badge_practice_streak_1769390952199.webp" type="image/webp">
+                    <img src="./assets/badges/badge_practice_streak_1769390952199.png" alt="" loading="lazy" decoding="async">
+                  </picture>
+                  <span class="badge-lock">🔒</span>
+                </div>
+                <span class="badge-name">Week Warrior</span>
+              </div>
+              <div class="badge-item locked" data-achievement="level_5">
+                <div class="badge-art">
+                  <span class="badge-fallback">★</span>
+                  <span class="badge-lock">🔒</span>
+                </div>
+                <span class="badge-name">Rising Star</span>
+              </div>
+              <div class="badge-item locked" data-achievement="practice_100">
+                <div class="badge-art">
+                  <span class="badge-fallback">⏱</span>
+                  <span class="badge-lock">🔒</span>
+                </div>
+                <span class="badge-name">Dedicated</span>
+              </div>
+              <div class="badge-item locked" data-achievement="pitch_perfect">
+                <div class="badge-art">
+                  <picture>
+                    <source srcset="./assets/badges/badge_pitch_master_1769390924763.webp" type="image/webp">
+                    <img src="./assets/badges/badge_pitch_master_1769390924763.png" alt="" loading="lazy" decoding="async">
+                  </picture>
+                  <span class="badge-lock">🔒</span>
+                </div>
+                <span class="badge-name">Pitch Perfect</span>
+              </div>
+              <div class="badge-item locked" data-achievement="rhythm_master">
+                <div class="badge-art">
+                  <picture>
+                    <source srcset="./assets/badges/badge_rhythm_star_1769390938421.webp" type="image/webp">
+                    <img src="./assets/badges/badge_rhythm_star_1769390938421.png" alt="" loading="lazy" decoding="async">
+                  </picture>
+                  <span class="badge-lock">🔒</span>
+                </div>
+                <span class="badge-name">Rhythm Master</span>
+              </div>
+              <div class="badge-item locked" data-achievement="bow_hero">
+                <div class="badge-art">
+                  <picture>
+                    <source srcset="./assets/badges/badge_bow_hero_1769390964607.webp" type="image/webp">
+                    <img src="./assets/badges/badge_bow_hero_1769390964607.png" alt="" loading="lazy" decoding="async">
+                  </picture>
+                  <span class="badge-lock">🔒</span>
+                </div>
+                <span class="badge-name">Bow Hero</span>
+              </div>
+              <div class="badge-item locked" data-achievement="ear_training">
+                <div class="badge-art">
+                  <picture>
+                    <source srcset="./assets/badges/badge_ear_training_1769391019017.webp" type="image/webp">
+                    <img src="./assets/badges/badge_ear_training_1769391019017.png" alt="" loading="lazy" decoding="async">
+                  </picture>
+                  <span class="badge-lock">🔒</span>
+                </div>
+                <span class="badge-name">Golden Ear</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="recent-games glass">
+            <h3>Recent Games</h3>
+            <div class="recent-games-list">
+              <div class="recent-game" data-recent-game="">
+                <span class="recent-game-title" data-recent-game-title="">Pitch Quest</span>
+                <span class="recent-game-score" data-recent-game-score="">Score 0</span>
+              </div>
+              <div class="recent-game" data-recent-game="">
+                <span class="recent-game-title" data-recent-game-title="">Rhythm Dash</span>
+                <span class="recent-game-score" data-recent-game-score="">Score 0</span>
+              </div>
+              <div class="recent-game" data-recent-game="">
+                <span class="recent-game-title" data-recent-game-title="">Bow Hero</span>
+                <span class="recent-game-score" data-recent-game-score="">Score 0</span>
+              </div>
+            </div>
+            <p class="recent-games-empty" data-recent-games-empty="">Play a game to see your latest scores.</p>
+          </div>
+
+          <div class="xp-panel glass">
+            <h3>XP Progress</h3>
+            <div class="xp-display">
+              <div class="xp-current">Level <strong data-progress="level">0</strong></div>
+              <div class="xp-bar-large" data-progress="xp-track" role="progressbar" aria-label="XP progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="xp-fill-large" data-progress="xp-fill" style="width: 0%"></div>
+              </div>
+              <div class="xp-info" data-progress="xp-info">0 / 0 XP</div>
+            </div>
+          </div>
+
+          <div class="progress-actions glass">
+            <h3>Session Review</h3>
+            <p>See recent plays, coach feedback, and today’s progress summary.</p>
+            <a class="btn btn-primary" href="#view-analysis">Open Session Review</a>
+          </div>
+
+          <div class="learning-path glass">
+            <h3>Learning Path</h3>
+            <div class="path-nodes">
+              <div class="path-node" data-path-level="1">
+                <span class="path-dot"></span>
+                <span class="path-label">Open Strings</span>
+              </div>
+              <div class="path-node" data-path-level="2">
+                <span class="path-dot"></span>
+                <span class="path-label">A String Notes</span>
+              </div>
+              <div class="path-node" data-path-level="3">
+                <span class="path-dot"></span>
+                <span class="path-label">D String Notes</span>
+              </div>
+              <div class="path-node" data-path-level="4">
+                <span class="path-dot"></span>
+                <span class="path-label">Simple Songs</span>
+              </div>
+              <div class="path-node locked" data-path-level="5">
+                <span class="path-dot"></span>
+                <span class="path-label">Scale Builder</span>
+              </div>
+              <div class="path-node locked" data-path-level="6">
+                <span class="path-dot"></span>
+                <span class="path-label">Rhythm Patterns</span>
+              </div>
+              <div class="path-node locked" data-path-level="7">
+                <span class="path-dot"></span>
+                <span class="path-label">Performance Badge</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>

@@ -1,0 +1,159 @@
+<section class="view" id="view-settings" aria-label="Settings">
+        <div class="view-header">
+          <a href="#view-home" class="back-btn">← Back</a>
+          <h2>Settings</h2>
+        </div>
+        <div class="settings-layout">
+          <div class="settings-card glass">
+            <h3>Appearance</h3>
+            <label class="setting-row">
+              <span>Large text</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-large-text">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <label class="setting-row">
+              <span>High contrast</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-high-contrast">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <label class="setting-row">
+              <span>Calm background</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-calm-bg">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>Accessibility</h3>
+            <label class="setting-row">
+              <span>Reduce motion</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-reduce-motion">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <p class="setting-note">Use system accessibility settings for VoiceOver, Larger Text, and Sound Recognition.</p>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>Audio &amp; Reminders</h3>
+            <p class="setting-note">Audio loops and reminders are managed by iPadOS 26.2 settings. Use Settings &gt; Sounds or Reminders.</p>
+            <label class="setting-row">
+              <span>Practice recordings</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-recordings">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <p class="setting-note">Record short play-along clips locally for Session Review.</p>
+            <p class="setting-note" data-recording-status="" aria-live="polite">Recording status: ready.</p>
+            <label class="setting-row">
+              <span>Voice coach</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-voice">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <p class="setting-note" data-voice-note="">Spoken coach tips use built-in iPad voices and work offline.</p>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>Focus</h3>
+            <label class="setting-row">
+              <span>Keep screen awake</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-keep-awake">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <p class="setting-note" data-wake-status="" aria-live="polite">Screen stays on during practice sessions.</p>
+            <label class="setting-row">
+              <span>Lock orientation</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-orientation-lock">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <p class="setting-note" data-orientation-status="" aria-live="polite">Orientation follows device settings.</p>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>Offline Storage</h3>
+            <p class="setting-note">All content stays on this device. To clear data, remove and reinstall the app from the Home Screen.</p>
+            <p class="setting-note" data-storage-status="" aria-live="polite">Checking offline storage status…</p>
+            <p class="setting-note" data-storage-estimate="" aria-live="polite">Storage estimate loading…</p>
+            <p class="setting-note" data-network-status="" aria-live="polite">Network status: checking…</p>
+            <p class="setting-note" data-offline-status="" aria-live="polite">Offline integrity: checking…</p>
+            <p class="setting-note" data-offline-assets="" aria-live="polite">Cached assets: —</p>
+            <p class="setting-note" data-offline-misses="" aria-live="polite">Offline misses: —</p>
+            <p class="setting-note" data-offline-last="" aria-live="polite">Last offline check: —</p>
+            <label class="setting-row">
+              <span>Offline mode</span>
+              <span class="toggle">
+                <input type="checkbox" id="setting-offline-mode">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <p class="setting-note" data-offline-mode-status="" aria-live="polite">Offline mode is off. Cached content will still be used when offline.</p>
+            <button class="btn btn-secondary" type="button" data-storage-request="">Protect offline data</button>
+            <button class="btn btn-secondary" type="button" data-offline-check="">Run offline check</button>
+            <button class="btn btn-secondary" type="button" data-offline-selftest="">Run offline self-test</button>
+            <p class="setting-note" data-offline-selftest-status="" aria-live="polite">Offline self-test: not run yet.</p>
+            <button class="btn btn-secondary" type="button" data-offline-repair="">Repair offline cache</button>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>App Updates</h3>
+            <p class="setting-note" data-sw-status="" aria-live="polite">Checking for updates…</p>
+            <p class="setting-note" data-sync-status="" aria-live="polite">Background refresh status: checking…</p>
+            <div class="settings-actions">
+              <button class="btn btn-secondary" type="button" data-sw-update="">Check for updates</button>
+              <button class="btn btn-primary" type="button" data-sw-apply="" hidden="">Apply update</button>
+            </div>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>App Install</h3>
+            <p class="setting-note" data-install-status="" aria-live="polite">Install status: Use Add to Home Screen for the best offline experience.</p>
+            <p class="setting-note">Open Safari → Share → Add to Home Screen.</p>
+            <button class="btn btn-secondary" type="button" data-install-help="">Show install steps</button>
+            <p class="setting-note" data-platform-status="" aria-live="polite">Checking device features…</p>
+            <p class="setting-note" data-input-status="" aria-live="polite">Input: checking…</p>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>Adaptive Learning</h3>
+            <p class="setting-note" data-ml-status="" aria-live="polite">Adaptive learning status loading…</p>
+            <p class="setting-note" data-ml-detail="">Most recent: —</p>
+            <p class="setting-note" data-ml-accel="" aria-live="polite">ML acceleration: checking…</p>
+            <p class="setting-note" data-ml-accel-detail="">Checking on-device ML support…</p>
+            <label class="setting-row">
+              <span>Demo mode</span>
+              <span class="toggle">
+                <input type="checkbox" data-ml-demo="" data-persist="false">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+            <p class="setting-note">Simulate adaptive updates to preview difficulty shifts.</p>
+            <button class="btn btn-secondary" type="button" data-ml-simulate="" disabled="">Simulate adaptive data</button>
+            <button class="btn btn-secondary" type="button" data-ml-reset="">Reset adaptive learning</button>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>Progress</h3>
+            <p class="setting-note">Reset practice stats and achievements saved on this device.</p>
+            <button class="btn btn-secondary" id="reset-progress" type="button">Reset progress</button>
+          </div>
+
+          <div class="settings-card glass">
+            <h3>Version</h3>
+            <p class="setting-note">Panda Violin 2.0.0 · Local-first PWA</p>
+          </div>
+        </div>
+      </section>

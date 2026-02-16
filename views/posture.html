@@ -1,0 +1,27 @@
+<section class="view" id="view-posture" aria-label="Posture Coach">
+        <div class="view-header">
+          <a href="#view-trainer" class="back-btn">← Back</a>
+          <h2>Posture Check</h2>
+        </div>
+        <div class="posture-layout">
+          <div class="posture-card glass">
+            <h3>Quick Snapshot</h3>
+            <p>Take a quick photo to review bow arm and left-hand alignment.</p>
+            <label class="btn btn-primary" for="posture-capture">Capture Photo</label>
+            <input type="file" id="posture-capture" class="posture-capture" accept="image/*" capture="user">
+            <p class="posture-hint">Photos stay on your device. Nothing is uploaded.</p>
+            <div class="posture-preview" data-posture-preview="" hidden="">
+              <img alt="Posture preview" data-posture-image="" loading="lazy" decoding="async">
+              <button class="btn btn-secondary" type="button" data-posture-clear="">Clear photo</button>
+            </div>
+          </div>
+          <details class="posture-tips glass">
+            <summary>Posture checklist</summary>
+            <ul class="game-tip-list">
+              <li>Shoulders are relaxed and level.</li>
+              <li>Violin sits on the collarbone, not the shoulder.</li>
+              <li>Bow wrist stays soft in the middle of the bow.</li>
+            </ul>
+          </details>
+        </div>
+      </section>

@@ -1,0 +1,61 @@
+<section class="view" id="view-tuner" aria-label="Tuner">
+        <div class="view-header">
+          <a href="#view-home" class="back-btn">← Back</a>
+          <h2>Tuner</h2>
+        </div>
+
+        <div class="tuner-layout">
+          <div class="tuner-card glass" id="tuner-live">
+            <picture>
+              <source srcset="./assets/illustrations/mascot-encourage.webp" type="image/webp">
+              <img src="./assets/illustrations/mascot-encourage.png" alt="Panda tuning" class="tuner-card-mascot" loading="lazy" decoding="async" width="1024" height="1024">
+            </picture>
+            <div class="tuner-card-header">
+              <div class="tuner-note-pill">
+                <div class="tuner-note" id="tuner-note">--</div>
+                <div class="tuner-frequency" id="tuner-frequency">0 Hz</div>
+              </div>
+              <button class="tuner-mic" id="tuner-start" type="button" aria-label="Start tuner">🎤</button>
+            </div>
+            <div class="tuner-meter" aria-hidden="true">
+              <div class="tuner-meter-track"></div>
+              <div class="tuner-meter-center"></div>
+              <div class="tuner-meter-needle"></div>
+            </div>
+            <div class="tuner-cents" id="tuner-cents">±0 cents</div>
+            <div class="tuner-live-status" id="tuner-status" aria-live="polite">Tap the mic to start listening.</div>
+            <div class="tuner-note-buttons">
+              <button class="tuner-note-btn" type="button" data-tone="G">G</button>
+              <button class="tuner-note-btn" type="button" data-tone="D">D</button>
+              <button class="tuner-note-btn" type="button" data-tone="A">A</button>
+              <button class="tuner-note-btn" type="button" data-tone="E">E</button>
+            </div>
+            <div class="tuner-controls">
+              <button class="btn btn-secondary" id="tuner-stop" type="button" disabled="">Stop</button>
+            </div>
+          </div>
+
+          <details class="tuner-reference glass">
+            <summary>Reference Tones</summary>
+            <p>Tap play to hear each open string. Stop listening before playing a reference tone.</p>
+            <div class="reference-grid">
+              <div class="audio-card">
+                <span class="audio-label" id="ref-g3-label">G3</span>
+                <audio controls="" preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="ref-g3-label" data-tone-audio="G"></audio>
+              </div>
+              <div class="audio-card">
+                <span class="audio-label" id="ref-d4-label">D4</span>
+                <audio controls="" preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="ref-d4-label" data-tone-audio="D"></audio>
+              </div>
+              <div class="audio-card">
+                <span class="audio-label" id="ref-a4-label">A4</span>
+                <audio controls="" preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="ref-a4-label" data-tone-audio="A"></audio>
+              </div>
+              <div class="audio-card">
+                <span class="audio-label" id="ref-e5-label">E5</span>
+                <audio controls="" preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="ref-e5-label" data-tone-audio="E"></audio>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
