@@ -8,6 +8,9 @@ export default defineConfig({
         // Include test files
         include: ['src/**/*.test.js', 'tests/**/*.test.js'],
 
+        // Exclude E2E tests (run via Playwright)
+        exclude: ['tests/e2e/**'],
+
         // Coverage configuration
         coverage: {
             provider: 'v8',
