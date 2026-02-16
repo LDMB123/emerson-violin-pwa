@@ -139,6 +139,18 @@ export const createTonePlayer = () => {
         }
     };
 
+    const releaseContext = () => {
+        stopAll();
+        if (context) {
+            context.close().catch(() => {});
+            context = null;
+        }
+    };
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) releaseContext();
+    });
+
     document.addEventListener('panda:sounds-change', syncSoundState);
 
     syncSoundState();
