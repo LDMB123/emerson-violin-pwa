@@ -1,0 +1,69 @@
+      <section class="view game-view game-string-quest" id="view-game-string-quest" aria-label="Game: String Quest">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>String Quest</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="string-quest-content">
+          <div class="string-quest-stage">
+            <div class="string-quest-hud">
+              <div class="string-score">Score <span data-string="score">0</span></div>
+              <div class="string-combo">Combo <span data-string="combo">x0</span></div>
+            </div>
+            <div class="string-prompt" data-string="prompt">Target: G string.</div>
+            <div class="string-sequence" data-string="sequence">Sequence: G · D · A · E</div>
+            <div class="string-board">
+              <div class="string-line" data-string="G">
+                <span class="string-label">G</span>
+                <span class="string-target" data-string-target="G"></span>
+              </div>
+              <div class="string-line" data-string="D">
+                <span class="string-label">D</span>
+                <span class="string-target" data-string-target="D"></span>
+              </div>
+              <div class="string-line" data-string="A">
+                <span class="string-label">A</span>
+                <span class="string-target" data-string-target="A"></span>
+              </div>
+              <div class="string-line" data-string="E">
+                <span class="string-label">E</span>
+                <span class="string-target" data-string-target="E"></span>
+              </div>
+            </div>
+            <div class="string-controls">
+              <button class="btn btn-primary string-btn" data-string-btn="G" type="button">G</button>
+              <button class="btn btn-primary string-btn" data-string-btn="D" type="button">D</button>
+              <button class="btn btn-primary string-btn" data-string-btn="A" type="button">A</button>
+              <button class="btn btn-primary string-btn" data-string-btn="E" type="button">E</button>
+            </div>
+          </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Track your string runs and lock in clean targets.</p>
+            <div class="game-checklist-group" data-total="4">
+              <div class="game-progress" data-total="4">
+                <span class="game-progress-label">Runs complete</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="sq-step-1">
+                  <label for="sq-step-1"><span class="note-chip">G</span> Hit the G target cleanly.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="sq-step-2">
+                  <label for="sq-step-2"><span class="note-chip">D → A</span> Play D then A in order.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="sq-step-3">
+                  <label for="sq-step-3"><span class="note-chip">Loop</span> Complete a G-D-A-E loop.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="sq-step-4">
+                  <label for="sq-step-4"><span class="note-chip">Combo</span> Keep an 8-hit combo.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-string" loading="lazy" decoding="async" />
+        </div>
+      </section>
+

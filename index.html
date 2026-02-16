@@ -2002,7 +2002,396 @@
         <img src="./assets/illustrations/mascot-focus.png" alt="" class="corner-mascot parent-mascot" loading="lazy" decoding="async" />
       </section>
 
-      <!-- GAME VIEWS (Placeholder for each game) -->
+      <!-- GAME_VIEWS_START -->
+      <section class="view game-view game-bow-hero" id="view-game-bow-hero" aria-label="Game: Bow Hero">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Bow Hero</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="bow-hero-content">
+          <input type="checkbox" id="bow-hero-run" class="state-checkbox bow-run-toggle" data-persist="false" aria-label="Start Bow Hero">
+          <div class="bow-hero-stage">
+            <div class="bow-hero-hud">
+              <div class="bow-timer" data-bow="timer">01:45</div>
+              <div class="bow-stars-badge">⭐ <span data-bow="stars">0</span> stars</div>
+            </div>
+            <div class="bow-arc">
+              <div class="bow-arc-track"></div>
+              <div class="bow-arc-indicator" data-bow="indicator"></div>
+            </div>
+            <div class="bow-stars">
+              <span class="bow-star" data-bow="star">★</span>
+              <span class="bow-star" data-bow="star">★</span>
+              <span class="bow-star" data-bow="star">★</span>
+              <span class="bow-star" data-bow="star">★</span>
+              <span class="bow-star" data-bow="star">★</span>
+            </div>
+          <div class="bow-controls">
+            <div class="toggle-ui">
+              <label for="bow-hero-run" class="btn btn-primary btn-start">Start</label>
+              <label for="bow-hero-run" class="btn btn-secondary btn-stop">Pause</label>
+            </div>
+            <button class="btn btn-secondary bow-stroke" type="button">Bow Stroke</button>
+          </div>
+          <div class="bow-status" data-bow="status" aria-live="polite">Press Start to begin the timer.</div>
+        </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Check off each bowing challenge as you finish it.</p>
+            <div class="game-checklist-group" data-total="5">
+              <div class="game-progress" data-total="5">
+                <span class="game-progress-label">Challenges done</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-1">
+                  <label for="bh-step-1"><span class="note-chip">Slow</span> 8 slow bow strokes.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-2">
+                  <label for="bh-step-2"><span class="note-chip">Mid</span> 8 medium bow strokes.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-3">
+                  <label for="bh-step-3"><span class="note-chip">Fast</span> 8 quick bow strokes.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-4">
+                  <label for="bh-step-4"><span class="note-chip">Smooth</span> Smooth bow changes for 30s.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-5">
+                  <label for="bh-step-5"><span class="note-chip">Finish</span> Complete a full session.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-encourage.png" alt="" class="game-mascot mascot-bow" loading="lazy" decoding="async" />
+        </div>
+      </section>
+      <section class="view game-view game-duet-challenge" id="view-game-duet-challenge" aria-label="Game: Duet Challenge">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Duet Challenge</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="duet-challenge-content">
+          <div class="duet-challenge-stage">
+            <div class="duet-hud">
+              <div class="duet-score">Score <span data-duet="score">0</span></div>
+              <div class="duet-combo">Combo <span data-duet="combo">x0</span></div>
+            </div>
+            <div class="duet-prompt" data-duet="prompt" aria-live="polite">Press play to hear the partner line.</div>
+            <div class="duet-round" data-duet="round">Round 1</div>
+            <div class="duet-panels">
+              <div class="duet-panel">
+                <h3>Partner</h3>
+                <div class="duet-notes">G · D · A · E</div>
+                <button class="btn btn-secondary duet-play" type="button" data-duet="play">Play Partner</button>
+              </div>
+              <div class="duet-panel">
+                <h3>You</h3>
+                <div class="duet-buttons">
+                  <button class="btn btn-primary duet-btn" data-duet-note="G" type="button">G</button>
+                  <button class="btn btn-primary duet-btn" data-duet-note="D" type="button">D</button>
+                  <button class="btn btn-primary duet-btn" data-duet-note="A" type="button">A</button>
+                  <button class="btn btn-primary duet-btn" data-duet-note="E" type="button">E</button>
+                </div>
+              </div>
+            </div>
+            <div class="duet-audio" aria-hidden="true">
+              <audio preload="none" src="./assets/audio/violin-g3.wav" data-duet-audio="G"></audio>
+              <audio preload="none" src="./assets/audio/violin-d4.wav" data-duet-audio="D"></audio>
+              <audio preload="none" src="./assets/audio/violin-a4.wav" data-duet-audio="A"></audio>
+              <audio preload="none" src="./assets/audio/violin-e5.wav" data-duet-audio="E"></audio>
+            </div>
+          </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Match the partner line and log each duet round.</p>
+            <div class="game-checklist-group" data-total="4">
+              <div class="game-progress" data-total="4">
+                <span class="game-progress-label">Duet rounds</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="dc-step-1">
+                  <label for="dc-step-1"><span class="note-chip">Listen</span> Hear the partner line once.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="dc-step-2">
+                  <label for="dc-step-2"><span class="note-chip">Answer</span> Play the response in time.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="dc-step-3">
+                  <label for="dc-step-3"><span class="note-chip">Blend</span> Match tone and rhythm.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="dc-step-4">
+                  <label for="dc-step-4"><span class="note-chip">Finish</span> Complete a full duet run.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-duet" loading="lazy" decoding="async" />
+        </div>
+      </section>
+      <section class="view game-view game-ear-trainer" id="view-game-ear-trainer" aria-label="Game: Ear Trainer">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Ear Trainer</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="ear-trainer-content">
+          <div class="ear-trainer-stage">
+            <div class="ear-progress" data-ear="progress">
+              <span class="ear-dot" data-step="1"></span>
+              <span class="ear-dot" data-step="2"></span>
+              <span class="ear-dot" data-step="3"></span>
+              <span class="ear-dot" data-step="4"></span>
+              <span class="ear-dot" data-step="5"></span>
+              <span class="ear-dot" data-step="6"></span>
+              <span class="ear-dot" data-step="7"></span>
+              <span class="ear-dot" data-step="8"></span>
+              <span class="ear-dot" data-step="9"></span>
+              <span class="ear-dot" data-step="10"></span>
+            </div>
+            <div class="ear-question" data-ear="question" aria-live="polite">Question 1 of 10</div>
+            <div class="ear-streak">Streak <span data-ear="streak">0</span></div>
+            <div class="ear-panel">
+              <div class="ear-icon">👂</div>
+              <button class="btn btn-secondary ear-play" type="button" data-ear="play">Play</button>
+            </div>
+            <fieldset class="ear-options">
+              <legend class="sr-only">Choose the string you heard</legend>
+              <input type="radio" id="ear-choice-g" name="ear-choice" class="ear-choice" data-ear-note="G" data-persist="false">
+              <label class="ear-option" for="ear-choice-g">G</label>
+              <input type="radio" id="ear-choice-d" name="ear-choice" class="ear-choice" data-ear-note="D" data-persist="false">
+              <label class="ear-option" for="ear-choice-d">D</label>
+              <input type="radio" id="ear-choice-a" name="ear-choice" class="ear-choice" data-ear-note="A" data-persist="false">
+              <label class="ear-option" for="ear-choice-a">A</label>
+              <input type="radio" id="ear-choice-e" name="ear-choice" class="ear-choice" data-ear-note="E" data-persist="false">
+              <label class="ear-option" for="ear-choice-e">E</label>
+            </fieldset>
+            <details class="pitch-audio glass">
+              <summary class="btn btn-secondary">Reference tones</summary>
+              <div class="audio-grid">
+                <div class="audio-card">
+                  <span class="audio-label" id="ear-g-label">G</span>
+                  <audio controls preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="ear-g-label"></audio>
+                </div>
+                <div class="audio-card">
+                  <span class="audio-label" id="ear-d-label">D</span>
+                  <audio controls preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="ear-d-label"></audio>
+                </div>
+                <div class="audio-card">
+                  <span class="audio-label" id="ear-a-label">A</span>
+                  <audio controls preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="ear-a-label"></audio>
+                </div>
+                <div class="audio-card">
+                  <span class="audio-label" id="ear-e-label">E</span>
+                  <audio controls preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="ear-e-label"></audio>
+                </div>
+              </div>
+            </details>
+          </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Log each listening set you complete.</p>
+            <div class="game-checklist-group" data-total="6">
+              <div class="game-progress" data-total="6">
+                <span class="game-progress-label">Rounds complete</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="et-step-1">
+                  <label for="et-step-1"><span class="note-chip">G</span> Identify the G tone.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="et-step-2">
+                  <label for="et-step-2"><span class="note-chip">D</span> Identify the D tone.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="et-step-3">
+                  <label for="et-step-3"><span class="note-chip">A</span> Identify the A tone.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="et-step-4">
+                  <label for="et-step-4"><span class="note-chip">E</span> Identify the E tone.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="et-step-5">
+                  <label for="et-step-5"><span class="note-chip">3x</span> Get three correct in a row.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="et-step-6">
+                  <label for="et-step-6"><span class="note-chip">Finish</span> Complete all 10 questions.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-focus.png" alt="" class="game-mascot mascot-ear" loading="lazy" decoding="async" />
+        </div>
+      </section>
+      <section class="view game-view game-melody-maker" id="view-game-melody-maker" aria-label="Game: Melody Maker">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Melody Maker</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="melody-maker-content">
+          <div class="melody-maker-stage">
+            <div class="melody-hud">
+              <div class="melody-score">Score <span data-melody="score">0</span></div>
+              <div class="melody-track" data-melody="track">Tap notes to build a melody.</div>
+              <div class="melody-target" data-melody="target">Target: G · A · B · C</div>
+            </div>
+            <div class="melody-buttons">
+              <button class="btn btn-secondary melody-btn" data-melody-note="G" type="button">G</button>
+              <button class="btn btn-secondary melody-btn" data-melody-note="A" type="button">A</button>
+              <button class="btn btn-secondary melody-btn" data-melody-note="B" type="button">B</button>
+              <button class="btn btn-secondary melody-btn" data-melody-note="C" type="button">C</button>
+              <button class="btn btn-secondary melody-btn" data-melody-note="D" type="button">D</button>
+            </div>
+            <div class="melody-actions">
+              <button class="btn btn-secondary" type="button" data-melody="play">Play melody</button>
+              <button class="btn btn-secondary" type="button" data-melody="play-target">Play target</button>
+              <button class="btn btn-ghost" type="button" data-melody="clear">Clear melody</button>
+            </div>
+            <div class="melody-status" data-melody="status" aria-live="polite">Build a melody, then press Play.</div>
+          </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Create a short melody and check off each goal.</p>
+            <div class="game-checklist-group" data-total="4">
+              <div class="game-progress" data-total="4">
+                <span class="game-progress-label">Melody goals</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="mm-step-1">
+                  <label for="mm-step-1"><span class="note-chip">Start</span> Tap four notes in a row.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="mm-step-2">
+                  <label for="mm-step-2"><span class="note-chip">Repeat</span> Repeat your melody once.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="mm-step-3">
+                  <label for="mm-step-3"><span class="note-chip">Mix</span> Add one new note.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="mm-step-4">
+                  <label for="mm-step-4"><span class="note-chip">Finish</span> Play it with a steady bow.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-melody" loading="lazy" decoding="async" />
+        </div>
+      </section>
+      <section class="view game-view game-note-memory" id="view-game-note-memory" aria-label="Game: Note Memory">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Note Memory</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="note-memory-content">
+          <div class="note-memory-stage">
+            <div class="memory-hud">
+              <div class="memory-timer" data-memory="timer">00:45</div>
+              <div class="memory-meta">Matches: <span data-memory="matches">0/6</span></div>
+              <div class="memory-meta">Score: <span data-memory="score">0</span></div>
+              <div class="memory-meta">Streak: <span data-memory="streak">0</span></div>
+              <button class="btn btn-secondary memory-reset" type="button" data-memory="reset">Reset</button>
+            </div>
+            <div class="memory-grid" data-memory="grid">
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-1" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-1">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">G</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-2" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-2">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">D</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-3" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-3">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">A</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-4" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-4">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">E</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-5" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-5">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">C</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-6" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-6">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">B</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-7" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-7">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">G</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-8" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-8">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">D</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-9" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-9">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">A</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-10" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-10">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">E</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-11" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-11">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">C</span>
+                </label>
+              </div>
+              <div class="memory-card">
+                <input type="checkbox" id="nm-card-12" data-persist="false" data-progress-ignore="true">
+                <label for="nm-card-12">
+                  <span class="memory-front">?</span>
+                  <span class="memory-back">B</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-focus.png" alt="" class="game-mascot mascot-memory" loading="lazy" decoding="async" />
+        </div>
+      </section>
       <section class="view game-view game-pitch-quest" id="view-game-pitch-quest" aria-label="Game: Pitch Quest">
         <div class="game-header">
           <a href="#view-games" class="back-btn">← Exit</a>
@@ -2122,7 +2511,70 @@
           <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-pitch" loading="lazy" decoding="async" />
         </div>
       </section>
-
+      <section class="view game-view game-pizzicato" id="view-game-pizzicato" aria-label="Game: Pizzicato Pop">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Panda Pizzicato</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="pizzicato-content">
+          <div class="pizzicato-stage">
+            <div class="pizzicato-hud">
+              <div class="pizzicato-score">Score <span data-pizzicato="score">0</span></div>
+              <div class="pizzicato-combo">Combo <span data-pizzicato="combo">x0</span></div>
+            </div>
+            <div class="pizzicato-strings">
+              <div class="pizzicato-string" data-string="G">
+                <span class="pizzicato-label">G</span>
+                <span class="pizzicato-note" data-pizzicato-target="G"></span>
+              </div>
+              <div class="pizzicato-string" data-string="D">
+                <span class="pizzicato-label">D</span>
+                <span class="pizzicato-note" data-pizzicato-target="D"></span>
+              </div>
+              <div class="pizzicato-string" data-string="A">
+                <span class="pizzicato-label">A</span>
+                <span class="pizzicato-note" data-pizzicato-target="A"></span>
+              </div>
+              <div class="pizzicato-string" data-string="E">
+                <span class="pizzicato-label">E</span>
+                <span class="pizzicato-note" data-pizzicato-target="E"></span>
+              </div>
+            </div>
+            <div class="pizzicato-controls">
+              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="G" type="button">G</button>
+              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="D" type="button">D</button>
+              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="A" type="button">A</button>
+              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="E" type="button">E</button>
+            </div>
+            <div class="pizzicato-status" data-pizzicato="status" aria-live="polite">Match the glowing string to keep your combo.</div>
+            <div class="pizzicato-sequence" data-pizzicato="sequence">Sequence: G · D · A · E</div>
+          </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Pluck through each string and track your combo streak.</p>
+            <div class="game-checklist-group" data-total="3">
+              <div class="game-progress" data-total="3">
+                <span class="game-progress-label">Rounds complete</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="pz-step-1">
+                  <label for="pz-step-1"><span class="note-chip">Warm-up</span> Pluck all four strings once.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="pz-step-2">
+                  <label for="pz-step-2"><span class="note-chip">Run</span> Match a 4-note sequence.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="pz-step-3">
+                  <label for="pz-step-3"><span class="note-chip">Combo</span> Hold a 6-hit combo.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-encourage.png" alt="" class="game-mascot mascot-pizzicato" loading="lazy" decoding="async" />
+        </div>
+      </section>
       <section class="view game-view game-rhythm-dash" id="view-game-rhythm-dash" aria-label="Game: Rhythm Dash">
         <div class="game-header">
           <a href="#view-games" class="back-btn">← Exit</a>
@@ -2217,277 +2669,178 @@
           <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-rhythm" loading="lazy" decoding="async" />
         </div>
       </section>
-
-      <section class="view game-view game-note-memory" id="view-game-note-memory" aria-label="Game: Note Memory">
+      <section class="view game-view game-rhythm-painter" id="view-game-rhythm-painter" aria-label="Game: Rhythm Painter">
         <div class="game-header">
           <a href="#view-games" class="back-btn">← Exit</a>
-          <h2>Note Memory</h2>
+          <h2>Rhythm Painter</h2>
           <div class="game-score">Guided Drill</div>
         </div>
-        <div class="game-content" id="note-memory-content">
-          <div class="note-memory-stage">
-            <div class="memory-hud">
-              <div class="memory-timer" data-memory="timer">00:45</div>
-              <div class="memory-meta">Matches: <span data-memory="matches">0/6</span></div>
-              <div class="memory-meta">Score: <span data-memory="score">0</span></div>
-              <div class="memory-meta">Streak: <span data-memory="streak">0</span></div>
-              <button class="btn btn-secondary memory-reset" type="button" data-memory="reset">Reset</button>
+        <div class="game-content" id="rhythm-painter-content">
+          <div class="rhythm-painter-stage">
+            <div class="painter-hud">
+              <div class="painter-score">Score <span data-painter="score">0</span></div>
+              <div class="painter-creativity">Creativity <span data-painter="creativity">0%</span></div>
+              <div class="painter-rounds">Rounds <span data-painter="rounds">0</span></div>
             </div>
-            <div class="memory-grid" data-memory="grid">
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-1" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-1">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">G</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-2" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-2">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">D</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-3" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-3">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">A</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-4" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-4">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">E</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-5" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-5">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">C</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-6" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-6">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">B</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-7" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-7">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">G</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-8" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-8">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">D</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-9" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-9">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">A</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-10" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-10">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">E</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-11" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-11">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">C</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-12" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-12">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">B</span>
-                </label>
-              </div>
+            <div class="painter-canvas">
+              <button class="paint-dot dot-blue" data-painter="dot" data-painter-dot="blue" type="button" aria-label="Blue paint dot"></button>
+              <button class="paint-dot dot-green" data-painter="dot" data-painter-dot="green" type="button" aria-label="Green paint dot"></button>
+              <button class="paint-dot dot-yellow" data-painter="dot" data-painter-dot="yellow" type="button" aria-label="Yellow paint dot"></button>
+              <button class="paint-dot dot-red" data-painter="dot" data-painter-dot="red" type="button" aria-label="Red paint dot"></button>
             </div>
-          </div>
-          <img src="./assets/illustrations/mascot-focus.png" alt="" class="game-mascot mascot-memory" loading="lazy" decoding="async" />
-        </div>
-      </section>
-
-      <section class="view game-view game-ear-trainer" id="view-game-ear-trainer" aria-label="Game: Ear Trainer">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn">← Exit</a>
-          <h2>Ear Trainer</h2>
-          <div class="game-score">Guided Drill</div>
-        </div>
-        <div class="game-content" id="ear-trainer-content">
-          <div class="ear-trainer-stage">
-            <div class="ear-progress" data-ear="progress">
-              <span class="ear-dot" data-step="1"></span>
-              <span class="ear-dot" data-step="2"></span>
-              <span class="ear-dot" data-step="3"></span>
-              <span class="ear-dot" data-step="4"></span>
-              <span class="ear-dot" data-step="5"></span>
-              <span class="ear-dot" data-step="6"></span>
-              <span class="ear-dot" data-step="7"></span>
-              <span class="ear-dot" data-step="8"></span>
-              <span class="ear-dot" data-step="9"></span>
-              <span class="ear-dot" data-step="10"></span>
+            <div class="painter-meter" role="progressbar" aria-label="Creativity meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="painter-needle" data-painter="needle"></div>
             </div>
-            <div class="ear-question" data-ear="question" aria-live="polite">Question 1 of 10</div>
-            <div class="ear-streak">Streak <span data-ear="streak">0</span></div>
-            <div class="ear-panel">
-              <div class="ear-icon">👂</div>
-              <button class="btn btn-secondary ear-play" type="button" data-ear="play">Play</button>
-            </div>
-            <fieldset class="ear-options">
-              <legend class="sr-only">Choose the string you heard</legend>
-              <input type="radio" id="ear-choice-g" name="ear-choice" class="ear-choice" data-ear-note="G" data-persist="false">
-              <label class="ear-option" for="ear-choice-g">G</label>
-              <input type="radio" id="ear-choice-d" name="ear-choice" class="ear-choice" data-ear-note="D" data-persist="false">
-              <label class="ear-option" for="ear-choice-d">D</label>
-              <input type="radio" id="ear-choice-a" name="ear-choice" class="ear-choice" data-ear-note="A" data-persist="false">
-              <label class="ear-option" for="ear-choice-a">A</label>
-              <input type="radio" id="ear-choice-e" name="ear-choice" class="ear-choice" data-ear-note="E" data-persist="false">
-              <label class="ear-option" for="ear-choice-e">E</label>
-            </fieldset>
-            <details class="pitch-audio glass">
-              <summary class="btn btn-secondary">Reference tones</summary>
-              <div class="audio-grid">
-                <div class="audio-card">
-                  <span class="audio-label" id="ear-g-label">G</span>
-                  <audio controls preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="ear-g-label"></audio>
-                </div>
-                <div class="audio-card">
-                  <span class="audio-label" id="ear-d-label">D</span>
-                  <audio controls preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="ear-d-label"></audio>
-                </div>
-                <div class="audio-card">
-                  <span class="audio-label" id="ear-a-label">A</span>
-                  <audio controls preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="ear-a-label"></audio>
-                </div>
-                <div class="audio-card">
-                  <span class="audio-label" id="ear-e-label">E</span>
-                  <audio controls preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="ear-e-label"></audio>
-                </div>
-              </div>
-            </details>
+            <div class="painter-status" data-painter="status" aria-live="polite">Tap each dot to paint the beat.</div>
           </div>
           <div class="game-drill glass">
-            <p class="game-drill-intro">Log each listening set you complete.</p>
-            <div class="game-checklist-group" data-total="6">
-              <div class="game-progress" data-total="6">
-                <span class="game-progress-label">Rounds complete</span>
+            <p class="game-drill-intro">Paint each rhythm pattern and log your rounds.</p>
+            <div class="game-checklist-group" data-total="4">
+              <div class="game-progress" data-total="4">
+                <span class="game-progress-label">Patterns complete</span>
               </div>
               <ol class="game-checklist">
                 <li class="game-check-item">
-                  <input type="checkbox" id="et-step-1">
-                  <label for="et-step-1"><span class="note-chip">G</span> Identify the G tone.</label>
+                  <input type="checkbox" id="rp-pattern-1">
+                  <label for="rp-pattern-1"><span class="note-chip">Colors</span> Tap each color once.</label>
                 </li>
                 <li class="game-check-item">
-                  <input type="checkbox" id="et-step-2">
-                  <label for="et-step-2"><span class="note-chip">D</span> Identify the D tone.</label>
+                  <input type="checkbox" id="rp-pattern-2">
+                  <label for="rp-pattern-2"><span class="note-chip">4-beat</span> Finish a 4-beat pattern.</label>
                 </li>
                 <li class="game-check-item">
-                  <input type="checkbox" id="et-step-3">
-                  <label for="et-step-3"><span class="note-chip">A</span> Identify the A tone.</label>
+                  <input type="checkbox" id="rp-pattern-3">
+                  <label for="rp-pattern-3"><span class="note-chip">Focus</span> Keep creativity above 70%.</label>
                 </li>
                 <li class="game-check-item">
-                  <input type="checkbox" id="et-step-4">
-                  <label for="et-step-4"><span class="note-chip">E</span> Identify the E tone.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="et-step-5">
-                  <label for="et-step-5"><span class="note-chip">3x</span> Get three correct in a row.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="et-step-6">
-                  <label for="et-step-6"><span class="note-chip">Finish</span> Complete all 10 questions.</label>
+                  <input type="checkbox" id="rp-pattern-4">
+                  <label for="rp-pattern-4"><span class="note-chip">Rounds</span> Complete 3 rounds.</label>
                 </li>
               </ol>
             </div>
           </div>
-          <img src="./assets/illustrations/mascot-focus.png" alt="" class="game-mascot mascot-ear" loading="lazy" decoding="async" />
+          <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-painter" loading="lazy" decoding="async" />
         </div>
       </section>
-
-      <section class="view game-view game-bow-hero" id="view-game-bow-hero" aria-label="Game: Bow Hero">
+      <section class="view game-view game-scale-practice" id="view-game-scale-practice" aria-label="Game: Scale Practice">
         <div class="game-header">
           <a href="#view-games" class="back-btn">← Exit</a>
-          <h2>Bow Hero</h2>
+          <h2>Scale Practice</h2>
           <div class="game-score">Guided Drill</div>
         </div>
-        <div class="game-content" id="bow-hero-content">
-          <input type="checkbox" id="bow-hero-run" class="state-checkbox bow-run-toggle" data-persist="false" aria-label="Start Bow Hero">
-          <div class="bow-hero-stage">
-            <div class="bow-hero-hud">
-              <div class="bow-timer" data-bow="timer">01:45</div>
-              <div class="bow-stars-badge">⭐ <span data-bow="stars">0</span> stars</div>
+        <div class="game-content" id="scale-practice-content">
+          <div class="scale-practice-stage">
+            <div class="scale-hud">
+              <div class="scale-score">Score <span data-scale="score">0</span></div>
+              <div class="scale-tempo">Tempo <span data-scale="tempo">80 BPM</span></div>
             </div>
-            <div class="bow-arc">
-              <div class="bow-arc-track"></div>
-              <div class="bow-arc-indicator" data-bow="indicator"></div>
+            <label class="scale-tempo-control">
+              <span>Set tempo</span>
+              <input type="range" min="60" max="120" value="80" data-scale="slider">
+            </label>
+            <div class="scale-status" data-scale="status" aria-live="polite">Set a tempo and play the scale.</div>
+            <div class="scale-tap-row">
+              <button class="btn btn-secondary scale-tap" type="button" data-scale="tap">Tap Beat</button>
+              <div class="scale-rating" data-scale="rating">Timing: --</div>
             </div>
-            <div class="bow-stars">
-              <span class="bow-star" data-bow="star">★</span>
-              <span class="bow-star" data-bow="star">★</span>
-              <span class="bow-star" data-bow="star">★</span>
-              <span class="bow-star" data-bow="star">★</span>
-              <span class="bow-star" data-bow="star">★</span>
+            <div class="scale-notes">
+              <span class="scale-note">G</span>
+              <span class="scale-note">A</span>
+              <span class="scale-note">B</span>
+              <span class="scale-note">C</span>
+              <span class="scale-note">D</span>
+              <span class="scale-note">E</span>
+              <span class="scale-note">F#</span>
+              <span class="scale-note">G</span>
             </div>
-          <div class="bow-controls">
-            <div class="toggle-ui">
-              <label for="bow-hero-run" class="btn btn-primary btn-start">Start</label>
-              <label for="bow-hero-run" class="btn btn-secondary btn-stop">Pause</label>
-            </div>
-            <button class="btn btn-secondary bow-stroke" type="button">Bow Stroke</button>
           </div>
-          <div class="bow-status" data-bow="status" aria-live="polite">Press Start to begin the timer.</div>
-        </div>
           <div class="game-drill glass">
-            <p class="game-drill-intro">Check off each bowing challenge as you finish it.</p>
-            <div class="game-checklist-group" data-total="5">
-              <div class="game-progress" data-total="5">
-                <span class="game-progress-label">Challenges done</span>
+            <p class="game-drill-intro">Run the G major scale and track your focus.</p>
+            <div class="game-checklist-group" data-total="4">
+              <div class="game-progress" data-total="4">
+                <span class="game-progress-label">Scale sets</span>
               </div>
               <ol class="game-checklist">
                 <li class="game-check-item">
-                  <input type="checkbox" id="bh-step-1">
-                  <label for="bh-step-1"><span class="note-chip">Slow</span> 8 slow bow strokes.</label>
+                  <input type="checkbox" id="sp-step-1">
+                  <label for="sp-step-1"><span class="note-chip">Slow</span> Play the scale slowly.</label>
                 </li>
                 <li class="game-check-item">
-                  <input type="checkbox" id="bh-step-2">
-                  <label for="bh-step-2"><span class="note-chip">Mid</span> 8 medium bow strokes.</label>
+                  <input type="checkbox" id="sp-step-2">
+                  <label for="sp-step-2"><span class="note-chip">Middle</span> Play at your target tempo.</label>
                 </li>
                 <li class="game-check-item">
-                  <input type="checkbox" id="bh-step-3">
-                  <label for="bh-step-3"><span class="note-chip">Fast</span> 8 quick bow strokes.</label>
+                  <input type="checkbox" id="sp-step-3">
+                  <label for="sp-step-3"><span class="note-chip">Smooth</span> Keep bow changes smooth.</label>
                 </li>
                 <li class="game-check-item">
-                  <input type="checkbox" id="bh-step-4">
-                  <label for="bh-step-4"><span class="note-chip">Smooth</span> Smooth bow changes for 30s.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="bh-step-5">
-                  <label for="bh-step-5"><span class="note-chip">Finish</span> Complete a full session.</label>
+                  <input type="checkbox" id="sp-step-4">
+                  <label for="sp-step-4"><span class="note-chip">Finish</span> Hold the final G with confidence.</label>
                 </li>
               </ol>
             </div>
           </div>
-          <img src="./assets/illustrations/mascot-encourage.png" alt="" class="game-mascot mascot-bow" loading="lazy" decoding="async" />
+          <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-scale" loading="lazy" decoding="async" />
         </div>
       </section>
-
+      <section class="view game-view game-story-song" id="view-game-story-song" aria-label="Game: Story Song Lab">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Story Song Lab</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="story-song-content">
+          <div class="story-song-stage">
+            <div class="story-banner">
+              <span data-story="title">Story Song Lab</span>
+              <span class="story-page" data-story="page">Page 1 of 3</span>
+            </div>
+            <div class="story-book">
+              <div class="story-hero">
+                <div class="story-notes" data-story="notes">♪ ♪ ♪</div>
+                <div class="story-character">🎻</div>
+                <div class="story-prompt" data-story="prompt">Warm up with your open strings.</div>
+              </div>
+            </div>
+            <input type="checkbox" id="story-play" class="story-play-toggle" data-persist="false" aria-label="Start Story Mode play-along">
+            <label for="story-play" class="btn btn-primary story-play-btn">Play-Along</label>
+            <div class="story-status" data-story="status" aria-live="polite">Press Play-Along to start.</div>
+            <div class="story-staff">
+              <span class="story-note" style="--note-delay: 0s;"></span>
+              <span class="story-note" style="--note-delay: 1s;"></span>
+              <span class="story-note" style="--note-delay: 2s;"></span>
+              <span class="story-note" style="--note-delay: 3s;"></span>
+            </div>
+          </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Follow the story and check off each play-along goal.</p>
+            <div class="game-checklist-group" data-total="4">
+              <div class="game-progress" data-total="4">
+                <span class="game-progress-label">Story steps</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="ss-step-1">
+                  <label for="ss-step-1"><span class="note-chip">Play</span> Start the play-along.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="ss-step-2">
+                  <label for="ss-step-2"><span class="note-chip">Notes</span> Follow four notes in a row.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="ss-step-3">
+                  <label for="ss-step-3"><span class="note-chip">Page</span> Finish a full story page.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="ss-step-4">
+                  <label for="ss-step-4"><span class="note-chip">Reflect</span> Pick a favorite moment.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-story" loading="lazy" decoding="async" />
+        </div>
+      </section>
       <section class="view game-view game-string-quest" id="view-game-string-quest" aria-label="Game: String Quest">
         <div class="game-header">
           <a href="#view-games" class="back-btn">← Exit</a>
@@ -2556,185 +2909,6 @@
           <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-string" loading="lazy" decoding="async" />
         </div>
       </section>
-
-      <section class="view game-view game-rhythm-painter" id="view-game-rhythm-painter" aria-label="Game: Rhythm Painter">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn">← Exit</a>
-          <h2>Rhythm Painter</h2>
-          <div class="game-score">Guided Drill</div>
-        </div>
-        <div class="game-content" id="rhythm-painter-content">
-          <div class="rhythm-painter-stage">
-            <div class="painter-hud">
-              <div class="painter-score">Score <span data-painter="score">0</span></div>
-              <div class="painter-creativity">Creativity <span data-painter="creativity">0%</span></div>
-              <div class="painter-rounds">Rounds <span data-painter="rounds">0</span></div>
-            </div>
-            <div class="painter-canvas">
-              <button class="paint-dot dot-blue" data-painter="dot" data-painter-dot="blue" type="button" aria-label="Blue paint dot"></button>
-              <button class="paint-dot dot-green" data-painter="dot" data-painter-dot="green" type="button" aria-label="Green paint dot"></button>
-              <button class="paint-dot dot-yellow" data-painter="dot" data-painter-dot="yellow" type="button" aria-label="Yellow paint dot"></button>
-              <button class="paint-dot dot-red" data-painter="dot" data-painter-dot="red" type="button" aria-label="Red paint dot"></button>
-            </div>
-            <div class="painter-meter" role="progressbar" aria-label="Creativity meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <div class="painter-needle" data-painter="needle"></div>
-            </div>
-            <div class="painter-status" data-painter="status" aria-live="polite">Tap each dot to paint the beat.</div>
-          </div>
-          <div class="game-drill glass">
-            <p class="game-drill-intro">Paint each rhythm pattern and log your rounds.</p>
-            <div class="game-checklist-group" data-total="4">
-              <div class="game-progress" data-total="4">
-                <span class="game-progress-label">Patterns complete</span>
-              </div>
-              <ol class="game-checklist">
-                <li class="game-check-item">
-                  <input type="checkbox" id="rp-pattern-1">
-                  <label for="rp-pattern-1"><span class="note-chip">Colors</span> Tap each color once.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="rp-pattern-2">
-                  <label for="rp-pattern-2"><span class="note-chip">4-beat</span> Finish a 4-beat pattern.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="rp-pattern-3">
-                  <label for="rp-pattern-3"><span class="note-chip">Focus</span> Keep creativity above 70%.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="rp-pattern-4">
-                  <label for="rp-pattern-4"><span class="note-chip">Rounds</span> Complete 3 rounds.</label>
-                </li>
-              </ol>
-            </div>
-          </div>
-          <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-painter" loading="lazy" decoding="async" />
-        </div>
-      </section>
-
-      <section class="view game-view game-story-song" id="view-game-story-song" aria-label="Game: Story Song Lab">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn">← Exit</a>
-          <h2>Story Song Lab</h2>
-          <div class="game-score">Guided Drill</div>
-        </div>
-        <div class="game-content" id="story-song-content">
-          <div class="story-song-stage">
-            <div class="story-banner">
-              <span data-story="title">Story Song Lab</span>
-              <span class="story-page" data-story="page">Page 1 of 3</span>
-            </div>
-            <div class="story-book">
-              <div class="story-hero">
-                <div class="story-notes" data-story="notes">♪ ♪ ♪</div>
-                <div class="story-character">🎻</div>
-                <div class="story-prompt" data-story="prompt">Warm up with your open strings.</div>
-              </div>
-            </div>
-            <input type="checkbox" id="story-play" class="story-play-toggle" data-persist="false" aria-label="Start Story Mode play-along">
-            <label for="story-play" class="btn btn-primary story-play-btn">Play-Along</label>
-            <div class="story-status" data-story="status" aria-live="polite">Press Play-Along to start.</div>
-            <div class="story-staff">
-              <span class="story-note" style="--note-delay: 0s;"></span>
-              <span class="story-note" style="--note-delay: 1s;"></span>
-              <span class="story-note" style="--note-delay: 2s;"></span>
-              <span class="story-note" style="--note-delay: 3s;"></span>
-            </div>
-          </div>
-          <div class="game-drill glass">
-            <p class="game-drill-intro">Follow the story and check off each play-along goal.</p>
-            <div class="game-checklist-group" data-total="4">
-              <div class="game-progress" data-total="4">
-                <span class="game-progress-label">Story steps</span>
-              </div>
-              <ol class="game-checklist">
-                <li class="game-check-item">
-                  <input type="checkbox" id="ss-step-1">
-                  <label for="ss-step-1"><span class="note-chip">Play</span> Start the play-along.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="ss-step-2">
-                  <label for="ss-step-2"><span class="note-chip">Notes</span> Follow four notes in a row.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="ss-step-3">
-                  <label for="ss-step-3"><span class="note-chip">Page</span> Finish a full story page.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="ss-step-4">
-                  <label for="ss-step-4"><span class="note-chip">Reflect</span> Pick a favorite moment.</label>
-                </li>
-              </ol>
-            </div>
-          </div>
-          <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-story" loading="lazy" decoding="async" />
-        </div>
-      </section>
-
-      <section class="view game-view game-pizzicato" id="view-game-pizzicato" aria-label="Game: Pizzicato Pop">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn">← Exit</a>
-          <h2>Panda Pizzicato</h2>
-          <div class="game-score">Guided Drill</div>
-        </div>
-        <div class="game-content" id="pizzicato-content">
-          <div class="pizzicato-stage">
-            <div class="pizzicato-hud">
-              <div class="pizzicato-score">Score <span data-pizzicato="score">0</span></div>
-              <div class="pizzicato-combo">Combo <span data-pizzicato="combo">x0</span></div>
-            </div>
-            <div class="pizzicato-strings">
-              <div class="pizzicato-string" data-string="G">
-                <span class="pizzicato-label">G</span>
-                <span class="pizzicato-note" data-pizzicato-target="G"></span>
-              </div>
-              <div class="pizzicato-string" data-string="D">
-                <span class="pizzicato-label">D</span>
-                <span class="pizzicato-note" data-pizzicato-target="D"></span>
-              </div>
-              <div class="pizzicato-string" data-string="A">
-                <span class="pizzicato-label">A</span>
-                <span class="pizzicato-note" data-pizzicato-target="A"></span>
-              </div>
-              <div class="pizzicato-string" data-string="E">
-                <span class="pizzicato-label">E</span>
-                <span class="pizzicato-note" data-pizzicato-target="E"></span>
-              </div>
-            </div>
-            <div class="pizzicato-controls">
-              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="G" type="button">G</button>
-              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="D" type="button">D</button>
-              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="A" type="button">A</button>
-              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="E" type="button">E</button>
-            </div>
-            <div class="pizzicato-status" data-pizzicato="status" aria-live="polite">Match the glowing string to keep your combo.</div>
-            <div class="pizzicato-sequence" data-pizzicato="sequence">Sequence: G · D · A · E</div>
-          </div>
-          <div class="game-drill glass">
-            <p class="game-drill-intro">Pluck through each string and track your combo streak.</p>
-            <div class="game-checklist-group" data-total="3">
-              <div class="game-progress" data-total="3">
-                <span class="game-progress-label">Rounds complete</span>
-              </div>
-              <ol class="game-checklist">
-                <li class="game-check-item">
-                  <input type="checkbox" id="pz-step-1">
-                  <label for="pz-step-1"><span class="note-chip">Warm-up</span> Pluck all four strings once.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="pz-step-2">
-                  <label for="pz-step-2"><span class="note-chip">Run</span> Match a 4-note sequence.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="pz-step-3">
-                  <label for="pz-step-3"><span class="note-chip">Combo</span> Hold a 6-hit combo.</label>
-                </li>
-              </ol>
-            </div>
-          </div>
-          <img src="./assets/illustrations/mascot-encourage.png" alt="" class="game-mascot mascot-pizzicato" loading="lazy" decoding="async" />
-        </div>
-      </section>
-
       <section class="view game-view game-tuning-time" id="view-game-tuning-time" aria-label="Game: Tuning Time">
         <div class="game-header">
           <a href="#view-games" class="back-btn">← Exit</a>
@@ -2808,192 +2982,7 @@
           <img src="./assets/illustrations/mascot-focus.png" alt="" class="game-mascot mascot-tuning" loading="lazy" decoding="async" />
         </div>
       </section>
-
-      <section class="view game-view game-melody-maker" id="view-game-melody-maker" aria-label="Game: Melody Maker">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn">← Exit</a>
-          <h2>Melody Maker</h2>
-          <div class="game-score">Guided Drill</div>
-        </div>
-        <div class="game-content" id="melody-maker-content">
-          <div class="melody-maker-stage">
-            <div class="melody-hud">
-              <div class="melody-score">Score <span data-melody="score">0</span></div>
-              <div class="melody-track" data-melody="track">Tap notes to build a melody.</div>
-              <div class="melody-target" data-melody="target">Target: G · A · B · C</div>
-            </div>
-            <div class="melody-buttons">
-              <button class="btn btn-secondary melody-btn" data-melody-note="G" type="button">G</button>
-              <button class="btn btn-secondary melody-btn" data-melody-note="A" type="button">A</button>
-              <button class="btn btn-secondary melody-btn" data-melody-note="B" type="button">B</button>
-              <button class="btn btn-secondary melody-btn" data-melody-note="C" type="button">C</button>
-              <button class="btn btn-secondary melody-btn" data-melody-note="D" type="button">D</button>
-            </div>
-            <div class="melody-actions">
-              <button class="btn btn-secondary" type="button" data-melody="play">Play melody</button>
-              <button class="btn btn-secondary" type="button" data-melody="play-target">Play target</button>
-              <button class="btn btn-ghost" type="button" data-melody="clear">Clear melody</button>
-            </div>
-            <div class="melody-status" data-melody="status" aria-live="polite">Build a melody, then press Play.</div>
-          </div>
-          <div class="game-drill glass">
-            <p class="game-drill-intro">Create a short melody and check off each goal.</p>
-            <div class="game-checklist-group" data-total="4">
-              <div class="game-progress" data-total="4">
-                <span class="game-progress-label">Melody goals</span>
-              </div>
-              <ol class="game-checklist">
-                <li class="game-check-item">
-                  <input type="checkbox" id="mm-step-1">
-                  <label for="mm-step-1"><span class="note-chip">Start</span> Tap four notes in a row.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="mm-step-2">
-                  <label for="mm-step-2"><span class="note-chip">Repeat</span> Repeat your melody once.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="mm-step-3">
-                  <label for="mm-step-3"><span class="note-chip">Mix</span> Add one new note.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="mm-step-4">
-                  <label for="mm-step-4"><span class="note-chip">Finish</span> Play it with a steady bow.</label>
-                </li>
-              </ol>
-            </div>
-          </div>
-          <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-melody" loading="lazy" decoding="async" />
-        </div>
-      </section>
-
-      <section class="view game-view game-scale-practice" id="view-game-scale-practice" aria-label="Game: Scale Practice">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn">← Exit</a>
-          <h2>Scale Practice</h2>
-          <div class="game-score">Guided Drill</div>
-        </div>
-        <div class="game-content" id="scale-practice-content">
-          <div class="scale-practice-stage">
-            <div class="scale-hud">
-              <div class="scale-score">Score <span data-scale="score">0</span></div>
-              <div class="scale-tempo">Tempo <span data-scale="tempo">80 BPM</span></div>
-            </div>
-            <label class="scale-tempo-control">
-              <span>Set tempo</span>
-              <input type="range" min="60" max="120" value="80" data-scale="slider">
-            </label>
-            <div class="scale-status" data-scale="status" aria-live="polite">Set a tempo and play the scale.</div>
-            <div class="scale-tap-row">
-              <button class="btn btn-secondary scale-tap" type="button" data-scale="tap">Tap Beat</button>
-              <div class="scale-rating" data-scale="rating">Timing: --</div>
-            </div>
-            <div class="scale-notes">
-              <span class="scale-note">G</span>
-              <span class="scale-note">A</span>
-              <span class="scale-note">B</span>
-              <span class="scale-note">C</span>
-              <span class="scale-note">D</span>
-              <span class="scale-note">E</span>
-              <span class="scale-note">F#</span>
-              <span class="scale-note">G</span>
-            </div>
-          </div>
-          <div class="game-drill glass">
-            <p class="game-drill-intro">Run the G major scale and track your focus.</p>
-            <div class="game-checklist-group" data-total="4">
-              <div class="game-progress" data-total="4">
-                <span class="game-progress-label">Scale sets</span>
-              </div>
-              <ol class="game-checklist">
-                <li class="game-check-item">
-                  <input type="checkbox" id="sp-step-1">
-                  <label for="sp-step-1"><span class="note-chip">Slow</span> Play the scale slowly.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="sp-step-2">
-                  <label for="sp-step-2"><span class="note-chip">Middle</span> Play at your target tempo.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="sp-step-3">
-                  <label for="sp-step-3"><span class="note-chip">Smooth</span> Keep bow changes smooth.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="sp-step-4">
-                  <label for="sp-step-4"><span class="note-chip">Finish</span> Hold the final G with confidence.</label>
-                </li>
-              </ol>
-            </div>
-          </div>
-          <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-scale" loading="lazy" decoding="async" />
-        </div>
-      </section>
-
-      <section class="view game-view game-duet-challenge" id="view-game-duet-challenge" aria-label="Game: Duet Challenge">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn">← Exit</a>
-          <h2>Duet Challenge</h2>
-          <div class="game-score">Guided Drill</div>
-        </div>
-        <div class="game-content" id="duet-challenge-content">
-          <div class="duet-challenge-stage">
-            <div class="duet-hud">
-              <div class="duet-score">Score <span data-duet="score">0</span></div>
-              <div class="duet-combo">Combo <span data-duet="combo">x0</span></div>
-            </div>
-            <div class="duet-prompt" data-duet="prompt" aria-live="polite">Press play to hear the partner line.</div>
-            <div class="duet-round" data-duet="round">Round 1</div>
-            <div class="duet-panels">
-              <div class="duet-panel">
-                <h3>Partner</h3>
-                <div class="duet-notes">G · D · A · E</div>
-                <button class="btn btn-secondary duet-play" type="button" data-duet="play">Play Partner</button>
-              </div>
-              <div class="duet-panel">
-                <h3>You</h3>
-                <div class="duet-buttons">
-                  <button class="btn btn-primary duet-btn" data-duet-note="G" type="button">G</button>
-                  <button class="btn btn-primary duet-btn" data-duet-note="D" type="button">D</button>
-                  <button class="btn btn-primary duet-btn" data-duet-note="A" type="button">A</button>
-                  <button class="btn btn-primary duet-btn" data-duet-note="E" type="button">E</button>
-                </div>
-              </div>
-            </div>
-            <div class="duet-audio" aria-hidden="true">
-              <audio preload="none" src="./assets/audio/violin-g3.wav" data-duet-audio="G"></audio>
-              <audio preload="none" src="./assets/audio/violin-d4.wav" data-duet-audio="D"></audio>
-              <audio preload="none" src="./assets/audio/violin-a4.wav" data-duet-audio="A"></audio>
-              <audio preload="none" src="./assets/audio/violin-e5.wav" data-duet-audio="E"></audio>
-            </div>
-          </div>
-          <div class="game-drill glass">
-            <p class="game-drill-intro">Match the partner line and log each duet round.</p>
-            <div class="game-checklist-group" data-total="4">
-              <div class="game-progress" data-total="4">
-                <span class="game-progress-label">Duet rounds</span>
-              </div>
-              <ol class="game-checklist">
-                <li class="game-check-item">
-                  <input type="checkbox" id="dc-step-1">
-                  <label for="dc-step-1"><span class="note-chip">Listen</span> Hear the partner line once.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="dc-step-2">
-                  <label for="dc-step-2"><span class="note-chip">Answer</span> Play the response in time.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="dc-step-3">
-                  <label for="dc-step-3"><span class="note-chip">Blend</span> Match tone and rhythm.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="dc-step-4">
-                  <label for="dc-step-4"><span class="note-chip">Finish</span> Complete a full duet run.</label>
-                </li>
-              </ol>
-            </div>
-          </div>
-          <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-duet" loading="lazy" decoding="async" />
-        </div>
-      </section>
+      <!-- GAME_VIEWS_END -->
 
       <!-- SETTINGS VIEW -->
       <section class="view" id="view-settings" aria-label="Settings">

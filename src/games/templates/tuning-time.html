@@ -1,0 +1,74 @@
+      <section class="view game-view game-tuning-time" id="view-game-tuning-time" aria-label="Game: Tuning Time">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Tuning Time</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="tuning-time-content">
+          <div class="tuning-time-stage">
+            <div class="tuning-hud">
+              <div class="tuning-score">Score <span data-tuning="score">0</span></div>
+              <div class="tuning-status" data-tuning="status" aria-live="polite">Pick a string and tune to its ring.</div>
+            </div>
+            <div class="tuning-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Tuning accuracy">
+              <span class="tuning-progress-fill" data-tuning="progress" style="width: 0%"></span>
+            </div>
+            <div class="tuning-strings">
+              <button class="btn btn-primary tuning-btn" data-tuning-note="G" type="button">G</button>
+              <button class="btn btn-primary tuning-btn" data-tuning-note="D" type="button">D</button>
+              <button class="btn btn-primary tuning-btn" data-tuning-note="A" type="button">A</button>
+              <button class="btn btn-primary tuning-btn" data-tuning-note="E" type="button">E</button>
+            </div>
+            <a class="btn btn-secondary" href="#view-tuner">Open Live Tuner</a>
+          </div>
+          <details class="pitch-audio glass">
+            <summary class="btn btn-secondary">Reference tones</summary>
+            <div class="audio-grid">
+              <div class="audio-card">
+                <span class="audio-label" id="tuning-g-label">G</span>
+                <audio controls preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="tuning-g-label"></audio>
+              </div>
+              <div class="audio-card">
+                <span class="audio-label" id="tuning-d-label">D</span>
+                <audio controls preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="tuning-d-label"></audio>
+              </div>
+              <div class="audio-card">
+                <span class="audio-label" id="tuning-a-label">A</span>
+                <audio controls preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="tuning-a-label"></audio>
+              </div>
+              <div class="audio-card">
+                <span class="audio-label" id="tuning-e-label">E</span>
+                <audio controls preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="tuning-e-label"></audio>
+              </div>
+            </div>
+          </details>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Tune each string once and mark your progress.</p>
+            <div class="game-checklist-group" data-total="4">
+              <div class="game-progress" data-total="4">
+                <span class="game-progress-label">Strings tuned</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="tt-step-1">
+                  <label for="tt-step-1"><span class="note-chip">G</span> Tune the G string.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="tt-step-2">
+                  <label for="tt-step-2"><span class="note-chip">D</span> Tune the D string.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="tt-step-3">
+                  <label for="tt-step-3"><span class="note-chip">A</span> Tune the A string.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="tt-step-4">
+                  <label for="tt-step-4"><span class="note-chip">E</span> Tune the E string.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-focus.png" alt="" class="game-mascot mascot-tuning" loading="lazy" decoding="async" />
+        </div>
+      </section>
+
