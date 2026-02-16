@@ -1,5 +1,6 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { formatDifficulty, processTunerMessage } from './tuner-utils.js';
 
 const livePanel = document.querySelector('#tuner-live');
 const startButton = document.querySelector('#tuner-start');
@@ -23,12 +24,7 @@ let detectCount = 0;
 let startToken = 0;
 let starting = false;
 
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const isTunerView = () => window.location.hash === '#view-tuner';
-const formatDifficulty = (value) => {
-    const label = value || 'medium';
-    return label.charAt(0).toUpperCase() + label.slice(1);
-};
 
 const ensureBadge = () => {
     const header = livePanel?.querySelector('.tuner-card-header');
@@ -173,36 +169,29 @@ const startTuner = async () => {
         workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
 
         workletNode.port.onmessage = (event) => {
-            const { frequency, note, cents, volume, inTune, error, ready } = event.data;
+            const result = processTunerMessage(event.data, tolerance);
+            if (!result) return;
 
-            if (error) {
-                setStatus('Live tuner unavailable on this device.');
-                return;
-            }
-
-            if (ready) {
-                setStatus('Listening… play a note.');
-                return;
-            }
-
-            if (!frequency || volume < 0.01) {
+            if (result.reset) {
                 resetDisplay();
-                setStatus(`Listening… play a note (±${tolerance}¢).`);
+                setStatus(result.status);
                 return;
             }
 
-            const roundedFreq = Math.round(frequency * 10) / 10;
-            const roundedCents = Math.round(cents);
-            noteEl.textContent = note || '--';
-            centsEl.textContent = `${roundedCents > 0 ? '+' : ''}${roundedCents} cents`;
-            freqEl.textContent = `${roundedFreq} Hz`;
+            if (!result.note) {
+                setStatus(result.status);
+                return;
+            }
 
-            const offset = clamp(roundedCents, -50, 50);
-            livePanel.style.setProperty('--tuner-offset', offset.toString());
-            livePanel.classList.toggle('in-tune', Boolean(inTune));
+            noteEl.textContent = result.note;
+            centsEl.textContent = result.centsLabel;
+            freqEl.textContent = result.freqLabel;
+
+            livePanel.style.setProperty('--tuner-offset', result.offset.toString());
+            livePanel.classList.toggle('in-tune', result.inTune);
             detectCount += 1;
-            if (inTune) inTuneCount += 1;
-            setStatus(inTune ? `In tune (±${tolerance}¢) ✨` : 'Adjust to center');
+            if (result.inTune) inTuneCount += 1;
+            setStatus(result.status);
         };
 
         setStatus(`Listening… play a note (±${tolerance}¢).`);
