@@ -1,14 +1,23 @@
-import initCore, { SkillProfile, SkillCategory } from '../wasm/panda_core.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { getJSON, getBlob } from '../persistence/storage.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 
+let wasmModule = null;
+const getCore = async () => {
+    if (!wasmModule) {
+        const mod = await import('../wasm/panda_core.js');
+        await mod.default();
+        wasmModule = mod;
+    }
+    return wasmModule;
+};
+
 const EVENT_KEY = 'panda-violin:events:v1';
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
 
-const { clamp, updateSkillProfile } = createSkillProfileUtils(SkillCategory);
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const chartLine = document.querySelector('[data-analysis="chart-line"]');
 const chartPoints = document.querySelector('[data-analysis="chart-points"]');
@@ -263,7 +272,8 @@ const buildSongMap = () => {
 };
 
 const initSessionReview = async () => {
-    await initCore();
+    const { SkillProfile, SkillCategory } = await getCore();
+    const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
     const events = await loadEvents();
     const recordings = await loadRecordings();
     const songMap = buildSongMap();
