@@ -1,4 +1,6 @@
-export const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+import { clamp } from '../utils/math.js';
+
+export { clamp };
 
 export const formatDifficulty = (value) => {
     const label = value || 'medium';

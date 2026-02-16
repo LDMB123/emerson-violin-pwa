@@ -1,4 +1,5 @@
-const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
+import { clamp as rawClamp } from './math.js';
+const clamp = (value, min = 0, max = 100) => rawClamp(value, min, max);
 
 const scoreFromMinutes = (minutes, base = 54, step = 8) => {
     const score = base + minutes * step;
