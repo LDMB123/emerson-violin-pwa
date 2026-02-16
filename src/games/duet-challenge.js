@@ -1,0 +1,255 @@
+import {
+    readLiveNumber,
+    setLiveNumber,
+    markChecklist,
+    setDifficultyBadge,
+    recordGameEvent,
+    attachTuning,
+    bindTap,
+    playToneNote,
+    playToneSequence,
+} from './shared.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
+
+const updateDuetChallenge = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-duet-challenge input[id^="dc-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = document.querySelector('[data-duet="score"]');
+    const comboEl = document.querySelector('[data-duet="combo"]');
+    const liveScore = readLiveNumber(scoreEl, 'liveScore');
+    const liveCombo = readLiveNumber(comboEl, 'liveCombo');
+    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 22);
+    if (comboEl) {
+        const combo = Number.isFinite(liveCombo) ? liveCombo : checked;
+        comboEl.textContent = `x${combo}`;
+    }
+};
+
+const bindDuetChallenge = () => {
+    const stage = document.querySelector('#view-game-duet-challenge');
+    if (!stage) return;
+    const playButton = stage.querySelector('[data-duet="play"]');
+    const buttons = Array.from(stage.querySelectorAll('.duet-btn'));
+    const promptEl = stage.querySelector('[data-duet="prompt"]');
+    const roundEl = stage.querySelector('[data-duet="round"]');
+    const scoreEl = stage.querySelector('[data-duet="score"]');
+    const comboEl = stage.querySelector('[data-duet="combo"]');
+    const notesEl = stage.querySelector('.duet-notes');
+    const audioMap = new Map(
+        Array.from(stage.querySelectorAll('[data-duet-audio]')).map((audio) => [audio.dataset.duetAudio, audio])
+    );
+    const notePool = ['G', 'D', 'A', 'E'];
+    let sequence = ['G', 'D', 'A', 'E'];
+    let seqIndex = 0;
+    let combo = 0;
+    let score = 0;
+    let active = false;
+    let isPlayingPartner = false;
+    let partnerToken = 0;
+    let comboTarget = 3;
+    let reported = false;
+    let round = 1;
+    let mistakes = 0;
+
+    const updateScoreboard = () => {
+        setLiveNumber(scoreEl, 'liveScore', score);
+        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
+    };
+
+    const reportResult = attachTuning('duet-challenge', (tuning) => {
+        comboTarget = tuning.comboTarget ?? comboTarget;
+        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+    });
+
+    const buildSequence = () => {
+        const next = [];
+        for (let i = 0; i < 4; i += 1) {
+            const options = notePool.filter((note) => note !== next[i - 1]);
+            next.push(options[Math.floor(Math.random() * options.length)]);
+        }
+        sequence = next;
+        if (notesEl) notesEl.textContent = sequence.join(' · ');
+        if (roundEl) roundEl.textContent = `Round ${round}`;
+        seqIndex = 0;
+        mistakes = 0;
+    };
+
+    const updateSoundState = () => {
+        if (playButton) playButton.disabled = !isSoundEnabled();
+    };
+
+    const playTone = (audio, token) => new Promise((resolve) => {
+        if (!audio) {
+            resolve();
+            return;
+        }
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            audio.removeEventListener('ended', finish);
+            resolve();
+        };
+        if (token !== partnerToken) {
+            resolve();
+            return;
+        }
+        if (!isSoundEnabled()) {
+            resolve();
+            return;
+        }
+        audio.addEventListener('ended', finish);
+        audio.currentTime = 0;
+        audio.play().catch(() => {
+            finish();
+        });
+        setTimeout(finish, 900);
+    });
+
+    const stopPartnerPlayback = () => {
+        partnerToken += 1;
+        isPlayingPartner = false;
+        audioMap.forEach((audio) => {
+            if (audio && !audio.paused) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        });
+        if (playButton) playButton.disabled = false;
+    };
+
+    const playPartnerSequence = async () => {
+        if (isPlayingPartner) return;
+        if (!isSoundEnabled()) {
+            if (promptEl) promptEl.textContent = 'Sounds are off. Turn on Sounds to hear the partner.';
+            return;
+        }
+        const token = partnerToken + 1;
+        partnerToken = token;
+        isPlayingPartner = true;
+        if (playButton) playButton.disabled = true;
+        if (promptEl) promptEl.textContent = 'Partner playing\u2026 get ready to respond.';
+        for (const note of sequence) {
+            if (token !== partnerToken) break;
+            const audio = audioMap.get(note);
+            await playTone(audio, token);
+        }
+        if (token === partnerToken) {
+            if (playButton) playButton.disabled = false;
+            isPlayingPartner = false;
+        }
+    };
+
+    const setButtonsDisabled = (disabled) => {
+        buttons.forEach((button) => {
+            button.disabled = disabled;
+        });
+    };
+
+    const reportSession = () => {
+        if (reported || score <= 0) return;
+        reported = true;
+        const accuracy = sequence.length ? (Math.max(0, sequence.length - mistakes) / sequence.length) * 100 : 0;
+        reportResult({ accuracy, score });
+        recordGameEvent('duet-challenge', { accuracy, score });
+    };
+
+    const resetSession = () => {
+        combo = 0;
+        score = 0;
+        seqIndex = 0;
+        active = false;
+        reported = false;
+        round = 1;
+        mistakes = 0;
+        stopPartnerPlayback();
+        updateScoreboard();
+        buildSequence();
+        if (promptEl) promptEl.textContent = 'Press play to hear the partner line.';
+        setButtonsDisabled(true);
+    };
+
+    bindTap(playButton, () => {
+        if (!isSoundEnabled()) {
+            if (promptEl) promptEl.textContent = 'Sounds are off. Turn on Sounds to hear the partner.';
+            return;
+        }
+        active = false;
+        buildSequence();
+        reported = false;
+        if (promptEl) promptEl.textContent = `Partner plays: ${sequence.join(' \u00b7 ')}`;
+        setButtonsDisabled(true);
+        playPartnerSequence().then(() => {
+            active = true;
+            setButtonsDisabled(false);
+            if (promptEl) promptEl.textContent = `Your turn: ${sequence.join(' \u00b7 ')}`;
+        });
+        markChecklist('dc-step-1');
+    });
+
+    buttons.forEach((button) => {
+        bindTap(button, () => {
+            if (isPlayingPartner) {
+                if (promptEl) promptEl.textContent = 'Wait for the partner line to finish.';
+                return;
+            }
+            if (!active) {
+                if (promptEl) promptEl.textContent = 'Press play to hear the partner line.';
+                return;
+            }
+            const note = button.dataset.duetNote;
+            if (note) {
+                playToneNote(note, { duration: 0.2, volume: 0.18, type: 'triangle' });
+            }
+            if (note === sequence[seqIndex]) {
+                combo += 1;
+                score += 15 + combo * 2;
+                seqIndex += 1;
+                if (seqIndex === 1) markChecklist('dc-step-2');
+                if (combo >= comboTarget) markChecklist('dc-step-3');
+                if (seqIndex >= sequence.length) {
+                    active = false;
+                    if (promptEl) promptEl.textContent = 'Great duet! Play again for a new combo.';
+                    markChecklist('dc-step-4');
+                    playToneSequence(sequence, { tempo: 160, gap: 0.1, duration: 0.18, volume: 0.16, type: 'sine' });
+                    if (!reported) {
+                        reportSession();
+                    }
+                    round += 1;
+                } else {
+                    if (promptEl) promptEl.textContent = `Your turn: ${sequence.slice(seqIndex).join(' \u00b7 ')}`;
+                }
+            } else {
+                combo = 0;
+                mistakes += 1;
+                seqIndex = 0;
+                if (promptEl) promptEl.textContent = 'Try again from the start.';
+                playToneNote('F', { duration: 0.16, volume: 0.12, type: 'sawtooth' });
+            }
+            updateScoreboard();
+        });
+    });
+
+    document.addEventListener('panda:sounds-change', (event) => {
+        if (event.detail?.enabled === false) {
+            stopPartnerPlayback();
+        }
+        updateSoundState();
+    });
+
+    updateSoundState();
+    setButtonsDisabled(true);
+    buildSequence();
+
+    window.addEventListener('hashchange', () => {
+        if (window.location.hash === '#view-game-duet-challenge') {
+            resetSession();
+            return;
+        }
+        stopPartnerPlayback();
+        reportSession();
+    }, { passive: true });
+};
+
+export { updateDuetChallenge as update, bindDuetChallenge as bind };
