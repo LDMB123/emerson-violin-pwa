@@ -1,5 +1,4 @@
 import {
-    PRIMARY_VIEWS,
     getViewId,
     getModulesForView,
     getActiveNavHref,

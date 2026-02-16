@@ -11,9 +11,6 @@ import {
     chartCaptionFor,
     filterSongEvents,
     getRecentEvents,
-    computeTotalMinutes,
-    computeAverageAccuracy,
-    extractAccuracyValues,
 } from '../utils/session-review-utils.js';
 
 let wasmModule = null;

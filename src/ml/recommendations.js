@@ -1,12 +1,8 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAdaptiveLog, getGameTuning } from './adaptive-engine.js';
 import {
-    SKILL_BY_GAME,
     GAME_BY_SKILL,
     SKILL_LABELS,
-    recencyWeight,
-    average,
-    weightedAverage,
     computeSkillScores,
     findWeakestSkill,
     computeSongLevel,
