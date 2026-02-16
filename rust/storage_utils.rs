@@ -1,5 +1,6 @@
 // rust/storage_utils.rs
 
+use serde_json::Value as JsonValue;
 use wasm_bindgen::JsValue;
 use web_sys::Blob;
 
@@ -377,9 +378,35 @@ pub fn js_blob_any(value: &JsValue) -> Option<Blob> {
     None
 }
 
+// ============================================================================
+// Category 6: JSON Extraction
+// ============================================================================
+
+/// Extracts string value from serde_json::Value by key.
+///
+/// Returns Some(String) if key exists and value is a string, None otherwise.
+pub fn extract_string(value: &JsonValue, key: &str) -> Option<String> {
+    match value {
+        JsonValue::Object(map) => map.get(key).and_then(|val| val.as_str().map(|v| v.to_string())),
+        _ => None,
+    }
+}
+
+/// Extracts numeric value from serde_json::Value by key.
+///
+/// Returns Some(f64) if key exists and value is a number, None otherwise.
+/// Handles integer coercion via as_f64().
+pub fn extract_number(value: &JsonValue, key: &str) -> Option<f64> {
+    match value {
+        JsonValue::Object(map) => map.get(key).and_then(|val| val.as_f64()),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn test_idb_fallback_path_basic() {
@@ -587,5 +614,43 @@ mod tests {
             checksums_ok: true,
         };
         assert!(!is_migration_in_progress(&summary));
+    }
+
+    // Category 6: JSON Extraction tests
+    #[test]
+    fn test_extract_string_valid() {
+        let value = json!({"name": "test", "count": 42});
+        assert_eq!(extract_string(&value, "name"), Some("test".to_string()));
+    }
+
+    #[test]
+    fn test_extract_string_missing_key() {
+        let value = json!({"name": "test"});
+        assert_eq!(extract_string(&value, "missing"), None);
+    }
+
+    #[test]
+    fn test_extract_string_wrong_type() {
+        let value = json!({"count": 42});
+        assert_eq!(extract_string(&value, "count"), None);
+    }
+
+    #[test]
+    fn test_extract_number_valid() {
+        let value = json!({"count": 42.5, "name": "test"});
+        assert_eq!(extract_number(&value, "count"), Some(42.5));
+    }
+
+    #[test]
+    fn test_extract_number_integer_coercion() {
+        let value = json!({"count": 42});
+        assert_eq!(extract_number(&value, "count"), Some(42.0));
+    }
+
+    #[test]
+    fn test_extract_number_missing_or_wrong_type() {
+        let value = json!({"name": "test"});
+        assert_eq!(extract_number(&value, "missing"), None);
+        assert_eq!(extract_number(&value, "name"), None);
     }
 }

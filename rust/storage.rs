@@ -2231,23 +2231,6 @@ fn recording_extension(format_hint: &str, blob: &Blob) -> String {
 
 
 
-
-
-
-fn extract_string(value: &JsonValue, key: &str) -> Option<String> {
-  match value {
-    JsonValue::Object(map) => map.get(key).and_then(|val| val.as_str().map(|v| v.to_string())),
-    _ => None,
-  }
-}
-
-fn extract_number(value: &JsonValue, key: &str) -> Option<f64> {
-  match value {
-    JsonValue::Object(map) => map.get(key).and_then(|val| val.as_f64()),
-    _ => None,
-  }
-}
-
 fn json_number(value: f64) -> JsonValue {
   serde_json::Number::from_f64(value)
     .map(JsonValue::Number)
