@@ -38,6 +38,7 @@ emerson-violin-pwa/
 - **iPad Optimized**: Specifically tuned for iPad mini (6th generation)
 - **Safe Harbor Fullscreen**: Custom fullscreen implementation for Safari
 - **Optimized Assets**: Automatic audio compression (Opus/MP3) and font subsetting reduce bundle size by 1.4 MB
+- **Lazy View Loading**: On-demand HTML loading reduces initial bundle by 95% (172 KB → 7.1 KB)
 - **Testing**: Comprehensive test suite with Playwright + Vitest
 
 ## Development
@@ -84,8 +85,8 @@ npm run preview
 
 ## Scripts
 
-- `predev` / `prebuild`: Builds song HTML and service worker assets
-- `prebuild` (production): Runs asset optimizations (audio, fonts, images)
+- `predev` / `prebuild`: Builds song HTML, extracts views, and generates service worker assets
+- `prebuild` (production): Runs asset optimizations (audio, fonts, images) and view extraction
 - `postbuild`: Updates service worker with dist assets
 - `scripts/qa-screenshots.mjs`: Captures iPad Safari QA screenshots (WebKit)
 - All builds automatically generate required static content
@@ -98,6 +99,15 @@ Production builds automatically optimize assets:
 - **Images**: PNG → WebP conversion with fallback support
 
 See `docs/guides/asset-optimization.md` for details.
+
+## HTML Optimization
+
+Production builds automatically extract inline views to separate files:
+- **Initial HTML**: 172 KB → 7.1 KB (95% reduction)
+- **View loading**: On-demand via fetch with in-memory caching
+- **Offline support**: Service worker precaches all view files
+
+See `docs/reports/2026-02-16-html-lazy-loading-results.md` for details.
 
 ## Status
 
