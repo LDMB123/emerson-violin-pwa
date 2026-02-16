@@ -86,6 +86,7 @@ self.__ASSETS__ = [
   "./src/styles/games.css",
   "./src/styles/scroll-animations.css",
   "./src/trainer/tools.js",
+  "./src/trainer/trainer-utils.js",
   "./src/tuner/tuner-utils.js",
   "./src/tuner/tuner.js",
   "./src/utils/math.js",

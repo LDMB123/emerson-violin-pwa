@@ -1,7 +1,20 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { clamp } from '../utils/math.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
+import {
+    isPracticeView as isPracticeViewUtil,
+    calculateMetronomeBpm,
+    calculateMetronomeInterval,
+    clampBpm,
+    calculateMetronomeAccuracy,
+    calculatePostureAccuracy,
+    calculatePostureScore,
+    calculateBowingAccuracy,
+    calculateBowingScore,
+    formatPostureHint,
+    formatBowingIntroText,
+    shouldClearTapTimes
+} from './trainer-utils.js';
 
 const metronomeSlider = document.querySelector('[data-metronome="slider"]');
 const metronomeBpmEl = document.querySelector('[data-metronome="bpm"]');
@@ -23,9 +36,7 @@ const bowingChecks = Array.from(document.querySelectorAll('#view-bowing input[id
 
 const isPracticeView = () => {
     const viewId = window.location.hash.replace('#', '') || 'view-home';
-    if (viewId.startsWith('view-game-')) return true;
-    if (viewId.startsWith('view-song-')) return true;
-    return ['view-coach', 'view-games', 'view-songs', 'view-trainer', 'view-tuner', 'view-bowing', 'view-posture'].includes(viewId);
+    return isPracticeViewUtil(viewId);
 };
 
 let metronomeBpm = Number.parseInt(metronomeSlider?.value || '100', 10);
@@ -84,8 +95,7 @@ const reportMetronome = () => {
     if (metronomeReported || !targetBpm || !metronomeTouched) return;
     metronomeReported = true;
     metronomeTouched = false;
-    const delta = Math.abs(metronomeBpm - targetBpm) / Math.max(targetBpm, 1);
-    const accuracy = clamp((1 - delta) * 100, 0, 100);
+    const accuracy = calculateMetronomeAccuracy(metronomeBpm, targetBpm);
     updateGameResult('trainer-metronome', { accuracy, score: metronomeBpm }).catch(() => {});
 };
 
@@ -157,7 +167,7 @@ const startMetronome = async () => {
         return;
     }
     await ctx.resume();
-    const interval = Math.round(60000 / metronomeBpm);
+    const interval = calculateMetronomeInterval(metronomeBpm);
     playClick();
     metronomeTimer = window.setInterval(playClick, interval);
     if (metronomeToggle) {
@@ -180,7 +190,7 @@ const refreshMetronome = () => {
 const updateBpm = (value) => {
     const parsed = Number.parseInt(value, 10);
     if (Number.isNaN(parsed)) return;
-    metronomeBpm = clamp(parsed, 50, 140);
+    metronomeBpm = clampBpm(parsed);
     if (metronomeSlider) metronomeSlider.value = String(metronomeBpm);
     updateMetronomeDisplay();
     refreshMetronome();
@@ -208,15 +218,14 @@ metronomeToggle?.addEventListener('click', () => {
 
 metronomeTap?.addEventListener('click', () => {
     const now = performance.now();
-    if (tapTimes.length && now - tapTimes[tapTimes.length - 1] > 2000) {
+    if (tapTimes.length && shouldClearTapTimes(tapTimes[tapTimes.length - 1], now)) {
         tapTimes = [];
     }
     tapTimes.push(now);
     if (tapTimes.length > 5) tapTimes.shift();
     if (tapTimes.length >= 2) {
         const intervals = tapTimes.slice(1).map((time, index) => time - tapTimes[index]);
-        const avg = intervals.reduce((sum, value) => sum + value, 0) / intervals.length;
-        const bpm = Math.round(60000 / avg);
+        const bpm = calculateMetronomeBpm(intervals);
         if (metronomeSlider) metronomeSlider.dataset.userSet = 'true';
         metronomeReported = false;
         metronomeTouched = true;
@@ -339,23 +348,15 @@ const clearPosturePreview = () => {
 
 const updatePostureHint = () => {
     if (!postureHint) return;
-    const remaining = Math.max(0, postureTarget - postureCount);
-    if (postureCount === 0) {
-        postureHint.textContent = `Suggested: ${postureTarget} snapshot${postureTarget === 1 ? '' : 's'} this week. Photos stay on your device.`;
-        return;
-    }
-    if (remaining > 0) {
-        postureHint.textContent = `Nice! ${remaining} more snapshot${remaining === 1 ? '' : 's'} to reach your goal.`;
-        return;
-    }
-    postureHint.textContent = 'Posture goal met. Great alignment today!';
+    postureHint.textContent = formatPostureHint(postureCount, postureTarget);
 };
 
 const reportPosture = () => {
     if (postureReported || postureCount === 0) return;
     postureReported = true;
-    const accuracy = clamp((postureCount / postureTarget) * 100, 0, 100);
-    updateGameResult('trainer-posture', { accuracy, score: postureCount * 20 }).catch(() => {});
+    const accuracy = calculatePostureAccuracy(postureCount, postureTarget);
+    const score = calculatePostureScore(postureCount);
+    updateGameResult('trainer-posture', { accuracy, score }).catch(() => {});
 };
 
 async function applyPostureTuning() {
@@ -369,7 +370,7 @@ const updateBowingIntro = () => {
     if (!bowingIntro) return;
     const base = bowingIntro.dataset.baseText || bowingIntro.textContent || '';
     if (!bowingIntro.dataset.baseText) bowingIntro.dataset.baseText = base;
-    bowingIntro.textContent = `${base} Goal: ${bowingTarget} sets.`;
+    bowingIntro.textContent = formatBowingIntroText(base, bowingTarget);
 };
 
 const reportBowing = () => {
@@ -378,8 +379,9 @@ const reportBowing = () => {
     if (!completed || completed === bowingLastReported) return;
     bowingReported = true;
     bowingLastReported = completed;
-    const accuracy = clamp((completed / bowingTarget) * 100, 0, 100);
-    updateGameResult('bowing-coach', { accuracy, score: completed * 25 }).catch(() => {});
+    const accuracy = calculateBowingAccuracy(completed, bowingTarget);
+    const score = calculateBowingScore(completed);
+    updateGameResult('bowing-coach', { accuracy, score }).catch(() => {});
 };
 
 async function applyBowingTuning() {
