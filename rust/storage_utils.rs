@@ -79,7 +79,124 @@ pub fn score_filename(id: &str, name: &str) -> String {
 // Category 3: Format Conversion
 // ============================================================================
 
-// Functions will go here
+/// Extract file extension from MIME type
+pub fn format_from_mime(mime: &str) -> String {
+    if mime.contains("webm") {
+        "webm"
+    } else if mime.contains("mp4") {
+        "mp4"
+    } else if mime.contains("mpeg") {
+        "mp3"
+    } else if mime.contains("wav") {
+        "wav"
+    } else if mime.contains("ogg") {
+        "ogg"
+    } else {
+        "bin"
+    }
+    .to_string()
+}
+
+/// Convert Recording to JsValue object
+///
+/// # Errors
+///
+/// Returns `Err(JsValue)` if any `Reflect::set` operation fails,
+/// which can occur if the object is frozen or property definition fails.
+pub fn recording_to_value(recording: &Recording) -> Result<JsValue, JsValue> {
+    let obj = js_sys::Object::new();
+    js_sys::Reflect::set(&obj, &"id".into(), &recording.id.clone().into())?;
+    js_sys::Reflect::set(&obj, &"createdAt".into(), &recording.created_at.into())?;
+    js_sys::Reflect::set(&obj, &"durationSeconds".into(), &recording.duration_seconds.into())?;
+    js_sys::Reflect::set(&obj, &"mimeType".into(), &recording.mime_type.clone().into())?;
+    js_sys::Reflect::set(&obj, &"sizeBytes".into(), &recording.size_bytes.into())?;
+    js_sys::Reflect::set(&obj, &"format".into(), &recording.format.clone().into())?;
+
+    if let Some(ref path) = recording.opfs_path {
+        js_sys::Reflect::set(&obj, &"opfsPath".into(), &path.clone().into())?;
+    }
+    if let Some(ref profile_id) = recording.profile_id {
+        js_sys::Reflect::set(&obj, &"profileId".into(), &profile_id.clone().into())?;
+    }
+    if let Some(ref blob) = recording.blob {
+        js_sys::Reflect::set(&obj, &"blob".into(), blob)?;
+    }
+
+    Ok(obj.into())
+}
+
+// Forward declarations - implemented in Category 5 (Task 5)
+// Temporary stub implementations - will be replaced in Task 5
+fn js_string_any(_value: &JsValue, _keys: &[&str]) -> Option<String> {
+    todo!("Will be implemented in Task 5")
+}
+
+fn js_number_any(_value: &JsValue, _keys: &[&str]) -> Option<f64> {
+    todo!("Will be implemented in Task 5")
+}
+
+fn js_date_any(_value: &JsValue, _keys: &[&str]) -> Option<f64> {
+    todo!("Will be implemented in Task 5")
+}
+
+fn js_blob_any(_value: &JsValue) -> Option<Blob> {
+    todo!("Will be implemented in Task 5")
+}
+
+/// Convert JsValue object to Recording
+pub fn recording_from_value(value: &JsValue) -> Option<Recording> {
+    let id = js_string_any(value, &["id"])?;
+    let created_at = js_number_any(value, &["createdAt", "created_at"])?;
+    let duration_seconds = js_number_any(value, &["durationSeconds", "duration_seconds"]).unwrap_or(0.0);
+    let mime_type = js_string_any(value, &["mimeType", "mime_type"]).unwrap_or_else(|| "audio/webm".to_string());
+    let size_bytes = js_number_any(value, &["sizeBytes", "size_bytes"]).unwrap_or(0.0);
+    let format = js_string_any(value, &["format"]).unwrap_or_else(|| "webm".to_string());
+    let opfs_path = js_string_any(value, &["opfsPath", "opfs_path"]);
+    let profile_id = js_string_any(value, &["profileId", "profile_id"]);
+    let blob = js_blob_any(value);
+
+    Some(Recording {
+        id,
+        created_at,
+        duration_seconds,
+        mime_type,
+        size_bytes,
+        format,
+        opfs_path,
+        profile_id,
+        blob,
+    })
+}
+
+/// Convert JsValue object to ShareItem
+pub fn share_item_from_value(value: &JsValue) -> Option<ShareItem> {
+    let id = js_string_any(value, &["id"])?;
+    let name = js_string_any(value, &["name"]).unwrap_or_else(|| "Shared File".to_string());
+    let size = js_number_any(value, &["size"]).unwrap_or(0.0);
+    let mime = js_string_any(value, &["type", "mime"]).unwrap_or_else(|| "application/octet-stream".to_string());
+    let created_at = js_date_any(value, &["lastModified", "created_at"]).unwrap_or_else(|| js_sys::Date::now());
+    let blob = js_blob_any(value);
+
+    Some(ShareItem {
+        id,
+        name,
+        size,
+        mime,
+        created_at,
+        blob,
+    })
+}
+
+/// Convert JsValue key to String
+pub fn key_to_string(key: &JsValue) -> Option<String> {
+    if let Some(s) = key.as_string() {
+        return Some(s);
+    }
+    if let Some(n) = key.as_f64() {
+        return Some(n.to_string());
+    }
+    None
+}
 
 // ============================================================================
 // Category 4: Calculations & Validation
@@ -177,5 +294,22 @@ mod tests {
     fn test_score_filename() {
         assert_eq!(score_filename("456", "Score"), "score_456_Score");
         assert_eq!(score_filename("xyz", "a/b"), "score_xyz_a_b");
+    }
+
+    #[test]
+    fn test_format_from_mime() {
+        assert_eq!(format_from_mime("audio/webm"), "webm");
+        assert_eq!(format_from_mime("video/mp4"), "mp4");
+        assert_eq!(format_from_mime("audio/mpeg"), "mp3");
+        assert_eq!(format_from_mime("audio/wav"), "wav");
+        assert_eq!(format_from_mime("audio/ogg"), "ogg");
+        assert_eq!(format_from_mime("unknown"), "bin");
+    }
+
+    #[test]
+    fn test_format_from_mime_edge_cases() {
+        assert_eq!(format_from_mime("audio/webm; codecs=opus"), "webm");
+        assert_eq!(format_from_mime(""), "bin");
+        assert_eq!(format_from_mime("AUDIO/MPEG"), "mp3");
     }
 }
