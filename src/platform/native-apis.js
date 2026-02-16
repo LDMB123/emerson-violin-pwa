@@ -1,3 +1,5 @@
+import { isSoundEnabled } from '../utils/sound-state.js';
+
 const storageStatusEl = document.querySelector('[data-storage-status]');
 const storageEstimateEl = document.querySelector('[data-storage-estimate]');
 const storageRequestButton = document.querySelector('[data-storage-request]');
@@ -12,7 +14,6 @@ const soundToggle = document.querySelector('#setting-sounds');
 const rootStyle = document.documentElement?.style;
 const root = document.documentElement;
 const installStatusEl = document.querySelector('[data-install-status]');
-const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
 const PERSIST_REQUEST_KEY = 'panda-violin:persist-request-v1';
 
 const loadPersistRequest = () => {
@@ -471,7 +472,6 @@ const bindMediaSession = () => {
         navigator.mediaSession.setActionHandler('play', async () => {
             if (!isSoundEnabled()) return;
             if (currentAudio) {
-                if (!isSoundEnabled()) return;
                 await currentAudio.play().catch(() => {});
             }
         });

@@ -1,4 +1,5 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
 
 const metronomeSlider = document.querySelector('[data-metronome="slider"]');
 const metronomeBpmEl = document.querySelector('[data-metronome="bpm"]');
@@ -18,7 +19,6 @@ const bowingView = document.querySelector('#view-bowing');
 const bowingIntro = bowingView?.querySelector('.game-drill-intro');
 const bowingChecks = Array.from(document.querySelectorAll('#view-bowing input[id^="bow-set-"]'));
 
-const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
 const isPracticeView = () => {
     const viewId = window.location.hash.replace('#', '') || 'view-home';
     if (viewId.startsWith('view-game-')) return true;
@@ -363,12 +363,12 @@ const reportPosture = () => {
     updateGameResult('trainer-posture', { accuracy, score: postureCount * 20 }).catch(() => {});
 };
 
-const applyPostureTuning = async () => {
+async function applyPostureTuning() {
     const tuning = await getGameTuning('trainer-posture');
     postureTarget = tuning.targetChecks ?? postureTarget;
     setBadge(document.querySelector('#view-posture .view-header'), tuning.difficulty, 'Posture');
     updatePostureHint();
-};
+}
 
 const updateBowingIntro = () => {
     if (!bowingIntro) return;
@@ -387,12 +387,12 @@ const reportBowing = () => {
     updateGameResult('bowing-coach', { accuracy, score: completed * 25 }).catch(() => {});
 };
 
-const applyBowingTuning = async () => {
+async function applyBowingTuning() {
     const tuning = await getGameTuning('bowing-coach');
     bowingTarget = tuning.targetSets ?? bowingTarget;
     setBadge(document.querySelector('#view-bowing .view-header'), tuning.difficulty, 'Bowing');
     updateBowingIntro();
-};
+}
 
 postureInput?.addEventListener('change', () => {
     const file = postureInput.files?.[0];

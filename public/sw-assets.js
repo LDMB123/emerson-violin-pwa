@@ -70,6 +70,7 @@ self.__ASSETS__ = [
   "./src/tuner/tuner.js",
   "./src/utils/recording-export.js",
   "./src/utils/skill-profile.js",
+  "./src/utils/sound-state.js",
   "./src/wasm/panda_audio.js",
   "./src/wasm/panda_audio_bg.wasm",
   "./src/wasm/panda_core.js",

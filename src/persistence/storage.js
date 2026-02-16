@@ -225,8 +225,8 @@ const clearBlobFallback = async (key) => {
         const db = await openDB();
         if (!db) return;
         await removeBlobFromDB(db, key);
-    } catch {
-        // ignore to avoid duplicate cleanup failures during environment changes
+    } catch (error) {
+        console.warn('[Storage] blob cleanup failed', error);
     }
 };
 

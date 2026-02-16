@@ -1,6 +1,7 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { createTonePlayer } from '../audio/tone-player.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
 
 const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
@@ -12,10 +13,6 @@ const formatCountdown = (seconds) => {
     const minutes = Math.floor(safe / 60);
     const remaining = safe % 60;
     return `${minutes.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
-};
-
-const isSoundEnabled = () => {
-    return document.documentElement?.dataset?.sounds !== 'off';
 };
 
 let tonePlayer = null;
@@ -2682,6 +2679,7 @@ const bindTuningTime = () => {
     if (!stage) return;
     const statusEl = stage.querySelector('[data-tuning="status"]');
     const progressEl = stage.querySelector('[data-tuning="progress"]');
+    const progressBar = progressEl?.parentElement;
     const buttons = Array.from(stage.querySelectorAll('.tuning-btn'));
     const audioMap = {
         G: stage.querySelector('audio[aria-labelledby="tuning-g-label"]'),
@@ -2708,6 +2706,7 @@ const bindTuningTime = () => {
         if (progressEl) {
             const percent = clamp((tunedNotes.size / targetStrings) * 100, 0, 100);
             progressEl.style.width = `${percent}%`;
+            if (progressBar) progressBar.setAttribute('aria-valuenow', Math.round(percent));
         }
     });
 
@@ -2751,6 +2750,7 @@ const bindTuningTime = () => {
             if (progressEl) {
                 const percent = clamp((tunedNotes.size / targetStrings) * 100, 0, 100);
                 progressEl.style.width = `${percent}%`;
+                if (progressBar) progressBar.setAttribute('aria-valuenow', Math.round(percent));
             }
             markChecklist(checklistMap[note]);
             if (tunedNotes.size >= targetStrings) {
@@ -2772,7 +2772,10 @@ const bindTuningTime = () => {
             if (statusEl) {
                 statusEl.textContent = `Tune ${targetStrings} strings to warm up.`;
             }
-            if (progressEl) progressEl.style.width = '0%';
+            if (progressEl) {
+                progressEl.style.width = '0%';
+                if (progressBar) progressBar.setAttribute('aria-valuenow', 0);
+            }
             return;
         }
         reportSession();

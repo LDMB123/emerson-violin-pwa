@@ -1,12 +1,12 @@
 import { getJSON, setJSON, getBlob, removeBlob } from '../persistence/storage.js';
 import { exportRecording } from '../utils/recording-export.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
 
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
 
 const listEl = document.querySelector('[data-parent-recordings]');
 const statusEl = document.querySelector('[data-parent-recordings-status]');
 const clearButton = document.querySelector('[data-parent-clear-recordings]');
-const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
 const playbackAudio = new Audio();
 let playbackUrl = '';
 
@@ -64,19 +64,41 @@ const buildRow = (recording, index) => {
     row.className = 'parent-recording-item';
     row.dataset.recordingIndex = String(index);
 
-    row.innerHTML = `
-      <button class="recording-play" type="button" aria-label="Play recording">▶</button>
-      <div class="recording-info">
-        <div class="recording-title"></div>
-        <div class="recording-sub"></div>
-      </div>
-      <button class="recording-save" type="button" aria-label="Save recording">⬇</button>
-      <button class="recording-delete" type="button" aria-label="Delete recording">✕</button>
-    `;
+    const playBtn = document.createElement('button');
+    playBtn.className = 'recording-play';
+    playBtn.type = 'button';
+    playBtn.setAttribute('aria-label', 'Play recording');
+    playBtn.textContent = '\u25B6';
 
-    const titleEl = row.querySelector('.recording-title');
-    const subEl = row.querySelector('.recording-sub');
-    if (titleEl) titleEl.textContent = recording.title || `Recording ${index + 1}`;
+    const info = document.createElement('div');
+    info.className = 'recording-info';
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'recording-title';
+    const subDiv = document.createElement('div');
+    subDiv.className = 'recording-sub';
+    info.appendChild(titleDiv);
+    info.appendChild(subDiv);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'recording-save';
+    saveBtn.type = 'button';
+    saveBtn.setAttribute('aria-label', 'Save recording');
+    saveBtn.textContent = '\u2B07';
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'recording-delete';
+    deleteBtn.type = 'button';
+    deleteBtn.setAttribute('aria-label', 'Delete recording');
+    deleteBtn.textContent = '\u2715';
+
+    row.appendChild(playBtn);
+    row.appendChild(info);
+    row.appendChild(saveBtn);
+    row.appendChild(deleteBtn);
+
+    const titleEl = titleDiv;
+    const subEl = subDiv;
+    titleEl.textContent = recording.title || `Recording ${index + 1}`;
     if (subEl) {
         let createdAt = '';
         if (recording.createdAt) {
@@ -91,7 +113,7 @@ const buildRow = (recording, index) => {
     }
 
     const hasSource = Boolean(recording.dataUrl || recording.blobKey);
-    const playButton = row.querySelector('.recording-play');
+    const playButton = playBtn;
     if (playButton) {
         playButton.disabled = !isSoundEnabled() || !hasSource;
         playButton.addEventListener('click', async () => {
@@ -110,7 +132,7 @@ const buildRow = (recording, index) => {
         });
     }
 
-    const saveButton = row.querySelector('.recording-save');
+    const saveButton = saveBtn;
     if (saveButton) {
         saveButton.disabled = !hasSource;
         saveButton.addEventListener('click', async () => {
@@ -133,7 +155,7 @@ const buildRow = (recording, index) => {
         });
     }
 
-    const deleteButton = row.querySelector('.recording-delete');
+    const deleteButton = deleteBtn;
     if (deleteButton) {
         deleteButton.addEventListener('click', async () => {
             const ok = window.confirm('Delete this recording?');
@@ -155,7 +177,7 @@ const buildRow = (recording, index) => {
 const render = async () => {
     if (!listEl) return;
     const recordings = await loadRecordings();
-    listEl.innerHTML = '';
+    listEl.replaceChildren();
 
     if (clearButton) clearButton.disabled = !recordings.length;
 

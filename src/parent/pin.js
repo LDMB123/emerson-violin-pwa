@@ -10,15 +10,20 @@ const pinStatusEl = document.querySelector('[data-parent-pin-status]');
 
 const PIN_KEY = 'panda-violin:parent-pin-v1';
 const UNLOCK_KEY = 'panda-violin:parent-unlocked';
-let cachedPin = '1001';
+let cachedHash = null;
 let pinReady = null;
 
 const normalizePin = (value) => (value || '').replace(/\D/g, '').slice(0, 4);
 
+const hashPin = async (pin) => {
+    const data = new TextEncoder().encode(pin);
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+};
+
 const updatePinDisplay = () => {
     if (pinDisplayEl) {
-        const mask = cachedPin ? '•'.repeat(cachedPin.length) : '••••';
-        pinDisplayEl.textContent = `🔒 PIN ${mask}`;
+        pinDisplayEl.textContent = '🔒 PIN ••••';
     }
     if (pinStatusEl) {
         pinStatusEl.textContent = 'PIN is set.';
@@ -27,18 +32,23 @@ const updatePinDisplay = () => {
 
 const loadPin = async () => {
     const stored = await getJSON(PIN_KEY);
-    const loaded = normalizePin(stored?.pin) || '1001';
-    cachedPin = loaded;
+    if (stored?.hash) {
+        cachedHash = stored.hash;
+    } else {
+        const plain = normalizePin(stored?.pin) || '1001';
+        cachedHash = await hashPin(plain);
+        await setJSON(PIN_KEY, { hash: cachedHash, updatedAt: Date.now() });
+    }
     updatePinDisplay();
-    return cachedPin;
+    return cachedHash;
 };
 
-const getPin = async () => {
+const getPinHash = async () => {
     if (!pinReady) {
         pinReady = loadPin();
     }
     await pinReady;
-    return cachedPin;
+    return cachedHash;
 };
 
 const setPinStatus = (message) => {
@@ -72,8 +82,9 @@ const handleSubmit = async (event) => {
         }
         return;
     }
-    const pin = await getPin();
-    if (input?.value === pin) {
+    const stored = await getPinHash();
+    const entered = await hashPin(normalizePin(input?.value));
+    if (entered === stored) {
         unlock();
         return;
     }
@@ -92,8 +103,9 @@ const checkGate = async () => {
         return;
     }
     const entry = window.prompt('Enter Parent PIN');
-    const pin = await getPin();
-    if (entry === pin) {
+    const stored = await getPinHash();
+    const entered = await hashPin(normalizePin(entry));
+    if (entered === stored) {
         sessionStorage.setItem(UNLOCK_KEY, 'true');
     } else {
         window.location.hash = '#view-home';
@@ -111,8 +123,8 @@ const savePin = async () => {
         setPinStatus('Enter a 4-digit PIN.');
         return;
     }
-    cachedPin = next;
-    await setJSON(PIN_KEY, { pin: next, updatedAt: Date.now() });
+    cachedHash = await hashPin(next);
+    await setJSON(PIN_KEY, { hash: cachedHash, updatedAt: Date.now() });
     pinInputEl.value = '';
     updatePinDisplay();
     setPinStatus('PIN updated.');

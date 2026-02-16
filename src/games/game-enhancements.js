@@ -180,11 +180,33 @@ const resetGameView = (view, { forceEvents = false } = {}) => {
     });
 };
 
-const attachSessionTimer = (view, timerEl, fillEl, trackEl, targetMinutes, scoreEl) => {
+const attachSessionTimer = (view, timerEl, fillEl, trackEl, targetMinutes, scoreEl, announceEl) => {
     let interval = null;
     let startedAt = null;
     const safeTargetMinutes = Math.max(1, targetMinutes || 0);
     const targetMs = safeTargetMinutes * 60 * 1000;
+    const halfMs = targetMs / 2;
+    const oneMinMs = 60 * 1000;
+    const announced = new Set();
+
+    const announce = (msg) => {
+        if (announceEl) announceEl.textContent = msg;
+    };
+
+    const checkMilestones = (elapsed) => {
+        if (!announceEl) return;
+        const remaining = targetMs - elapsed;
+        if (elapsed >= targetMs && !announced.has('end')) {
+            announced.add('end');
+            announce('Session complete');
+        } else if (remaining > 0 && remaining <= oneMinMs && !announced.has('1min')) {
+            announced.add('1min');
+            announce('1 minute remaining');
+        } else if (elapsed >= halfMs && !announced.has('half')) {
+            announced.add('half');
+            announce('Halfway there');
+        }
+    };
 
     const update = () => {
         if (!startedAt) return;
@@ -198,12 +220,15 @@ const attachSessionTimer = (view, timerEl, fillEl, trackEl, targetMinutes, score
         if (scoreEl) {
             scoreEl.textContent = elapsed >= targetMs ? 'Session Complete' : 'Session Active';
         }
+        checkMilestones(elapsed);
     };
 
     const start = () => {
         if (interval) return;
         startedAt = Date.now();
+        announced.clear();
         view.dataset.session = 'active';
+        announce('Session started');
         update();
         interval = window.setInterval(update, 1000);
     };
@@ -219,7 +244,9 @@ const attachSessionTimer = (view, timerEl, fillEl, trackEl, targetMinutes, score
     const reset = () => {
         stop();
         startedAt = null;
+        announced.clear();
         if (timerEl) timerEl.textContent = '00:00';
+        if (announceEl) announceEl.textContent = '';
         if (fillEl) {
             fillEl.style.width = '0%';
             if (trackEl) trackEl.setAttribute('aria-valuenow', '0');
@@ -280,8 +307,12 @@ const injectHeaderControls = (view) => {
     const timer = document.createElement('div');
     timer.className = 'game-timer';
     timer.textContent = '00:00';
-    timer.setAttribute('aria-live', 'polite');
     timer.dataset.gameTimer = 'true';
+
+    const timerAnnounce = document.createElement('div');
+    timerAnnounce.className = 'sr-only';
+    timerAnnounce.setAttribute('aria-live', 'polite');
+    timerAnnounce.dataset.gameTimerAnnounce = 'true';
 
     const resetButton = document.createElement('button');
     resetButton.className = 'icon-btn';
@@ -298,6 +329,7 @@ const injectHeaderControls = (view) => {
     coachButton.dataset.gameCoachJump = 'true';
 
     controls.appendChild(timer);
+    controls.appendChild(timerAnnounce);
     controls.appendChild(coachButton);
     controls.appendChild(resetButton);
 
@@ -310,7 +342,7 @@ const injectHeaderControls = (view) => {
         });
     }
 
-    return { scoreEl, timerEl: timer, resetButton };
+    return { scoreEl, timerEl: timer, announceEl: timerAnnounce, resetButton };
 };
 
 const buildCoachPanel = (view, meta) => {
@@ -326,11 +358,21 @@ const buildCoachPanel = (view, meta) => {
 
     const headerText = document.createElement('div');
     headerText.className = 'game-coach-text';
-    headerText.innerHTML = `
-        <span class="game-coach-kicker">Coach Focus</span>
-        <h3>${meta.skill} · ${meta.goal}</h3>
-        <p class="game-coach-goal">Target session: ${formatMinutes(meta.targetMinutes)}</p>
-    `;
+
+    const kicker = document.createElement('span');
+    kicker.className = 'game-coach-kicker';
+    kicker.textContent = 'Coach Focus';
+
+    const heading = document.createElement('h3');
+    heading.textContent = `${meta.skill} · ${meta.goal}`;
+
+    const goalP = document.createElement('p');
+    goalP.className = 'game-coach-goal';
+    goalP.textContent = `Target session: ${formatMinutes(meta.targetMinutes)}`;
+
+    headerText.appendChild(kicker);
+    headerText.appendChild(heading);
+    headerText.appendChild(goalP);
 
     const badge = document.createElement('div');
     badge.className = 'game-coach-badge';
@@ -344,35 +386,97 @@ const buildCoachPanel = (view, meta) => {
     meta.steps.forEach((step, index) => {
         const stepEl = document.createElement('div');
         stepEl.className = 'game-coach-step';
-        stepEl.innerHTML = `
-            <span class="game-coach-step-index">${index + 1}</span>
-            <span class="game-coach-step-time">${formatMinutes(step.minutes)}</span>
-            <span class="game-coach-step-text">${step.label}</span>
-            <span class="game-coach-step-cue">${step.cue || ''}</span>
-        `;
+
+        const stepIndex = document.createElement('span');
+        stepIndex.className = 'game-coach-step-index';
+        stepIndex.textContent = String(index + 1);
+
+        const stepTime = document.createElement('span');
+        stepTime.className = 'game-coach-step-time';
+        stepTime.textContent = formatMinutes(step.minutes);
+
+        const stepText = document.createElement('span');
+        stepText.className = 'game-coach-step-text';
+        stepText.textContent = step.label;
+
+        const stepCue = document.createElement('span');
+        stepCue.className = 'game-coach-step-cue';
+        stepCue.textContent = step.cue || '';
+
+        stepEl.appendChild(stepIndex);
+        stepEl.appendChild(stepTime);
+        stepEl.appendChild(stepText);
+        stepEl.appendChild(stepCue);
         steps.appendChild(stepEl);
     });
 
     const session = document.createElement('div');
     session.className = 'game-session';
-    session.innerHTML = `
-        <div class="game-session-row">
-            <span class="game-session-label">Session Timer</span>
-            <span class="game-session-time" data-game-session-time>00:00</span>
-            <span class="game-session-target">/ ${formatMinutes(meta.targetMinutes)}</span>
-        </div>
-        <div class="game-session-track" data-game-session-track role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <span class="game-session-fill" data-game-session-fill style="width:0%"></span>
-        </div>
-        <div class="game-session-actions">
-            <button class="btn btn-primary" type="button" data-game-session-start>Start session</button>
-            <button class="btn btn-secondary" type="button" data-game-session-stop disabled>Finish</button>
-        </div>
-    `;
+
+    const sessionRow = document.createElement('div');
+    sessionRow.className = 'game-session-row';
+
+    const sessionLabel = document.createElement('span');
+    sessionLabel.className = 'game-session-label';
+    sessionLabel.textContent = 'Session Timer';
+
+    const sessionTime = document.createElement('span');
+    sessionTime.className = 'game-session-time';
+    sessionTime.dataset.gameSessionTime = '';
+    sessionTime.textContent = '00:00';
+
+    const sessionTarget = document.createElement('span');
+    sessionTarget.className = 'game-session-target';
+    sessionTarget.textContent = `/ ${formatMinutes(meta.targetMinutes)}`;
+
+    sessionRow.appendChild(sessionLabel);
+    sessionRow.appendChild(sessionTime);
+    sessionRow.appendChild(sessionTarget);
+
+    const sessionTrack = document.createElement('div');
+    sessionTrack.className = 'game-session-track';
+    sessionTrack.dataset.gameSessionTrack = '';
+    sessionTrack.setAttribute('role', 'progressbar');
+    sessionTrack.setAttribute('aria-valuemin', '0');
+    sessionTrack.setAttribute('aria-valuemax', '100');
+    sessionTrack.setAttribute('aria-valuenow', '0');
+
+    const sessionFill = document.createElement('span');
+    sessionFill.className = 'game-session-fill';
+    sessionFill.dataset.gameSessionFill = '';
+    sessionFill.style.width = '0%';
+
+    sessionTrack.appendChild(sessionFill);
+
+    const sessionActions = document.createElement('div');
+    sessionActions.className = 'game-session-actions';
+
+    const startBtn = document.createElement('button');
+    startBtn.className = 'btn btn-primary';
+    startBtn.type = 'button';
+    startBtn.dataset.gameSessionStart = '';
+    startBtn.textContent = 'Start session';
+
+    const stopBtn = document.createElement('button');
+    stopBtn.className = 'btn btn-secondary';
+    stopBtn.type = 'button';
+    stopBtn.dataset.gameSessionStop = '';
+    stopBtn.disabled = true;
+    stopBtn.textContent = 'Finish';
+
+    sessionActions.appendChild(startBtn);
+    sessionActions.appendChild(stopBtn);
+
+    session.appendChild(sessionRow);
+    session.appendChild(sessionTrack);
+    session.appendChild(sessionActions);
 
     const tip = document.createElement('div');
     tip.className = 'game-coach-tip';
-    tip.innerHTML = `<span>Coach tip:</span> ${meta.tip}`;
+    const tipLabel = document.createElement('span');
+    tipLabel.textContent = 'Coach tip:';
+    tip.appendChild(tipLabel);
+    tip.appendChild(document.createTextNode(` ${meta.tip}`));
 
     panel.appendChild(header);
     panel.appendChild(steps);
@@ -397,8 +501,9 @@ const bindGameEnhancements = () => {
         const trackEl = panel?.querySelector('[data-game-session-track]');
         const fillEl = panel?.querySelector('[data-game-session-fill]');
         const scoreEl = headerControls?.scoreEl;
+        const announceEl = headerControls?.announceEl;
 
-        const session = attachSessionTimer(view, timerEl, fillEl, trackEl, meta.targetMinutes, scoreEl);
+        const session = attachSessionTimer(view, timerEl, fillEl, trackEl, meta.targetMinutes, scoreEl, announceEl);
 
         const startButton = panel?.querySelector('[data-game-session-start]');
         const stopButton = panel?.querySelector('[data-game-session-stop]');

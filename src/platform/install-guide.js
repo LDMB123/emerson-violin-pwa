@@ -33,19 +33,47 @@ const buildGuide = () => {
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('aria-labelledby', 'install-guide-title');
 
-    panel.innerHTML = `
-      <h3 id="install-guide-title">Install Panda Violin</h3>
-      <p>For the best offline experience on iPad:</p>
-      <ol>
-        <li>Open Safari&#39;s <span class="install-guide-chip">Share</span> menu.</li>
-        <li>Select <strong>Add to Home Screen</strong>.</li>
-        <li>Launch Panda Violin from your Home Screen.</li>
-      </ol>
-      <div class="install-guide-actions">
-        <button class="btn btn-primary" type="button" data-install-dismiss>Got it</button>
-        <button class="btn btn-secondary" type="button" data-install-later>Later</button>
-      </div>
-    `;
+    const title = document.createElement('h3');
+    title.id = 'install-guide-title';
+    title.textContent = 'Install Panda Violin';
+
+    const desc = document.createElement('p');
+    desc.textContent = 'For the best offline experience on iPad:';
+
+    const steps = document.createElement('ol');
+    const step1 = document.createElement('li');
+    step1.append('Open Safari\u2019s ');
+    const chip = document.createElement('span');
+    chip.className = 'install-guide-chip';
+    chip.textContent = 'Share';
+    step1.append(chip, ' menu.');
+
+    const step2 = document.createElement('li');
+    step2.append('Select ');
+    const bold = document.createElement('strong');
+    bold.textContent = 'Add to Home Screen';
+    step2.append(bold, '.');
+
+    const step3 = document.createElement('li');
+    step3.textContent = 'Launch Panda Violin from your Home Screen.';
+
+    steps.append(step1, step2, step3);
+
+    const actions = document.createElement('div');
+    actions.className = 'install-guide-actions';
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'btn btn-primary';
+    dismissBtn.type = 'button';
+    dismissBtn.dataset.installDismiss = '';
+    dismissBtn.textContent = 'Got it';
+    const laterBtn = document.createElement('button');
+    laterBtn.className = 'btn btn-secondary';
+    laterBtn.type = 'button';
+    laterBtn.dataset.installLater = '';
+    laterBtn.textContent = 'Later';
+    actions.append(dismissBtn, laterBtn);
+
+    panel.append(title, desc, steps, actions);
 
     backdrop.appendChild(panel);
 
