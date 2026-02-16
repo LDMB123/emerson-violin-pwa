@@ -11,6 +11,25 @@ import {
     getTonePlayer,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import {
+    computeBeatInterval,
+    computeBpm,
+    computeTimingScore,
+    getRatingFromScore,
+    computeNextCombo,
+    computeScoreIncrement,
+    computeAverageFromHistory,
+    computeAccuracyFromTimingScores,
+    computeAccuracyFromBpmHistory,
+    getMetronomeNote,
+    getMetronomeVolume,
+    shouldMarkTapMilestone,
+    shouldMarkComboMilestone,
+    shouldMarkEnduranceMilestone,
+    shouldShowComboStatus,
+    formatComboStatus,
+    formatRegularStatus,
+} from '../utils/rhythm-dash-utils.js';
 
 const rhythmScoreEl = cachedEl('[data-rhythm="score"]');
 const rhythmComboEl = cachedEl('[data-rhythm="combo"]');
@@ -92,7 +111,7 @@ const bindRhythmDash = () => {
     const updateTargetBpm = (value, { user = false } = {}) => {
         const next = clamp(Number(value) || targetBpm, 60, 140);
         targetBpm = next;
-        beatInterval = 60000 / targetBpm;
+        beatInterval = computeBeatInterval(targetBpm);
         stage.style.setProperty('--beat-interval', `${(60 / targetBpm).toFixed(2)}s`);
         stage.style.setProperty('--beat-cycle', `${(60 / targetBpm * 8).toFixed(2)}s`);
         if (targetSlider) {
@@ -126,13 +145,9 @@ const bindRhythmDash = () => {
 
     const computeAccuracy = () => {
         if (timingScores.length) {
-            const avg = timingScores.reduce((sum, value) => sum + value, 0) / timingScores.length;
-            return clamp(avg * 100, 0, 100);
+            return computeAccuracyFromTimingScores(timingScores);
         }
-        if (!tapHistory.length) return 0;
-        const average = tapHistory.reduce((sum, value) => sum + value, 0) / tapHistory.length;
-        const delta = Math.abs(average - targetBpm) / Math.max(targetBpm, 1);
-        return clamp((1 - delta) * 100, 0, 100);
+        return computeAccuracyFromBpmHistory(tapHistory, targetBpm);
     };
 
     const reportSession = () => {
@@ -158,9 +173,8 @@ const bindRhythmDash = () => {
         if (!player) return;
         const interval = Math.max(240, beatInterval);
         metronomeId = window.setInterval(() => {
-            const strong = metronomeBeat % 4 === 0;
-            const note = strong ? 'E' : 'A';
-            const volume = strong ? 0.18 : 0.12;
+            const note = getMetronomeNote(metronomeBeat);
+            const volume = getMetronomeVolume(metronomeBeat);
             player.playNote(note, { duration: 0.08, volume, type: 'square' }).catch(() => {});
             metronomeBeat += 1;
         }, interval);
@@ -285,36 +299,24 @@ const bindRhythmDash = () => {
         let rating = 'Off';
         let level = 'off';
         if (delta > 0) {
-            const deviation = Math.abs(delta - beatInterval);
-            timingScore = clamp(1 - deviation / beatInterval, 0, 1);
-            if (timingScore >= 0.9) {
-                rating = 'Perfect';
-                level = 'perfect';
-            } else if (timingScore >= 0.75) {
-                rating = 'Great';
-                level = 'great';
-            } else if (timingScore >= 0.6) {
-                rating = 'Good';
-                level = 'good';
-            }
+            timingScore = computeTimingScore(delta, beatInterval);
+            const result = getRatingFromScore(timingScore);
+            rating = result.rating;
+            level = result.level;
         }
-        if (delta > 0 && timingScore >= 0.6) {
-            combo += 1;
-        } else {
-            combo = 1;
-        }
-        const base = timingScore >= 0.9 ? 22 : timingScore >= 0.75 ? 16 : timingScore >= 0.6 ? 12 : 6;
-        score += base + combo * 2;
+        combo = computeNextCombo(combo, timingScore);
+        const increment = computeScoreIncrement(timingScore, combo);
+        score += increment;
         tapCount += 1;
         setLiveNumber(scoreEl, 'liveScore', score);
         setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
         if (delta > 0 && bpmEl) {
-            const bpm = clamp(Math.round(60000 / delta), 50, 160);
+            const bpm = computeBpm(delta);
             bpmEl.textContent = String(bpm);
             tapHistory.push(bpm);
             if (tapHistory.length > 4) tapHistory.shift();
             if (suggestedEl && tapHistory.length >= 2) {
-                const avg = Math.round(tapHistory.reduce((sum, value) => sum + value, 0) / tapHistory.length);
+                const avg = computeAverageFromHistory(tapHistory);
                 suggestedEl.textContent = String(avg);
             }
         }
@@ -324,15 +326,15 @@ const bindRhythmDash = () => {
             if (timingScores.length > 12) timingScores.shift();
             setRating(rating, level, timingScore);
         }
-        if (combo >= 3) {
-            setStatus(`Nice streak! ${rating} timing · Combo x${combo}.`);
+        if (shouldShowComboStatus(combo)) {
+            setStatus(formatComboStatus(rating, combo));
         } else {
-            setStatus(`Timing: ${rating}. Keep the beat steady.`);
+            setStatus(formatRegularStatus(rating));
         }
-        markChecklistIf(tapCount >= 8, 'rd-set-1');
-        markChecklistIf(combo >= 10, 'rd-set-2');
+        markChecklistIf(shouldMarkTapMilestone(tapCount), 'rd-set-1');
+        markChecklistIf(shouldMarkComboMilestone(combo), 'rd-set-2');
         const elapsed = runStartedAt ? (Date.now() - runStartedAt) : 0;
-        markChecklistIf(tapCount >= 16 || elapsed >= 20000, 'rd-set-3');
+        markChecklistIf(shouldMarkEnduranceMilestone(tapCount, elapsed), 'rd-set-3');
     });
 
     window.addEventListener('hashchange', () => {
