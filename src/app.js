@@ -45,10 +45,10 @@ const scheduleIdle = (task) => {
         return;
     }
     if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(task, { timeout: 1500 });
+        window.requestIdleCallback(task, { timeout: 800 });
         return;
     }
-    window.setTimeout(() => task({ timeRemaining: () => 0, didTimeout: true }), 600);
+    window.setTimeout(() => task({ timeRemaining: () => 0, didTimeout: true }), 300);
 };
 
 const loadModule = (key) => {
