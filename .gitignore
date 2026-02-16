@@ -12,3 +12,4 @@ node_modules/
 .claude/
 .worktrees/
 *.log
+_archived/original-assets/
