@@ -1,4 +1,5 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
+import { clamp } from '../utils/math.js';
 
 const GOAL_KEY = 'panda-violin:parent-goal-v1';
 const DEFAULT_GOAL = {
@@ -11,8 +12,6 @@ const titleInput = document.querySelector('[data-parent-goal-title-input]');
 const minutesInput = document.querySelector('[data-parent-goal-minutes-input]');
 const saveButton = document.querySelector('[data-parent-goal-save]');
 const statusEl = document.querySelector('[data-parent-goal-status]');
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const setStatus = (message) => {
     if (statusEl) statusEl.textContent = message;

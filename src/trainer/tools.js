@@ -1,5 +1,6 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { clamp } from '../utils/math.js';
 
 const metronomeSlider = document.querySelector('[data-metronome="slider"]');
 const metronomeBpmEl = document.querySelector('[data-metronome="bpm"]');
@@ -25,8 +26,6 @@ const isPracticeView = () => {
     if (viewId.startsWith('view-song-')) return true;
     return ['view-coach', 'view-games', 'view-songs', 'view-trainer', 'view-tuner', 'view-bowing', 'view-posture'].includes(viewId);
 };
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 let metronomeBpm = Number.parseInt(metronomeSlider?.value || '100', 10);
 if (Number.isNaN(metronomeBpm)) metronomeBpm = 100;
