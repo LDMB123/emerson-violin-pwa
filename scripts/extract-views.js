@@ -34,7 +34,7 @@ export function getViewFilePath(viewId, category) {
   return `views/${name}.html`;
 }
 
-export async function extractViews(inputHtml, outputDir = 'views') {
+export async function extractViews(inputHtml, outputDir = 'public/views') {
   const views = identifyViews(inputHtml);
 
   // Create directories
@@ -55,5 +55,5 @@ export async function extractViews(inputHtml, outputDir = 'views') {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const indexHtml = fs.readFileSync('index.html', 'utf-8');
   const count = await extractViews(indexHtml);
-  console.log(`✓ Extracted ${count} views to views/ directory`);
+  console.log(`✓ Extracted ${count} views to public/views/ directory`);
 }

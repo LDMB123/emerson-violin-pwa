@@ -78,6 +78,11 @@ if (distMode) {
         include: /\.(?:png|jpe?g|svg|webp|gif|mp3|wav|opus)$/i,
         excludeDirs: ['mockups'],
     });
+
+    addDir('public/views', {
+        urlPrefix: 'views',
+        include: /\.html$/i,
+    });
 }
 
 const sortedAssets = Array.from(assets).sort();
