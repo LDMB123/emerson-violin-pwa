@@ -14,6 +14,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const ASSETS_DIR = path.join(projectRoot, 'public/assets');
+const ILLUSTRATIONS_DIR = path.join(projectRoot, 'public/assets/illustrations');
 const ARCHIVE_DIR = path.join(projectRoot, '_archived/original-assets/images');
 const WEBP_QUALITY = 85; // Balance between quality and size
 
@@ -100,4 +101,56 @@ function formatBytes(bytes) {
   return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
 }
 
-optimizeImages();
+// Mascot WebP conversion
+async function convertMascotsToWebP() {
+  console.log('🎨 Converting mascot illustrations to WebP...\n');
+
+  try {
+    // Get all mascot PNG files
+    const files = await fs.readdir(ILLUSTRATIONS_DIR);
+    const mascots = files.filter(f => f.startsWith('mascot-') && f.endsWith('.png'));
+
+    if (mascots.length === 0) {
+      console.log('✅ No mascot PNG files found to convert');
+      return;
+    }
+
+    console.log(`[optimize-images] Converting ${mascots.length} mascots to WebP...`);
+
+    let totalPngSize = 0;
+    let totalWebPSize = 0;
+
+    for (const file of mascots) {
+      const pngPath = path.join(ILLUSTRATIONS_DIR, file);
+      const webpFile = file.replace('.png', '.webp');
+      const webpPath = path.join(ILLUSTRATIONS_DIR, webpFile);
+
+      // Convert to WebP with high quality method
+      await sharp(pngPath)
+        .webp({ quality: 85, method: 6 })
+        .toFile(webpPath);
+
+      // Get file sizes
+      const pngStats = await fs.stat(pngPath);
+      const webpStats = await fs.stat(webpPath);
+      const pngSize = pngStats.size;
+      const webpSize = webpStats.size;
+      const reduction = ((pngSize - webpSize) / pngSize * 100).toFixed(1);
+
+      totalPngSize += pngSize;
+      totalWebPSize += webpSize;
+
+      console.log(`  ${file} → ${webpFile} (${reduction}% smaller)`);
+    }
+
+    const totalReduction = ((totalPngSize - totalWebPSize) / totalPngSize * 100).toFixed(1);
+    console.log('\n[optimize-images] Mascot conversion complete');
+    console.log(`  Total savings: ${formatBytes(totalPngSize - totalWebPSize)} (${totalReduction}% reduction)\n`);
+
+  } catch (error) {
+    console.error('❌ Mascot conversion failed:', error);
+    process.exit(1);
+  }
+}
+
+optimizeImages().then(() => convertMascotsToWebP());
