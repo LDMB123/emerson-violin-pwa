@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v107';
+const CACHE_VERSION = 'v108';
 const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
 const APP_SHELL_URL = './index.html';
 const OFFLINE_URL = './offline.html';
@@ -34,7 +34,9 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         (async () => {
             const cache = await caches.open(CACHE_NAME);
-            await Promise.allSettled(PRECACHE_URLS.map((asset) => cache.add(asset)));
+            const results = await Promise.allSettled(PRECACHE_URLS.map((asset) => cache.add(asset)));
+            const failed = results.filter((r) => r.status === 'rejected');
+            if (failed.length) console.warn('[SW] precache failures:', failed.length);
         })()
     );
     self.skipWaiting();
@@ -46,8 +48,10 @@ self.addEventListener('activate', (event) => {
             await Promise.all(
                 (await caches.keys()).map((key) => (key === CACHE_NAME ? null : caches.delete(key)))
             );
-            if (self.registration?.navigationPreload) {
-                await self.registration.navigationPreload.enable();
+            try {
+                await self.registration?.navigationPreload?.enable();
+            } catch {
+                // Navigation preload not supported
             }
         })()
     );
@@ -165,7 +169,8 @@ const updateAppShell = async (responsePromise) => {
 };
 
 const handleNavigation = async (event) => {
-    const preloadResponse = await event.preloadResponse;
+    let preloadResponse;
+    try { preloadResponse = await event.preloadResponse; } catch { /* preload unsupported */ }
     const fetchPromise = preloadResponse ? Promise.resolve(preloadResponse) : fetch(event.request);
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(APP_SHELL_URL, { ignoreSearch: true });

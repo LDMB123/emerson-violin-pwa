@@ -150,7 +150,7 @@ const buildRow = (recording, index) => {
                 setTimeout(() => {
                     saveButton.textContent = original || '⬇';
                     saveButton.disabled = false;
-                }, 1200);
+                }, 800);
             }
         });
     }

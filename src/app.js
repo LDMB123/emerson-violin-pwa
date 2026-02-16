@@ -132,7 +132,7 @@ const loadForView = (viewId) => {
 const registerServiceWorker = () => {
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => { });
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch((err) => console.warn('[SW] registration failed', err));
     });
 };
 
