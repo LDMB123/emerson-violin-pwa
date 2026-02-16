@@ -1,6 +1,7 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { clamp } from '../utils/math.js';
+import { formatDifficulty } from '../tuner/tuner-utils.js';
 
 const metronomeSlider = document.querySelector('[data-metronome="slider"]');
 const metronomeBpmEl = document.querySelector('[data-metronome="bpm"]');
@@ -42,11 +43,6 @@ let postureReported = false;
 let bowingTarget = 3;
 let bowingReported = false;
 let bowingLastReported = 0;
-
-const formatDifficulty = (value) => {
-    const label = value || 'medium';
-    return label.charAt(0).toUpperCase() + label.slice(1);
-};
 
 const ensureBadge = (container, prefix = 'Adaptive') => {
     if (!container) return null;
