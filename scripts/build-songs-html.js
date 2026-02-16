@@ -41,7 +41,7 @@ const cards = songs.map((song) => {
         `${indent}  <div class="song-stars" aria-label="${stars} stars">`,
         buildStars(stars),
         `${indent}  </div>`,
-        `${indent}  <div class="song-play">▶</div>`,
+        `${indent}  <div class="song-play" aria-hidden="true">▶</div>`,
         `${indent}</a>`,
     ].join('\n');
 }).join('\n');
