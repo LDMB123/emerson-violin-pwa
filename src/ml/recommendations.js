@@ -1,11 +1,10 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAdaptiveLog, getGameTuning } from './adaptive-engine.js';
+import { clamp } from '../utils/math.js';
 
 const EVENT_KEY = 'panda-violin:events:v1';
 const CACHE_KEY = 'panda-violin:ml:recs-v1';
 const CACHE_TTL = 5 * 60 * 1000;
-
-const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 
 const SKILL_BY_GAME = {
     'pitch-quest': 'pitch',
