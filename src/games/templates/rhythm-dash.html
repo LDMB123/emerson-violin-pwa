@@ -1,0 +1,95 @@
+      <section class="view game-view game-rhythm-dash" id="view-game-rhythm-dash" aria-label="Game: Rhythm Dash">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Rhythm Dash</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="rhythm-dash-content">
+          <input type="checkbox" id="rhythm-run" class="state-checkbox rhythm-run-toggle" data-persist="false" aria-label="Start Rhythm Dash">
+          <div class="rhythm-dash-stage">
+            <div class="rhythm-hud">
+              <button class="icon-btn" type="button" aria-label="Pause" data-rhythm="pause">⏸</button>
+              <div class="rhythm-scoreboard">
+                <div class="rhythm-score-block">
+                  <span class="rhythm-score-label">Score</span>
+                  <span class="rhythm-score-value" data-rhythm="score">0</span>
+                </div>
+                <div class="rhythm-score-block">
+                  <span class="rhythm-score-label">Combo</span>
+                  <span class="rhythm-score-value" data-rhythm="combo">x0</span>
+                </div>
+              </div>
+              <button class="icon-btn" type="button" aria-label="Settings" data-rhythm="settings" popovertarget="rhythm-settings" aria-haspopup="dialog" aria-controls="rhythm-settings" aria-expanded="false">⚙️</button>
+            </div>
+
+            <div class="rhythm-lanes">
+              <div class="rhythm-lane lane-blue">
+                <span class="rhythm-note note-blue" style="--note-delay: 0s;"></span>
+                <span class="rhythm-note note-blue" style="--note-delay: 2s;"></span>
+              </div>
+              <div class="rhythm-lane lane-green">
+                <span class="rhythm-note note-green" style="--note-delay: 1s;"></span>
+                <span class="rhythm-note note-green" style="--note-delay: 3s;"></span>
+              </div>
+              <div class="rhythm-lane lane-yellow">
+                <span class="rhythm-note note-yellow" style="--note-delay: 1.5s;"></span>
+                <span class="rhythm-note note-yellow" style="--note-delay: 3.5s;"></span>
+              </div>
+              <div class="rhythm-lane lane-red">
+                <span class="rhythm-note note-red" style="--note-delay: 0.5s;"></span>
+                <span class="rhythm-note note-red" style="--note-delay: 2.5s;"></span>
+              </div>
+            </div>
+
+            <div class="rhythm-hit-zone">Hit Zone</div>
+
+            <div class="rhythm-controls">
+              <div class="toggle-ui">
+                <label for="rhythm-run" class="btn btn-primary btn-start">Start</label>
+                <label for="rhythm-run" class="btn btn-secondary btn-stop">Stop</label>
+              </div>
+              <button class="btn btn-ghost rhythm-tap" type="button">Tap</button>
+              <div class="rhythm-meta">BPM <span data-rhythm="bpm">80</span> · Suggested <span data-rhythm="suggested">80</span></div>
+              <div class="rhythm-rating" data-rhythm="rating">Timing: --</div>
+              <div class="rhythm-meter" role="progressbar" aria-label="Timing accuracy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <span class="rhythm-meter-fill" data-rhythm="meter" style="width: 0%"></span>
+              </div>
+              <div class="rhythm-status" data-rhythm="status" aria-live="polite">Tap Start to begin the run.</div>
+            </div>
+
+            <div id="rhythm-settings" popover="auto" class="game-settings-popover glass" role="dialog" aria-label="Rhythm Dash settings">
+              <h3>Rhythm Settings</h3>
+              <label class="settings-row">
+                <span>Target BPM</span>
+                <input type="range" min="60" max="140" value="90" data-rhythm="target-slider" />
+                <span class="settings-value" data-rhythm="target-value">90 BPM</span>
+              </label>
+              <button class="btn btn-secondary" type="button" data-rhythm="settings-reset">Reset to Coach</button>
+            </div>
+          </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Use the tap button and track your rhythm sets.</p>
+            <div class="game-checklist-group" data-total="3">
+              <div class="game-progress" data-total="3">
+                <span class="game-progress-label">Sets complete</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="rd-set-1">
+                  <label for="rd-set-1"><span class="note-chip">8 beats</span> Tap 8 steady beats.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="rd-set-2">
+                  <label for="rd-set-2"><span class="note-chip">Combo</span> Hold a combo for 10 taps.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="rd-set-3">
+                  <label for="rd-set-3"><span class="note-chip">Finish</span> Complete one full lane run.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-rhythm" loading="lazy" decoding="async" />
+        </div>
+      </section>
+
