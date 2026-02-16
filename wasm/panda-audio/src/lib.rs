@@ -84,7 +84,6 @@ impl PitchResult {
 #[wasm_bindgen]
 pub struct PitchDetector {
     sample_rate: f32,
-    buffer_size: usize,
     /// Minimum frequency to detect (Hz) - slightly below G3
     min_freq: f32,
     /// Maximum frequency to detect (Hz) - slightly above E6
@@ -117,7 +116,6 @@ impl PitchDetector {
 
         PitchDetector {
             sample_rate,
-            buffer_size,
             min_freq: 180.0,
             max_freq: 1400.0,
             volume_threshold: 0.01,
