@@ -85,7 +85,11 @@ pub fn format_from_mime(mime: &str) -> String {
     if mime.contains("webm") {
         "webm"
     } else if mime.contains("mp4") {
-        "mp4"
+        if mime.starts_with("audio/") {
+            "m4a"
+        } else {
+            "mp4"
+        }
     } else if mime.contains("mpeg") {
         "mp3"
     } else if mime.contains("wav") {
@@ -559,6 +563,7 @@ mod tests {
     #[test]
     fn test_format_from_mime() {
         assert_eq!(format_from_mime("audio/webm"), "webm");
+        assert_eq!(format_from_mime("audio/mp4"), "m4a");
         assert_eq!(format_from_mime("video/mp4"), "mp4");
         assert_eq!(format_from_mime("audio/mpeg"), "mp3");
         assert_eq!(format_from_mime("audio/wav"), "wav");
