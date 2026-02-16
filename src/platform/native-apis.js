@@ -1,4 +1,12 @@
 import { isSoundEnabled } from '../utils/sound-state.js';
+import {
+    shouldRetryPersist,
+    formatBytes,
+    isStandalone,
+    getViewId,
+    viewAllowsWake,
+    getPreferredOrientation,
+} from './platform-utils.js';
 
 const storageStatusEl = document.querySelector('[data-storage-status]');
 const storageEstimateEl = document.querySelector('[data-storage-estimate]');
@@ -42,17 +50,6 @@ const setRootDataset = (key, value) => {
     root.dataset[key] = String(value);
 };
 
-const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
-    || window.matchMedia('(display-mode: fullscreen)').matches
-    || window.navigator.standalone === true;
-
-const shouldRetryPersist = (state) => {
-    if (!state) return true;
-    if (state.persisted) return false;
-    if (!state.lastAttempt) return true;
-    const week = 7 * 24 * 60 * 60 * 1000;
-    return Date.now() - state.lastAttempt > week;
-};
 
 const requestPersistentStorage = async (reason) => {
     if (!navigator.storage?.persist) return false;
@@ -88,18 +85,6 @@ const maybeAutoPersist = async (reason) => {
     }
 };
 
-const formatBytes = (bytes) => {
-    if (!Number.isFinite(bytes)) return '0 MB';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let value = bytes;
-    let index = 0;
-    while (value >= 1024 && index < units.length - 1) {
-        value /= 1024;
-        index += 1;
-    }
-    const precision = value < 10 && index > 0 ? 1 : 0;
-    return `${value.toFixed(precision)} ${units[index]}`;
-};
 
 const updateStorageEstimate = async () => {
     if (!navigator.storage?.estimate) {
@@ -217,16 +202,6 @@ const bindNetworkStatus = () => {
 
 let wakeLock = null;
 
-const getViewId = () => {
-    const hash = window.location.hash.replace('#', '').trim();
-    return hash || 'view-home';
-};
-
-const viewAllowsWake = (viewId) => {
-    if (viewId.startsWith('view-game-')) return true;
-    if (viewId.startsWith('view-song-')) return true;
-    return ['view-coach', 'view-songs', 'view-trainer', 'view-tuner', 'view-session-review'].includes(viewId);
-};
 
 const releaseWakeLock = async () => {
     if (!wakeLock) return;
@@ -296,12 +271,6 @@ const updateOrientationStatus = (message) => {
     if (orientationStatusEl) orientationStatusEl.textContent = message;
 };
 
-const getPreferredOrientation = () => {
-    const current = screen.orientation?.type;
-    if (current) return current;
-    const landscape = window.matchMedia('(orientation: landscape)').matches;
-    return landscape ? 'landscape-primary' : 'portrait-primary';
-};
 
 const unlockOrientation = () => {
     if (screen.orientation?.unlock) {

@@ -75,6 +75,7 @@ self.__ASSETS__ = [
   "./src/platform/offline-integrity.js",
   "./src/platform/offline-mode.js",
   "./src/platform/offline-recovery.js",
+  "./src/platform/platform-utils.js",
   "./src/platform/sw-updates.js",
   "./src/progress/progress-utils.js",
   "./src/progress/progress.js",
