@@ -1,5 +1,12 @@
 import { getJSON, setJSON, setBlob, removeBlob, supportsIndexedDB } from '../persistence/storage.js';
 import { dataUrlToBlob } from '../utils/recording-export.js';
+import {
+    getSongIdFromViewId,
+    getSongIdFromHash,
+    createBlobKey as createRecordingBlobKey,
+    filterValidRecordings,
+    pruneOldRecordings,
+} from '../utils/recordings-utils.js';
 
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
 const MAX_RECORDINGS = 4;
@@ -14,12 +21,8 @@ let permissionListenerBound = false;
 let stopPromise = null;
 let stopResolve = null;
 
-const getSongId = (section) => section?.id?.replace('view-song-', '') || '';
-const getSongIdFromHash = () => {
-    const hash = window.location.hash || '';
-    if (!hash.startsWith('#view-song-')) return '';
-    return hash.replace('#view-song-', '');
-};
+const getSongId = (section) => getSongIdFromViewId(section?.id);
+const getCurrentSongId = () => getSongIdFromHash(window.location.hash);
 
 const getSongTitle = (songId) => {
     const view = document.getElementById(`view-song-${songId}`);
@@ -52,12 +55,7 @@ const scheduleIdle = (task) => {
     window.setTimeout(task, 400);
 };
 
-const createBlobKey = (songId) => {
-    if (globalThis.crypto?.randomUUID) {
-        return `recording:${songId}:${crypto.randomUUID()}`;
-    }
-    return `recording:${songId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-};
+const createBlobKey = (songId) => createRecordingBlobKey(songId);
 
 const pruneBlobs = async (previous, next) => {
     if (!supportsIndexedDB) return;
@@ -277,7 +275,7 @@ const initRecordings = () => {
     });
 
     window.addEventListener('hashchange', () => {
-        const currentSong = getSongIdFromHash();
+        const currentSong = getCurrentSongId();
         if (!currentSong || (recordingSongId && currentSong !== recordingSongId)) {
             stopRecording();
         }
