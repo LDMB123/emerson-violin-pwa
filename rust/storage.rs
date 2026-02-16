@@ -13,6 +13,9 @@ use web_sys::{
   IdbRequest, IdbTransactionMode,
 };
 
+mod storage_utils;
+use storage_utils::*;
+
 use crate::dom;
 use crate::db_client;
 use crate::storage_pressure;
