@@ -403,6 +403,57 @@ pub fn extract_number(value: &JsonValue, key: &str) -> Option<f64> {
     }
 }
 
+// ============================================================================
+// Category 7: JSON Conversion
+// ============================================================================
+
+/// Converts f64 to serde_json::Value::Number with NaN/Infinity fallback.
+///
+/// Returns JsonValue::Number(0) if value is NaN or cannot be converted.
+pub fn json_number(value: f64) -> JsonValue {
+    serde_json::Number::from_f64(value)
+        .map(JsonValue::Number)
+        .unwrap_or_else(|| JsonValue::Number(serde_json::Number::from(0)))
+}
+
+/// Converts wasm_bindgen::JsValue to serde_json::Value.
+///
+/// Returns JsonValue::Null on conversion failure.
+/// Critical for JavaScript → Rust data flow.
+pub fn json_from_js(value: &JsValue) -> JsonValue {
+    serde_wasm_bindgen::from_value(value.clone()).unwrap_or(JsonValue::Null)
+}
+
+/// Converts serde_json::Value to wasm_bindgen::JsValue.
+///
+/// Returns None on conversion failure.
+/// Critical for Rust → JavaScript data flow.
+pub fn json_to_js(value: &JsonValue) -> Option<JsValue> {
+    serde_wasm_bindgen::to_value(value).ok()
+}
+
+/// Determines file extension from format hint or MIME type.
+///
+/// Priority:
+/// 1. If format_hint contains '/', treat as MIME type (use format_from_mime)
+/// 2. If format_hint non-empty, treat as extension (strip leading '.')
+/// 3. Fallback to blob.type_() MIME type
+/// 4. If blob MIME empty, return "bin"
+pub fn recording_extension(format_hint: &str, blob: &Blob) -> String {
+    if !format_hint.is_empty() {
+        if format_hint.contains('/') {
+            return format_from_mime(format_hint);
+        }
+        return format_hint.trim_start_matches('.').to_string();
+    }
+    let mime = blob.type_();
+    if mime.is_empty() {
+        "bin".to_string()
+    } else {
+        format_from_mime(&mime)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -652,5 +703,122 @@ mod tests {
         let value = json!({"name": "test"});
         assert_eq!(extract_number(&value, "missing"), None);
         assert_eq!(extract_number(&value, "name"), None);
+    }
+
+    // Category 7: JSON Conversion tests
+    #[test]
+    fn test_json_number_positive() {
+        let num = json_number(42.5);
+        assert!(matches!(num, JsonValue::Number(_)));
+    }
+
+    #[test]
+    fn test_json_number_negative_and_zero() {
+        let neg = json_number(-10.0);
+        assert!(matches!(neg, JsonValue::Number(_)));
+        let zero = json_number(0.0);
+        assert!(matches!(zero, JsonValue::Number(_)));
+    }
+
+    #[test]
+    fn test_json_number_nan() {
+        let nan_result = json_number(f64::NAN);
+        // Fallback to Number(0) on NaN
+        assert!(matches!(nan_result, JsonValue::Number(_)));
+    }
+
+    #[test]
+    fn test_json_number_infinity() {
+        let inf = json_number(f64::INFINITY);
+        assert!(matches!(inf, JsonValue::Number(_)));
+    }
+
+    #[test]
+    fn test_json_from_js_string() {
+        let js_str = JsValue::from_str("test");
+        let json = json_from_js(&js_str);
+        match json {
+            JsonValue::String(s) => assert_eq!(s, "test"),
+            _ => panic!("Expected JsonValue::String"),
+        }
+    }
+
+    #[test]
+    fn test_json_from_js_number() {
+        let js_num = JsValue::from_f64(42.0);
+        let json = json_from_js(&js_num);
+        match json {
+            JsonValue::Number(n) => assert_eq!(n.as_f64(), Some(42.0)),
+            _ => panic!("Expected JsonValue::Number"),
+        }
+    }
+
+    #[test]
+    fn test_json_from_js_bool() {
+        let js_bool = JsValue::from_bool(true);
+        let json = json_from_js(&js_bool);
+        match json {
+            JsonValue::Bool(b) => assert!(b),
+            _ => panic!("Expected JsonValue::Bool"),
+        }
+    }
+
+    #[test]
+    fn test_json_from_js_null() {
+        let js_null = JsValue::NULL;
+        let json = json_from_js(&js_null);
+        assert!(matches!(json, JsonValue::Null));
+    }
+
+    #[test]
+    fn test_json_to_js_object() {
+        let json = json!({"name": "test"});
+        let js = json_to_js(&json);
+        assert!(js.is_some());
+    }
+
+    #[test]
+    fn test_json_to_js_all_types() {
+        assert!(json_to_js(&json!("string")).is_some());
+        assert!(json_to_js(&json!(42)).is_some());
+        assert!(json_to_js(&json!(true)).is_some());
+        assert!(json_to_js(&JsonValue::Null).is_some());
+    }
+
+    #[test]
+    fn test_recording_extension_mime_type() {
+        use web_sys::Blob;
+        let blob = Blob::new().unwrap();
+        assert_eq!(recording_extension("audio/webm", &blob), "webm");
+        assert_eq!(recording_extension("audio/mp4", &blob), "m4a");
+    }
+
+    #[test]
+    fn test_recording_extension_plain_ext() {
+        use web_sys::Blob;
+        let blob = Blob::new().unwrap();
+        assert_eq!(recording_extension("webm", &blob), "webm");
+        assert_eq!(recording_extension(".mp4", &blob), "mp4");
+    }
+
+    #[test]
+    fn test_recording_extension_empty_hint() {
+        use web_sys::Blob;
+        use js_sys::Array;
+
+        let parts = Array::new();
+        parts.push(&JsValue::from_str("test"));
+        let mut options = web_sys::BlobPropertyBag::new();
+        options.type_("audio/webm");
+        let blob = Blob::new_with_str_sequence_and_options(&parts, &options).unwrap();
+
+        assert_eq!(recording_extension("", &blob), "webm");
+    }
+
+    #[test]
+    fn test_recording_extension_fallback() {
+        use web_sys::Blob;
+        let blob = Blob::new().unwrap(); // Empty MIME type
+        assert_eq!(recording_extension("", &blob), "bin");
     }
 }

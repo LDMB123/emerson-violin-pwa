@@ -2213,30 +2213,6 @@ async fn call_method2(
   JsFuture::from(promise).await
 }
 
-
-fn recording_extension(format_hint: &str, blob: &Blob) -> String {
-  if !format_hint.is_empty() {
-    if format_hint.contains('/') {
-      return format_from_mime(format_hint);
-    }
-    return format_hint.trim_start_matches('.').to_string();
-  }
-  let mime = blob.type_();
-  if mime.is_empty() {
-    "bin".to_string()
-  } else {
-    format_from_mime(&mime)
-  }
-}
-
-
-
-fn json_number(value: f64) -> JsonValue {
-  serde_json::Number::from_f64(value)
-    .map(JsonValue::Number)
-    .unwrap_or_else(|| JsonValue::Number(serde_json::Number::from(0)))
-}
-
 fn ensure_id(value: &JsValue) -> String {
   let id = js_string_any(value, &["id"]).unwrap_or_else(utils::create_id);
   let _ = Reflect::set(value, &"id".into(), &JsValue::from_str(&id));
@@ -2250,14 +2226,6 @@ fn ensure_created_at(value: &JsValue, keys: &[&str], fallback: f64) -> f64 {
   let ts = fallback;
   let _ = Reflect::set(value, &"created_at".into(), &JsValue::from_f64(ts));
   ts
-}
-
-fn json_from_js(value: &JsValue) -> JsonValue {
-  serde_wasm_bindgen::from_value(value.clone()).unwrap_or(JsonValue::Null)
-}
-
-fn json_to_js(value: &JsonValue) -> Option<JsValue> {
-  serde_wasm_bindgen::to_value(value).ok()
 }
 
 fn payload_string(value: &JsValue) -> String {
