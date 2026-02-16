@@ -1,14 +1,8 @@
 import { GAME_META } from './game-config.js';
+import { formatMinutes, createSessionTimer } from './session-timer.js';
 
-const formatMinutes = (value) => `${Math.max(1, Math.round(value || 0))} min`;
 const activeSessions = new Map();
 let lifecycleBound = false;
-const formatTime = (ms) => {
-    const total = Math.max(0, Math.floor(ms / 1000));
-    const minutes = Math.floor(total / 60);
-    const seconds = total % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-};
 
 const resetGameView = (view, { forceEvents = false } = {}) => {
     if (!view) return;
@@ -37,70 +31,37 @@ const resetGameView = (view, { forceEvents = false } = {}) => {
 };
 
 const attachSessionTimer = (view, timerEl, fillEl, trackEl, targetMinutes, scoreEl, announceEl) => {
-    let interval = null;
-    let startedAt = null;
-    const safeTargetMinutes = Math.max(1, targetMinutes || 0);
-    const targetMs = safeTargetMinutes * 60 * 1000;
-    const halfMs = targetMs / 2;
-    const oneMinMs = 60 * 1000;
-    const announced = new Set();
-
-    const announce = (msg) => {
-        if (announceEl) announceEl.textContent = msg;
-    };
-
-    const checkMilestones = (elapsed) => {
-        if (!announceEl) return;
-        const remaining = targetMs - elapsed;
-        if (elapsed >= targetMs && !announced.has('end')) {
-            announced.add('end');
-            announce('Session complete');
-        } else if (remaining > 0 && remaining <= oneMinMs && !announced.has('1min')) {
-            announced.add('1min');
-            announce('1 minute remaining');
-        } else if (elapsed >= halfMs && !announced.has('half')) {
-            announced.add('half');
-            announce('Halfway there');
-        }
-    };
-
-    const update = () => {
-        if (!startedAt) return;
-        const elapsed = Date.now() - startedAt;
-        if (timerEl) timerEl.textContent = formatTime(elapsed);
-        if (fillEl) {
-            const percent = Math.min(100, Math.round((elapsed / targetMs) * 100));
-            fillEl.style.width = `${percent}%`;
-            if (trackEl) trackEl.setAttribute('aria-valuenow', String(percent));
-        }
-        if (scoreEl) {
-            scoreEl.textContent = elapsed >= targetMs ? 'Session Complete' : 'Session Active';
-        }
-        checkMilestones(elapsed);
-    };
+    const timer = createSessionTimer({
+        targetMinutes,
+        onUpdate: ({ percent, complete, timeLabel }) => {
+            if (timerEl) timerEl.textContent = timeLabel;
+            if (fillEl) {
+                fillEl.style.width = `${percent}%`;
+                if (trackEl) trackEl.setAttribute('aria-valuenow', String(percent));
+            }
+            if (scoreEl) {
+                scoreEl.textContent = complete ? 'Session Complete' : 'Session Active';
+            }
+        },
+        onMilestone: (_id, message) => {
+            if (announceEl) announceEl.textContent = message;
+        },
+    });
 
     const start = () => {
-        if (interval) return;
-        startedAt = Date.now();
-        announced.clear();
         view.dataset.session = 'active';
-        announce('Session started');
-        update();
-        interval = window.setInterval(update, 1000);
+        if (announceEl) announceEl.textContent = 'Session started';
+        timer.start();
     };
 
     const stop = () => {
-        if (!interval) return;
-        window.clearInterval(interval);
-        interval = null;
+        timer.stop();
         view.dataset.session = 'idle';
         if (scoreEl) scoreEl.textContent = scoreEl.dataset.defaultScore || 'Guided Drill';
     };
 
     const reset = () => {
-        stop();
-        startedAt = null;
-        announced.clear();
+        timer.reset();
         if (timerEl) timerEl.textContent = '00:00';
         if (announceEl) announceEl.textContent = '';
         if (fillEl) {
