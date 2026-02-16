@@ -4,7 +4,7 @@
   "description": "Local-first violin teacher, coach, trainer, tuner, and progress tracker for Emerson.",
   "categories": ["education", "music", "kids"],
   "lang": "en-US",
-  "start_url": "./#view-home",
+  "start_url": "./",
   "scope": "./",
   "id": "./",
   "display": "standalone",

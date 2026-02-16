@@ -4,6 +4,7 @@ import { getJSON, setJSON } from '../persistence/storage.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 
 const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
+const cachedEl = (selector) => { let el; return () => (el ??= document.querySelector(selector)); };
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const EVENT_KEY = 'panda-violin:events:v1';
 const MAX_EVENTS = 500;
@@ -146,13 +147,16 @@ const attachTuning = (id, onUpdate) => {
     return report;
 };
 
+const pitchScoreEl = cachedEl('[data-pitch="score"]');
+const pitchStarsEl = cachedEl('[data-pitch="stars"]');
+
 const updatePitchQuest = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-pitch-quest input[id^="pq-step-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
     const total = inputs.length;
-    const scoreEl = document.querySelector('[data-pitch="score"]');
-    const starsEl = document.querySelector('[data-pitch="stars"]');
+    const scoreEl = pitchScoreEl();
+    const starsEl = pitchStarsEl();
     const liveScore = readLiveNumber(scoreEl, 'liveScore');
     const liveStars = readLiveNumber(starsEl, 'liveStars');
 
@@ -167,12 +171,15 @@ const updatePitchQuest = () => {
     }
 };
 
+const rhythmScoreEl = cachedEl('[data-rhythm="score"]');
+const rhythmComboEl = cachedEl('[data-rhythm="combo"]');
+
 const updateRhythmDash = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-rhythm-dash input[id^="rd-set-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
-    const scoreEl = document.querySelector('[data-rhythm="score"]');
-    const comboEl = document.querySelector('[data-rhythm="combo"]');
+    const scoreEl = rhythmScoreEl();
+    const comboEl = rhythmComboEl();
     const liveScore = readLiveNumber(scoreEl, 'liveScore');
     const liveCombo = readLiveNumber(comboEl, 'liveCombo');
 
@@ -185,13 +192,16 @@ const updateRhythmDash = () => {
     }
 };
 
+const memoryMatchesEl = cachedEl('[data-memory="matches"]');
+const memoryScoreEl = cachedEl('[data-memory="score"]');
+
 const updateNoteMemory = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-note-memory input[id^="nm-card-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
     const pairs = Math.floor(checked / 2);
-    const matchesEl = document.querySelector('[data-memory="matches"]');
-    const scoreEl = document.querySelector('[data-memory="score"]');
+    const matchesEl = memoryMatchesEl();
+    const scoreEl = memoryScoreEl();
     const liveMatches = readLiveNumber(matchesEl, 'liveMatches');
     const liveScore = readLiveNumber(scoreEl, 'liveScore');
 
@@ -205,31 +215,38 @@ const updateNoteMemory = () => {
     }
 };
 
+const earQuestionEl = cachedEl('[data-ear="question"]');
+
 const updateEarTrainer = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-ear-trainer input[id^="et-step-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
-    const questionEl = document.querySelector('[data-ear="question"]');
+    const questionEl = earQuestionEl();
     if (questionEl && checked > 0 && !questionEl.dataset.live) {
         questionEl.textContent = `Rounds complete: ${checked}/${inputs.length}`;
     }
 };
 
+const bowStarsEl = cachedEl('[data-bow="stars"]');
+
 const updateBowHero = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-bow-hero input[id^="bh-step-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
-    const starsEl = document.querySelector('[data-bow="stars"]');
+    const starsEl = bowStarsEl();
     const liveStars = readLiveNumber(starsEl, 'liveStars');
     if (starsEl) starsEl.textContent = String(Number.isFinite(liveStars) ? liveStars : checked);
 };
+
+const stringScoreEl = cachedEl('[data-string="score"]');
+const stringComboEl = cachedEl('[data-string="combo"]');
 
 const updateStringQuest = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-string-quest input[id^="sq-step-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
-    const scoreEl = document.querySelector('[data-string="score"]');
-    const comboEl = document.querySelector('[data-string="combo"]');
+    const scoreEl = stringScoreEl();
+    const comboEl = stringComboEl();
     const liveScore = readLiveNumber(scoreEl, 'liveScore');
     const liveCombo = readLiveNumber(comboEl, 'liveCombo');
     if (scoreEl) {
@@ -241,12 +258,15 @@ const updateStringQuest = () => {
     }
 };
 
+const painterScoreEl = cachedEl('[data-painter="score"]');
+const painterCreativityEl = cachedEl('[data-painter="creativity"]');
+
 const updateRhythmPainter = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-rhythm-painter input[id^="rp-pattern-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
-    const scoreEl = document.querySelector('[data-painter="score"]');
-    const creativityEl = document.querySelector('[data-painter="creativity"]');
+    const scoreEl = painterScoreEl();
+    const creativityEl = painterCreativityEl();
     const liveScore = readLiveNumber(scoreEl, 'liveScore');
     const liveCreativity = readLiveNumber(creativityEl, 'liveCreativity');
     const creativity = Math.min(100, checked * 25);
@@ -258,11 +278,13 @@ const updateRhythmPainter = () => {
     }
 };
 
+const storyTitleEl = cachedEl('#view-game-story-song [data-story="title"]');
+
 const updateStorySong = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-story-song input[id^="ss-step-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
-    const titleEl = document.querySelector('#view-game-story-song [data-story="title"]');
+    const titleEl = storyTitleEl();
     if (titleEl) {
         titleEl.textContent = checked === inputs.length ? 'Story Song Lab · Complete!' : 'Story Song Lab';
     }
