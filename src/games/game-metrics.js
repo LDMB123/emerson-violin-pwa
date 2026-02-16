@@ -1,3 +1,4 @@
+import '../styles/games.css';
 import { stopTonePlayer } from './shared.js';
 
 const gameModules = {
