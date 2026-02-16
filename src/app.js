@@ -5,6 +5,10 @@ import {
     isNavItemActive,
 } from './utils/app-utils.js';
 import { getAudioPath } from './audio/format-detection.js';
+import { ViewLoader } from './views/view-loader.js';
+import { getViewPath } from './views/view-paths.js';
+
+const viewLoader = new ViewLoader();
 
 const moduleLoaders = {
     platform: () => import('./platform/native-apis.js'),
@@ -85,6 +89,46 @@ const loadForView = (viewId) => {
     modules.forEach((module) => loadModule(module));
 };
 
+const showView = async (viewId, enhanceCallback) => {
+    if (!viewId) return;
+
+    try {
+        const viewPath = getViewPath(viewId);
+        const html = await viewLoader.load(viewPath);
+
+        const container = document.getElementById('main-content');
+        if (!container) {
+            console.error('[App] main-content container not found');
+            return;
+        }
+
+        container.innerHTML = html;
+
+        // Re-enhance any toggle labels in the new view
+        if (enhanceCallback) {
+            enhanceCallback();
+        }
+
+        // Load modules for this view
+        loadForView(viewId);
+    } catch (err) {
+        console.error('[App] View load failed:', err);
+        const container = document.getElementById('main-content');
+        if (container) {
+            container.innerHTML = `
+                <section class="view" id="${viewId}" aria-label="Error">
+                    <div class="view-header">
+                        <h2>Error Loading View</h2>
+                    </div>
+                    <div class="error-message">
+                        <p>Failed to load view. Please try again.</p>
+                    </div>
+                </section>
+            `;
+        }
+    }
+};
+
 const registerServiceWorker = () => {
     if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', () => {
@@ -122,13 +166,6 @@ const boot = async () => {
     loadIdle('offlineMode');
     loadIdle('reminders');
     loadIdle('badging');
-    loadForView(getCurrentViewId());
-    registerServiceWorker();
-
-    window.addEventListener('hashchange', () => {
-        loadForView(getCurrentViewId());
-        updateNavState();
-    }, { passive: true });
 
     const reduceMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
     const prefersReducedMotion = () => reduceMotionMedia.matches;
@@ -137,6 +174,36 @@ const boot = async () => {
     const supportsPopover = 'showPopover' in HTMLElement.prototype;
     const navItems = Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]'));
     let lastPopoverTrigger = null;
+
+    const enhanceToggleLabels = () => {
+        const labels = document.querySelectorAll(
+            '.toggle-ui label[for], .song-controls label[for], .focus-controls label[for]'
+        );
+        labels.forEach((label) => {
+            if (label.dataset.keybound === 'true') return;
+            label.dataset.keybound = 'true';
+            label.setAttribute('role', 'button');
+            label.setAttribute('tabindex', '0');
+            label.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    label.click();
+                }
+            });
+        });
+    };
+
+    // Load initial view
+    const initialViewId = getCurrentViewId() || 'view-home';
+    await showView(initialViewId, enhanceToggleLabels);
+
+    registerServiceWorker();
+
+    window.addEventListener('hashchange', async () => {
+        const viewId = getCurrentViewId() || 'view-home';
+        await showView(viewId, enhanceToggleLabels);
+        updateNavState();
+    }, { passive: true });
 
     const setPopoverExpanded = (popover, expanded) => {
         if (!popover?.id) return;
@@ -195,26 +262,7 @@ const boot = async () => {
         });
     };
 
-    const enhanceToggleLabels = () => {
-        const labels = document.querySelectorAll(
-            '.toggle-ui label[for], .song-controls label[for], .focus-controls label[for]'
-        );
-        labels.forEach((label) => {
-            if (label.dataset.keybound === 'true') return;
-            label.dataset.keybound = 'true';
-            label.setAttribute('role', 'button');
-            label.setAttribute('tabindex', '0');
-            label.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    label.click();
-                }
-            });
-        });
-    };
-
     updateNavState();
-    enhanceToggleLabels();
 
     const openPopoverFallback = (popover) => {
         if (!popover) return;
