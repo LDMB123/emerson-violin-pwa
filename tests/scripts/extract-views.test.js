@@ -1,6 +1,6 @@
 // tests/scripts/extract-views.test.js
 import { describe, it, expect } from 'vitest';
-import { identifyViews } from '../../scripts/extract-views.js';
+import { identifyViews, getViewFilePath } from '../../scripts/extract-views.js';
 
 describe('View Extraction', () => {
   it('should identify all view sections in HTML', () => {
@@ -23,5 +23,11 @@ describe('View Extraction', () => {
     expect(views[0].category).toBe('core');
     expect(views[1].category).toBe('song');
     expect(views[2].category).toBe('game');
+  });
+
+  it('should generate correct file paths for views', () => {
+    expect(getViewFilePath('view-home', 'core')).toBe('views/home.html');
+    expect(getViewFilePath('view-song-twinkle', 'song')).toBe('views/songs/twinkle.html');
+    expect(getViewFilePath('view-game-pitch-quest', 'game')).toBe('views/games/pitch-quest.html');
   });
 });
