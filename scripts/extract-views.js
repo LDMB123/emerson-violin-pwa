@@ -7,9 +7,16 @@ export function identifyViews(html) {
 
   $('.view[id^="view-"]').each((i, el) => {
     const $el = $(el);
+    const id = $el.attr('id');
+
+    let category = 'core';
+    if (id.startsWith('view-song-')) category = 'song';
+    else if (id.startsWith('view-game-')) category = 'game';
+
     views.push({
-      id: $el.attr('id'),
+      id,
       tag: el.tagName.toLowerCase(),
+      category,
       html: $.html($el)
     });
   });
