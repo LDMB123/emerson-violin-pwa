@@ -1,39 +1,23 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAdaptiveLog, getGameTuning } from './adaptive-engine.js';
-import { clamp } from '../utils/math.js';
+import {
+    SKILL_BY_GAME,
+    GAME_BY_SKILL,
+    SKILL_LABELS,
+    recencyWeight,
+    average,
+    weightedAverage,
+    computeSkillScores,
+    findWeakestSkill,
+    computeSongLevel,
+    pickDailyCue,
+    filterEventsByType,
+    cacheFresh,
+} from '../utils/recommendations-utils.js';
 
 const EVENT_KEY = 'panda-violin:events:v1';
 const CACHE_KEY = 'panda-violin:ml:recs-v1';
 const CACHE_TTL = 5 * 60 * 1000;
-
-const SKILL_BY_GAME = {
-    'pitch-quest': 'pitch',
-    'ear-trainer': 'pitch',
-    'tuning-time': 'pitch',
-    tuner: 'pitch',
-    'scale-practice': 'pitch',
-    'rhythm-dash': 'rhythm',
-    'rhythm-painter': 'rhythm',
-    pizzicato: 'rhythm',
-    'duet-challenge': 'rhythm',
-    'bow-hero': 'bow_control',
-    'string-quest': 'bow_control',
-    'note-memory': 'reading',
-    'melody-maker': 'reading',
-    'story-song': 'reading',
-    'coach-focus': 'focus',
-    'trainer-metronome': 'rhythm',
-    'trainer-posture': 'posture',
-    'bowing-coach': 'bow_control',
-};
-
-const GAME_BY_SKILL = {
-    pitch: 'pitch-quest',
-    rhythm: 'rhythm-dash',
-    bow_control: 'bow-hero',
-    reading: 'note-memory',
-    posture: 'view-posture',
-};
 
 const GAME_LABELS = {
     'pitch-quest': 'Pitch Quest',
@@ -50,15 +34,6 @@ const COACH_MESSAGES = {
     reading: 'Reading focus: name the notes before you play.',
     posture: 'Posture focus: tall spine and relaxed shoulders.',
     default: 'Nice work today! Keep your tempo calm and steady.',
-};
-
-const SKILL_LABELS = {
-    pitch: 'Pitch',
-    rhythm: 'Rhythm',
-    bow_control: 'Bowing',
-    reading: 'Reading',
-    posture: 'Posture',
-    focus: 'Focus',
 };
 
 const MASTER_CUES = {
@@ -150,13 +125,6 @@ const toViewId = (id) => {
     return `view-game-${id}`;
 };
 
-const pickDailyCue = (list, seed = 0) => {
-    if (!Array.isArray(list) || !list.length) return '';
-    const day = Math.floor(Date.now() / 86400000);
-    const index = Math.abs(day + seed) % list.length;
-    return list[index] || list[0];
-};
-
 const buildMinutes = (skill) => {
     const base = {
         warmup: STEP_BASE.warmup.minutes,
@@ -224,33 +192,6 @@ const loadEvents = async () => {
     return Array.isArray(stored) ? stored : [];
 };
 
-const average = (values) => {
-    if (!values.length) return 0;
-    return values.reduce((sum, value) => sum + value, 0) / values.length;
-};
-
-const recencyWeight = (timestamp) => {
-    if (!timestamp) return 1;
-    const daysAgo = Math.max(0, (Date.now() - timestamp) / 86400000);
-    return 1 / (1 + daysAgo * 0.35);
-};
-
-const weightedAverage = (items, getValue, getWeight) => {
-    if (!items.length) return 0;
-    let total = 0;
-    let weightSum = 0;
-    items.forEach((item) => {
-        const value = getValue(item);
-        const weight = getWeight(item);
-        if (Number.isFinite(value) && Number.isFinite(weight)) {
-            total += value * weight;
-            weightSum += weight;
-        }
-    });
-    if (!weightSum) return 0;
-    return total / weightSum;
-};
-
 const computeRecommendations = async () => {
     const [events, adaptiveLog, metronomeTuning] = await Promise.all([
         loadEvents(),
@@ -258,39 +199,10 @@ const computeRecommendations = async () => {
         getGameTuning('trainer-metronome').catch(() => ({ targetBpm: 90 })),
     ]);
 
-    const skillTotals = new Map();
-    const skillCounts = new Map();
-
-    adaptiveLog.forEach((entry) => {
-        const skill = SKILL_BY_GAME[entry.id];
-        if (!skill) return;
-        const value = clamp(Number.isFinite(entry.accuracy) ? entry.accuracy : entry.score || 0, 0, 100);
-        const weight = recencyWeight(entry.timestamp);
-        skillTotals.set(skill, (skillTotals.get(skill) || 0) + value * weight);
-        skillCounts.set(skill, (skillCounts.get(skill) || 0) + weight);
-    });
-
-    const skillScores = {};
-    skillTotals.forEach((total, skill) => {
-        const count = skillCounts.get(skill) || 1;
-        skillScores[skill] = clamp(total / count, 0, 100);
-    });
-
-    const skillCandidates = ['pitch', 'rhythm', 'bow_control', 'reading', 'posture'];
-    const weakestSkill = skillCandidates.reduce((weakest, skill) => {
-        const score = skillScores[skill] ?? 60;
-        if (!weakest) return { skill, score };
-        return score < weakest.score ? { skill, score } : weakest;
-    }, null)?.skill || 'pitch';
-
-    const songEvents = events.filter((event) => event.type === 'song');
-    const recentSongEvents = songEvents.slice(-8);
-    const averageSong = weightedAverage(
-        recentSongEvents,
-        (event) => clamp(event.accuracy || 0, 0, 100),
-        (event) => recencyWeight(event.timestamp)
-    ) || average(recentSongEvents.map((event) => clamp(event.accuracy || 0, 0, 100)));
-    const songLevel = averageSong >= 85 ? 'advanced' : averageSong >= 65 ? 'intermediate' : 'beginner';
+    const skillScores = computeSkillScores(adaptiveLog);
+    const weakestSkill = findWeakestSkill(skillScores);
+    const songEvents = filterEventsByType(events, 'song');
+    const songLevel = computeSongLevel(songEvents);
 
     const recommendedGameId = GAME_BY_SKILL[weakestSkill] || 'pitch-quest';
     const recommendedGameLabel = GAME_LABELS[recommendedGameId] || 'Pitch Quest';
@@ -335,11 +247,6 @@ const readCache = async () => {
     return cached;
 };
 
-const cacheFresh = (cached) => {
-    if (!cached?.updatedAt) return false;
-    return (Date.now() - cached.updatedAt) < CACHE_TTL;
-};
-
 export const refreshRecommendationsCache = async () => {
     const recommendations = await computeRecommendations();
     const payload = {
@@ -359,7 +266,7 @@ export const getLearningRecommendations = async ({ allowCached = true } = {}) =>
     if (allowCached) {
         const cached = await readCache();
         if (cached?.recommendations) {
-            if (!cacheFresh(cached)) {
+            if (!cacheFresh(cached, CACHE_TTL)) {
                 refreshRecommendationsCache().catch(() => {});
             }
             return cached.recommendations;
