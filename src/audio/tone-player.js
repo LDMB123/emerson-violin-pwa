@@ -1,6 +1,6 @@
 import { isSoundEnabled } from '../utils/sound-state.js';
 
-const NOTE_FREQUENCIES = {
+export const NOTE_FREQUENCIES = {
     G3: 196.00,
     A3: 220.00,
     B3: 246.94,
@@ -17,7 +17,7 @@ const NOTE_FREQUENCIES = {
     E5: 659.25,
 };
 
-const DEFAULT_MAP = {
+export const DEFAULT_MAP = {
     G: 'G3',
     D: 'D4',
     A: 'A4',
@@ -30,7 +30,7 @@ const DEFAULT_MAP = {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const normalizeNote = (note) => {
+export const normalizeNote = (note) => {
     if (!note) return null;
     if (NOTE_FREQUENCIES[note]) return note;
     const trimmed = String(note).trim().toUpperCase();
