@@ -1,12 +1,15 @@
-import initCore, {
-    PlayerProgress,
-    AchievementTracker,
-    SkillProfile,
-    SkillCategory,
-    calculate_streak,
-} from '../wasm/panda_core.js';
 import { getJSON, setJSON, removeJSON } from '../persistence/storage.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
+
+let wasmModule = null;
+const getCore = async () => {
+    if (!wasmModule) {
+        const mod = await import('../wasm/panda_core.js');
+        await mod.default();
+        wasmModule = mod;
+    }
+    return wasmModule;
+};
 
 const EVENT_KEY = 'panda-violin:events:v1';
 const PERSIST_KEY = 'panda-violin:ui-state:v1';
@@ -102,7 +105,7 @@ const minutesForInput = (input) => {
     return 1;
 };
 
-const { clamp, updateSkillProfile } = createSkillProfileUtils(SkillCategory);
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const updateProgressTrack = (el, percent, text) => {
     if (!el) return;
@@ -179,7 +182,8 @@ const coachMessageFor = (skill) => {
 };
 
 const buildProgress = async (events) => {
-    await initCore();
+    const { PlayerProgress, AchievementTracker, SkillProfile, SkillCategory, calculate_streak } = await getCore();
+    const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
     const progress = new PlayerProgress();
     const tracker = new AchievementTracker();
     const skillProfile = new SkillProfile();
