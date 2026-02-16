@@ -106,6 +106,7 @@ const migrateRecordingsToBlobs = async () => {
 
 const saveRecording = async (songId, duration, blob) => {
     const recordings = await loadRecordings();
+
     let blobKey = null;
     if (supportsIndexedDB && blob) {
         blobKey = createBlobKey(songId);

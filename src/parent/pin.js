@@ -1,4 +1,5 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
+import { createPinHash, verifyPin } from './pin-crypto.js';
 
 const dialog = document.querySelector('[data-pin-dialog]');
 const input = document.getElementById('parent-pin-input');
@@ -8,14 +9,16 @@ const pinInputEl = document.querySelector('[data-parent-pin-input]');
 const pinSaveButton = document.querySelector('[data-parent-pin-save]');
 const pinStatusEl = document.querySelector('[data-parent-pin-status]');
 
-const PIN_KEY = 'panda-violin:parent-pin-v1';
+const PIN_KEY = 'panda-violin:parent-pin-v2'; // Changed to v2 for PBKDF2
+const PIN_KEY_LEGACY = 'panda-violin:parent-pin-v1'; // Old SHA-256 version
 const UNLOCK_KEY = 'panda-violin:parent-unlocked';
-let cachedHash = null;
+let cachedPinData = null;
 let pinReady = null;
 
 const normalizePin = (value) => (value || '').replace(/\D/g, '').slice(0, 4);
 
-const hashPin = async (pin) => {
+// Legacy SHA-256 hash for migration
+const hashPinLegacy = async (pin) => {
     const data = new TextEncoder().encode(pin);
     const buf = await crypto.subtle.digest('SHA-256', data);
     return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -31,24 +34,50 @@ const updatePinDisplay = () => {
 };
 
 const loadPin = async () => {
-    const stored = await getJSON(PIN_KEY);
-    if (stored?.hash) {
-        cachedHash = stored.hash;
+    // Try new PBKDF2 format first
+    let stored = await getJSON(PIN_KEY);
+
+    if (stored?.hash && stored?.salt) {
+        // Valid PBKDF2 format
+        cachedPinData = stored;
     } else {
-        const plain = normalizePin(stored?.pin) || '1001';
-        cachedHash = await hashPin(plain);
-        await setJSON(PIN_KEY, { hash: cachedHash, updatedAt: Date.now() });
+        // Try legacy v1 format for migration
+        const legacy = await getJSON(PIN_KEY_LEGACY);
+        if (legacy?.hash) {
+            // Cannot migrate without original PIN, set default
+            console.warn('[PIN] Legacy format detected, resetting to default');
+            const defaultPin = '1001';
+            const { hash, salt } = await createPinHash(defaultPin);
+            cachedPinData = {
+                hash,
+                salt,
+                createdAt: Date.now(),
+                migrated: true,
+            };
+            await setJSON(PIN_KEY, cachedPinData);
+        } else {
+            // No PIN set, create default 1001
+            const defaultPin = '1001';
+            const { hash, salt } = await createPinHash(defaultPin);
+            cachedPinData = {
+                hash,
+                salt,
+                createdAt: Date.now(),
+            };
+            await setJSON(PIN_KEY, cachedPinData);
+        }
     }
+
     updatePinDisplay();
-    return cachedHash;
+    return cachedPinData;
 };
 
-const getPinHash = async () => {
+const getPinData = async () => {
     if (!pinReady) {
         pinReady = loadPin();
     }
     await pinReady;
-    return cachedHash;
+    return cachedPinData;
 };
 
 const setPinStatus = (message) => {
@@ -82,9 +111,11 @@ const handleSubmit = async (event) => {
         }
         return;
     }
-    const stored = await getPinHash();
-    const entered = await hashPin(normalizePin(input?.value));
-    if (entered === stored) {
+    const pinData = await getPinData();
+    const enteredPin = normalizePin(input?.value);
+    const isValid = await verifyPin(enteredPin, pinData.hash, pinData.salt);
+
+    if (isValid) {
         unlock();
         return;
     }
@@ -103,9 +134,11 @@ const checkGate = async () => {
         return;
     }
     const entry = window.prompt('Enter Parent PIN');
-    const stored = await getPinHash();
-    const entered = await hashPin(normalizePin(entry));
-    if (entered === stored) {
+    const pinData = await getPinData();
+    const enteredPin = normalizePin(entry);
+    const isValid = await verifyPin(enteredPin, pinData.hash, pinData.salt);
+
+    if (isValid) {
         sessionStorage.setItem(UNLOCK_KEY, 'true');
     } else {
         window.location.hash = '#view-home';
@@ -123,11 +156,16 @@ const savePin = async () => {
         setPinStatus('Enter a 4-digit PIN.');
         return;
     }
-    cachedHash = await hashPin(next);
-    await setJSON(PIN_KEY, { hash: cachedHash, updatedAt: Date.now() });
+    const { hash, salt } = await createPinHash(next);
+    cachedPinData = {
+        hash,
+        salt,
+        updatedAt: Date.now(),
+    };
+    await setJSON(PIN_KEY, cachedPinData);
     pinInputEl.value = '';
     updatePinDisplay();
-    setPinStatus('PIN updated.');
+    setPinStatus('PIN updated (secure).');
 };
 
 if (pinInputEl) {
