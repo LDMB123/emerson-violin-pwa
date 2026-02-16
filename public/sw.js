@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v108';
+const CACHE_VERSION = 'v109';
 const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
 const APP_SHELL_URL = './index.html';
 const OFFLINE_URL = './offline.html';

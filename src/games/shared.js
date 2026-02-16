@@ -1,0 +1,148 @@
+import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
+import { createTonePlayer } from '../audio/tone-player.js';
+import { getJSON, setJSON } from '../persistence/storage.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
+
+export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
+export const cachedEl = (selector) => { let el; return () => (el ??= document.querySelector(selector)); };
+export const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
+export const EVENT_KEY = 'panda-violin:events:v1';
+export const MAX_EVENTS = 500;
+export const todayDay = () => Math.floor(Date.now() / 86400000);
+export const formatCountdown = (seconds) => {
+    const safe = Math.max(0, Math.ceil(seconds));
+    const minutes = Math.floor(safe / 60);
+    const remaining = safe % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
+};
+
+let tonePlayer = null;
+export const getTonePlayer = () => {
+    if (tonePlayer) return tonePlayer;
+    const created = createTonePlayer();
+    if (!created) return null;
+    tonePlayer = created;
+    return tonePlayer;
+};
+
+export const stopTonePlayer = () => {
+    if (tonePlayer) {
+        tonePlayer.stopAll();
+    }
+};
+
+export const playToneNote = (note, options) => {
+    if (!isSoundEnabled()) return false;
+    const player = getTonePlayer();
+    if (!player) return false;
+    player.playNote(note, options).catch(() => {});
+    return true;
+};
+
+export const playToneSequence = (notes, options) => {
+    if (!isSoundEnabled()) return false;
+    const player = getTonePlayer();
+    if (!player) return false;
+    player.playSequence(notes, options).catch(() => {});
+    return true;
+};
+
+export const bindTap = (element, handler, { threshold = 160, clickIgnoreWindow = 420 } = {}) => {
+    if (!element || typeof handler !== 'function') return;
+    let lastTap = 0;
+    let lastPointerTap = 0;
+    const invoke = (event) => {
+        const now = performance.now();
+        if (now - lastTap < threshold) return;
+        lastTap = now;
+        handler(event);
+    };
+    element.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        event.preventDefault();
+        lastPointerTap = performance.now();
+        invoke(event);
+    }, { passive: false });
+    element.addEventListener('click', (event) => {
+        const now = performance.now();
+        if (now - lastPointerTap < clickIgnoreWindow && event.detail !== 0) return;
+        invoke(event);
+    });
+};
+
+export const readLiveNumber = (el, key) => {
+    if (!el || !el.dataset) return null;
+    const value = Number(el.dataset[key]);
+    return Number.isFinite(value) ? value : null;
+};
+
+export const setLiveNumber = (el, key, value, formatter) => {
+    if (!el) return;
+    el.dataset[key] = String(value);
+    el.textContent = formatter ? formatter(value) : String(value);
+};
+
+export const markChecklist = (id) => {
+    if (!id) return;
+    const input = document.getElementById(id);
+    if (!input || input.checked) return;
+    input.checked = true;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+export const markChecklistIf = (condition, id) => {
+    if (condition) markChecklist(id);
+};
+
+export const formatDifficulty = (value) => {
+    const label = value || 'medium';
+    return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+export const setDifficultyBadge = (container, difficulty, prefix = 'Adaptive') => {
+    if (!container) return;
+    let badge = container.querySelector('.difficulty-badge');
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'difficulty-badge';
+        container.appendChild(badge);
+    }
+    badge.dataset.level = difficulty || 'medium';
+    badge.textContent = `${prefix}: ${formatDifficulty(difficulty)}`;
+};
+
+export const recordGameEvent = async (id, payload = {}) => {
+    if (!id) return;
+    const events = await getJSON(EVENT_KEY);
+    const list = Array.isArray(events) ? events : [];
+    const entry = {
+        type: 'game',
+        id,
+        day: todayDay(),
+        timestamp: Date.now(),
+    };
+    if (Number.isFinite(payload.score)) entry.score = Math.round(payload.score);
+    if (Number.isFinite(payload.accuracy)) entry.accuracy = Math.round(payload.accuracy);
+    if (Number.isFinite(payload.stars)) entry.stars = Math.round(payload.stars);
+    list.push(entry);
+    if (list.length > MAX_EVENTS) {
+        list.splice(0, list.length - MAX_EVENTS);
+    }
+    await setJSON(EVENT_KEY, list);
+    document.dispatchEvent(new CustomEvent('panda:game-recorded', { detail: entry }));
+};
+
+export const attachTuning = (id, onUpdate) => {
+    const apply = (tuning) => {
+        if (!tuning) return;
+        onUpdate(tuning);
+    };
+    const refresh = () => {
+        getGameTuning(id).then(apply).catch(() => {});
+    };
+    refresh();
+    document.addEventListener('panda:ml-reset', refresh);
+    const report = (payload) => updateGameResult(id, payload).then(apply).catch(() => {});
+    report.refresh = refresh;
+    return report;
+};

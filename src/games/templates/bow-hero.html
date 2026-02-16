@@ -1,0 +1,67 @@
+      <section class="view game-view game-bow-hero" id="view-game-bow-hero" aria-label="Game: Bow Hero">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Bow Hero</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="bow-hero-content">
+          <input type="checkbox" id="bow-hero-run" class="state-checkbox bow-run-toggle" data-persist="false" aria-label="Start Bow Hero">
+          <div class="bow-hero-stage">
+            <div class="bow-hero-hud">
+              <div class="bow-timer" data-bow="timer">01:45</div>
+              <div class="bow-stars-badge">⭐ <span data-bow="stars">0</span> stars</div>
+            </div>
+            <div class="bow-arc">
+              <div class="bow-arc-track"></div>
+              <div class="bow-arc-indicator" data-bow="indicator"></div>
+            </div>
+            <div class="bow-stars">
+              <span class="bow-star" data-bow="star">★</span>
+              <span class="bow-star" data-bow="star">★</span>
+              <span class="bow-star" data-bow="star">★</span>
+              <span class="bow-star" data-bow="star">★</span>
+              <span class="bow-star" data-bow="star">★</span>
+            </div>
+          <div class="bow-controls">
+            <div class="toggle-ui">
+              <label for="bow-hero-run" class="btn btn-primary btn-start">Start</label>
+              <label for="bow-hero-run" class="btn btn-secondary btn-stop">Pause</label>
+            </div>
+            <button class="btn btn-secondary bow-stroke" type="button">Bow Stroke</button>
+          </div>
+          <div class="bow-status" data-bow="status" aria-live="polite">Press Start to begin the timer.</div>
+        </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Check off each bowing challenge as you finish it.</p>
+            <div class="game-checklist-group" data-total="5">
+              <div class="game-progress" data-total="5">
+                <span class="game-progress-label">Challenges done</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-1">
+                  <label for="bh-step-1"><span class="note-chip">Slow</span> 8 slow bow strokes.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-2">
+                  <label for="bh-step-2"><span class="note-chip">Mid</span> 8 medium bow strokes.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-3">
+                  <label for="bh-step-3"><span class="note-chip">Fast</span> 8 quick bow strokes.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-4">
+                  <label for="bh-step-4"><span class="note-chip">Smooth</span> Smooth bow changes for 30s.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="bh-step-5">
+                  <label for="bh-step-5"><span class="note-chip">Finish</span> Complete a full session.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-encourage.png" alt="" class="game-mascot mascot-bow" loading="lazy" decoding="async" />
+        </div>
+      </section>
+
