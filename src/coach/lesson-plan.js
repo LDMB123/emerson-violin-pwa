@@ -1,4 +1,5 @@
 import { getLearningRecommendations } from '../ml/recommendations.js';
+import { formatTime } from '../games/session-timer.js';
 
 const planPanel = document.querySelector('[data-lesson-plan="coach"]');
 if (!planPanel) {
@@ -46,12 +47,6 @@ if (!planPanel) {
     const nextButton = runner.querySelector('[data-lesson-runner-next]');
     const ctaButton = runner.querySelector('[data-lesson-runner-cta]');
 
-    const formatTime = (seconds) => {
-        const total = Math.max(0, Math.ceil(seconds));
-        const minutes = Math.floor(total / 60);
-        const remaining = total % 60;
-        return `${minutes.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
-    };
 
     const toLessonLink = (id) => {
         if (!id) return '#view-games';
@@ -137,7 +132,7 @@ if (!planPanel) {
         }
         if (timerEl) {
             const duration = Math.max(30, Math.round((step?.minutes || 1) * 60));
-            timerEl.textContent = formatTime(remainingSeconds || duration);
+            timerEl.textContent = formatTime((remainingSeconds || duration) * 1000);
         }
         if (startButton) startButton.disabled = false;
         if (nextButton) nextButton.disabled = completedSteps >= steps.length;
@@ -182,7 +177,7 @@ if (!planPanel) {
             return;
         }
         remainingSeconds -= 1;
-        if (timerEl) timerEl.textContent = formatTime(remainingSeconds);
+        if (timerEl) timerEl.textContent = formatTime(remainingSeconds * 1000);
         updateProgress();
     };
 
@@ -203,7 +198,7 @@ if (!planPanel) {
         if (nextButton) nextButton.disabled = false;
         dispatchLessonEvent('start', step);
         timerId = window.setInterval(tick, 1000);
-        if (timerEl) timerEl.textContent = formatTime(remainingSeconds);
+        if (timerEl) timerEl.textContent = formatTime(remainingSeconds * 1000);
         updateProgress();
     };
 
