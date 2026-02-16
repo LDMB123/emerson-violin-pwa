@@ -58,7 +58,22 @@ pub fn sanitize_filename(name: &str) -> String {
 // Category 2: Filename Generation
 // ============================================================================
 
-// Functions will go here
+/// Generate recording filename: "rec_{id}.{ext}"
+pub fn recording_filename(id: &str, ext: &str) -> String {
+    format!("rec_{}.{}", id, ext)
+}
+
+/// Generate share filename: "share_{id}_{sanitized_name}"
+pub fn share_filename(id: &str, name: &str) -> String {
+    let sanitized = sanitize_filename(name);
+    format!("share_{}_{}", id, sanitized)
+}
+
+/// Generate score filename: "score_{id}_{sanitized_name}"
+pub fn score_filename(id: &str, name: &str) -> String {
+    let sanitized = sanitize_filename(name);
+    format!("score_{}_{}", id, sanitized)
+}
 
 // ============================================================================
 // Category 3: Format Conversion
@@ -144,5 +159,23 @@ mod tests {
     #[test]
     fn test_sanitize_filename_multiple_replacements() {
         assert_eq!(sanitize_filename("a<b>c|d.txt"), "a_b_c_d.txt");
+    }
+
+    #[test]
+    fn test_recording_filename() {
+        assert_eq!(recording_filename("abc123", "webm"), "rec_abc123.webm");
+        assert_eq!(recording_filename("xyz", "mp3"), "rec_xyz.mp3");
+    }
+
+    #[test]
+    fn test_share_filename() {
+        assert_eq!(share_filename("123", "My File"), "share_123_My File");
+        assert_eq!(share_filename("abc", "test<>"), "share_abc_test__");
+    }
+
+    #[test]
+    fn test_score_filename() {
+        assert_eq!(score_filename("456", "Score"), "score_456_Score");
+        assert_eq!(score_filename("xyz", "a/b"), "score_xyz_a_b");
     }
 }
