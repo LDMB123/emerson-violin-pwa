@@ -1,0 +1,148 @@
+<section class="view" id="view-songs" aria-label="Song Library">
+        <div class="view-header">
+          <a href="#view-home" class="back-btn">← Back</a>
+          <h2>Song Library</h2>
+        </div>
+
+        <div class="songs-search glass">
+          <span class="songs-search-icon">🔍</span>
+          <span class="songs-search-title">Song Library</span>
+          <input type="search" class="songs-search-input" placeholder="Search songs" aria-label="Search songs" data-song-search="" inputmode="search" enterkeyhint="search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="songs-filters glass">
+          <label class="filter-label">
+            <input type="radio" name="song-filter" value="beginner" class="filter-input" checked="">
+            <span class="filter-chip">Beginner</span>
+          </label>
+          <label class="filter-label">
+            <input type="radio" name="song-filter" value="intermediate" class="filter-input">
+            <span class="filter-chip">Intermediate</span>
+          </label>
+          <label class="filter-label">
+            <input type="radio" name="song-filter" value="advanced" class="filter-input">
+            <span class="filter-chip">Advanced</span>
+          </label>
+        </div>
+
+        <div class="songs-grid" id="songs-grid">
+          <!-- SONGS_GRID_START -->
+          <a class="song-card glass" href="#view-song-open_strings" data-song="open_strings" data-level="beginner">
+            <div class="song-art">🎻</div>
+            <div class="song-title">Open String Song</div>
+            <div class="song-stars" aria-label="3 stars">
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star">★</span>
+              <span class="star">★</span>
+            </div>
+            <div class="song-play" aria-hidden="true">▶</div>
+          </a>
+          <a class="song-card glass" href="#view-song-twinkle" data-song="twinkle" data-level="beginner">
+            <div class="song-art">⭐🌙</div>
+            <div class="song-title">Twinkle Twinkle Little Star</div>
+            <div class="song-stars" aria-label="4 stars">
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star">★</span>
+            </div>
+            <div class="song-play" aria-hidden="true">▶</div>
+          </a>
+          <a class="song-card glass" href="#view-song-mary" data-song="mary" data-level="beginner">
+            <div class="song-art">🐑</div>
+            <div class="song-title">Mary Had a Little Lamb</div>
+            <div class="song-stars" aria-label="3 stars">
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star">★</span>
+              <span class="star">★</span>
+            </div>
+            <div class="song-play" aria-hidden="true">▶</div>
+          </a>
+          <a class="song-card glass" href="#view-song-lightly_row" data-song="lightly_row" data-level="beginner">
+            <div class="song-art">🚣</div>
+            <div class="song-title">Lightly Row</div>
+            <div class="song-stars" aria-label="3 stars">
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star">★</span>
+              <span class="star">★</span>
+            </div>
+            <div class="song-play" aria-hidden="true">▶</div>
+          </a>
+          <a class="song-card glass" href="#view-song-go_tell_aunt_rhody" data-song="go_tell_aunt_rhody" data-level="beginner">
+            <div class="song-art">🎀</div>
+            <div class="song-title">Go Tell Aunt Rhody</div>
+            <div class="song-stars" aria-label="3 stars">
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star">★</span>
+              <span class="star">★</span>
+            </div>
+            <div class="song-play" aria-hidden="true">▶</div>
+          </a>
+          <a class="song-card glass" href="#view-song-ode_to_joy" data-song="ode_to_joy" data-level="intermediate">
+            <div class="song-art">🎉</div>
+            <div class="song-title">Ode to Joy</div>
+            <div class="song-stars" aria-label="4 stars">
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star">★</span>
+            </div>
+            <div class="song-play" aria-hidden="true">▶</div>
+          </a>
+          <a class="song-card glass" href="#view-song-minuet_1" data-song="minuet_1" data-level="intermediate">
+            <div class="song-art">🎼</div>
+            <div class="song-title">Minuet 1</div>
+            <div class="song-stars" aria-label="4 stars">
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star">★</span>
+            </div>
+            <div class="song-play" aria-hidden="true">▶</div>
+          </a>
+          <a class="song-card glass" href="#view-song-gavotte" data-song="gavotte" data-level="intermediate">
+            <div class="song-art">🎻</div>
+            <div class="song-title">Gavotte</div>
+            <div class="song-stars" aria-label="4 stars">
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star">★</span>
+            </div>
+            <div class="song-play" aria-hidden="true">▶</div>
+          </a>
+          <a class="song-card glass" href="#view-song-perpetual_motion" data-song="perpetual_motion" data-level="advanced">
+            <div class="song-art">⚡</div>
+            <div class="song-title">Perpetual Motion</div>
+            <div class="song-stars" aria-label="5 stars">
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+              <span class="star is-filled">★</span>
+            </div>
+            <div class="song-play" aria-hidden="true">▶</div>
+          </a>
+          <!-- SONGS_GRID_END -->
+        </div>
+        <p class="songs-empty" data-songs-empty="" role="status" aria-live="polite" hidden="">
+          No songs match that search yet. Try another title or switch levels.
+        </p>
+
+        <picture>
+          <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
+          <img src="./assets/illustrations/mascot-happy.png" alt="" class="corner-mascot" loading="lazy" decoding="async" width="1024" height="1024">
+        </picture>
+      </section>

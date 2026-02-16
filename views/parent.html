@@ -1,0 +1,131 @@
+<section class="view" id="view-parent" aria-label="Parent Zone">
+        <div class="view-header">
+          <a href="#view-home" class="back-btn">← Back</a>
+          <h2>Parent Zone</h2>
+          <div class="pin-lock" data-parent-pin-display="" aria-hidden="true">🔒 PIN set</div>
+        </div>
+
+        <dialog class="pin-dialog glass" data-pin-dialog="" aria-labelledby="parent-pin-title" aria-modal="true" role="dialog">
+          <form method="dialog" class="pin-form">
+            <h3 id="parent-pin-title">Parent Zone</h3>
+            <p>Enter the 4-digit PIN to continue.</p>
+            <label class="sr-only" for="parent-pin-input">Parent PIN</label>
+            <input type="password" id="parent-pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-describedby="parent-pin-error">
+            <p class="pin-error" id="parent-pin-error" data-pin-error="" role="status" aria-live="polite">Incorrect PIN. Try again.</p>
+            <div class="pin-actions">
+              <button class="btn btn-secondary" type="submit" value="cancel">Cancel</button>
+              <button class="btn btn-primary" type="submit" value="confirm">Unlock</button>
+            </div>
+          </form>
+        </dialog>
+
+        <div class="parent-layout">
+          <div class="parent-chart glass">
+            <h3>Weekly Practice Summary</h3>
+            <div class="parent-chart-graph">
+              <svg viewBox="0 0 320 160" aria-hidden="true">
+                <path class="parent-chart-line" data-parent="week-line" d="M20 120 L70 100 L120 110 L170 80 L220 90 L270 70 L300 60"></path>
+                <g class="parent-chart-points" data-parent="week-points">
+                  <circle cx="20" cy="120" r="4"></circle>
+                  <circle cx="70" cy="100" r="4"></circle>
+                  <circle cx="120" cy="110" r="4"></circle>
+                  <circle cx="170" cy="80" r="4"></circle>
+                  <circle cx="220" cy="90" r="4"></circle>
+                  <circle cx="270" cy="70" r="4"></circle>
+                  <circle cx="300" cy="60" r="4"></circle>
+                </g>
+              </svg>
+              <picture>
+                <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
+                <img src="./assets/illustrations/mascot-focus.png" alt="" class="parent-chart-mascot" loading="lazy" decoding="async">
+              </picture>
+            </div>
+            <p class="weekly-summary" data-parent="week-summary">Total: 0 minutes</p>
+          </div>
+
+          <div class="parent-goals glass">
+            <h3>Goal Setting</h3>
+            <p class="parent-goal-note" data-parent-goal-title="">Next Recital Piece</p>
+            <div class="goal-progress parent-goal-progress" data-parent="goal-track" role="progressbar" aria-label="Weekly goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="goal-fill" data-parent="goal-fill"></div>
+            </div>
+            <div class="parent-goal-value" data-parent="goal-value">0 / 15</div>
+            <div class="parent-goal-form">
+              <label class="setting-row">
+                <span>Recital piece</span>
+                <input class="parent-goal-input" type="text" data-parent-goal-title-input="" placeholder="Next recital piece" autocomplete="off">
+              </label>
+              <label class="setting-row">
+                <span>Weekly minutes goal</span>
+                <input class="parent-goal-input" type="number" min="30" max="420" step="5" data-parent-goal-minutes-input="">
+              </label>
+              <div class="parent-actions">
+                <button class="btn btn-secondary" type="button" data-parent-goal-save="">Save goal</button>
+              </div>
+              <p class="parent-settings-note" data-parent-goal-status="" aria-live="polite">Goal saved.</p>
+            </div>
+          </div>
+
+          <div class="parent-settings glass">
+            <h3>Practice Reminder</h3>
+            <p class="parent-settings-note" data-reminder-status="" aria-live="polite">Use iPadOS Reminders or Calendar alerts to keep practice on track.</p>
+            <label class="toggle-setting">
+              <span>Daily reminder</span>
+              <span class="toggle">
+                <input type="checkbox" id="parent-reminder-toggle" checked="">
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+          </div>
+
+          <div class="parent-settings glass parent-pin-card">
+            <h3>Parent PIN</h3>
+            <p class="parent-settings-note">Update the 4-digit PIN used to open Parent Zone.</p>
+            <label class="setting-row">
+              <span>New PIN</span>
+              <input class="parent-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" data-parent-pin-input="" aria-label="New parent PIN">
+            </label>
+            <div class="parent-actions">
+              <button class="btn btn-secondary" type="button" data-parent-pin-save="">Save PIN</button>
+            </div>
+            <p class="parent-settings-note" data-parent-pin-status="" aria-live="polite">PIN is set.</p>
+          </div>
+
+          <div class="parent-overview glass">
+            <h3>Child Progress Overview</h3>
+            <div class="overview-skills">
+              <div class="overview-skill">
+                <span class="skill-name">Bow Hold</span>
+                <div class="skill-stars" data-parent-skill="bow_control" role="img" aria-label="5 out of 5 stars">★★★★★</div>
+              </div>
+              <div class="overview-skill">
+                <span class="skill-name">Intonation</span>
+                <div class="skill-stars" data-parent-skill="pitch" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
+              </div>
+              <div class="overview-skill">
+                <span class="skill-name">Rhythm</span>
+                <div class="skill-stars" data-parent-skill="rhythm" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
+              </div>
+            </div>
+            <div class="parent-actions">
+              <a class="btn btn-secondary" href="#view-backup">Export Data</a>
+              <button class="btn btn-primary" type="button" data-share-summary="">Share Summary</button>
+            </div>
+            <p class="parent-share-note" data-share-status="" aria-live="polite">Share this week’s summary via AirDrop, Messages, or Files.</p>
+          </div>
+
+          <div class="parent-recordings glass">
+            <h3>Practice Recordings</h3>
+            <p class="parent-settings-note" data-parent-recordings-status="" aria-live="polite">Loading recordings…</p>
+            <div class="parent-recording-list" data-parent-recordings=""></div>
+            <div class="parent-actions">
+              <button class="btn btn-secondary" type="button" data-parent-clear-recordings="">Clear recordings</button>
+            </div>
+          </div>
+        </div>
+
+        <picture>
+          <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
+          <img src="./assets/illustrations/mascot-focus.png" alt="" class="corner-mascot parent-mascot" loading="lazy" decoding="async">
+        </picture>
+      </section>

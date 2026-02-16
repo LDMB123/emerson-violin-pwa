@@ -1,0 +1,119 @@
+<section class="view game-view game-pitch-quest" id="view-game-pitch-quest" aria-label="Game: Pitch Quest">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Pitch Quest</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="pitch-quest-content">
+          <fieldset class="pitch-targets-group">
+          <legend class="sr-only">Target Note</legend>
+          <input type="radio" name="pitch-target" id="pitch-target-g" class="state-checkbox pitch-target-toggle" data-persist="false">
+          <input type="radio" name="pitch-target" id="pitch-target-d" class="state-checkbox pitch-target-toggle" data-persist="false">
+          <input type="radio" name="pitch-target" id="pitch-target-a" class="state-checkbox pitch-target-toggle" data-persist="false" checked="">
+          <input type="radio" name="pitch-target" id="pitch-target-e" class="state-checkbox pitch-target-toggle" data-persist="false">
+
+          <div class="pitch-targets">
+            <span class="pitch-target-label">Target Note</span>
+            <div class="pitch-target-options">
+              <label class="note-btn" for="pitch-target-g">G</label>
+              <label class="note-btn" for="pitch-target-d">D</label>
+              <label class="note-btn" for="pitch-target-a">A</label>
+              <label class="note-btn" for="pitch-target-e">E</label>
+            </div>
+            <div class="pitch-target-status" data-pitch="status" aria-live="polite">Target: A</div>
+          </div>
+          </fieldset>
+
+          <div class="pitch-quest-stage">
+            <div class="pitch-scoreboard">
+              <div class="pitch-score">Score <span data-pitch="score">0</span></div>
+              <div class="pitch-stars" data-pitch="stars">☆☆☆</div>
+              <div class="pitch-stability">Streak <span data-pitch="stability">0x</span></div>
+            </div>
+            <div class="pitch-gauge">
+              <div class="pitch-arc"></div>
+              <div class="pitch-note" data-pitch="target">
+                <span class="pitch-target pitch-target--g">G</span>
+                <span class="pitch-target pitch-target--d">D</span>
+                <span class="pitch-target pitch-target--a">A</span>
+                <span class="pitch-target pitch-target--e">E</span>
+              </div>
+              <div class="pitch-needle" data-pitch="needle"></div>
+            </div>
+          </div>
+
+          <div class="pitch-controls glass">
+            <label class="pitch-slider">
+              <span>Adjust pitch (cents)</span>
+              <input type="range" min="-50" max="50" value="0" data-pitch="slider">
+              <span class="pitch-readout" data-pitch="offset">0 cents</span>
+            </label>
+            <label class="pitch-slider pitch-tolerance">
+              <span>Tuning window</span>
+              <input type="range" min="3" max="12" value="6" data-pitch="tolerance">
+              <span class="pitch-readout" data-pitch="tolerance-value">±6¢</span>
+            </label>
+            <div class="pitch-actions">
+              <button class="btn btn-primary" type="button" data-pitch="check">Check Pitch</button>
+              <div class="pitch-feedback" data-pitch="feedback" aria-live="polite">Listen and adjust to center.</div>
+            </div>
+          </div>
+
+          <details class="pitch-audio glass">
+            <summary class="btn btn-secondary">Reference tones</summary>
+            <div class="audio-grid">
+              <div class="audio-card">
+                <span class="audio-label" id="pitch-g-label">G</span>
+                <audio controls="" preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="pitch-g-label"></audio>
+              </div>
+              <div class="audio-card">
+                <span class="audio-label" id="pitch-d-label">D</span>
+                <audio controls="" preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="pitch-d-label"></audio>
+              </div>
+              <div class="audio-card">
+                <span class="audio-label" id="pitch-a-label">A</span>
+                <audio controls="" preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="pitch-a-label"></audio>
+              </div>
+              <div class="audio-card">
+                <span class="audio-label" id="pitch-e-label">E</span>
+                <audio controls="" preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="pitch-e-label"></audio>
+              </div>
+            </div>
+          </details>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Mark each target you matched today.</p>
+            <div class="game-checklist-group" data-total="6">
+              <div class="game-progress" data-total="6">
+                <span class="game-progress-label">Targets matched</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="pq-step-1">
+                  <label for="pq-step-1"><span class="note-chip">G</span> Match the G pitch.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="pq-step-2">
+                  <label for="pq-step-2"><span class="note-chip">D</span> Match the D pitch.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="pq-step-3">
+                  <label for="pq-step-3"><span class="note-chip">A</span> Match the A pitch.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="pq-step-4">
+                  <label for="pq-step-4"><span class="note-chip">E</span> Match the E pitch.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="pq-step-5">
+                  <label for="pq-step-5"><span class="note-chip">Hold</span> Hold a steady note for 3 seconds.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="pq-step-6">
+                  <label for="pq-step-6"><span class="note-chip">Combo</span> Match two notes in a row.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-pitch" loading="lazy" decoding="async">
+        </div>
+      </section>

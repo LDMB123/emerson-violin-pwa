@@ -1,0 +1,60 @@
+<section class="view" id="view-home" aria-label="Home">
+        <div class="home-hero">
+          <div class="home-brand">
+            <picture>
+              <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
+              <img src="./assets/illustrations/mascot-happy.png" alt="Panda" class="home-mascot" decoding="async" loading="eager" fetchpriority="high" width="1024" height="1024">
+            </picture>
+            <div class="home-brand-text">
+              <h1 class="home-title">Panda Violin</h1>
+              <p class="home-subtitle">Emerson's Studio</p>
+            </div>
+          </div>
+
+          <div class="home-cards">
+            <div class="goal-card glass" data-progress="daily-goal">
+              <div class="goal-icon">🎻</div>
+              <div class="goal-body">
+                <span class="goal-label">Today's Goal</span>
+                <div class="goal-time"><span data-progress="daily-goal-value">15</span> minutes</div>
+                <div class="goal-progress" data-progress="daily-goal-track" role="progressbar" aria-label="Daily goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                  <div class="goal-fill" data-progress="daily-goal-fill"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="streak-card glass">
+              <span class="streak-fire" aria-hidden="true">🔥</span>
+              <span class="streak-count" data-progress="home-streak">0</span>
+              <span class="streak-label">day streak</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-grid home-primary">
+          <a href="#view-coach" class="feature-card feature-primary">
+            <div class="feature-icon">💬</div>
+            <div class="feature-title">Coach</div>
+          </a>
+
+          <a href="#view-songs" class="feature-card feature-primary">
+            <div class="feature-icon">🎵</div>
+            <div class="feature-title">Songs</div>
+          </a>
+
+          <a href="#view-games" class="feature-card feature-primary">
+            <div class="feature-icon">🎮</div>
+            <div class="feature-title">Games</div>
+          </a>
+
+          <a href="#view-progress" class="feature-card feature-primary">
+            <div class="feature-icon">📈</div>
+            <div class="feature-title">Progress</div>
+          </a>
+        </div>
+
+        <div class="home-mini">
+          <span class="home-mini-chip"><span data-progress="week-minutes">0</span> min this week</span>
+          <span class="home-mini-chip" data-progress="level-label">Level 1</span>
+        </div>
+      </section>

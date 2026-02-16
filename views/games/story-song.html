@@ -1,0 +1,58 @@
+<section class="view game-view game-story-song" id="view-game-story-song" aria-label="Game: Story Song Lab">
+        <div class="game-header">
+          <a href="#view-games" class="back-btn">← Exit</a>
+          <h2>Story Song Lab</h2>
+          <div class="game-score">Guided Drill</div>
+        </div>
+        <div class="game-content" id="story-song-content">
+          <div class="story-song-stage">
+            <div class="story-banner">
+              <span data-story="title">Story Song Lab</span>
+              <span class="story-page" data-story="page">Page 1 of 3</span>
+            </div>
+            <div class="story-book">
+              <div class="story-hero">
+                <div class="story-notes" data-story="notes">♪ ♪ ♪</div>
+                <div class="story-character">🎻</div>
+                <div class="story-prompt" data-story="prompt">Warm up with your open strings.</div>
+              </div>
+            </div>
+            <input type="checkbox" id="story-play" class="story-play-toggle" data-persist="false" aria-label="Start Story Mode play-along">
+            <label for="story-play" class="btn btn-primary story-play-btn">Play-Along</label>
+            <div class="story-status" data-story="status" aria-live="polite">Press Play-Along to start.</div>
+            <div class="story-staff">
+              <span class="story-note" style="--note-delay: 0s;"></span>
+              <span class="story-note" style="--note-delay: 1s;"></span>
+              <span class="story-note" style="--note-delay: 2s;"></span>
+              <span class="story-note" style="--note-delay: 3s;"></span>
+            </div>
+          </div>
+          <div class="game-drill glass">
+            <p class="game-drill-intro">Follow the story and check off each play-along goal.</p>
+            <div class="game-checklist-group" data-total="4">
+              <div class="game-progress" data-total="4">
+                <span class="game-progress-label">Story steps</span>
+              </div>
+              <ol class="game-checklist">
+                <li class="game-check-item">
+                  <input type="checkbox" id="ss-step-1">
+                  <label for="ss-step-1"><span class="note-chip">Play</span> Start the play-along.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="ss-step-2">
+                  <label for="ss-step-2"><span class="note-chip">Notes</span> Follow four notes in a row.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="ss-step-3">
+                  <label for="ss-step-3"><span class="note-chip">Page</span> Finish a full story page.</label>
+                </li>
+                <li class="game-check-item">
+                  <input type="checkbox" id="ss-step-4">
+                  <label for="ss-step-4"><span class="note-chip">Reflect</span> Pick a favorite moment.</label>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-story" loading="lazy" decoding="async">
+        </div>
+      </section>

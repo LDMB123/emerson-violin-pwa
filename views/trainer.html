@@ -1,0 +1,117 @@
+<section class="view" id="view-trainer" aria-label="Practice Tools">
+        <div class="view-header">
+          <a href="#view-home" class="back-btn">← Back</a>
+          <h2>Practice Tools</h2>
+        </div>
+
+        <div class="trainer-layout">
+          <div class="trainer-hero glass">
+            <div class="trainer-showcase">
+              <div class="trainer-mascot-wrap">
+                <picture>
+                  <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
+                  <img src="./assets/illustrations/mascot-focus.png" alt="Tools" class="trainer-mascot" loading="lazy" decoding="async">
+                </picture>
+              </div>
+              <div class="trainer-metronome" aria-hidden="true">
+                <div class="metronome-body"></div>
+                <div class="metronome-arm"></div>
+              </div>
+              <div class="trainer-dial" aria-hidden="true">
+                <div class="trainer-dial-ring"></div>
+                <div class="trainer-dial-value">
+                  <span class="dial-number">100</span>
+                  <span class="dial-unit">BPM</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-cards">
+            <a class="tool-card glass" id="tool-metronome" href="#view-trainer" data-scroll-target="metronome-loops">
+              <div class="tool-icon">🎵</div>
+              <div class="tool-title">Metronome</div>
+            </a>
+
+            <a class="tool-card glass" id="tool-drone" href="#view-trainer" data-scroll-target="drone-tones">
+              <div class="tool-icon">🧪</div>
+              <div class="tool-title">Tone Lab</div>
+            </a>
+
+            <a class="tool-card glass" id="tool-bowing" href="#view-bowing">
+              <div class="tool-icon">🎻</div>
+              <div class="tool-title">Bowing Coach</div>
+            </a>
+
+            <a class="tool-card glass" id="tool-timer" href="#view-coach">
+              <div class="tool-icon">⏱️</div>
+              <div class="tool-title">Practice Timer</div>
+            </a>
+
+            <a class="tool-card glass" href="#view-posture">
+              <div class="tool-icon">🪞</div>
+              <div class="tool-title">Posture Mirror</div>
+            </a>
+          </div>
+
+          <div class="trainer-audio">
+            <section class="audio-panel glass" id="metronome-loops">
+              <div class="audio-panel-header">
+                <h3>Metronome Loops</h3>
+                <p>Choose a tempo and let it loop while you practice.</p>
+              </div>
+              <div class="metronome-controls">
+                <label class="metronome-range">
+                  <span>Tempo</span>
+                  <input type="range" min="50" max="140" value="100" data-metronome="slider">
+                  <span class="metronome-bpm" data-metronome="bpm">100 BPM</span>
+                </label>
+                <div class="metronome-actions">
+                  <button class="btn btn-primary" type="button" data-metronome="toggle" aria-pressed="false">Start</button>
+                  <button class="btn btn-secondary" type="button" data-metronome="tap">Tap Tempo</button>
+                </div>
+                <p class="metronome-status" data-metronome="status" aria-live="polite">Tap Start to hear the click.</p>
+              </div>
+              <div class="audio-grid">
+                <div class="audio-card">
+                  <span class="audio-label" id="metro-60-label">Slow · 60 BPM</span>
+                  <audio controls="" loop="" preload="none" src="./assets/audio/metronome-60.wav" aria-labelledby="metro-60-label"></audio>
+                </div>
+                <div class="audio-card">
+                  <span class="audio-label" id="metro-90-label">Steady · 90 BPM</span>
+                  <audio controls="" loop="" preload="none" src="./assets/audio/metronome-90.wav" aria-labelledby="metro-90-label"></audio>
+                </div>
+                <div class="audio-card">
+                  <span class="audio-label" id="metro-120-label">Bright · 120 BPM</span>
+                  <audio controls="" loop="" preload="none" src="./assets/audio/metronome-120.wav" aria-labelledby="metro-120-label"></audio>
+                </div>
+              </div>
+            </section>
+
+            <section class="audio-panel glass" id="drone-tones">
+              <div class="audio-panel-header">
+                <h3>Drone Tones</h3>
+                <p>Play a steady reference pitch. Works offline with headphones.</p>
+              </div>
+              <div class="audio-grid">
+                <div class="audio-card">
+                  <span class="audio-label" id="drone-g3-label">G3</span>
+                  <audio controls="" loop="" preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="drone-g3-label"></audio>
+                </div>
+                <div class="audio-card">
+                  <span class="audio-label" id="drone-d4-label">D4</span>
+                  <audio controls="" loop="" preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="drone-d4-label"></audio>
+                </div>
+                <div class="audio-card">
+                  <span class="audio-label" id="drone-a4-label">A4</span>
+                  <audio controls="" loop="" preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="drone-a4-label"></audio>
+                </div>
+                <div class="audio-card">
+                  <span class="audio-label" id="drone-e5-label">E5</span>
+                  <audio controls="" loop="" preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="drone-e5-label"></audio>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
