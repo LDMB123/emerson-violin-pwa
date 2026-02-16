@@ -6,7 +6,8 @@
   "scripts": {
     "predev": "node scripts/build-games-html.js && node scripts/build-songs-html.js && node scripts/build-sw-assets.js",
     "dev": "vite",
-    "prebuild": "node scripts/build-games-html.js && node scripts/build-songs-html.js && node scripts/build-sw-assets.js",
+    "preoptimize": "node scripts/optimize-images.js && node scripts/optimize-audio.js && node scripts/optimize-fonts.js",
+    "prebuild": "npm run preoptimize && node scripts/build-games-html.js && node scripts/build-songs-html.js && node scripts/build-sw-assets.js",
     "build": "vite build",
     "postbuild": "node scripts/build-sw-assets.js --dist",
     "preview": "vite preview",
