@@ -23,4 +23,16 @@ describe('ViewLoader', () => {
     expect(html).toBe('<div>Home View</div>');
     expect(global.fetch).toHaveBeenCalledWith('views/home.html');
   });
+
+  it('should cache loaded views', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      text: async () => '<div>Cached</div>'
+    });
+
+    await viewLoader.load('views/tune.html');
+    await viewLoader.load('views/tune.html');
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
 });
