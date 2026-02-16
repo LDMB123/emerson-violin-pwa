@@ -10,4 +10,5 @@ sw-assets.js
 wasm/target/
 node_modules/
 .claude/
+.worktrees/
 *.log
