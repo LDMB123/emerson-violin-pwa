@@ -7,6 +7,7 @@ import {
 import { getAudioPath } from './audio/format-detection.js';
 import { ViewLoader } from './views/view-loader.js';
 import { getViewPath } from './views/view-paths.js';
+import { showViewError } from './views/view-error.js';
 
 const viewLoader = new ViewLoader();
 
@@ -113,19 +114,7 @@ const showView = async (viewId, enhanceCallback) => {
         loadForView(viewId);
     } catch (err) {
         console.error('[App] View load failed:', err);
-        const container = document.getElementById('main-content');
-        if (container) {
-            container.innerHTML = `
-                <section class="view" id="${viewId}" aria-label="Error">
-                    <div class="view-header">
-                        <h2>Error Loading View</h2>
-                    </div>
-                    <div class="error-message">
-                        <p>Failed to load view. Please try again.</p>
-                    </div>
-                </section>
-            `;
-        }
+        showViewError('Failed to load view. Please check your connection and try again.');
     }
 };
 
