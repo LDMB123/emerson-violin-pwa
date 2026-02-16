@@ -1,3 +1,11 @@
+import {
+    PRIMARY_VIEWS,
+    getViewId,
+    getModulesForView,
+    getActiveNavHref,
+    isNavItemActive,
+} from './utils/app-utils.js';
+
 const moduleLoaders = {
     platform: () => import('./platform/native-apis.js'),
     dataSaver: () => import('./platform/data-saver.js'),
@@ -33,7 +41,6 @@ const moduleLoaders = {
 };
 
 const loaded = new Map();
-const PRIMARY_VIEWS = new Set(['view-home', 'view-coach', 'view-games', 'view-progress']);
 const scheduleIdle = (task) => {
     if (typeof window === 'undefined') return;
     if (document.prerendering) {
@@ -66,67 +73,14 @@ const loadIdle = (key) => {
     scheduleIdle(() => loadModule(key));
 };
 
-const getViewId = () => {
-    const hash = window.location.hash || '';
-    const id = hash.replace('#', '').trim();
-    return id || 'view-home';
+const getCurrentViewId = () => {
+    return getViewId(window.location.hash);
 };
 
 const loadForView = (viewId) => {
     if (!viewId) return;
-
-    if (viewId === 'view-tuner') {
-        loadModule('tuner');
-    }
-
-    if (viewId === 'view-session-review' || viewId === 'view-analysis') {
-        loadModule('sessionReview');
-        loadModule('recordings');
-    }
-
-    if (viewId === 'view-songs' || viewId.startsWith('view-song-')) {
-        loadModule('songProgress');
-        loadModule('songSearch');
-        loadModule('recordings');
-    }
-
-    if (viewId === 'view-coach') {
-        loadModule('coachActions');
-        loadModule('focusTimer');
-        loadModule('lessonPlan');
-        loadModule('recommendationsUi');
-    }
-
-    if (viewId === 'view-trainer' || viewId === 'view-bowing' || viewId === 'view-posture') {
-        loadModule('trainerTools');
-    }
-
-    if (viewId === 'view-settings') {
-        loadModule('swUpdates');
-        loadModule('adaptiveUi');
-        loadModule('offlineMode');
-        loadModule('reminders');
-    }
-
-    if (viewId === 'view-backup') {
-        loadModule('backupExport');
-    }
-
-    if (viewId === 'view-parent') {
-        loadModule('parentPin');
-        loadModule('parentGoals');
-        loadModule('parentRecordings');
-        loadModule('reminders');
-    }
-
-    if (viewId === 'view-games' || viewId.startsWith('view-game-')) {
-        loadModule('gameMetrics');
-        loadModule('gameEnhancements');
-    }
-
-    if (viewId === 'view-progress') {
-        loadModule('recommendationsUi');
-    }
+    const modules = getModulesForView(viewId);
+    modules.forEach((module) => loadModule(module));
 };
 
 const registerServiceWorker = () => {
@@ -154,11 +108,11 @@ const boot = async () => {
     loadIdle('offlineIntegrity');
     loadIdle('offlineMode');
     loadIdle('reminders');
-    loadForView(getViewId());
+    loadForView(getCurrentViewId());
     registerServiceWorker();
 
     window.addEventListener('hashchange', () => {
-        loadForView(getViewId());
+        loadForView(getCurrentViewId());
         updateNavState();
     }, { passive: true });
 
@@ -213,12 +167,13 @@ const boot = async () => {
     };
 
     const updateNavState = () => {
-        const viewId = getViewId();
-        const activeHref = PRIMARY_VIEWS.has(viewId) ? `#${viewId}` : null;
+        const viewId = getCurrentViewId();
+        const activeHref = getActiveNavHref(viewId);
         navItems.forEach((item) => {
-            const isActive = activeHref && item.getAttribute('href') === activeHref;
-            item.classList.toggle('is-active', Boolean(isActive));
-            if (isActive) {
+            const itemHref = item.getAttribute('href');
+            const active = isNavItemActive(itemHref, activeHref);
+            item.classList.toggle('is-active', active);
+            if (active) {
                 item.setAttribute('aria-current', 'page');
             } else {
                 item.removeAttribute('aria-current');
