@@ -5089,3 +5089,18 @@
     font-weight: 700;
     cursor: pointer;
 }
+
+/* ===========================================================================
+   View Error Component
+   =========================================================================== */
+.view-error {
+    text-align: center;
+    padding: 2rem;
+    max-width: 400px;
+    margin: 4rem auto;
+}
+
+.view-error .error-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
