@@ -7,7 +7,8 @@ A local-first violin teaching Progressive Web App for children, featuring a Red 
 Interactive violin teaching application designed for young learners with:
 - Red Panda mascot coach
 - Local-first architecture (works offline)
-- iPadOS 26.2 optimization
+- Safari 26.2 / iPadOS 26.2 optimization
+- iPad mini (6th generation) tested and optimized
 - Progressive Web App capabilities
 
 ## Project Structure
@@ -32,8 +33,11 @@ emerson-violin-pwa/
 
 - **Offline-First**: Works without internet connection
 - **PWA**: Installable on devices
-- **WebAssembly**: High-performance audio processing
-- **iPadOS Optimized**: Specifically tuned for iPad
+- **WebAssembly**: High-performance audio processing with Rust
+- **Safari Compatible**: Tested on Safari 26.2 / iPadOS 26.2
+- **iPad Optimized**: Specifically tuned for iPad mini (6th generation)
+- **Safe Harbor Fullscreen**: Custom fullscreen implementation for Safari
+- **Optimized Assets**: Automatic audio compression (Opus/MP3) and font subsetting reduce bundle size by 1.4 MB
 - **Testing**: Comprehensive test suite with Playwright + Vitest
 
 ## Development
@@ -75,14 +79,25 @@ npm run preview
 
 - Node.js >= 20.0.0
 - Modern browser with PWA support
-- For full experience: iPadOS 26.2+
+- For full experience: Safari 26.2+ / iPadOS 26.2+
+- Recommended device: iPad mini (6th generation) or newer
 
 ## Scripts
 
 - `predev` / `prebuild`: Builds song HTML and service worker assets
+- `prebuild` (production): Runs asset optimizations (audio, fonts, images)
 - `postbuild`: Updates service worker with dist assets
 - `scripts/qa-screenshots.mjs`: Captures iPad Safari QA screenshots (WebKit)
 - All builds automatically generate required static content
+
+## Asset Optimization
+
+Production builds automatically optimize assets:
+- **Audio**: WAV → Opus (primary) + MP3 (fallback) for 86% size reduction
+- **Fonts**: Variable fonts subset to Basic Latin + music notation for 94% size reduction
+- **Images**: PNG → WebP conversion with fallback support
+
+See `docs/guides/asset-optimization.md` for details.
 
 ## Status
 

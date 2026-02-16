@@ -29,12 +29,22 @@ const FONTS = ['fraunces-vf.woff2', 'nunito-vf.woff2'];
 const UNICODE_RANGE = 'U+0020-007E,U+2669-266C';
 
 function checkPyftsubset() {
-    try {
-        execSync('pyftsubset --version', { stdio: 'ignore' });
-        return true;
-    } catch (e) {
-        return false;
+    const paths = [
+        'pyftsubset',
+        process.env.HOME + '/.local/bin/pyftsubset',
+        '/usr/local/bin/pyftsubset'
+    ];
+
+    for (const path of paths) {
+        try {
+            // pyftsubset doesn't support --version, but --help returns exit code 0
+            execSync(`${path} --help`, { stdio: 'ignore' });
+            return path;
+        } catch (e) {
+            continue;
+        }
     }
+    return null;
 }
 
 function getFileSize(path) {
@@ -62,7 +72,7 @@ function archiveOriginal(fontPath) {
     }
 }
 
-function subsetFont(fontPath) {
+function subsetFont(fontPath, pyftsubsetPath) {
     const originalSize = getFileSize(fontPath);
     const tempPath = fontPath + '.subset';
 
@@ -72,7 +82,7 @@ function subsetFont(fontPath) {
     try {
         // Subset using pyftsubset
         execSync(
-            `pyftsubset "${fontPath}" ` +
+            `"${pyftsubsetPath}" "${fontPath}" ` +
             `--unicodes="${UNICODE_RANGE}" ` +
             `--output-file="${tempPath}" ` +
             `--flavor=woff2 ` +
@@ -113,11 +123,13 @@ function main() {
     console.log('================================\n');
 
     // Check for pyftsubset
-    if (!checkPyftsubset()) {
+    const pyftsubsetPath = checkPyftsubset();
+    if (!pyftsubsetPath) {
         console.error('❌ pyftsubset not found!');
         console.error('   Install: pip install fonttools brotli');
         process.exit(1);
     }
+    console.log(`✓ Using pyftsubset: ${pyftsubsetPath}\n`);
 
     // Check fonts directory
     if (!existsSync(FONTS_DIR)) {
@@ -145,7 +157,7 @@ function main() {
         archiveOriginal(fontPath);
 
         // Subset font
-        subsetFont(fontPath);
+        subsetFont(fontPath, pyftsubsetPath);
 
         const subsetSize = parseFloat(getFileSize(fontPath));
         totalSubset += subsetSize;
