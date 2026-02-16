@@ -343,7 +343,10 @@ const buildProgress = async (events) => {
     };
 };
 
-const updateUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills, weakestSkill, recentGames }) => {
+let pendingUIData = null;
+let rafId = 0;
+
+const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills, weakestSkill, recentGames }) => {
     if (levelEl) levelEl.textContent = String(progress.level);
 
     const xpCurrent = progress.xp;
@@ -471,6 +474,16 @@ const updateUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills
     });
 
     updateAppBadge(streak);
+};
+
+const updateUI = (data) => {
+    pendingUIData = data;
+    if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+            rafId = 0;
+            if (pendingUIData) applyUI(pendingUIData);
+        });
+    }
 };
 
 const initProgress = async () => {
