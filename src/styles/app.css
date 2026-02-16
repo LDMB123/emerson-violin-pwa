@@ -18,6 +18,7 @@
     font-weight: 300 900;
     font-style: normal;
     font-display: swap;
+    unicode-range: U+0020-007F, U+00A0-00FF, U+2018-201D, U+2026, U+266D-266F, U+2728;
 }
 
 @font-face {
@@ -26,6 +27,7 @@
     font-weight: 300 900;
     font-style: normal;
     font-display: swap;
+    unicode-range: U+0020-007F, U+00A0-00FF, U+2018-201D, U+2026, U+266D-266F, U+2728;
 }
 
 /* ===========================================================================
@@ -1494,6 +1496,7 @@
         transform: translate(-50%, -100%) rotate(calc(var(--tuner-offset) * 0.9deg));
         transform-origin: bottom center;
         transition: transform var(--duration-fast) var(--ease-out);
+        will-change: transform;
         box-shadow: 0 6px 12px rgba(90, 120, 140, 0.25);
     }
 
