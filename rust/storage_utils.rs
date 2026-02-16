@@ -4,7 +4,7 @@ use wasm_bindgen::JsValue;
 use web_sys::Blob;
 
 // Re-export types from storage.rs that utils need
-use crate::{Recording, ShareItem, MigrationSummary};
+use super::{Recording, ShareItem, MigrationSummary};
 
 // ============================================================================
 // Category 1: Path Utilities
@@ -35,3 +35,10 @@ use crate::{Recording, ShareItem, MigrationSummary};
 // ============================================================================
 
 // Functions will go here
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Tests will go here
+}
