@@ -35,4 +35,28 @@ describe('ViewLoader', () => {
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
+
+  it('should prevent duplicate fetches for same view', async () => {
+    let resolveCount = 0;
+    global.fetch.mockImplementation(() => {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolveCount++;
+          resolve({
+            ok: true,
+            text: async () => '<div>Slow</div>'
+          });
+        }, 100);
+      });
+    });
+
+    const [html1, html2] = await Promise.all([
+      viewLoader.load('views/slow.html'),
+      viewLoader.load('views/slow.html')
+    ]);
+
+    expect(html1).toBe('<div>Slow</div>');
+    expect(html2).toBe('<div>Slow</div>');
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
 });
