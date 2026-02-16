@@ -987,105 +987,9 @@ pub fn idb_purged_at() -> Option<f64> {
 }
 
 
-fn recording_to_value(recording: &Recording) -> Result<JsValue, JsValue> {
-  let obj = Object::new();
-  Reflect::set(&obj, &"id".into(), &JsValue::from_str(&recording.id))?;
-  Reflect::set(&obj, &"created_at".into(), &JsValue::from_f64(recording.created_at))?;
-  Reflect::set(&obj, &"duration_seconds".into(), &JsValue::from_f64(recording.duration_seconds))?;
-  Reflect::set(&obj, &"mime_type".into(), &JsValue::from_str(&recording.mime_type))?;
-  Reflect::set(&obj, &"size_bytes".into(), &JsValue::from_f64(recording.size_bytes))?;
-  Reflect::set(&obj, &"format".into(), &JsValue::from_str(&recording.format))?;
-  if let Some(path) = &recording.opfs_path {
-    Reflect::set(&obj, &"opfs_path".into(), &JsValue::from_str(path))?;
-  }
-  if let Some(profile_id) = &recording.profile_id {
-    Reflect::set(&obj, &"profile_id".into(), &JsValue::from_str(profile_id))?;
-  }
-  if let Some(blob) = &recording.blob {
-    Reflect::set(&obj, &"blob".into(), blob)?;
-  }
-  Ok(obj.into())
-}
 
-fn recording_from_value(value: &JsValue) -> Option<Recording> {
-  let id = Reflect::get(value, &"id".into()).ok()?.as_string()?;
-  let created_at = Reflect::get(value, &"created_at".into()).ok()?.as_f64()?;
-  let duration = Reflect::get(value, &"duration_seconds".into()).ok()?.as_f64()?;
-  let blob = Reflect::get(value, &"blob".into())
-    .ok()
-    .and_then(|val| val.dyn_into::<Blob>().ok());
-  let mime_type = Reflect::get(value, &"mime_type".into())
-    .ok()
-    .and_then(|val| val.as_string())
-    .or_else(|| blob.as_ref().map(|b| b.type_()))
-    .unwrap_or_else(|| "audio/webm".to_string());
-  let size_bytes = Reflect::get(value, &"size_bytes".into())
-    .ok()
-    .and_then(|val| val.as_f64())
-    .or_else(|| blob.as_ref().map(|b| b.size() as f64))
-    .unwrap_or(0.0);
-  let format = Reflect::get(value, &"format".into())
-    .ok()
-    .and_then(|val| val.as_string())
-    .filter(|val| !val.is_empty())
-    .unwrap_or_else(|| format_from_mime(&mime_type));
-  let opfs_path = Reflect::get(value, &"opfs_path".into())
-    .ok()
-    .and_then(|val| val.as_string());
-  let profile_id = Reflect::get(value, &"profile_id".into())
-    .ok()
-    .and_then(|val| val.as_string());
-  Some(Recording {
-    id,
-    created_at,
-    duration_seconds: duration,
-    mime_type,
-    size_bytes,
-    format,
-    opfs_path,
-    profile_id,
-    blob,
-  })
-}
 
-fn share_item_from_value(value: &JsValue) -> Option<ShareItem> {
-  let id = Reflect::get(value, &"id".into()).ok()?.as_string()?;
-  let name = Reflect::get(value, &"name".into()).ok()?.as_string()?;
-  let size = Reflect::get(value, &"size".into()).ok()?.as_f64()?;
-  let mime = Reflect::get(value, &"type".into())
-    .ok()
-    .and_then(|v| v.as_string())
-    .unwrap_or_else(|| "application/octet-stream".to_string());
-  let created_raw = Reflect::get(value, &"created_at".into())
-    .ok()
-    .or_else(|| Reflect::get(value, &"createdAt".into()).ok())
-    .unwrap_or(JsValue::UNDEFINED);
-  let created_at = if let Some(ts) = created_raw.as_f64() {
-    ts
-  } else if let Some(text) = created_raw.as_string() {
-    js_sys::Date::parse(&text)
-  } else {
-    js_sys::Date::now()
-  };
-  let blob = Reflect::get(value, &"blob".into())
-    .ok()
-    .and_then(|val| val.dyn_into::<Blob>().ok());
-  Some(ShareItem {
-    id,
-    name,
-    size,
-    mime,
-    created_at,
-    blob,
-  })
-}
 
-fn key_to_string(key: &JsValue) -> Option<String> {
-  if let Some(text) = key.as_string() {
-    return Some(text);
-  }
-  JSON::stringify(key).ok().and_then(|val| val.as_string())
-}
 
 pub fn local_get(key: &str) -> Option<String> {
   dom::window()
@@ -2134,27 +2038,6 @@ async fn idb_get_value(store_name: &str, key: &str) -> Result<JsValue, JsValue> 
   receiver.await.map_err(|_| JsValue::from_str("IDB get error"))?
 }
 
-fn idb_fallback_path(store: &str, id: &str) -> String {
-  format!("{}{}{}", IDB_PATH_PREFIX, store, format!("/{}", id))
-}
-
-fn is_idb_path(path: &str) -> bool {
-  path.starts_with(IDB_PATH_PREFIX)
-}
-
-fn idb_key_from_path(path: &str) -> Option<String> {
-  if !is_idb_path(path) {
-    return None;
-  }
-  let trimmed = path.trim_start_matches(IDB_PATH_PREFIX);
-  if let Some((_, key)) = trimmed.rsplit_once('/') {
-    Some(key.to_string())
-  } else if !trimmed.is_empty() {
-    Some(trimmed.to_string())
-  } else {
-    None
-  }
-}
 
 async fn save_blob_to_opfs(path: &str, blob: &Blob) -> Result<(), JsValue> {
   let root = opfs_root().await?;
@@ -2330,14 +2213,6 @@ async fn call_method2(
   JsFuture::from(promise).await
 }
 
-fn recording_filename(id: &str, ext: &str) -> String {
-  let ext = ext.trim_start_matches('.');
-  if ext.is_empty() {
-    sanitize_filename(id)
-  } else {
-    format!("{}.{}", sanitize_filename(id), ext)
-  }
-}
 
 fn recording_extension(format_hint: &str, blob: &Blob) -> String {
   if !format_hint.is_empty() {
@@ -2354,106 +2229,10 @@ fn recording_extension(format_hint: &str, blob: &Blob) -> String {
   }
 }
 
-fn share_filename(id: &str, name: &str) -> String {
-  let safe = sanitize_filename(name);
-  if safe.is_empty() {
-    sanitize_filename(id)
-  } else {
-    format!("{}-{}", sanitize_filename(id), safe)
-  }
-}
 
-fn score_filename(id: &str, name: &str) -> String {
-  let safe = sanitize_filename(name);
-  let base = if safe.is_empty() { sanitize_filename(id) } else { safe };
-  if base.to_lowercase().ends_with(".pdf") {
-    base
-  } else {
-    format!("{}.pdf", base)
-  }
-}
 
-fn sanitize_filename(name: &str) -> String {
-  let mut out = String::new();
-  for ch in name.chars() {
-    if ch.is_ascii_alphanumeric() || ch == '.' || ch == '-' || ch == '_' {
-      out.push(ch);
-    } else {
-      out.push('_');
-    }
-  }
-  if out.is_empty() {
-    "file".to_string()
-  } else {
-    out
-  }
-}
 
-fn split_path(path: &str) -> (Option<&str>, &str) {
-  if let Some((dir, file)) = path.rsplit_once('/') {
-    (Some(dir), file)
-  } else {
-    (None, path)
-  }
-}
 
-fn format_from_mime(mime: &str) -> String {
-  let base = mime.split(';').next().unwrap_or(mime);
-  let ext = base.split('/').nth(1).unwrap_or("").trim();
-  if ext.is_empty() {
-    "bin".to_string()
-  } else {
-    ext.to_string()
-  }
-}
-
-fn js_string_any(value: &JsValue, keys: &[&str]) -> Option<String> {
-  for key in keys {
-    if let Ok(val) = Reflect::get(value, &JsValue::from_str(key)) {
-      if let Some(text) = val.as_string() {
-        return Some(text);
-      }
-    }
-  }
-  None
-}
-
-fn js_number_any(value: &JsValue, keys: &[&str]) -> Option<f64> {
-  for key in keys {
-    if let Ok(val) = Reflect::get(value, &JsValue::from_str(key)) {
-      if let Some(num) = val.as_f64() {
-        return Some(num);
-      }
-    }
-  }
-  None
-}
-
-fn js_date_any(value: &JsValue, keys: &[&str]) -> Option<f64> {
-  for key in keys {
-    if let Ok(val) = Reflect::get(value, &JsValue::from_str(key)) {
-      if val.is_null() || val.is_undefined() {
-        continue;
-      }
-      if let Some(num) = val.as_f64() {
-        return Some(num);
-      }
-      if let Some(text) = val.as_string() {
-        let parsed = js_sys::Date::parse(&text);
-        if !parsed.is_nan() {
-          return Some(parsed);
-        }
-      }
-    }
-  }
-  None
-}
-
-fn js_blob_any(value: &JsValue) -> Option<Blob> {
-  Reflect::get(value, &JsValue::from_str("blob"))
-    .ok()
-    .and_then(|val| val.dyn_into::<Blob>().ok())
-}
 
 fn extract_string(value: &JsonValue, key: &str) -> Option<String> {
   match value {
