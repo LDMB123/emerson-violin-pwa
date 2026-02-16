@@ -111,6 +111,7 @@ self.__ASSETS__ = [
   "./src/utils/session-review-utils.js",
   "./src/utils/skill-profile.js",
   "./src/utils/sound-state.js",
+  "./src/views/view-error.js",
   "./src/views/view-loader.js",
   "./src/views/view-paths.js",
   "./src/wasm/panda_audio.js",

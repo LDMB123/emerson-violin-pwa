@@ -1,0 +1,48 @@
+/**
+ * UI/UX Critical Fixes (Slim Version)
+ * Only additions/overrides not in app.css
+ */
+
+/* Install Prompt - Don't Block Navigation */
+.install-guide-backdrop {
+    padding-bottom: calc(90px + var(--safe-bottom) + var(--space-5));
+    align-items: center;
+}
+
+.install-guide-backdrop[hidden],
+.install-guide-backdrop[data-dismissed="true"] {
+    display: none !important;
+}
+
+/* Bottom Navigation - Higher Z-Index */
+.bottom-nav {
+    z-index: 1000;
+}
+
+/* Install Prompt Close Button */
+.install-guide-close {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(86, 40, 23, 0.1);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    transition: all 0.2s;
+}
+
+.install-guide-close:hover {
+    background: rgba(86, 40, 23, 0.2);
+    transform: scale(1.1);
+}
+
+.install-guide-close:active {
+    transform: scale(0.95);
+}
