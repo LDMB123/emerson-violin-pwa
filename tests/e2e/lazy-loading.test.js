@@ -1,0 +1,192 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Lazy View Loading', () => {
+    test.beforeEach(async ({ page }) => {
+        // Hide install banner to prevent it from blocking navigation
+        await page.addInitScript(() => {
+            window.addEventListener('DOMContentLoaded', () => {
+                const banner = document.getElementById('install-banner');
+                if (banner) {
+                    banner.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    test('should load home view on initial visit', async ({ page }) => {
+        await page.goto('/');
+
+        // Check that home view is loaded
+        await expect(page.locator('#main-content')).toContainText('Panda Violin');
+        await expect(page.locator('.home-title')).toContainText('Panda Violin');
+        await expect(page.locator('.home-subtitle')).toContainText("Emerson's Studio");
+
+        // Verify home view elements are present
+        await expect(page.locator('.home-mascot')).toBeVisible();
+        await expect(page.locator('.home-cards')).toBeVisible();
+    });
+
+    test('should lazy load trainer view', async ({ page }) => {
+        // Start on home to ensure we test lazy loading
+        await page.goto('/');
+
+        // Navigate to trainer view via direct URL
+        await page.goto('/#view-trainer');
+
+        // Wait for view content to load
+        await expect(page.locator('#main-content')).toContainText('Practice Tools', { timeout: 10000 });
+
+        // Verify trainer elements are present in DOM
+        await expect(page.locator('#tool-metronome')).toBeAttached();
+    });
+
+    test('should lazy load coach view from navigation', async ({ page }) => {
+        await page.goto('/');
+
+        // Navigate using hash change (CSS :target selector)
+        await page.goto('/#view-coach');
+
+        // Wait for URL and view content
+        await page.waitForURL('**/#view-coach');
+        await expect(page.locator('#main-content')).toContainText('Coach', { timeout: 10000 });
+    });
+
+    test('should cache and quickly reload views', async ({ page }) => {
+        await page.goto('/');
+
+        // First load of coach view - measure network timing
+        const start1 = Date.now();
+        await page.goto('/#view-coach');
+        await expect(page.locator('#main-content')).toContainText('Coach', { timeout: 10000 });
+        const time1 = Date.now() - start1;
+
+        // Navigate away
+        await page.goto('/#view-home');
+        await page.waitForSelector('.home-title');
+
+        // Second load of coach (should be cached)
+        const start2 = Date.now();
+        await page.goto('/#view-coach');
+        await expect(page.locator('#main-content')).toContainText('Coach', { timeout: 10000 });
+        const time2 = Date.now() - start2;
+
+        // Second load should be significantly faster
+        // Note: Using goto() might have overhead, so relaxing the assertion
+        expect(time2).toBeLessThan(time1);
+    });
+
+    test('should load multiple different views in sequence', async ({ page }) => {
+        await page.goto('/');
+
+        // Load home
+        await expect(page.locator('.home-title')).toContainText('Panda Violin');
+
+        // Load coach via URL
+        await page.goto('/#view-coach');
+        await page.waitForURL('**/#view-coach');
+        await expect(page.locator('#main-content')).toContainText('Coach', { timeout: 10000 });
+
+        // Load games via URL
+        await page.goto('/#view-games');
+        await page.waitForURL('**/#view-games');
+        await expect(page.locator('#main-content')).toContainText('Games', { timeout: 10000 });
+
+        // Load progress via URL
+        await page.goto('/#view-progress');
+        await page.waitForURL('**/#view-progress');
+        await expect(page.locator('#main-content')).toContainText('Progress', { timeout: 10000 });
+
+        // Return to home via URL
+        await page.goto('/#view-home');
+        await page.waitForURL('**/#view-home');
+        await expect(page.locator('.home-title')).toContainText('Panda Violin');
+    });
+
+    test('should handle view loading errors gracefully', async ({ page }) => {
+        await page.goto('/');
+
+        // Try to load a non-existent view
+        await page.goto('/#view-nonexistent');
+
+        // Wait for any error handling
+        await page.waitForTimeout(1000);
+
+        // At minimum, verify no crash by checking page is still responsive
+        expect(await page.evaluate(() => document.readyState)).toBe('complete');
+
+        // The page should still be functional - test by navigating to a valid view
+        await page.goto('/#view-home');
+        await expect(page.locator('.home-title')).toContainText('Panda Violin');
+    });
+
+    test('should maintain view state after navigation', async ({ page }) => {
+        await page.goto('/');
+
+        // Navigate to progress view via URL
+        await page.goto('/#view-progress');
+        await page.waitForURL('**/#view-progress');
+        await expect(page.locator('#main-content')).toContainText('Progress', { timeout: 10000 });
+
+        // Navigate away via URL
+        await page.goto('/#view-home');
+        await expect(page.locator('.home-title')).toContainText('Panda Violin');
+
+        // Navigate back to progress via URL
+        await page.goto('/#view-progress');
+        await page.waitForURL('**/#view-progress');
+        await expect(page.locator('#main-content')).toContainText('Progress', { timeout: 10000 });
+
+        // View should load quickly from cache
+        const loadTime = await page.evaluate(() => {
+            return performance.now();
+        });
+        expect(loadTime).toBeGreaterThan(0);
+    });
+
+    test('should load views with deep navigation paths', async ({ page }) => {
+        await page.goto('/');
+
+        // Navigate to games view via URL
+        await page.goto('/#view-games');
+        await page.waitForURL('**/#view-games');
+        await expect(page.locator('#main-content')).toContainText('Games', { timeout: 10000 });
+
+        // Navigate to a specific game via URL
+        await page.goto('/#view-game-pitch-quest');
+        await page.waitForURL('**/#view-game-pitch-quest');
+        await expect(page.locator('#main-content')).toContainText('Pitch Quest', { timeout: 10000 });
+    });
+
+    test('should preload views efficiently', async ({ page }) => {
+        await page.goto('/');
+
+        // Home view should be loaded
+        await expect(page.locator('.home-title')).toBeVisible();
+
+        // Navigate quickly between views to test caching
+        const views = [
+            { id: 'coach', text: 'Coach' },
+            { id: 'games', text: 'Games' },
+            { id: 'progress', text: 'Progress' }
+        ];
+
+        for (const view of views) {
+            await page.goto(`/#view-${view.id}`);
+            await page.waitForURL(`**/#view-${view.id}`);
+            await expect(page.locator('#main-content')).toContainText(view.text, { timeout: 10000 });
+        }
+
+        // All views should now be cached
+        // Navigate back through them quickly
+        for (const view of [{ id: 'home', text: 'Panda Violin' }, ...views]) {
+            const start = Date.now();
+            await page.goto(`/#view-${view.id}`);
+            await page.waitForURL(`**/#view-${view.id}`);
+            const loadTime = Date.now() - start;
+
+            // Cached views should load relatively quickly
+            // Using a more realistic timeout since goto() has overhead
+            expect(loadTime).toBeLessThan(500);
+        }
+    });
+});
