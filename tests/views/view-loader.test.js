@@ -59,4 +59,21 @@ describe('ViewLoader', () => {
     expect(html2).toBe('<div>Slow</div>');
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
+
+  it('should handle fetch errors', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 404
+    });
+
+    await expect(viewLoader.load('views/missing.html'))
+      .rejects.toThrow('Failed to load view: HTTP 404');
+  });
+
+  it('should handle network errors', async () => {
+    global.fetch.mockRejectedValue(new Error('Network error'));
+
+    await expect(viewLoader.load('views/error.html'))
+      .rejects.toThrow('Network error');
+  });
 });
