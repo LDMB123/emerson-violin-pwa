@@ -243,8 +243,10 @@ const weightedAverage = (items, getValue, getWeight) => {
     items.forEach((item) => {
         const value = getValue(item);
         const weight = getWeight(item);
-        total += value * weight;
-        weightSum += weight;
+        if (Number.isFinite(value) && Number.isFinite(weight)) {
+            total += value * weight;
+            weightSum += weight;
+        }
     });
     if (!weightSum) return 0;
     return total / weightSum;

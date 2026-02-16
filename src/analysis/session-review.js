@@ -3,6 +3,7 @@ import { getLearningRecommendations } from '../ml/recommendations.js';
 import { getJSON, getBlob } from '../persistence/storage.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { exportRecording } from '../utils/recording-export.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
 
 const EVENT_KEY = 'panda-violin:events:v1';
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
@@ -26,8 +27,6 @@ let currentRecordings = [];
 playbackAudio.preload = 'none';
 
 const todayDay = () => Math.floor(Date.now() / 86400000);
-const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
-
 const updatePlaybackButtons = (enabled) => {
     recordingEls.forEach((el) => {
         const button = el.querySelector('.recording-play');
@@ -119,7 +118,7 @@ const updateChart = (values) => {
     const chart = buildChart(values);
     if (!chart) return;
     chartLine.setAttribute('d', chart.path);
-    chartPoints.innerHTML = '';
+    chartPoints.replaceChildren();
     chart.points.forEach((point) => {
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', point.x.toFixed(1));

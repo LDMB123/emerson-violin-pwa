@@ -5,6 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
   <meta name="theme-color" content="#F56B49" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'" />
 
   <!-- PWA / iPadOS 26.2 Capable -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -60,7 +61,7 @@
       <section class="view" id="view-home" aria-label="Home">
         <div class="home-hero">
           <div class="home-brand">
-            <img src="./assets/illustrations/mascot-happy.png" alt="Panda" class="home-mascot" decoding="async" loading="eager" fetchpriority="high" />
+            <img src="./assets/illustrations/mascot-happy.png" alt="Panda" class="home-mascot" decoding="async" loading="eager" fetchpriority="high" width="1024" height="1024" />
             <div class="home-brand-text">
               <h1 class="home-title">Panda Violin</h1>
               <p class="home-subtitle">Emerson's Studio</p>
@@ -80,7 +81,7 @@
             </div>
 
             <div class="streak-card glass">
-              <span class="streak-fire">🔥</span>
+              <span class="streak-fire" aria-hidden="true">🔥</span>
               <span class="streak-count" data-progress="home-streak">0</span>
               <span class="streak-label">day streak</span>
             </div>
@@ -131,9 +132,9 @@
                 <span class="coach-status-text">Active</span>
               </div>
             </div>
-            <div class="coach-stars" data-coach="stars">★★★★☆</div>
+            <div class="coach-stars" data-coach="stars" role="img" aria-label="Coach rating: 4 out of 5 stars">★★★★☆</div>
             <div class="coach-hero">
-              <img src="./assets/illustrations/mascot-focus.png" alt="Coach" class="coach-mascot" loading="lazy" decoding="async" />
+              <img src="./assets/illustrations/mascot-focus.png" alt="Coach" class="coach-mascot" loading="lazy" decoding="async" width="1024" height="1024" />
               <div class="coach-bubble" data-progress="coach-speech" aria-live="polite">Let's start with some warm-ups! Play each string slowly.</div>
             </div>
             <div class="coach-metrics">
@@ -180,17 +181,18 @@
                   <strong data-lesson="total">15 min</strong>
                 </div>
               </div>
-              <ul class="lesson-steps" data-lesson-steps aria-label="Lesson steps"></ul>
+              <ul class="lesson-steps" data-lesson-steps aria-label="Lesson steps" aria-live="polite"></ul>
               <a class="btn btn-secondary" data-lesson="cta" href="#view-games">Start this plan</a>
             </div>
 
             <div class="practice-focus glass">
             <h3>Focus Sprint</h3>
-            <input type="checkbox" id="focus-timer" class="state-checkbox focus-toggle">
+            <input type="checkbox" id="focus-timer" class="state-checkbox focus-toggle" aria-label="Toggle focus timer">
             <input type="checkbox" id="goal-step-focus-5" class="state-checkbox focus-log" data-minutes="5" data-persist="false" aria-hidden="true" tabindex="-1" hidden>
             <input type="checkbox" id="goal-step-focus-10" class="state-checkbox focus-log" data-minutes="10" data-persist="false" aria-hidden="true" tabindex="-1" hidden>
             <input type="checkbox" id="goal-step-focus-15" class="state-checkbox focus-log" data-minutes="15" data-persist="false" aria-hidden="true" tabindex="-1" hidden>
-            <div class="focus-presets">
+            <fieldset class="focus-presets">
+              <legend class="sr-only">Focus duration</legend>
               <label class="focus-chip">
                 <input type="radio" name="focus-duration" id="focus-5" checked>
                 <span>5 min</span>
@@ -203,7 +205,7 @@
                 <input type="radio" name="focus-duration" id="focus-15">
                 <span>15 min</span>
               </label>
-            </div>
+            </fieldset>
             <div class="focus-ring" aria-hidden="true"></div>
             <div class="focus-meta">
               <span class="focus-duration">Choose a timer and tap Start.</span>
@@ -266,7 +268,7 @@
 
         <div class="tuner-layout">
           <div class="tuner-card glass" id="tuner-live">
-            <img src="./assets/illustrations/mascot-encourage.png" alt="Panda tuning" class="tuner-card-mascot" loading="lazy" decoding="async" />
+            <img src="./assets/illustrations/mascot-encourage.png" alt="Panda tuning" class="tuner-card-mascot" loading="lazy" decoding="async" width="1024" height="1024" />
             <div class="tuner-card-header">
               <div class="tuner-note-pill">
                 <div class="tuner-note" id="tuner-note">--</div>
@@ -461,7 +463,7 @@
           No songs match that search yet. Try another title or switch levels.
         </p>
 
-        <img src="./assets/illustrations/mascot-happy.png" alt="" class="corner-mascot" loading="lazy" decoding="async" />
+        <img src="./assets/illustrations/mascot-happy.png" alt="" class="corner-mascot" loading="lazy" decoding="async" width="1024" height="1024" />
       </section>
 
       <!-- SONG_VIEWS_START -->
@@ -1380,7 +1382,7 @@
           <div class="progress-hero glass">
             <img src="./assets/illustrations/mascot-celebrate.png" alt="Great job!" class="progress-mascot" loading="lazy" decoding="async" />
             <div class="streak-display">
-              <span class="streak-fire">🔥</span>
+              <span class="streak-fire" aria-hidden="true">🔥</span>
               <span class="streak-number" data-progress="streak-days">0</span>
               <span class="streak-label">Day Streak!</span>
             </div>
@@ -1442,7 +1444,7 @@
                 <strong data-lesson="total">15 min</strong>
               </div>
             </div>
-            <ul class="lesson-steps" data-lesson-steps aria-label="Lesson steps"></ul>
+            <ul class="lesson-steps" data-lesson-steps aria-label="Lesson steps" aria-live="polite"></ul>
             <a class="btn btn-primary" data-lesson="cta" href="#view-games">Start now</a>
           </div>
 
@@ -1608,7 +1610,7 @@
             <div class="analysis-coach-message" data-analysis="coach-message" aria-live="polite">
               Great bowing arm! Try to keep your tempo steady in the middle section.
             </div>
-            <div class="analysis-coach-message" data-analysis="coach-message-alt" aria-live="polite">
+            <div class="analysis-coach-message" data-analysis="coach-message-alt">
               Deep bow, then monitor your tempo.
             </div>
             <div class="analysis-coach-avatar">
@@ -1644,28 +1646,28 @@
                 <span class="skill-icon">🏹</span>
                 <div>
                   <div class="skill-name">Bowing</div>
-                  <div class="skill-stars" data-analysis="skill-stars">★★★★☆</div>
+                  <div class="skill-stars" data-analysis="skill-stars" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
                 </div>
               </div>
               <div class="skill-cell" data-analysis="skill" data-skill="fingering">
                 <span class="skill-icon">✋</span>
                 <div>
                   <div class="skill-name">Fingering</div>
-                  <div class="skill-stars" data-analysis="skill-stars">★★★☆☆</div>
+                  <div class="skill-stars" data-analysis="skill-stars" role="img" aria-label="3 out of 5 stars">★★★☆☆</div>
                 </div>
               </div>
               <div class="skill-cell" data-analysis="skill" data-skill="rhythm">
                 <span class="skill-icon">🥁</span>
                 <div>
                   <div class="skill-name">Rhythm</div>
-                  <div class="skill-stars" data-analysis="skill-stars">★★★★☆</div>
+                  <div class="skill-stars" data-analysis="skill-stars" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
                 </div>
               </div>
               <div class="skill-cell" data-analysis="skill" data-skill="intonation">
                 <span class="skill-icon">🎯</span>
                 <div>
                   <div class="skill-name">Intonation</div>
-                  <div class="skill-stars" data-analysis="skill-stars">★★★☆☆</div>
+                  <div class="skill-stars" data-analysis="skill-stars" role="img" aria-label="3 out of 5 stars">★★★☆☆</div>
                 </div>
               </div>
             </div>
@@ -1969,15 +1971,15 @@
             <div class="overview-skills">
               <div class="overview-skill">
                 <span class="skill-name">Bow Hold</span>
-                <div class="skill-stars" data-parent-skill="bow_control">★★★★★</div>
+                <div class="skill-stars" data-parent-skill="bow_control" role="img" aria-label="5 out of 5 stars">★★★★★</div>
               </div>
               <div class="overview-skill">
                 <span class="skill-name">Intonation</span>
-                <div class="skill-stars" data-parent-skill="pitch">★★★★☆</div>
+                <div class="skill-stars" data-parent-skill="pitch" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
               </div>
               <div class="overview-skill">
                 <span class="skill-name">Rhythm</span>
-                <div class="skill-stars" data-parent-skill="rhythm">★★★★☆</div>
+                <div class="skill-stars" data-parent-skill="rhythm" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
               </div>
             </div>
             <div class="parent-actions">
@@ -2008,6 +2010,8 @@
           <div class="game-score">Guided Drill</div>
         </div>
         <div class="game-content" id="pitch-quest-content">
+          <fieldset class="pitch-targets-group">
+          <legend class="sr-only">Target Note</legend>
           <input type="radio" name="pitch-target" id="pitch-target-g" class="state-checkbox pitch-target-toggle" data-persist="false">
           <input type="radio" name="pitch-target" id="pitch-target-d" class="state-checkbox pitch-target-toggle" data-persist="false">
           <input type="radio" name="pitch-target" id="pitch-target-a" class="state-checkbox pitch-target-toggle" data-persist="false" checked>
@@ -2023,6 +2027,7 @@
             </div>
             <div class="pitch-target-status" data-pitch="status" aria-live="polite">Target: A</div>
           </div>
+          </fieldset>
 
           <div class="pitch-quest-stage">
             <div class="pitch-scoreboard">
@@ -2125,7 +2130,7 @@
           <div class="game-score">Guided Drill</div>
         </div>
         <div class="game-content" id="rhythm-dash-content">
-          <input type="checkbox" id="rhythm-run" class="state-checkbox rhythm-run-toggle" data-persist="false">
+          <input type="checkbox" id="rhythm-run" class="state-checkbox rhythm-run-toggle" data-persist="false" aria-label="Start Rhythm Dash">
           <div class="rhythm-dash-stage">
             <div class="rhythm-hud">
               <button class="icon-btn" type="button" aria-label="Pause" data-rhythm="pause">⏸</button>
@@ -2345,7 +2350,8 @@
               <div class="ear-icon">👂</div>
               <button class="btn btn-secondary ear-play" type="button" data-ear="play">Play</button>
             </div>
-            <div class="ear-options">
+            <fieldset class="ear-options">
+              <legend class="sr-only">Choose the string you heard</legend>
               <input type="radio" id="ear-choice-g" name="ear-choice" class="ear-choice" data-ear-note="G" data-persist="false">
               <label class="ear-option" for="ear-choice-g">G</label>
               <input type="radio" id="ear-choice-d" name="ear-choice" class="ear-choice" data-ear-note="D" data-persist="false">
@@ -2354,7 +2360,7 @@
               <label class="ear-option" for="ear-choice-a">A</label>
               <input type="radio" id="ear-choice-e" name="ear-choice" class="ear-choice" data-ear-note="E" data-persist="false">
               <label class="ear-option" for="ear-choice-e">E</label>
-            </div>
+            </fieldset>
             <details class="pitch-audio glass">
               <summary class="btn btn-secondary">Reference tones</summary>
               <div class="audio-grid">
@@ -2422,7 +2428,7 @@
           <div class="game-score">Guided Drill</div>
         </div>
         <div class="game-content" id="bow-hero-content">
-          <input type="checkbox" id="bow-hero-run" class="state-checkbox bow-run-toggle" data-persist="false">
+          <input type="checkbox" id="bow-hero-run" class="state-checkbox bow-run-toggle" data-persist="false" aria-label="Start Bow Hero">
           <div class="bow-hero-stage">
             <div class="bow-hero-hud">
               <div class="bow-timer" data-bow="timer">01:45</div>
@@ -2624,7 +2630,7 @@
                 <div class="story-prompt" data-story="prompt">Warm up with your open strings.</div>
               </div>
             </div>
-            <input type="checkbox" id="story-play" class="story-play-toggle" data-persist="false">
+            <input type="checkbox" id="story-play" class="story-play-toggle" data-persist="false" aria-label="Start Story Mode play-along">
             <label for="story-play" class="btn btn-primary story-play-btn">Play-Along</label>
             <div class="story-status" data-story="status" aria-live="polite">Press Play-Along to start.</div>
             <div class="story-staff">
@@ -2741,7 +2747,7 @@
               <div class="tuning-score">Score <span data-tuning="score">0</span></div>
               <div class="tuning-status" data-tuning="status" aria-live="polite">Pick a string and tune to its ring.</div>
             </div>
-            <div class="tuning-progress">
+            <div class="tuning-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Tuning accuracy">
               <span class="tuning-progress-fill" data-tuning="progress" style="width: 0%"></span>
             </div>
             <div class="tuning-strings">
@@ -2938,12 +2944,12 @@
             <div class="duet-round" data-duet="round">Round 1</div>
             <div class="duet-panels">
               <div class="duet-panel">
-                <h4>Partner</h4>
+                <h3>Partner</h3>
                 <div class="duet-notes">G · D · A · E</div>
                 <button class="btn btn-secondary duet-play" type="button" data-duet="play">Play Partner</button>
               </div>
               <div class="duet-panel">
-                <h4>You</h4>
+                <h3>You</h3>
                 <div class="duet-buttons">
                   <button class="btn btn-primary duet-btn" data-duet-note="G" type="button">G</button>
                   <button class="btn btn-primary duet-btn" data-duet-note="D" type="button">D</button>
@@ -3247,45 +3253,45 @@
         <span class="nav-label">Progress</span>
       </a>
       <!-- Popover Trigger -->
-      <button class="nav-item" type="button" popovertarget="more-menu" aria-haspopup="menu" aria-controls="more-menu" aria-expanded="false" style="anchor-name: --more-btn">
+      <button class="nav-item" type="button" popovertarget="more-menu" aria-controls="more-menu" aria-expanded="false">
         <span class="nav-icon">☰</span>
         <span class="nav-label">More</span>
       </button>
     </nav>
 
     <!-- More Menu Popover -->
-    <div id="more-menu" popover="auto" class="popover-menu glass" style="position-anchor: --more-btn" role="dialog" aria-label="More menu">
+    <div id="more-menu" popover="auto" class="popover-menu glass" role="dialog" aria-label="More menu">
       <div class="popover-header">
         <h2>More</h2>
         <!-- Light dismiss handles closing, but we can keep a close button if desired -->
         <button class="close-btn" type="button" aria-label="Close menu" popovertarget="more-menu" popovertargetaction="hide">✕</button>
       </div>
-      <div class="more-menu" role="menu">
-        <a href="#view-settings" class="more-item" role="menuitem">
+      <div class="more-menu">
+        <a href="#view-settings" class="more-item">
           <span class="more-icon">⚙️</span>
           <span>Settings</span>
         </a>
-        <a href="#view-help" class="more-item" role="menuitem">
+        <a href="#view-help" class="more-item">
           <span class="more-icon">❓</span>
           <span>Help</span>
         </a>
-        <a href="#view-about" class="more-item" role="menuitem">
+        <a href="#view-about" class="more-item">
           <span class="more-icon">ℹ️</span>
           <span>About</span>
         </a>
-        <a href="#view-progress" class="more-item" role="menuitem">
+        <a href="#view-progress" class="more-item">
           <span class="more-icon">⭐</span>
           <span>Achievements</span>
         </a>
-        <a href="#view-trainer" class="more-item" role="menuitem">
+        <a href="#view-trainer" class="more-item">
           <span class="more-icon">🧰</span>
           <span>Practice Tools</span>
         </a>
-        <a href="#view-parent" class="more-item" role="menuitem">
+        <a href="#view-parent" class="more-item">
           <span class="more-icon">👨‍👩‍👧</span>
           <span>Parent Zone</span>
         </a>
-        <a href="#view-backup" class="more-item" role="menuitem">
+        <a href="#view-backup" class="more-item">
           <span class="more-icon">☁️</span>
           <span>Data Backup</span>
         </a>

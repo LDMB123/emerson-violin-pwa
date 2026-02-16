@@ -1,3 +1,5 @@
+import { isSoundEnabled } from '../utils/sound-state.js';
+
 const NOTE_FREQUENCIES = {
     G3: 196.00,
     A3: 220.00,
@@ -27,8 +29,6 @@ const DEFAULT_MAP = {
 };
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
 
 const normalizeNote = (note) => {
     if (!note) return null;

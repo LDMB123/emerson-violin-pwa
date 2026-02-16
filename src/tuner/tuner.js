@@ -1,4 +1,5 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
 
 const livePanel = document.querySelector('#tuner-live');
 const startButton = document.querySelector('#tuner-start');
@@ -24,8 +25,6 @@ let starting = false;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const isTunerView = () => window.location.hash === '#view-tuner';
-const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
-
 const formatDifficulty = (value) => {
     const label = value || 'medium';
     return label.charAt(0).toUpperCase() + label.slice(1);
@@ -258,7 +257,6 @@ if (toneButtons.length) {
                 setStatus('Sounds are off. Turn on Sounds to hear this tone.');
                 return;
             }
-            if (!isSoundEnabled()) return;
             sample.currentTime = 0;
             sample.play().catch(() => {});
         });
