@@ -4,7 +4,7 @@ use wasm_bindgen::JsValue;
 use web_sys::Blob;
 
 // Re-export types from storage.rs that utils need
-use super::{Recording, ShareItem, MigrationSummary};
+use super::{MigrationSummary, Recording, ShareItem};
 
 // ============================================================================
 // Category 1: Path Utilities
@@ -107,8 +107,16 @@ pub fn recording_to_value(recording: &Recording) -> Result<JsValue, JsValue> {
     let obj = js_sys::Object::new();
     js_sys::Reflect::set(&obj, &"id".into(), &recording.id.clone().into())?;
     js_sys::Reflect::set(&obj, &"createdAt".into(), &recording.created_at.into())?;
-    js_sys::Reflect::set(&obj, &"durationSeconds".into(), &recording.duration_seconds.into())?;
-    js_sys::Reflect::set(&obj, &"mimeType".into(), &recording.mime_type.clone().into())?;
+    js_sys::Reflect::set(
+        &obj,
+        &"durationSeconds".into(),
+        &recording.duration_seconds.into(),
+    )?;
+    js_sys::Reflect::set(
+        &obj,
+        &"mimeType".into(),
+        &recording.mime_type.clone().into(),
+    )?;
     js_sys::Reflect::set(&obj, &"sizeBytes".into(), &recording.size_bytes.into())?;
     js_sys::Reflect::set(&obj, &"format".into(), &recording.format.clone().into())?;
 
@@ -125,30 +133,14 @@ pub fn recording_to_value(recording: &Recording) -> Result<JsValue, JsValue> {
     Ok(obj.into())
 }
 
-// Forward declarations - implemented in Category 5 (Task 5)
-// Temporary stub implementations - will be replaced in Task 5
-fn js_string_any(_value: &JsValue, _keys: &[&str]) -> Option<String> {
-    todo!("Will be implemented in Task 5")
-}
-
-fn js_number_any(_value: &JsValue, _keys: &[&str]) -> Option<f64> {
-    todo!("Will be implemented in Task 5")
-}
-
-fn js_date_any(_value: &JsValue, _keys: &[&str]) -> Option<f64> {
-    todo!("Will be implemented in Task 5")
-}
-
-fn js_blob_any(_value: &JsValue) -> Option<Blob> {
-    todo!("Will be implemented in Task 5")
-}
-
 /// Convert JsValue object to Recording
 pub fn recording_from_value(value: &JsValue) -> Option<Recording> {
     let id = js_string_any(value, &["id"])?;
     let created_at = js_number_any(value, &["createdAt", "created_at"])?;
-    let duration_seconds = js_number_any(value, &["durationSeconds", "duration_seconds"]).unwrap_or(0.0);
-    let mime_type = js_string_any(value, &["mimeType", "mime_type"]).unwrap_or_else(|| "audio/webm".to_string());
+    let duration_seconds =
+        js_number_any(value, &["durationSeconds", "duration_seconds"]).unwrap_or(0.0);
+    let mime_type = js_string_any(value, &["mimeType", "mime_type"])
+        .unwrap_or_else(|| "audio/webm".to_string());
     let size_bytes = js_number_any(value, &["sizeBytes", "size_bytes"]).unwrap_or(0.0);
     let format = js_string_any(value, &["format"]).unwrap_or_else(|| "webm".to_string());
     let opfs_path = js_string_any(value, &["opfsPath", "opfs_path"]);
@@ -173,8 +165,10 @@ pub fn share_item_from_value(value: &JsValue) -> Option<ShareItem> {
     let id = js_string_any(value, &["id"])?;
     let name = js_string_any(value, &["name"]).unwrap_or_else(|| "Shared File".to_string());
     let size = js_number_any(value, &["size"]).unwrap_or(0.0);
-    let mime = js_string_any(value, &["type", "mime"]).unwrap_or_else(|| "application/octet-stream".to_string());
-    let created_at = js_date_any(value, &["lastModified", "created_at"]).unwrap_or_else(|| js_sys::Date::now());
+    let mime = js_string_any(value, &["type", "mime"])
+        .unwrap_or_else(|| "application/octet-stream".to_string());
+    let created_at =
+        js_date_any(value, &["lastModified", "created_at"]).unwrap_or_else(|| js_sys::Date::now());
     let blob = js_blob_any(value);
 
     Some(ShareItem {
@@ -202,13 +196,186 @@ pub fn key_to_string(key: &JsValue) -> Option<String> {
 // Category 4: Calculations & Validation
 // ============================================================================
 
-// Functions will go here
+/// Sum size bytes for recordings with OPFS paths (excluding IDB)
+pub fn sum_opfs_bytes(recordings: &[Recording]) -> f64 {
+    recordings
+        .iter()
+        .filter_map(|rec| {
+            let path = rec.opfs_path.as_ref()?;
+            if is_idb_path(path) {
+                return None;
+            }
+            let size = if rec.size_bytes > 0.0 {
+                rec.size_bytes
+            } else {
+                rec.blob.as_ref().map(|b| b.size() as f64).unwrap_or(0.0)
+            };
+            Some(size)
+        })
+        .sum()
+}
+
+/// Check if migration is in progress
+///
+/// Returns true only when migration has started but not yet completed.
+/// This is useful for determining if migration operations should continue.
+///
+/// # Arguments
+///
+/// * `summary` - The migration summary to check
+///
+/// # Returns
+///
+/// * `true` - Migration is actively in progress (started=true, completed=false)
+/// * `false` - Migration hasn't started or is already completed
+pub fn is_migration_in_progress(summary: &MigrationSummary) -> bool {
+    summary.started && !summary.completed
+}
 
 // ============================================================================
 // Category 5: JsValue Extraction Helpers
 // ============================================================================
 
-// Functions will go here
+/// Extract string from JsValue by trying multiple keys
+///
+/// Iterates through the provided keys in order, attempting to extract a string
+/// value from each field. Returns the first successful match.
+///
+/// # Arguments
+///
+/// * `value` - The JsValue object to extract from
+/// * `keys` - Array of field names to try (e.g., `&["camelCase", "snake_case"]`)
+///
+/// # Returns
+///
+/// * `Some(String)` - First non-null, non-undefined string field found
+/// * `None` - If all keys are missing, null, undefined, or not strings
+///
+/// # Example
+///
+/// ```rust
+/// // Try both camelCase and snake_case variants
+/// let id = js_string_any(value, &["profileId", "profile_id"]);
+/// ```
+pub fn js_string_any(value: &JsValue, keys: &[&str]) -> Option<String> {
+    for key in keys {
+        if let Ok(field) = js_sys::Reflect::get(value, &(*key).into()) {
+            if !field.is_null() && !field.is_undefined() {
+                if let Some(s) = field.as_string() {
+                    return Some(s);
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Extract number from JsValue by trying multiple keys
+///
+/// Iterates through the provided keys in order, attempting to extract a numeric
+/// value from each field. Returns the first successful match.
+///
+/// # Arguments
+///
+/// * `value` - The JsValue object to extract from
+/// * `keys` - Array of field names to try (e.g., `&["sizeBytes", "size_bytes"]`)
+///
+/// # Returns
+///
+/// * `Some(f64)` - First non-null, non-undefined numeric field found
+/// * `None` - If all keys are missing, null, undefined, or not numbers
+///
+/// # Example
+///
+/// ```rust
+/// // Try both camelCase and snake_case variants
+/// let size = js_number_any(value, &["sizeBytes", "size_bytes"]).unwrap_or(0.0);
+/// ```
+pub fn js_number_any(value: &JsValue, keys: &[&str]) -> Option<f64> {
+    for key in keys {
+        if let Ok(field) = js_sys::Reflect::get(value, &(*key).into()) {
+            if !field.is_null() && !field.is_undefined() {
+                if let Some(n) = field.as_f64() {
+                    return Some(n);
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Extract date (as timestamp) from JsValue by trying multiple keys
+///
+/// Iterates through the provided keys in order, attempting to extract a timestamp
+/// or Date object from each field. Handles both numeric timestamps (f64) and
+/// JavaScript Date objects, converting Date objects to milliseconds since epoch.
+///
+/// # Arguments
+///
+/// * `value` - The JsValue object to extract from
+/// * `keys` - Array of field names to try (e.g., `&["createdAt", "created_at"]`)
+///
+/// # Returns
+///
+/// * `Some(f64)` - First timestamp found (either as number or Date.getTime())
+/// * `None` - If all keys are missing, null, undefined, or not dates/numbers
+///
+/// # Example
+///
+/// ```rust
+/// // Try both camelCase and snake_case variants, with Date fallback
+/// let created = js_date_any(value, &["createdAt", "created_at"])
+///     .unwrap_or_else(|| js_sys::Date::now());
+/// ```
+pub fn js_date_any(value: &JsValue, keys: &[&str]) -> Option<f64> {
+    for key in keys {
+        if let Ok(field) = js_sys::Reflect::get(value, &(*key).into()) {
+            if !field.is_null() && !field.is_undefined() {
+                if let Some(n) = field.as_f64() {
+                    return Some(n);
+                }
+                if field.is_instance_of::<js_sys::Date>() {
+                    if let Ok(date) = field.dyn_into::<js_sys::Date>() {
+                        return Some(date.get_time());
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Extract Blob from JsValue "blob" field
+///
+/// Attempts to extract a Blob object from the "blob" field of a JsValue.
+/// This is commonly used when deserializing Recording or ShareItem objects
+/// that contain binary data.
+///
+/// # Arguments
+///
+/// * `value` - The JsValue object to extract from
+///
+/// # Returns
+///
+/// * `Some(Blob)` - If "blob" field exists and is a valid Blob object
+/// * `None` - If "blob" field is missing, null, undefined, or not a Blob
+///
+/// # Example
+///
+/// ```rust
+/// // Extract blob from recording object
+/// let blob = js_blob_any(value);
+/// ```
+pub fn js_blob_any(value: &JsValue) -> Option<Blob> {
+    if let Ok(blob_field) = js_sys::Reflect::get(value, &"blob".into()) {
+        if !blob_field.is_null() && !blob_field.is_undefined() {
+            if let Ok(blob) = blob_field.dyn_into::<Blob>() {
+                return Some(blob);
+            }
+        }
+    }
+    None
+}
 
 #[cfg(test)]
 mod tests {
@@ -239,8 +406,14 @@ mod tests {
 
     #[test]
     fn test_idb_key_from_path_valid() {
-        assert_eq!(idb_key_from_path("idb://recordings/rec123"), Some("rec123".to_string()));
-        assert_eq!(idb_key_from_path("idb://store/key/with/slashes"), Some("key/with/slashes".to_string()));
+        assert_eq!(
+            idb_key_from_path("idb://recordings/rec123"),
+            Some("rec123".to_string())
+        );
+        assert_eq!(
+            idb_key_from_path("idb://store/key/with/slashes"),
+            Some("key/with/slashes".to_string())
+        );
     }
 
     #[test]
@@ -264,13 +437,22 @@ mod tests {
     #[test]
     fn test_sanitize_filename_valid() {
         assert_eq!(sanitize_filename("normal.txt"), "normal.txt");
-        assert_eq!(sanitize_filename("under_score-dash.ext"), "under_score-dash.ext");
+        assert_eq!(
+            sanitize_filename("under_score-dash.ext"),
+            "under_score-dash.ext"
+        );
     }
 
     #[test]
     fn test_sanitize_filename_invalid_chars() {
-        assert_eq!(sanitize_filename("file/with/slashes.txt"), "file_with_slashes.txt");
-        assert_eq!(sanitize_filename("colons:asterisks*.txt"), "colons_asterisks_.txt");
+        assert_eq!(
+            sanitize_filename("file/with/slashes.txt"),
+            "file_with_slashes.txt"
+        );
+        assert_eq!(
+            sanitize_filename("colons:asterisks*.txt"),
+            "colons_asterisks_.txt"
+        );
     }
 
     #[test]
@@ -311,5 +493,99 @@ mod tests {
         assert_eq!(format_from_mime("audio/webm; codecs=opus"), "webm");
         assert_eq!(format_from_mime(""), "bin");
         assert_eq!(format_from_mime("AUDIO/MPEG"), "mp3");
+    }
+
+    #[test]
+    fn test_sum_opfs_bytes_empty() {
+        let recordings: Vec<Recording> = vec![];
+        assert_eq!(sum_opfs_bytes(&recordings), 0.0);
+    }
+
+    #[test]
+    fn test_sum_opfs_bytes_mixed() {
+        let rec1 = Recording {
+            id: "1".to_string(),
+            created_at: 0.0,
+            duration_seconds: 0.0,
+            mime_type: "audio/webm".to_string(),
+            size_bytes: 100.0,
+            format: "webm".to_string(),
+            opfs_path: Some("/opfs/file1.webm".to_string()),
+            profile_id: None,
+            blob: None,
+        };
+        let rec2 = Recording {
+            id: "2".to_string(),
+            created_at: 0.0,
+            duration_seconds: 0.0,
+            mime_type: "audio/webm".to_string(),
+            size_bytes: 200.0,
+            format: "webm".to_string(),
+            opfs_path: Some("idb://recordings/2".to_string()),
+            profile_id: None,
+            blob: None,
+        };
+        let recordings = vec![rec1, rec2];
+        assert_eq!(sum_opfs_bytes(&recordings), 100.0); // Skip IDB path
+    }
+
+    #[test]
+    fn test_sum_opfs_bytes_blob_fallback() {
+        // Test that when size_bytes=0, blob is checked (but returns 0 when blob=None)
+        let rec = Recording {
+            id: "3".to_string(),
+            created_at: 0.0,
+            duration_seconds: 0.0,
+            mime_type: "audio/webm".to_string(),
+            size_bytes: 0.0, // Triggers blob fallback path
+            format: "webm".to_string(),
+            opfs_path: Some("/opfs/file3.webm".to_string()),
+            profile_id: None,
+            blob: None, // Would use blob.size() if present, falls back to 0.0
+        };
+        let recordings = vec![rec];
+        assert_eq!(sum_opfs_bytes(&recordings), 0.0);
+
+        // Note: Full blob.size() test requires wasm_bindgen_test with real Blob
+        // This test verifies the code path exists and handles None correctly
+    }
+
+    #[test]
+    fn test_is_migration_in_progress_true() {
+        let summary = MigrationSummary {
+            started: true,
+            completed: false,
+            updated_at: 1000.0,
+            last_store: Some("sessions".to_string()),
+            errors: vec![],
+            checksums_ok: true,
+        };
+        assert!(is_migration_in_progress(&summary));
+    }
+
+    #[test]
+    fn test_is_migration_in_progress_false_not_started() {
+        let summary = MigrationSummary {
+            started: false,
+            completed: false,
+            updated_at: 0.0,
+            last_store: None,
+            errors: vec![],
+            checksums_ok: false,
+        };
+        assert!(!is_migration_in_progress(&summary));
+    }
+
+    #[test]
+    fn test_is_migration_in_progress_false_completed() {
+        let summary = MigrationSummary {
+            started: true,
+            completed: true,
+            updated_at: 2000.0,
+            last_store: Some("recordings".to_string()),
+            errors: vec![],
+            checksums_ok: true,
+        };
+        assert!(!is_migration_in_progress(&summary));
     }
 }
