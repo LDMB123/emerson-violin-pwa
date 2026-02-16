@@ -4,12 +4,14 @@ import {
     getActiveNavHref,
     isNavItemActive,
 } from './utils/app-utils.js';
+import { getAudioPath } from './audio/format-detection.js';
 
 const moduleLoaders = {
     platform: () => import('./platform/native-apis.js'),
     dataSaver: () => import('./platform/data-saver.js'),
     offlineRecovery: () => import('./platform/offline-recovery.js'),
     installGuide: () => import('./platform/install-guide.js'),
+    installGuideClose: () => import('./platform/install-guide-close.js'),
     ipadosCapabilities: () => import('./platform/ipados-capabilities.js'),
     inputCapabilities: () => import('./platform/input-capabilities.js'),
     mlScheduler: () => import('./ml/offline-scheduler.js'),
@@ -26,6 +28,7 @@ const moduleLoaders = {
     focusTimer: () => import('./coach/focus-timer.js'),
     lessonPlan: () => import('./coach/lesson-plan.js'),
     reminders: () => import('./notifications/reminders.js'),
+    badging: () => import('./notifications/badging.js'),
     backupExport: () => import('./backup/export.js'),
     gameMetrics: () => import('./games/game-metrics.js'),
     gameEnhancements: () => import('./games/game-enhancements.js'),
@@ -94,6 +97,16 @@ const boot = async () => {
         document.addEventListener('prerenderingchange', boot, { once: true });
         return;
     }
+
+    // Update all audio elements to use Opus or MP3 based on browser support
+    const audioElements = document.querySelectorAll('audio[src*="/assets/audio/"]');
+    audioElements.forEach((audio) => {
+        const currentSrc = audio.getAttribute('src');
+        if (currentSrc) {
+            audio.setAttribute('src', getAudioPath(currentSrc));
+        }
+    });
+
     loadModule('platform');
     loadModule('dataSaver');
     loadModule('offlineRecovery');
@@ -102,11 +115,13 @@ const boot = async () => {
     loadModule('progress');
     await loadModule('persist');
     loadIdle('installGuide');
+    loadIdle('installGuideClose');
     loadIdle('mlScheduler');
     loadIdle('mlAccelerator');
     loadIdle('offlineIntegrity');
     loadIdle('offlineMode');
     loadIdle('reminders');
+    loadIdle('badging');
     loadForView(getCurrentViewId());
     registerServiceWorker();
 

@@ -1,4 +1,5 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
+import { getAudioPath } from '../audio/format-detection.js';
 
 const METRICS_KEY = 'panda-violin:offline:metrics-v1';
 
@@ -23,13 +24,13 @@ const CRITICAL_ASSETS = [
     './src/assets/fonts/nunito-vf.woff2',
     './assets/icons/icon-192.png',
     './assets/illustrations/mascot-happy.png',
-    './assets/audio/violin-a4.wav',
-    './assets/audio/violin-g3.wav',
-    './assets/audio/violin-d4.wav',
-    './assets/audio/violin-e5.wav',
-    './assets/audio/metronome-90.wav',
-    './assets/audio/metronome-60.wav',
-    './assets/audio/metronome-120.wav',
+    getAudioPath('./assets/audio/violin-a4.wav'),
+    getAudioPath('./assets/audio/violin-g3.wav'),
+    getAudioPath('./assets/audio/violin-d4.wav'),
+    getAudioPath('./assets/audio/violin-e5.wav'),
+    getAudioPath('./assets/audio/metronome-90.wav'),
+    getAudioPath('./assets/audio/metronome-60.wav'),
+    getAudioPath('./assets/audio/metronome-120.wav'),
 ];
 
 const defaultMetrics = () => ({
