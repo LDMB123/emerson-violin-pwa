@@ -51,7 +51,7 @@ const addDir = (sourceDir, options) => {
 if (distMode) {
     addDir('dist', {
         urlPrefix: '',
-        include: /\.(?:html|js|css|json|webmanifest|wasm|woff2|png|jpe?g|svg|webp|gif|mp3|wav)$/i,
+        include: /\.(?:html|js|css|json|webmanifest|wasm|woff2|png|jpe?g|svg|webp|gif|mp3|wav|opus)$/i,
     });
 } else {
     assets.add('./index.html');
@@ -75,7 +75,7 @@ if (distMode) {
 
     addDir('public/assets', {
         urlPrefix: 'assets',
-        include: /\.(?:png|jpe?g|svg|webp|gif|mp3|wav)$/i,
+        include: /\.(?:png|jpe?g|svg|webp|gif|mp3|wav|opus)$/i,
         excludeDirs: ['mockups'],
     });
 }
