@@ -4,8 +4,6 @@ import {
     getSongIdFromViewId,
     getSongIdFromHash,
     createBlobKey as createRecordingBlobKey,
-    filterValidRecordings,
-    pruneOldRecordings,
 } from '../utils/recordings-utils.js';
 
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
