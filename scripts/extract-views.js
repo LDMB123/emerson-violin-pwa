@@ -23,3 +23,11 @@ export function identifyViews(html) {
 
   return views;
 }
+
+export function getViewFilePath(viewId, category) {
+  const name = viewId.replace(/^view-(song-|game-)?/, '');
+
+  if (category === 'song') return `views/songs/${name}.html`;
+  if (category === 'game') return `views/games/${name}.html`;
+  return `views/${name}.html`;
+}
