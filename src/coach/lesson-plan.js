@@ -1,5 +1,13 @@
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { formatTime } from '../games/session-timer.js';
+import {
+    toLessonLink,
+    computeStepDuration,
+    computeStepProgress,
+    computeOverallProgress,
+    formatStepLabel,
+    formatStepCue,
+} from '../utils/lesson-plan-utils.js';
 
 const planPanel = document.querySelector('[data-lesson-plan="coach"]');
 if (!planPanel) {
@@ -48,12 +56,6 @@ if (!planPanel) {
     const ctaButton = runner.querySelector('[data-lesson-runner-cta]');
 
 
-    const toLessonLink = (id) => {
-        if (!id) return '#view-games';
-        if (id.startsWith('view-')) return `#${id}`;
-        return `#view-game-${id}`;
-    };
-
     let steps = [];
     let currentIndex = 0;
     let completedSteps = 0;
@@ -71,9 +73,9 @@ if (!planPanel) {
     const updateProgress = () => {
         if (!steps.length) return;
         const step = steps[currentIndex];
-        const duration = Math.max(30, Math.round((step?.minutes || 1) * 60));
-        const stepProgress = timerId ? (duration - remainingSeconds) / duration : 0;
-        const overall = Math.min(1, (completedSteps + stepProgress) / steps.length);
+        const duration = computeStepDuration(step?.minutes);
+        const stepProgress = computeStepProgress(duration, remainingSeconds, !!timerId);
+        const overall = computeOverallProgress(completedSteps, stepProgress, steps.length);
         const percent = Math.round(overall * 100);
         if (fillEl) fillEl.style.width = `${percent}%`;
         if (trackEl) trackEl.setAttribute('aria-valuenow', String(percent));
@@ -110,7 +112,7 @@ if (!planPanel) {
 
     const updateStepDetails = () => {
         if (!steps.length) {
-            if (stepEl) stepEl.textContent = 'No lesson plan yet';
+            if (stepEl) stepEl.textContent = formatStepLabel(0, 0);
             if (cueEl) cueEl.textContent = 'Practice a game to unlock a custom plan.';
             if (timerEl) timerEl.textContent = '00:00';
             if (ctaButton) ctaButton.setAttribute('href', '#view-games');
@@ -120,10 +122,10 @@ if (!planPanel) {
         }
         const step = steps[currentIndex];
         if (stepEl) {
-            stepEl.textContent = `Step ${Math.min(currentIndex + 1, steps.length)} of ${steps.length}`;
+            stepEl.textContent = formatStepLabel(currentIndex, steps.length);
         }
         if (cueEl) {
-            cueEl.textContent = step?.label ? `${step.label}${step.cue ? ` · ${step.cue}` : ''}` : 'Tap Start to begin.';
+            cueEl.textContent = formatStepCue(step);
         }
         if (ctaButton) {
             const ctaTarget = step?.cta || recommendedGameId;
@@ -131,7 +133,7 @@ if (!planPanel) {
             ctaButton.textContent = step?.ctaLabel || 'Open activity';
         }
         if (timerEl) {
-            const duration = Math.max(30, Math.round((step?.minutes || 1) * 60));
+            const duration = computeStepDuration(step?.minutes);
             timerEl.textContent = formatTime((remainingSeconds || duration) * 1000);
         }
         if (startButton) startButton.disabled = false;
@@ -188,7 +190,7 @@ if (!planPanel) {
             currentIndex = 0;
         }
         const step = steps[currentIndex];
-        const duration = Math.max(30, Math.round((step?.minutes || 1) * 60));
+        const duration = computeStepDuration(step?.minutes);
         if (!remainingSeconds || remainingSeconds > duration) {
             remainingSeconds = duration;
         }
