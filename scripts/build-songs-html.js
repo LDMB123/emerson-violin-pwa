@@ -133,11 +133,9 @@ const html = await fs.readFile(indexPath, 'utf8');
 const pattern = new RegExp(`${start}[\\s\\S]*?${end}`);
 const viewsPattern = new RegExp(`${viewsStart}[\\s\\S]*?${viewsEnd}`);
 
-if (!pattern.test(html)) {
-    throw new Error('SONGS_GRID markers not found in index.html');
-}
-if (!viewsPattern.test(html)) {
-    throw new Error('SONG_VIEWS markers not found in index.html');
+if (!pattern.test(html) || !viewsPattern.test(html)) {
+    console.log('[build-songs-html] Markers not found, skipping.');
+    process.exit(0);
 }
 
 const nextHtml = html
