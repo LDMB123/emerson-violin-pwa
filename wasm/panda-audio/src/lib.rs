@@ -10,7 +10,6 @@
 //! - Optimized for 48kHz sample rate
 
 use wasm_bindgen::prelude::*;
-use std::f32::consts::PI;
 
 // Initialize panic hook for better error messages
 #[wasm_bindgen(start)]
@@ -400,28 +399,6 @@ impl PitchDetector {
     pub fn set_tune_tolerance(&mut self, cents: i32) {
         self.tune_tolerance = cents.clamp(1, 50);
     }
-}
-
-/// Generate a reference tone at a specific frequency
-#[wasm_bindgen]
-pub fn generate_tone_buffer(frequency: f32, sample_rate: f32, duration_ms: u32) -> Vec<f32> {
-    let num_samples = (sample_rate * duration_ms as f32 / 1000.0) as usize;
-    let mut buffer = Vec::with_capacity(num_samples);
-
-    for i in 0..num_samples {
-        let t = i as f32 / sample_rate;
-        // Sine wave with slight attack/release envelope
-        let envelope = if i < 100 {
-            i as f32 / 100.0
-        } else if i > num_samples - 100 {
-            (num_samples - i) as f32 / 100.0
-        } else {
-            1.0
-        };
-        buffer.push(envelope * (2.0 * PI * frequency * t).sin());
-    }
-
-    buffer
 }
 
 /// Get frequency for a given string name
