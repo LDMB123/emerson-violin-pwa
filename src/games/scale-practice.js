@@ -1,5 +1,4 @@
 import {
-    clamp,
     readLiveNumber,
     markChecklist,
     markChecklistIf,
@@ -9,6 +8,7 @@ import {
     bindTap,
     playToneNote,
 } from './shared.js';
+import { clamp } from '../utils/math.js';
 
 const updateScalePractice = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-scale-practice input[id^="sp-step-"]'));

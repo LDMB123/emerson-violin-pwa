@@ -1,7 +1,8 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { formatDifficulty, processTunerMessage } from './tuner-utils.js';
+import { processTunerMessage } from './tuner-utils.js';
 import { ML_UPDATE, ML_RESET } from '../utils/event-names.js';
+import { setDifficultyBadge } from '../games/shared.js';
 
 const livePanel = document.querySelector('#tuner-live');
 const startButton = document.querySelector('#tuner-start');
@@ -27,26 +28,10 @@ let starting = false;
 
 const isTunerView = () => window.location.hash === '#view-tuner';
 
-const ensureBadge = () => {
-    const header = livePanel?.querySelector('.tuner-card-header');
-    if (!header) return null;
-    let badge = header.querySelector('.difficulty-badge');
-    if (!badge) {
-        badge = document.createElement('span');
-        badge.className = 'difficulty-badge';
-        header.appendChild(badge);
-    }
-    return badge;
-};
-
 const applyTuning = async () => {
     const tuning = await getGameTuning('tuner');
     tolerance = tuning.tolerance ?? tolerance;
-    const badge = ensureBadge();
-    if (badge) {
-        badge.dataset.level = tuning.difficulty || 'medium';
-        badge.textContent = `Adaptive: ${formatDifficulty(tuning.difficulty)}`;
-    }
+    setDifficultyBadge(livePanel?.querySelector('.tuner-card-header'), tuning.difficulty);
     if (statusEl && !workletNode) {
         statusEl.textContent = `Tap the mic to start listening (±${tolerance}¢).`;
     }

@@ -1,7 +1,6 @@
 import {
     formatStars,
     cachedEl,
-    clamp,
     readLiveNumber,
     setLiveNumber,
     markChecklist,
@@ -11,6 +10,7 @@ import {
     bindTap,
     playToneNote,
 } from './shared.js';
+import { clamp } from '../utils/math.js';
 
 const pitchScoreEl = cachedEl('[data-pitch="score"]');
 const pitchStarsEl = cachedEl('[data-pitch="stars"]');

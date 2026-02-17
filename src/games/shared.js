@@ -2,14 +2,13 @@ import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { createTonePlayer } from '../audio/tone-player.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { clamp, todayDay } from '../utils/math.js';
+import { todayDay } from '../utils/math.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
 import { GAME_RECORDED, ML_RESET } from '../utils/event-names.js';
 
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 export const cachedEl = (selector) => { let el; return () => (el ??= document.querySelector(selector)); };
-export { clamp };
 export const MAX_EVENTS = 500;
 export const formatCountdown = (seconds) => {
     const safe = Math.max(0, Math.ceil(seconds));

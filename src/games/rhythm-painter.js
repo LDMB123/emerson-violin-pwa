@@ -1,6 +1,5 @@
 import {
     cachedEl,
-    clamp,
     readLiveNumber,
     setLiveNumber,
     markChecklistIf,
@@ -11,6 +10,7 @@ import {
     playToneNote,
     playToneSequence,
 } from './shared.js';
+import { clamp } from '../utils/math.js';
 
 const painterScoreEl = cachedEl('[data-painter="score"]');
 const painterCreativityEl = cachedEl('[data-painter="creativity"]');

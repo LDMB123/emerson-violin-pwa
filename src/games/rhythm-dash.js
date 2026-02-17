@@ -1,6 +1,5 @@
 import {
     cachedEl,
-    clamp,
     readLiveNumber,
     setLiveNumber,
     markChecklistIf,
@@ -10,6 +9,7 @@ import {
     bindTap,
     getTonePlayer,
 } from './shared.js';
+import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import {
