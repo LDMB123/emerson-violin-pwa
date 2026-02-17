@@ -1,5 +1,4 @@
 import { clamp } from '../utils/math.js';
-export { clamp };
 
 export const formatDifficulty = (value) => {
     const label = value || 'medium';

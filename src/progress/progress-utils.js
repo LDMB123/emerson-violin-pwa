@@ -1,11 +1,11 @@
-import { clamp } from '../utils/math.js';
+import { clamp, todayDay } from '../utils/math.js';
 
 const RADAR_CENTER = 100;
 const RADAR_RADIUS = 80;
 const RADAR_ORDER = ['pitch', 'rhythm', 'bow_control', 'posture', 'reading'];
 const RADAR_ANGLES = RADAR_ORDER.map((_, index) => ((index * 2 * Math.PI) / RADAR_ORDER.length) - Math.PI / 2);
 
-export const todayDay = () => Math.floor(Date.now() / 86400000);
+export { todayDay };
 
 export const minutesForInput = (input) => {
     if (input?.dataset?.minutes) {
