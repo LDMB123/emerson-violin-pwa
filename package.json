@@ -4,10 +4,10 @@
   "description": "Local-first violin teaching PWA for children with a Red Panda coach and iPadOS 26.2 optimization",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/build-games-html.js && node scripts/build-songs-html.js && node scripts/extract-views.js && node scripts/build-sw-assets.js",
+    "predev": "node scripts/extract-views.js && node scripts/build-sw-assets.js",
     "dev": "vite",
     "preoptimize": "node scripts/optimize-images.js && node scripts/optimize-audio.js && node scripts/optimize-fonts.js",
-    "prebuild": "npm run preoptimize && node scripts/build-games-html.js && node scripts/build-songs-html.js && node scripts/extract-views.js && node scripts/build-sw-assets.js",
+    "prebuild": "npm run preoptimize && node scripts/extract-views.js && node scripts/build-sw-assets.js",
     "build": "vite build",
     "postbuild": "node scripts/build-sw-assets.js --dist",
     "preview": "vite preview",
