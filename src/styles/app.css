@@ -127,7 +127,7 @@
         --color-bg-alt: #FFEFE2;
         --color-surface: #FFFFFF;
         --color-text: #352019;
-        --color-text-muted: #553628;
+        --color-text-muted: #4A2E20;
 
         /* Brand Browns */
         --color-brand-brown: #6A3A2A;
@@ -237,6 +237,14 @@
             --duration-fast: 0.01ms;
             --duration-normal: 0.01ms;
             --duration-slow: 0.01ms;
+        }
+    }
+
+    @media (min-width: 768px) {
+        :root {
+            /* Cap fluid type at iPad viewport to prevent oversizing */
+            --text-2xl: 1.75rem;
+            --text-3xl: 2.25rem;
         }
     }
 }
@@ -919,7 +927,7 @@
     .home-title {
         font-family: var(--font-display);
         font-size: clamp(2.2rem, 7vw, 3.2rem);
-        letter-spacing: 0.015em;
+        letter-spacing: -0.01em;
         margin: 0;
         text-wrap: balance;
         line-height: var(--leading-tight);
