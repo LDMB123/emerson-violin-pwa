@@ -4676,13 +4676,13 @@
     .skeleton-bar {
         background: linear-gradient(
             90deg,
-            var(--color-bg-alt) 25%,
-            color-mix(in oklch, var(--color-bg-alt), white 40%) 50%,
-            var(--color-bg-alt) 75%
+            rgba(233, 86, 57, 0.07) 25%,
+            rgba(249, 169, 63, 0.12) 50%,
+            rgba(233, 86, 57, 0.07) 75%
         );
         background-size: 200% 100%;
         border-radius: var(--radius-md);
-        animation: skeleton-shimmer 1.5s ease-in-out infinite;
+        animation: skeleton-shimmer 1.8s ease-in-out infinite;
     }
 
     .skeleton-header {
@@ -4709,6 +4709,14 @@
     .skeleton-row .skeleton-bar {
         flex: 1;
     }
+
+    .skeleton-bar:nth-child(1) { animation-delay: 0ms; }
+    .skeleton-bar:nth-child(2) { animation-delay: 120ms; }
+    .skeleton-bar:nth-child(3) { animation-delay: 240ms; }
+    .skeleton-bar:nth-child(4) { animation-delay: 360ms; }
+    .skeleton-card { animation-delay: 80ms; }
+    .skeleton-card-sm:nth-child(1) { animation-delay: 160ms; }
+    .skeleton-card-sm:nth-child(2) { animation-delay: 280ms; }
 
     @keyframes skeleton-shimmer {
         0% { background-position: 200% 0; }
