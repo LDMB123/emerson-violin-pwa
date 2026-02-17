@@ -142,7 +142,6 @@
 
         /* Shadows */
         --shadow-sm: 0 2px 8px rgba(86, 40, 23, 0.08);
-        --shadow-md: 0 8px 24px rgba(86, 40, 23, 0.12);
 
         /* Elevation System */
         --elevation-sm: 0 4px 12px rgba(86, 40, 23, 0.06);
@@ -172,7 +171,6 @@
         --leading-snug: 1.25;
         --leading-relaxed: 1.45;
         --tracking-tight: 0.01em;
-        --tracking-wide: 0.08em;
 
         /* Spacing */
         --space-1: 0.25rem;
@@ -182,9 +180,6 @@
         --space-5: 1.25rem;
         --space-6: 1.5rem;
         --space-8: 2rem;
-        --space-10: 2.5rem;
-        --space-12: 3rem;
-        --space-16: 4rem;
 
         /* Border Radius */
         --radius-sm: 8px;
@@ -195,7 +190,6 @@
 
         /* Animations - iPadOS 26.2 Spring Physics */
         --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-        --ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
         --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
         --duration-fast: 0.2s;
@@ -204,13 +198,9 @@
 
         /* Safe Areas (iPadOS 26.2) */
         --safe-top: env(safe-area-inset-top, 0px);
-        --safe-right: env(safe-area-inset-right, 0px);
         --safe-bottom: env(safe-area-inset-bottom, 0px);
-        --safe-left: env(safe-area-inset-left, 0px);
 
         /* Z-Index Scale */
-        --z-base: 0;
-        --z-dropdown: 100;
         --z-sticky: 200;
         --z-modal: 300;
         --z-toast: 400;
@@ -231,7 +221,6 @@
             --glass-border: color-mix(in srgb, white 32%, transparent);
 
             --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
 
             --color-brand-brown: #D4A88C;
             --color-brand-tan: #C49A80;
@@ -408,58 +397,6 @@
         color: var(--color-text);
     }
 
-    .glass-subtle {
-        background: color-mix(in srgb, var(--glass-bg), transparent 30%);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
-
-    /* Header */
-    .app-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: var(--space-3) var(--space-4);
-        position: sticky;
-        top: 0;
-        z-index: var(--z-sticky);
-        margin: var(--space-2);
-        border-radius: var(--radius-lg);
-    }
-
-    .header-left {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-    }
-
-    .header-mascot {
-        width: 44px;
-        height: 44px;
-        border-radius: var(--radius-full);
-        object-fit: cover;
-    }
-
-    .header-title h1 {
-        font-size: var(--text-lg);
-        font-weight: 800;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .header-title .subtitle {
-        font-size: var(--text-xs);
-        color: var(--color-text-muted);
-    }
-
-    .header-right {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-    }
-
     .xp-badge {
         display: flex;
         flex-direction: column;
@@ -555,8 +492,7 @@
             display: none;
         }
 
-        .glass,
-        .glass-subtle {
+        .glass {
             backdrop-filter: none;
             -webkit-backdrop-filter: none;
         }
@@ -567,8 +503,7 @@
         display: none;
     }
 
-    :root[data-save-data="on"] .glass,
-    :root[data-save-data="on"] .glass-subtle {
+    :root[data-save-data="on"] .glass {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
     }
@@ -580,7 +515,6 @@
         padding-bottom: calc(80px + var(--safe-bottom) + var(--keyboard-offset));
         overflow-y: auto;
         scroll-behavior: smooth;
-        -webkit-overflow-scrolling: touch;
         scrollbar-gutter: stable;
     }
 
@@ -672,30 +606,6 @@
     @keyframes slide-in-left {
         from { opacity: 0; transform: translateX(-30px); }
         to { opacity: 1; transform: translateX(0); }
-    }
-
-    @keyframes fade-in {
-        from {
-            opacity: 0;
-            transform: translateY(8px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes fade-out {
-        from {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        to {
-            opacity: 0;
-            transform: translateY(-8px);
-        }
     }
 
     /* Hide the 'back' button on home (if it existed there) or handle specific view layouts */
@@ -869,20 +779,10 @@
         color: var(--color-primary);
     }
 
-    .btn-xl {
-        padding: var(--space-5) var(--space-8);
-        font-size: var(--text-lg);
-        border-radius: var(--radius-lg);
-    }
-
     .btn-sm {
         padding: var(--space-2) var(--space-3);
         font-size: var(--text-sm);
         border-radius: var(--radius-md);
-    }
-
-    .btn-icon {
-        font-size: 1.2em;
     }
 
     /* Home View */
@@ -1001,7 +901,6 @@
         padding: var(--space-4);
         border-radius: var(--radius-xl);
         text-align: left;
-        --goal-progress: 0;
         background: linear-gradient(160deg, rgba(255, 226, 198, 0.95), rgba(255, 246, 234, 0.98));
         box-shadow: var(--elevation-md);
         min-height: 132px;
@@ -1152,10 +1051,6 @@
         margin-bottom: var(--space-4);
     }
 
-    .home-secondary {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    }
-
     .feature-card {
         display: flex;
         flex-direction: column;
@@ -1205,10 +1100,6 @@
 
     .home-primary .feature-card:nth-child(4) {
         background: linear-gradient(160deg, #C084FF, #8F4FE6);
-    }
-
-    .feature-secondary {
-        color: var(--color-text);
     }
 
     .feature-icon {
@@ -1396,7 +1287,7 @@
         justify-content: space-around;
         padding: var(--space-2) var(--space-4);
         padding-bottom: calc(var(--space-2) + var(--safe-bottom));
-        z-index: var(--z-sticky);
+        z-index: 1000;
         margin: var(--space-2);
         margin-bottom: calc(var(--safe-bottom) + var(--keyboard-offset));
         border-radius: var(--radius-xl);
@@ -2661,10 +2552,16 @@
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         justify-content: center;
         padding: var(--space-5);
+        padding-bottom: calc(90px + var(--safe-bottom) + var(--space-5));
         z-index: var(--z-modal);
+    }
+
+    .install-guide-backdrop[hidden],
+    .install-guide-backdrop[data-dismissed="true"] {
+        display: none !important;
     }
 
     .install-guide {
@@ -2709,6 +2606,33 @@
 
     .install-guide-open {
         overflow: hidden;
+    }
+
+    .install-guide-close {
+        position: absolute;
+        top: var(--space-3);
+        right: var(--space-3);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(86, 40, 23, 0.1);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--color-text-muted);
+        transition: all 0.2s;
+    }
+
+    .install-guide-close:hover {
+        background: rgba(86, 40, 23, 0.2);
+        transform: scale(1.1);
+    }
+
+    .install-guide-close:active {
+        transform: scale(0.95);
     }
 
     :root[data-input="pen"] .btn,
@@ -3838,8 +3762,6 @@
     .painter-score,
     .pizzicato-score,
     .game-score,
-    .pizzicato-score,
-    .rhythm-score-value,
     .pitch-score span,
     .memory-meta span,
     .string-score span,
@@ -5611,20 +5533,13 @@
         -webkit-backdrop-filter: none;
         background: rgba(255, 255, 255, 0.96);
     }
-
-    .glass-subtle {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        background: rgba(255, 255, 255, 0.9);
-    }
 }
 
 @supports (content-visibility: auto) {
     .songs-grid,
     .games-grid,
     .analysis-layout,
-    .trainer-layout,
-    .parent-grid {
+    .trainer-layout {
         content-visibility: auto;
         contain-intrinsic-size: 800px 600px;
     }
