@@ -1,8 +1,6 @@
 import { getJSON, setJSON, removeJSON } from '../persistence/storage.js';
 import { clamp as rawClamp } from '../utils/math.js';
-
-const MODEL_KEY = 'panda-violin:ml:adaptive-v1';
-const LOG_KEY = 'panda-violin:ml:events:v1';
+import { ML_MODEL_KEY as MODEL_KEY, ML_LOG_KEY as LOG_KEY } from '../persistence/storage-keys.js';
 const DEFAULT_MODEL = {
     version: 1,
     updatedAt: 0,

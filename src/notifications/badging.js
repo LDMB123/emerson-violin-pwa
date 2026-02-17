@@ -1,3 +1,5 @@
+import { PROGRESS_KEY, LESSON_PLAN_KEY, FOCUS_ACTIVE_KEY } from '../persistence/storage-keys.js';
+
 /**
  * Badging API
  *
@@ -110,8 +112,7 @@ const getIncompletePracticeTasks = async () => {
  */
 const checkPracticeToday = async (date) => {
     try {
-        const progressKey = 'panda-violin:progress:v1';
-        const stored = localStorage.getItem(progressKey);
+        const stored = localStorage.getItem(PROGRESS_KEY);
         if (!stored) return false;
 
         const progress = JSON.parse(stored);
@@ -127,8 +128,7 @@ const checkPracticeToday = async (date) => {
  */
 const getLessonPlan = async () => {
     try {
-        const planKey = 'panda-violin:lesson-plan:v1';
-        const stored = localStorage.getItem(planKey);
+        const stored = localStorage.getItem(LESSON_PLAN_KEY);
         return stored ? JSON.parse(stored) : null;
     } catch {
         return null;
@@ -140,8 +140,7 @@ const getLessonPlan = async () => {
  */
 const getFocusGoal = async () => {
     try {
-        const focusKey = 'panda-violin:focus-active:v1';
-        const stored = localStorage.getItem(focusKey);
+        const stored = localStorage.getItem(FOCUS_ACTIVE_KEY);
         return stored ? JSON.parse(stored) : null;
     } catch {
         return null;

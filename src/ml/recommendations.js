@@ -10,9 +10,7 @@ import {
     filterEventsByType,
     cacheFresh,
 } from '../utils/recommendations-utils.js';
-
-const EVENT_KEY = 'panda-violin:events:v1';
-const CACHE_KEY = 'panda-violin:ml:recs-v1';
+import { EVENTS_KEY as EVENT_KEY, ML_RECS_KEY as CACHE_KEY } from '../persistence/storage-keys.js';
 const CACHE_TTL = 5 * 60 * 1000;
 
 const GAME_LABELS = {

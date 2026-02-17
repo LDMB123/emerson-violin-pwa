@@ -1,7 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { clamp } from '../utils/math.js';
-
-const GOAL_KEY = 'panda-violin:parent-goal-v1';
+import { PARENT_GOAL_KEY as GOAL_KEY } from '../persistence/storage-keys.js';
 const DEFAULT_GOAL = {
     title: 'Next Recital Piece',
     weeklyMinutes: 90,

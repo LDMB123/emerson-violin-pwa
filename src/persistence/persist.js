@@ -1,6 +1,5 @@
 import { getJSON, setJSON } from './storage.js';
-
-const STORAGE_KEY = 'panda-violin:ui-state:v1';
+import { UI_STATE_KEY as STORAGE_KEY } from './storage-keys.js';
 
 const IGNORE_IDS = new Set(['focus-timer']);
 const IGNORE_PREFIXES = ['song-play-'];
