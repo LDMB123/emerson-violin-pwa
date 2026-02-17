@@ -2,14 +2,14 @@ import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { createTonePlayer } from '../audio/tone-player.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { clamp } from '../utils/math.js';
+import { clamp, todayDay } from '../utils/math.js';
+import { formatDifficulty } from '../tuner/tuner-utils.js';
 
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 export const cachedEl = (selector) => { let el; return () => (el ??= document.querySelector(selector)); };
-export { clamp };
+export { clamp, todayDay };
 export const EVENT_KEY = 'panda-violin:events:v1';
 export const MAX_EVENTS = 500;
-export const todayDay = () => Math.floor(Date.now() / 86400000);
 export const formatCountdown = (seconds) => {
     const safe = Math.max(0, Math.ceil(seconds));
     const minutes = Math.floor(safe / 60);
@@ -95,10 +95,7 @@ export const markChecklistIf = (condition, id) => {
     if (condition) markChecklist(id);
 };
 
-export const formatDifficulty = (value) => {
-    const label = value || 'medium';
-    return label.charAt(0).toUpperCase() + label.slice(1);
-};
+export { formatDifficulty };
 
 export const setDifficultyBadge = (container, difficulty, prefix = 'Adaptive') => {
     if (!container) return;

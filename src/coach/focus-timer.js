@@ -1,4 +1,5 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
+import { formatDifficulty } from '../tuner/tuner-utils.js';
 
 const focusToggle = document.querySelector('#focus-timer');
 const focusArea = document.querySelector('.practice-focus');
@@ -11,11 +12,6 @@ let endTime = null;
 let activeMinutes = 5;
 let isCompleting = false;
 let recommendedMinutes = 10;
-
-const formatDifficulty = (value) => {
-    const label = value || 'medium';
-    return label.charAt(0).toUpperCase() + label.slice(1);
-};
 
 const ensureBadge = () => {
     const header = document.querySelector('.coach-card-header');

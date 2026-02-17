@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { clamp, formatDifficulty, processTunerMessage } from '../src/tuner/tuner-utils.js';
+import { clamp } from '../src/utils/math.js';
+import { formatDifficulty, processTunerMessage } from '../src/tuner/tuner-utils.js';
 
 describe('clamp', () => {
     it('returns value when within range', () => {

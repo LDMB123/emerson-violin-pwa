@@ -1,15 +1,11 @@
 import { getAdaptiveSummary, resetAdaptiveModel, updateGameResult } from './adaptive-engine.js';
+import { formatDifficulty } from '../tuner/tuner-utils.js';
 
 const statusEl = document.querySelector('[data-ml-status]');
 const detailEl = document.querySelector('[data-ml-detail]');
 const resetButton = document.querySelector('[data-ml-reset]');
 const demoToggle = document.querySelector('[data-ml-demo]');
 const simulateButton = document.querySelector('[data-ml-simulate]');
-
-const formatDifficulty = (value) => {
-    const label = value || 'medium';
-    return label.charAt(0).toUpperCase() + label.slice(1);
-};
 
 const formatTimestamp = (value) => {
     if (!value) return '—';

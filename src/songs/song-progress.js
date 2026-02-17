@@ -1,9 +1,7 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
-import { clamp } from '../utils/math.js';
+import { clamp, todayDay } from '../utils/math.js';
 
 const EVENT_KEY = 'panda-violin:events:v1';
-
-const todayDay = () => Math.floor(Date.now() / 86400000);
 
 const loadEvents = async () => {
     const stored = await getJSON(EVENT_KEY);
