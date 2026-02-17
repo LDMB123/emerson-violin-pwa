@@ -17,6 +17,7 @@ const moduleLoaders = {
     offlineRecovery: () => import('./platform/offline-recovery.js'),
     installGuide: () => import('./platform/install-guide.js'),
     installGuideClose: () => import('./platform/install-guide-close.js'),
+    installToast: () => import('./platform/install-toast.js'),
     ipadosCapabilities: () => import('./platform/ipados-capabilities.js'),
     inputCapabilities: () => import('./platform/input-capabilities.js'),
     mlScheduler: () => import('./ml/offline-scheduler.js'),
@@ -45,6 +46,8 @@ const moduleLoaders = {
     swUpdates: () => import('./platform/sw-updates.js'),
     adaptiveUi: () => import('./ml/adaptive-ui.js'),
     recommendationsUi: () => import('./ml/recommendations-ui.js'),
+    audioPlayer: () => import('./audio/audio-player.js'),
+    onboarding: () => import('./onboarding/onboarding.js'),
 };
 
 const loaded = new Map();
@@ -90,19 +93,33 @@ const loadForView = (viewId) => {
     modules.forEach((module) => loadModule(module));
 };
 
+const skeletonHTML = `<div class="skeleton-view" aria-hidden="true">
+    <div class="skeleton-bar skeleton-header"></div>
+    <div class="skeleton-bar skeleton-card"></div>
+    <div class="skeleton-row">
+        <div class="skeleton-bar skeleton-card-sm"></div>
+        <div class="skeleton-bar skeleton-card-sm"></div>
+    </div>
+    <div class="skeleton-bar skeleton-card-sm"></div>
+</div>`;
+
 const showView = async (viewId, enhanceCallback) => {
     if (!viewId) return;
 
     try {
-        const viewPath = getViewPath(viewId);
-        const html = await viewLoader.load(viewPath);
-
         const container = document.getElementById('main-content');
         if (!container) {
             console.error('[App] main-content container not found');
             return;
         }
 
+        // Show skeleton while loading (only if view isn't cached)
+        const viewPath = getViewPath(viewId);
+        if (!viewLoader.has(viewPath)) {
+            container.innerHTML = skeletonHTML;
+        }
+
+        const html = await viewLoader.load(viewPath);
         container.innerHTML = html;
 
         // Re-enhance any toggle labels in the new view
@@ -147,6 +164,7 @@ const boot = async () => {
     loadModule('inputCapabilities');
     loadModule('progress');
     await loadModule('persist');
+    loadIdle('installToast');
     loadIdle('installGuide');
     loadIdle('installGuideClose');
     loadIdle('mlScheduler');
@@ -155,6 +173,7 @@ const boot = async () => {
     loadIdle('offlineMode');
     loadIdle('reminders');
     loadIdle('badging');
+    loadIdle('audioPlayer');
 
     const reduceMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
     const prefersReducedMotion = () => reduceMotionMedia.matches;
@@ -182,9 +201,22 @@ const boot = async () => {
         });
     };
 
-    // Load initial view
-    const initialViewId = getCurrentViewId() || 'view-home';
+    // Check first-run onboarding
+    let initialViewId = getCurrentViewId() || 'view-home';
+    if (initialViewId === 'view-home') {
+        try {
+            const { shouldShowOnboarding } = await import('./onboarding/onboarding-check.js');
+            if (await shouldShowOnboarding()) {
+                initialViewId = 'view-onboarding';
+            }
+        } catch {
+            // Onboarding check failed — proceed to home
+        }
+    }
     await showView(initialViewId, enhanceToggleLabels);
+    if (initialViewId === 'view-onboarding') {
+        loadModule('onboarding');
+    }
 
     registerServiceWorker();
 
@@ -217,6 +249,8 @@ const boot = async () => {
         });
     };
 
+    let navDirection = 'forward';
+
     const navigateTo = (href, afterNav) => {
         if (!href) return;
         if (href === window.location.hash) {
@@ -228,9 +262,14 @@ const boot = async () => {
             window.addEventListener('hashchange', handle, { once: true });
         }
         if (shouldAnimateNav()) {
-            document.startViewTransition(() => {
+            document.documentElement.dataset.navDirection = navDirection;
+            const transition = document.startViewTransition(() => {
                 window.location.hash = href;
             });
+            transition.finished.then(() => {
+                delete document.documentElement.dataset.navDirection;
+            }).catch(() => {});
+            navDirection = 'forward';
         } else {
             window.location.hash = href;
         }
@@ -355,6 +394,9 @@ const boot = async () => {
                 popover.removeAttribute('open');
                 closePopoverFallback(popover);
             }
+        }
+        if (link.classList.contains('back-btn')) {
+            navDirection = 'back';
         }
         navigateTo(href, targetId ? () => scrollToTarget(targetId) : null);
     });

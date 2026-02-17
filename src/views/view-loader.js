@@ -4,6 +4,10 @@ export class ViewLoader {
     this.loading = new Map();
   }
 
+  has(viewPath) {
+    return this.cache.has(viewPath);
+  }
+
   async load(viewPath) {
     if (this.cache.has(viewPath)) {
       return this.cache.get(viewPath);
