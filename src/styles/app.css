@@ -720,10 +720,17 @@
 
     .btn:disabled,
     .btn[aria-disabled="true"] {
-        opacity: 0.55;
+        opacity: 0.5;
         cursor: not-allowed;
         transform: none;
         box-shadow: none;
+        background-image: repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 4px,
+            rgba(255, 255, 255, 0.12) 4px,
+            rgba(255, 255, 255, 0.12) 6px
+        );
     }
 
     .btn:focus-visible,
@@ -771,6 +778,7 @@
         padding: var(--space-2) var(--space-3);
         font-size: var(--text-sm);
         border-radius: var(--radius-md);
+        min-height: 44px;
     }
 
     /* Custom Range Slider */
