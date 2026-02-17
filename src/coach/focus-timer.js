@@ -1,6 +1,6 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
-import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { PERSIST_APPLIED, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
+import { setDifficultyBadge } from '../games/shared.js';
 
 const focusToggle = document.querySelector('#focus-timer');
 const focusArea = document.querySelector('.practice-focus');
@@ -14,17 +14,6 @@ let activeMinutes = 5;
 let isCompleting = false;
 let recommendedMinutes = 10;
 
-const ensureBadge = () => {
-    const header = document.querySelector('.coach-card-header');
-    if (!header) return null;
-    let badge = header.querySelector('.difficulty-badge');
-    if (!badge) {
-        badge = document.createElement('span');
-        badge.className = 'difficulty-badge';
-        header.appendChild(badge);
-    }
-    return badge;
-};
 
 const selectMinutes = (minutes) => {
     const target = durationRadios.find((radio) => radio.id === `focus-${minutes}`);
@@ -61,11 +50,7 @@ const setFocusDuration = (minutes) => {
 const applyTuning = async () => {
     const tuning = await getGameTuning('coach-focus');
     recommendedMinutes = tuning.focusMinutes ?? recommendedMinutes;
-    const badge = ensureBadge();
-    if (badge) {
-        badge.dataset.level = tuning.difficulty || 'medium';
-        badge.textContent = `Coach: ${formatDifficulty(tuning.difficulty)}`;
-    }
+    setDifficultyBadge(document.querySelector('.coach-card-header'), tuning.difficulty, 'Coach');
     if (focusArea && !focusArea.dataset.userSet) {
         selectMinutes(recommendedMinutes);
         setFocusDuration(recommendedMinutes);

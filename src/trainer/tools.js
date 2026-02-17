@@ -1,7 +1,7 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { SOUNDS_CHANGE, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
+import { setDifficultyBadge } from '../games/shared.js';
 import {
     isPracticeView as isPracticeViewUtil,
     calculateMetronomeBpm,
@@ -56,24 +56,6 @@ let bowingTarget = 3;
 let bowingReported = false;
 let bowingLastReported = 0;
 
-const ensureBadge = (container, prefix = 'Adaptive') => {
-    if (!container) return null;
-    let badge = container.querySelector('.difficulty-badge');
-    if (!badge) {
-        badge = document.createElement('span');
-        badge.className = 'difficulty-badge';
-        container.appendChild(badge);
-    }
-    badge.dataset.prefix = prefix;
-    return badge;
-};
-
-const setBadge = (container, difficulty, prefix) => {
-    const badge = ensureBadge(container, prefix);
-    if (!badge) return;
-    badge.dataset.level = difficulty || 'medium';
-    badge.textContent = `${prefix}: ${formatDifficulty(difficulty)}`;
-};
 
 const updateMetronomeDisplay = () => {
     if (metronomeBpmEl) metronomeBpmEl.textContent = `${metronomeBpm} BPM`;
@@ -103,7 +85,7 @@ const reportMetronome = () => {
 const applyMetronomeTuning = async () => {
     const tuning = await getGameTuning('trainer-metronome');
     targetBpm = tuning.targetBpm ?? targetBpm;
-    setBadge(document.querySelector('#metronome-loops .audio-panel-header'), tuning.difficulty, 'Tempo');
+    setDifficultyBadge(document.querySelector('#metronome-loops .audio-panel-header'), tuning.difficulty, 'Tempo');
     if (metronomeSlider && !metronomeSlider.dataset.userSet) {
         updateBpm(targetBpm);
     }
@@ -363,7 +345,7 @@ const reportPosture = () => {
 async function applyPostureTuning() {
     const tuning = await getGameTuning('trainer-posture');
     postureTarget = tuning.targetChecks ?? postureTarget;
-    setBadge(document.querySelector('#view-posture .view-header'), tuning.difficulty, 'Posture');
+    setDifficultyBadge(document.querySelector('#view-posture .view-header'), tuning.difficulty, 'Posture');
     updatePostureHint();
 }
 
@@ -388,7 +370,7 @@ const reportBowing = () => {
 async function applyBowingTuning() {
     const tuning = await getGameTuning('bowing-coach');
     bowingTarget = tuning.targetSets ?? bowingTarget;
-    setBadge(document.querySelector('#view-bowing .view-header'), tuning.difficulty, 'Bowing');
+    setDifficultyBadge(document.querySelector('#view-bowing .view-header'), tuning.difficulty, 'Bowing');
     updateBowingIntro();
 }
 

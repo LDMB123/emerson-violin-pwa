@@ -1,5 +1,4 @@
 import {
-    clamp,
     readLiveNumber,
     markChecklist,
     setDifficultyBadge,
@@ -7,6 +6,7 @@ import {
     attachTuning,
     bindTap,
 } from './shared.js';
+import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
