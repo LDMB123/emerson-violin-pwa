@@ -19,7 +19,6 @@ const CRITICAL_ASSETS = [
     './offline.html',
     './src/app.js',
     './src/styles/app.css',
-    './src/styles/scroll-animations.css',
     './src/assets/fonts/fraunces-vf.woff2',
     './src/assets/fonts/nunito-vf.woff2',
     './assets/icons/icon-192.png',

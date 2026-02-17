@@ -108,8 +108,6 @@ self.__ASSETS__ = [
   "./src/songs/song-search.js",
   "./src/styles/app.css",
   "./src/styles/games.css",
-  "./src/styles/scroll-animations.css",
-  "./src/styles/ui-fixes-slim.css",
   "./src/trainer/tools.js",
   "./src/trainer/trainer-utils.js",
   "./src/tuner/tuner-utils.js",

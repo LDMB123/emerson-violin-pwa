@@ -495,61 +495,6 @@
         font-size: var(--text-sm);
     }
 
-    .beat-strip {
-        display: grid;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
-        gap: var(--space-2);
-        padding: var(--space-3);
-        border-radius: var(--radius-lg);
-        background: rgba(255, 255, 255, 0.3);
-        --beat-interval: 0.5s;
-        --beat-cycle: calc(var(--beat-interval) * 8);
-    }
-
-    .beat {
-        height: 36px;
-        border-radius: var(--radius-md);
-        background: color-mix(in srgb, var(--color-primary), white 55%);
-        animation: beat-pulse var(--beat-cycle, 4s) linear infinite;
-        animation-delay: calc(var(--beat-index, 0) * var(--beat-interval, 0.5s));
-        transform-origin: center;
-    }
-
-    .rhythm-panel {
-        margin-top: var(--space-4);
-        display: grid;
-        gap: var(--space-3);
-    }
-
-    .rhythm-scoreboard {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: var(--space-2);
-    }
-
-    .rhythm-score {
-        padding: var(--space-2) var(--space-3);
-        border-radius: var(--radius-lg);
-        background: rgba(255, 255, 255, 0.7);
-        display: grid;
-        gap: 4px;
-        text-align: center;
-    }
-
-    .rhythm-label {
-        font-size: var(--text-xs);
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--color-text-muted);
-        line-height: 1.1;
-    }
-
-    .rhythm-value {
-        font-weight: 800;
-        font-size: var(--text-lg);
-        line-height: 1.1;
-    }
-
     .rhythm-controls {
         display: flex;
         gap: var(--space-2);
@@ -593,12 +538,6 @@
     .settings-value {
         font-weight: 800;
         color: var(--color-text);
-    }
-
-    .rhythm-hint {
-        font-size: var(--text-sm);
-        color: var(--color-text-muted);
-        line-height: 1.3;
     }
 
     .rhythm-dash-stage {
@@ -791,17 +730,6 @@
         }
     }
 
-    @keyframes beat-pulse {
-        0%, 100% {
-            opacity: 0.4;
-            transform: scaleY(0.6);
-        }
-        50% {
-            opacity: 1;
-            transform: scaleY(1.1);
-        }
-    }
-
     .memory-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -851,55 +779,6 @@
         background: var(--color-primary);
         color: #fff;
         transform: rotateY(180deg);
-    }
-
-    .rhythm-patterns {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3);
-    }
-
-    .rhythm-pattern {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--space-3);
-        padding: var(--space-3);
-        border-radius: var(--radius-lg);
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-    }
-
-    .pattern-bars {
-        display: grid;
-        grid-template-columns: repeat(4, 14px);
-        gap: 6px;
-    }
-
-    .pattern-bars span {
-        display: block;
-        width: 14px;
-        height: 32px;
-        border-radius: var(--radius-sm);
-        background: color-mix(in srgb, var(--color-primary), transparent 20%);
-    }
-
-    .pattern-bars--sync span:nth-child(even) {
-        height: 18px;
-        opacity: 0.7;
-    }
-
-    .pattern-bars--rush span:nth-child(2),
-    .pattern-bars--rush span:nth-child(3) {
-        height: 20px;
-        opacity: 0.6;
-    }
-
-    .pattern-label {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        font-weight: 600;
     }
 
     /* Pitch Quest */
