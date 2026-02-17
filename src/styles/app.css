@@ -4626,6 +4626,78 @@
             animation: none;
         }
     }
+
+    /* =========================================================
+       iPad Mini 6 — Portrait (≥768px) & Landscape (≥1024px)
+       ========================================================= */
+    @media (min-width: 768px) {
+        /* Larger nav items */
+        .nav-item {
+            min-height: 60px;
+            padding: var(--space-3) var(--space-4);
+            min-width: 72px;
+        }
+
+        .nav-icon svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        /* Games: 4-col on iPad portrait */
+        .games-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            width: min(100%, 900px);
+        }
+
+        .games-section {
+            width: min(100%, 900px);
+        }
+
+        /* Home: feature grid, max-width */
+        .home-grid {
+            width: min(100%, 640px);
+            margin-inline: auto;
+        }
+
+        /* Increase button min-height for fat-finger friendliness */
+        .btn {
+            min-height: 52px;
+        }
+
+        /* Generous view padding */
+        .view {
+            padding: var(--space-6) var(--space-6) calc(var(--space-6) + 80px);
+        }
+
+        /* Corner mascot larger on iPad */
+        .corner-mascot {
+            width: 100px;
+            height: 100px;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        /* Constrain content width on landscape to prevent over-stretching */
+        .progress-layout,
+        .coach-layout,
+        .trainer-layout,
+        .tuner-layout,
+        .home-hero,
+        .home-grid {
+            max-width: 900px;
+            margin-inline: auto;
+        }
+
+        .games-section {
+            width: min(100%, 1100px);
+        }
+
+        /* Games: stay 4-col, wider */
+        .games-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            width: min(100%, 1100px);
+        }
+    }
 }
 
 
