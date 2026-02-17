@@ -401,18 +401,6 @@ impl PitchDetector {
     }
 }
 
-/// Get frequency for a given string name
-#[wasm_bindgen]
-pub fn string_frequency(string: &str) -> f32 {
-    match string.to_uppercase().as_str() {
-        "G" | "G3" => 196.0,
-        "D" | "D4" => 293.66,
-        "A" | "A4" => 440.0,
-        "E" | "E5" => 659.25,
-        _ => 0.0,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
