@@ -1,4 +1,4 @@
-import { clamp } from '../utils/math.js';
+import { clamp, deviationAccuracy } from '../utils/math.js';
 
 /**
  * Determines if the given view ID represents a practice view.
@@ -47,8 +47,7 @@ export const clampBpm = (bpm) => {
  * @returns {number} Accuracy percentage (0-100)
  */
 export const calculateMetronomeAccuracy = (currentBpm, targetBpm) => {
-    const delta = Math.abs(currentBpm - targetBpm) / Math.max(targetBpm, 1);
-    return clamp((1 - delta) * 100, 0, 100);
+    return deviationAccuracy(currentBpm, targetBpm);
 };
 
 /**

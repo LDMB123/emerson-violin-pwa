@@ -8,7 +8,7 @@ import {
     bindTap,
     playToneNote,
 } from './shared.js';
-import { clamp } from '../utils/math.js';
+import { clamp, deviationAccuracy } from '../utils/math.js';
 
 const updateScalePractice = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-scale-practice input[id^="sp-step-"]'));
@@ -91,8 +91,7 @@ const bindScalePractice = () => {
     });
     slider?.addEventListener('change', () => {
         const tempo = slider ? Number.parseInt(slider.value, 10) : 0;
-        const delta = Math.abs(tempo - targetTempo) / Math.max(targetTempo, 1);
-        const accuracy = clamp((1 - delta) * 100, 0, 100);
+        const accuracy = deviationAccuracy(tempo, targetTempo);
         reportResult({ accuracy, score: tempo });
         reportSession(accuracy, tempo);
     });

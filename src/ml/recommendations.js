@@ -2,6 +2,7 @@ import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAdaptiveLog, getGameTuning } from './adaptive-engine.js';
 import {
     GAME_BY_SKILL,
+    GAME_LABELS,
     SKILL_LABELS,
     computeSkillScores,
     findWeakestSkill,
@@ -12,14 +13,6 @@ import {
 } from '../utils/recommendations-utils.js';
 import { EVENTS_KEY as EVENT_KEY, ML_RECS_KEY as CACHE_KEY } from '../persistence/storage-keys.js';
 const CACHE_TTL = 5 * 60 * 1000;
-
-const GAME_LABELS = {
-    'pitch-quest': 'Pitch Quest',
-    'rhythm-dash': 'Rhythm Dash',
-    'bow-hero': 'Bow Hero',
-    'note-memory': 'Note Memory',
-    'view-posture': 'Posture Mirror',
-};
 
 const COACH_MESSAGES = {
     pitch: 'Pitch focus: aim for clean, centered notes today.',

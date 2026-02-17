@@ -1,7 +1,6 @@
 import {
     cachedEl,
     readLiveNumber,
-    setLiveNumber,
     markChecklist,
     markChecklistIf,
     setDifficultyBadge,
@@ -10,6 +9,8 @@ import {
     bindTap,
     playToneNote,
     playToneSequence,
+    buildNoteSequence,
+    updateScoreCombo,
 } from './shared.js';
 
 const stringScoreEl = cachedEl('[data-string="score"]');
@@ -51,13 +52,7 @@ const bindStringQuest = () => {
     let sequenceLength = 4;
 
     const buildSequence = () => {
-        const next = [];
-        for (let i = 0; i < sequenceLength; i += 1) {
-            const options = notePool.filter((note) => note !== next[i - 1]);
-            const choice = options[Math.floor(Math.random() * options.length)];
-            next.push(choice);
-        }
-        sequence = next;
+        sequence = buildNoteSequence(notePool, sequenceLength);
         seqIndex = 0;
     };
 
@@ -74,10 +69,7 @@ const bindStringQuest = () => {
         }
     };
 
-    const updateScoreboard = () => {
-        setLiveNumber(scoreEl, 'liveScore', score);
-        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
-    };
+    const updateScoreboard = () => updateScoreCombo(scoreEl, comboEl, score, combo);
 
     const reportResult = attachTuning('string-quest', (tuning) => {
         comboTarget = tuning.comboTarget ?? comboTarget;

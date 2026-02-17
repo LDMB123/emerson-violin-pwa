@@ -9,6 +9,7 @@ import {
     bindTap,
     getTonePlayer,
     stopTonePlayer,
+    buildNoteSequence,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
@@ -67,12 +68,7 @@ const bindMelodyMaker = () => {
 
     const buildTarget = () => {
         if (!notePool.length) return;
-        const next = [];
-        for (let i = 0; i < lengthTarget; i += 1) {
-            const options = notePool.filter((note) => note !== next[i - 1]);
-            next.push(options[Math.floor(Math.random() * options.length)]);
-        }
-        targetMotif = next;
+        targetMotif = buildNoteSequence(notePool, lengthTarget);
         matchCount = 0;
         updateTarget();
     };

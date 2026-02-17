@@ -4,6 +4,8 @@ import { minutesForInput, toTrackerTimestamp, formatRecentScore, coachMessageFor
 import { clamp, todayDay } from '../utils/math.js';
 import { EVENTS_KEY as EVENT_KEY, UI_STATE_KEY as PERSIST_KEY } from '../persistence/storage-keys.js';
 import { PRACTICE_RECORDED, GAME_RECORDED, GOAL_TARGET_CHANGE } from '../utils/event-names.js';
+import { setBadge } from '../notifications/badging.js';
+import { GAME_LABELS } from '../utils/recommendations-utils.js';
 
 let wasmModule = null;
 const getCore = async () => {
@@ -47,22 +49,6 @@ const achievementEls = Array.from(document.querySelectorAll('[data-achievement]'
 const radarShapeEl = document.querySelector('[data-radar="shape"]');
 const radarPointEls = Array.from(document.querySelectorAll('.radar-point[data-skill]'));
 
-const GAME_LABELS = {
-    'pitch-quest': 'Pitch Quest',
-    'rhythm-dash': 'Rhythm Dash',
-    'note-memory': 'Note Memory',
-    'ear-trainer': 'Ear Trainer',
-    'bow-hero': 'Bow Hero',
-    'string-quest': 'String Quest',
-    'rhythm-painter': 'Rhythm Painter',
-    'story-song': 'Story Song Lab',
-    pizzicato: 'Pizzicato Pop',
-    'tuning-time': 'Tuning Time',
-    'melody-maker': 'Melody Maker',
-    'scale-practice': 'Scale Practice',
-    'duet-challenge': 'Duet Challenge',
-};
-
 const getDailyGoalTarget = () => {
     const raw = document.documentElement?.dataset?.dailyGoalTarget
         || dailyGoalValueEl?.textContent
@@ -93,22 +79,6 @@ const updateProgressTrack = (el, percent, text) => {
     el.setAttribute('aria-valuenow', String(value));
     if (text) {
         el.setAttribute('aria-valuetext', text);
-    }
-};
-
-const updateAppBadge = async (streak) => {
-    if (!('setAppBadge' in navigator)) return;
-    try {
-        const value = Math.max(0, Math.min(99, Number(streak) || 0));
-        if (value > 0) {
-            await navigator.setAppBadge(value);
-        } else if ('clearAppBadge' in navigator) {
-            await navigator.clearAppBadge();
-        } else {
-            await navigator.setAppBadge(0);
-        }
-    } catch {
-        // Ignore badge errors
     }
 };
 
@@ -427,7 +397,7 @@ const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills,
         node.classList.toggle('locked', progress.level < required);
     });
 
-    updateAppBadge(streak);
+    setBadge(Math.max(0, Math.min(99, Number(streak) || 0)));
 };
 
 const updateUI = (data) => {

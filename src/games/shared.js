@@ -107,6 +107,20 @@ export const setDifficultyBadge = (container, difficulty, prefix = 'Adaptive') =
     badge.textContent = `${prefix}: ${formatDifficulty(difficulty)}`;
 };
 
+export const buildNoteSequence = (pool, length) => {
+    const next = [];
+    for (let i = 0; i < length; i += 1) {
+        const options = pool.filter((note) => note !== next[i - 1]);
+        next.push(options[Math.floor(Math.random() * options.length)]);
+    }
+    return next;
+};
+
+export const updateScoreCombo = (scoreEl, comboEl, score, combo) => {
+    setLiveNumber(scoreEl, 'liveScore', score);
+    setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
+};
+
 export const recordGameEvent = async (id, payload = {}) => {
     if (!id) return;
     const events = await getJSON(EVENT_KEY);
