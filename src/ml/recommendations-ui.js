@@ -1,17 +1,9 @@
 import { getLearningRecommendations } from './recommendations.js';
+import { SKILL_LABELS } from '../utils/recommendations-utils.js';
 
 const panels = Array.from(document.querySelectorAll('[data-lesson-plan]'));
 const stepLists = Array.from(document.querySelectorAll('[data-lesson-steps]'));
 const goalList = document.querySelector('[data-goal-list]');
-
-const SKILL_LABELS = {
-    pitch: 'Pitch',
-    rhythm: 'Rhythm',
-    bow_control: 'Bowing',
-    reading: 'Reading',
-    posture: 'Posture',
-    focus: 'Focus',
-};
 
 const formatBpm = (value) => `${Math.round(value)} BPM`;
 const formatMinutes = (value) => `${Math.max(0, Math.round(value || 0))} min`;
