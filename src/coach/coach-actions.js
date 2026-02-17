@@ -19,9 +19,19 @@ if (bubble?.textContent?.trim()) {
     messages = [...baseMessages];
 }
 
+const textSpan = bubble?.querySelector('.coach-bubble-text');
+let typingTimer = 0;
+
 const setMessage = (message) => {
-    if (!bubble) return;
-    bubble.textContent = message;
+    if (!bubble || !textSpan) return;
+    clearTimeout(typingTimer);
+    bubble.classList.remove('is-revealed');
+    bubble.classList.add('is-typing');
+    typingTimer = setTimeout(() => {
+        textSpan.textContent = message;
+        bubble.classList.remove('is-typing');
+        bubble.classList.add('is-revealed');
+    }, 600);
 };
 
 const canSpeak = () => Boolean(voiceToggle?.checked)

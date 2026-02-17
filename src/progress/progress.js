@@ -298,7 +298,10 @@ const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills,
     if (streakEl) streakEl.textContent = String(streak);
     if (homeStreakEl) homeStreakEl.textContent = String(streak);
     if (weekMinutesEl) weekMinutesEl.textContent = String(weekMinutes);
-    if (coachSpeechEl) coachSpeechEl.textContent = coachMessageFor(weakestSkill);
+    if (coachSpeechEl) {
+        const textEl = coachSpeechEl.querySelector('.coach-bubble-text') || coachSpeechEl;
+        textEl.textContent = coachMessageFor(weakestSkill);
+    }
 
     const goalTarget = getDailyGoalTarget();
     if (dailyGoalValueEl) dailyGoalValueEl.textContent = String(goalTarget);
@@ -364,9 +367,29 @@ const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills,
     achievementEls.forEach((el) => {
         const id = el.dataset.achievement;
         if (!id) return;
+        const wasLocked = el.classList.contains('locked');
         const unlocked = tracker.is_unlocked(id);
         el.classList.toggle('unlocked', unlocked);
         el.classList.toggle('locked', !unlocked);
+
+        // Celebrate newly unlocked badges
+        if (unlocked && wasLocked) {
+            el.classList.add('just-unlocked');
+            const art = el.querySelector('.badge-art');
+            if (art) {
+                art.addEventListener('animationend', () => {
+                    el.classList.remove('just-unlocked');
+                }, { once: true });
+            }
+            // Trigger mascot celebrate animation
+            const mascot = document.querySelector('.progress-mascot');
+            if (mascot && !mascot.classList.contains('is-celebrating')) {
+                mascot.classList.add('is-celebrating');
+                mascot.addEventListener('animationend', () => {
+                    mascot.classList.remove('is-celebrating');
+                }, { once: true });
+            }
+        }
     });
 
     if (recentGameEls.length) {
