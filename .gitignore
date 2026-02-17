@@ -16,3 +16,6 @@ _archived/
 _mockups/
 dist-build/
 native/
+
+.playwright-mcp/
+firebase-debug.log
