@@ -5002,6 +5002,10 @@
     :root:has(#setting-reduce-motion:checked) .song-play-toggle:checked ~ .song-sheet .song-note {
         animation: none !important;
     }
+
+    :root:has(#setting-reduce-motion:checked) .corner-mascot {
+        opacity: 0.8;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5029,6 +5033,10 @@
     .install-toast.is-visible,
     .install-toast.is-leaving {
         animation: none !important;
+    }
+
+    .corner-mascot {
+        opacity: 0.8;
     }
 
     .install-toast.is-visible {
