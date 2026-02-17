@@ -46,7 +46,6 @@ const LEVEL_XP: [u32; 20] = [
 ];
 
 /// XP reward multipliers
-#[wasm_bindgen]
 #[derive(Clone, Copy, Debug)]
 pub struct XpRewards {
     /// Base XP per minute of practice
