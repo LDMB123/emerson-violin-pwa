@@ -41,3 +41,6 @@ export const PERSIST_REQUEST_KEY = 'panda-violin:persist-request-v1';
 // Offline
 export const OFFLINE_MODE_KEY = 'panda-violin:offline:mode-v1';
 export const OFFLINE_METRICS_KEY = 'panda-violin:offline:metrics-v1';
+
+// Onboarding
+export const ONBOARDING_KEY = 'onboarding-complete';

@@ -165,12 +165,12 @@ export const initializeBadging = () => {
     });
 
     // Update on practice completion
-    document.addEventListener('panda:practice-completed', () => {
+    document.addEventListener('panda:practice-recorded', () => {
         updatePracticeBadge();
     });
 
     // Update on lesson step completion
-    document.addEventListener('panda:lesson-step-completed', () => {
+    document.addEventListener('panda:lesson-step', () => {
         updatePracticeBadge();
     });
 

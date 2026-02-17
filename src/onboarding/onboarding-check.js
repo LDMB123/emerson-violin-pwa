@@ -1,6 +1,5 @@
 import { getJSON } from '../persistence/storage.js';
-
-const STORAGE_KEY = 'onboarding-complete';
+import { ONBOARDING_KEY as STORAGE_KEY } from '../persistence/storage-keys.js';
 
 export const shouldShowOnboarding = async () => {
     const complete = await getJSON(STORAGE_KEY);

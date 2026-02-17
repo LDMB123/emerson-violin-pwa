@@ -1,6 +1,5 @@
 import { setJSON } from '../persistence/storage.js';
-
-const STORAGE_KEY = 'onboarding-complete';
+import { ONBOARDING_KEY as STORAGE_KEY } from '../persistence/storage-keys.js';
 
 const carousel = document.getElementById('onboarding-carousel');
 const dots = document.querySelectorAll('.onboarding-dot');
