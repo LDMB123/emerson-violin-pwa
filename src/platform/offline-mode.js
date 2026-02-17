@@ -1,5 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { OFFLINE_MODE_KEY as MODE_KEY } from '../persistence/storage-keys.js';
+import { OFFLINE_MODE_CHANGE } from '../utils/event-names.js';
 const toggle = document.querySelector('#setting-offline-mode');
 const statusEl = document.querySelector('[data-offline-mode-status]');
 let currentEnabled = false;
@@ -45,7 +46,7 @@ const applyState = async (enabled, persist = true) => {
     if (toggle) toggle.checked = enabled;
     setDataset(enabled);
     setStatus(enabled);
-    document.dispatchEvent(new CustomEvent('panda:offline-mode-change', { detail: { enabled } }));
+    document.dispatchEvent(new CustomEvent(OFFLINE_MODE_CHANGE, { detail: { enabled } }));
     await notifyServiceWorker(enabled);
     if (persist) {
         await setJSON(MODE_KEY, { enabled, updatedAt: Date.now() });

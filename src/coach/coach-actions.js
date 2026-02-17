@@ -1,4 +1,5 @@
 import { getLearningRecommendations } from '../ml/recommendations.js';
+import { ML_UPDATE, LESSON_STEP, LESSON_COMPLETE } from '../utils/event-names.js';
 
 const bubble = document.querySelector('[data-progress="coach-speech"]');
 const buttons = Array.from(document.querySelectorAll('[data-coach-action]'));
@@ -136,9 +137,9 @@ if (buttons.length) {
 
 applyRecommendations();
 
-document.addEventListener('panda:ml-update', applyRecommendations);
-document.addEventListener('panda:lesson-step', handleLessonStep);
-document.addEventListener('panda:lesson-complete', handleLessonComplete);
+document.addEventListener(ML_UPDATE, applyRecommendations);
+document.addEventListener(LESSON_STEP, handleLessonStep);
+document.addEventListener(LESSON_COMPLETE, handleLessonComplete);
 
 if (voiceToggle && 'speechSynthesis' in window) {
     voiceToggle.addEventListener('change', () => {

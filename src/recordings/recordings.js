@@ -6,6 +6,7 @@ import {
     createBlobKey as createRecordingBlobKey,
 } from '../utils/recordings-utils.js';
 import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
+import { RECORDINGS_UPDATED } from '../utils/event-names.js';
 const MAX_RECORDINGS = 4;
 const recordToggle = document.querySelector('#setting-recordings');
 const statusEl = document.querySelector('[data-recording-status]');
@@ -99,7 +100,7 @@ const migrateRecordingsToBlobs = async () => {
 
     if (changed) {
         await setJSON(RECORDINGS_KEY, next);
-        window.dispatchEvent(new Event('panda:recordings-updated'));
+        window.dispatchEvent(new Event(RECORDINGS_UPDATED));
     }
 };
 
@@ -125,7 +126,7 @@ const saveRecording = async (songId, duration, blob) => {
     const next = [entry, ...recordings].slice(0, MAX_RECORDINGS);
     await setJSON(RECORDINGS_KEY, next);
     await pruneBlobs(recordings, next);
-    window.dispatchEvent(new Event('panda:recordings-updated'));
+    window.dispatchEvent(new Event(RECORDINGS_UPDATED));
 };
 
 const pickMimeType = () => {

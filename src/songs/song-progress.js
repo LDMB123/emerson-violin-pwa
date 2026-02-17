@@ -1,6 +1,7 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { clamp, todayDay } from '../utils/math.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
+import { SONG_RECORDED } from '../utils/event-names.js';
 
 const loadEvents = async () => {
     const stored = await getJSON(EVENT_KEY);
@@ -34,7 +35,7 @@ const recordSongEvent = async (songId, accuracy, duration, elapsed) => {
     };
     events.push(entry);
     await saveEvents(events);
-    document.dispatchEvent(new CustomEvent('panda:song-recorded', { detail: entry }));
+    document.dispatchEvent(new CustomEvent(SONG_RECORDED, { detail: entry }));
     updateBestAccuracyUI(events);
 };
 

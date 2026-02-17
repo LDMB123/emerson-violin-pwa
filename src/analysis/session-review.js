@@ -1,5 +1,6 @@
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { getJSON, getBlob } from '../persistence/storage.js';
+import { SOUNDS_CHANGE, RECORDINGS_UPDATED } from '../utils/event-names.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
@@ -155,7 +156,7 @@ const bindRecordingPlayback = () => {
     syncPlaybackSound();
     if (!soundListenerBound) {
         soundListenerBound = true;
-        document.addEventListener('panda:sounds-change', (event) => {
+        document.addEventListener(SOUNDS_CHANGE, (event) => {
             const enabled = event.detail?.enabled;
             syncPlaybackSound(enabled);
             if (!enabled) stopPlayback();
@@ -260,7 +261,7 @@ const initSessionReview = async () => {
         bindRecordingPlayback();
         bindRecordingExport();
     };
-    window.addEventListener('panda:recordings-updated', refreshRecordings);
+    window.addEventListener(RECORDINGS_UPDATED, refreshRecordings);
     window.addEventListener('hashchange', stopPlayback, { passive: true });
     window.addEventListener('pagehide', stopPlayback, { passive: true });
     document.addEventListener('visibilitychange', () => {

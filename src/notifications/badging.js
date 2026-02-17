@@ -1,4 +1,5 @@
 import { PROGRESS_KEY, LESSON_PLAN_KEY, FOCUS_ACTIVE_KEY } from '../persistence/storage-keys.js';
+import { PRACTICE_RECORDED, LESSON_STEP } from '../utils/event-names.js';
 
 /**
  * Badging API
@@ -165,12 +166,12 @@ export const initializeBadging = () => {
     });
 
     // Update on practice completion
-    document.addEventListener('panda:practice-recorded', () => {
+    document.addEventListener(PRACTICE_RECORDED, () => {
         updatePracticeBadge();
     });
 
     // Update on lesson step completion
-    document.addEventListener('panda:lesson-step', () => {
+    document.addEventListener(LESSON_STEP, () => {
         updatePracticeBadge();
     });
 

@@ -9,6 +9,7 @@ import {
     playToneNote,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const earQuestionEl = cachedEl('[data-ear="question"]');
 
@@ -128,7 +129,7 @@ const bindEarTrainer = () => {
 
     updateSoundState();
 
-    document.addEventListener('panda:sounds-change', (event) => {
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
             setQuestion('Sounds are off. Turn on Sounds to play.');
             Object.values(audioMap).forEach((audio) => {

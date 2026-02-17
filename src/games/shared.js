@@ -5,6 +5,7 @@ import { isSoundEnabled } from '../utils/sound-state.js';
 import { clamp, todayDay } from '../utils/math.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { EVENTS_KEY } from '../persistence/storage-keys.js';
+import { GAME_RECORDED, ML_RESET } from '../utils/event-names.js';
 
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 export const cachedEl = (selector) => { let el; return () => (el ??= document.querySelector(selector)); };
@@ -128,7 +129,7 @@ export const recordGameEvent = async (id, payload = {}) => {
         list.splice(0, list.length - MAX_EVENTS);
     }
     await setJSON(EVENT_KEY, list);
-    document.dispatchEvent(new CustomEvent('panda:game-recorded', { detail: entry }));
+    document.dispatchEvent(new CustomEvent(GAME_RECORDED, { detail: entry }));
 };
 
 export const attachTuning = (id, onUpdate) => {
@@ -140,7 +141,7 @@ export const attachTuning = (id, onUpdate) => {
         getGameTuning(id).then(apply).catch(() => {});
     };
     refresh();
-    document.addEventListener('panda:ml-reset', refresh);
+    document.addEventListener(ML_RESET, refresh);
     const report = (payload) => updateGameResult(id, payload).then(apply).catch(() => {});
     report.refresh = refresh;
     return report;

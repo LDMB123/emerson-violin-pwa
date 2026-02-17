@@ -1,6 +1,7 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
+import { SOUNDS_CHANGE, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import {
     isPracticeView as isPracticeViewUtil,
     calculateMetronomeBpm,
@@ -255,7 +256,7 @@ window.addEventListener('hashchange', () => {
     }
 }, { passive: true });
 
-document.addEventListener('panda:sounds-change', (event) => {
+document.addEventListener(SOUNDS_CHANGE, (event) => {
     if (event.detail?.enabled === false) {
         stopMetronome({ silent: true });
         setMetronomeStatus('Sounds are off.');
@@ -276,7 +277,7 @@ window.addEventListener('hashchange', () => {
     }
 }, { passive: true });
 
-document.addEventListener('panda:ml-update', (event) => {
+document.addEventListener(ML_UPDATE, (event) => {
     if (event.detail?.id === 'trainer-metronome') {
         metronomeReported = false;
         applyMetronomeTuning();
@@ -291,7 +292,7 @@ document.addEventListener('panda:ml-update', (event) => {
     }
 });
 
-document.addEventListener('panda:ml-reset', () => {
+document.addEventListener(ML_RESET, () => {
     if (metronomeSlider) delete metronomeSlider.dataset.userSet;
     metronomeReported = false;
     applyMetronomeTuning();

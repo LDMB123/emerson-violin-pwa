@@ -1,6 +1,7 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { formatDifficulty, processTunerMessage } from './tuner-utils.js';
+import { ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 
 const livePanel = document.querySelector('#tuner-live');
 const startButton = document.querySelector('#tuner-start');
@@ -226,13 +227,13 @@ if (startButton && stopButton) {
     }, { passive: true });
 }
 
-document.addEventListener('panda:ml-update', (event) => {
+document.addEventListener(ML_UPDATE, (event) => {
     if (event.detail?.id === 'tuner') {
         applyTuning();
     }
 });
 
-document.addEventListener('panda:ml-reset', () => {
+document.addEventListener(ML_RESET, () => {
     applyTuning();
 });
 

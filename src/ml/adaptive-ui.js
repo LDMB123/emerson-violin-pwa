@@ -1,5 +1,6 @@
 import { getAdaptiveSummary, resetAdaptiveModel, updateGameResult } from './adaptive-engine.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
+import { ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 
 const statusEl = document.querySelector('[data-ml-status]');
 const detailEl = document.querySelector('[data-ml-detail]');
@@ -105,10 +106,10 @@ if (demoToggle && simulateButton) {
 
 updateSummary();
 
-document.addEventListener('panda:ml-update', () => {
+document.addEventListener(ML_UPDATE, () => {
     updateSummary();
 });
 
-document.addEventListener('panda:ml-reset', () => {
+document.addEventListener(ML_RESET, () => {
     updateSummary();
 });

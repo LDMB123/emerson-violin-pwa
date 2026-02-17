@@ -1,4 +1,5 @@
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 export const NOTE_FREQUENCIES = {
     G3: 196.00,
@@ -151,7 +152,7 @@ export const createTonePlayer = () => {
         if (document.hidden) releaseContext();
     });
 
-    document.addEventListener('panda:sounds-change', syncSoundState);
+    document.addEventListener(SOUNDS_CHANGE, syncSoundState);
 
     syncSoundState();
 

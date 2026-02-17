@@ -9,6 +9,7 @@ import {
     stopTonePlayer,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const storyTitleEl = cachedEl('#view-game-story-song [data-story="title"]');
 
@@ -191,7 +192,7 @@ const bindStorySong = () => {
     updatePage();
     updateStatus();
 
-    document.addEventListener('panda:sounds-change', (event) => {
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
             stopPlayback({ message: 'Sounds are off. Enable Sounds to play along.' });
         } else if (event.detail?.enabled === true) {

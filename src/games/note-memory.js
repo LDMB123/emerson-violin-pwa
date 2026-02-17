@@ -11,6 +11,7 @@ import {
     playToneSequence,
     stopTonePlayer,
 } from './shared.js';
+import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const memoryMatchesEl = cachedEl('[data-memory="matches"]');
 const memoryScoreEl = cachedEl('[data-memory="score"]');
@@ -244,7 +245,7 @@ const bindNoteMemory = () => {
         resetGame();
     });
 
-    document.addEventListener('panda:sounds-change', (event) => {
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
             stopTonePlayer();
         }

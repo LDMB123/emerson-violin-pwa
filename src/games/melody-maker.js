@@ -11,6 +11,7 @@ import {
     stopTonePlayer,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const updateMelodyMaker = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-melody-maker input[id^="mm-step-"]'));
@@ -215,7 +216,7 @@ const bindMelodyMaker = () => {
         playSequence(targetMotif, 'Playing target motif\u2026');
     });
 
-    document.addEventListener('panda:sounds-change', (event) => {
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
             stopPlayback('Sounds are off. Enable Sounds to play your melody.');
         } else if (event.detail?.enabled === true) {
