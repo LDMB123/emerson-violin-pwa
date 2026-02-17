@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { todayDay } from '../src/utils/math.js';
 import {
-    todayDay,
     starString,
     coachMessageFor,
     buildChart,

@@ -1,3 +1,5 @@
+import { dataUrlToBlob, blobToDataUrl } from '../utils/recording-export.js';
+
 const DB_NAME = 'panda-violin-db';
 const DB_VERSION = 2;
 const STORE = 'kv';
@@ -32,6 +34,18 @@ const openDB = () => {
     return dbPromise;
 };
 
+/* ── IDB transaction helper ─────────────────────────────── */
+
+const idbOp = (db, storeName, mode, fn) => new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, mode);
+    const store = tx.objectStore(storeName);
+    const request = fn(store);
+    request.onsuccess = () => resolve(request.result ?? null);
+    request.onerror = () => reject(request.error);
+});
+
+/* ── localStorage fallbacks ─────────────────────────────── */
+
 const fallbackGet = (key) => {
     try {
         const raw = localStorage.getItem(key);
@@ -58,20 +72,7 @@ const fallbackRemove = (key) => {
     }
 };
 
-const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-        if (reader.result) resolve(reader.result);
-        else reject(new Error('[Storage] Unable to serialize blob to data URL.'));
-    };
-    reader.onerror = () => reject(reader.error || new Error('[Storage] Unable to serialize blob to data URL.'));
-    reader.readAsDataURL(blob);
-});
-
-const dataUrlToBlob = async (dataUrl) => {
-    const response = await fetch(dataUrl);
-    return response.blob();
-};
+/* ── Blob localStorage fallbacks ────────────────────────── */
 
 const fallbackSetBlob = async (key, blob) => {
     try {
@@ -104,70 +105,26 @@ const fallbackRemoveBlob = (key) => {
     }
 };
 
-const getFromDB = async (db, key) => new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readonly');
-    const store = tx.objectStore(STORE);
-    const request = store.get(key);
-    request.onsuccess = () => resolve(request.result ?? null);
-    request.onerror = () => reject(request.error);
-});
-
-const setInDB = async (db, key, value) => new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    const store = tx.objectStore(STORE);
-    const request = store.put(value, key);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-});
-
-const removeFromDB = async (db, key) => new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    const store = tx.objectStore(STORE);
-    const request = store.delete(key);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-});
-
-const getBlobFromDB = async (db, key) => new Promise((resolve, reject) => {
-    const tx = db.transaction(BLOB_STORE, 'readonly');
-    const store = tx.objectStore(BLOB_STORE);
-    const request = store.get(key);
-    request.onsuccess = () => resolve(request.result ?? null);
-    request.onerror = () => reject(request.error);
-});
-
-const setBlobInDB = async (db, key, blob) => new Promise((resolve, reject) => {
-    const tx = db.transaction(BLOB_STORE, 'readwrite');
-    const store = tx.objectStore(BLOB_STORE);
-    const request = store.put(blob, key);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-});
-
-const removeBlobFromDB = async (db, key) => new Promise((resolve, reject) => {
-    const tx = db.transaction(BLOB_STORE, 'readwrite');
-    const store = tx.objectStore(BLOB_STORE);
-    const request = store.delete(key);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-});
+/* ── Migration ──────────────────────────────────────────── */
 
 const migrateFallback = async (key, value) => {
     if (value === null || value === undefined) return;
     const db = await openDB();
     if (!db) return;
     try {
-        await setInDB(db, key, value);
+        await idbOp(db, STORE, 'readwrite', (s) => s.put(value, key));
     } catch (error) {
         console.warn('[Storage] IndexedDB migrate failed', error);
     }
 };
 
+/* ── Public API: JSON (KV store) ────────────────────────── */
+
 export const getJSON = async (key) => {
     const db = await openDB();
     if (db) {
         try {
-            const value = await getFromDB(db, key);
+            const value = await idbOp(db, STORE, 'readonly', (s) => s.get(key));
             if (value !== null && value !== undefined) return value;
         } catch (error) {
             console.warn('[Storage] IndexedDB get failed', error);
@@ -182,7 +139,7 @@ export const setJSON = async (key, value) => {
     const db = await openDB();
     if (db) {
         try {
-            await setInDB(db, key, value);
+            await idbOp(db, STORE, 'readwrite', (s) => s.put(value, key));
             return;
         } catch (error) {
             console.warn('[Storage] IndexedDB set failed', error);
@@ -195,7 +152,7 @@ export const removeJSON = async (key) => {
     const db = await openDB();
     if (db) {
         try {
-            await removeFromDB(db, key);
+            await idbOp(db, STORE, 'readwrite', (s) => s.delete(key));
         } catch (error) {
             console.warn('[Storage] IndexedDB remove failed', error);
         }
@@ -203,11 +160,13 @@ export const removeJSON = async (key) => {
     fallbackRemove(key);
 };
 
+/* ── Public API: Blobs ──────────────────────────────────── */
+
 export const getBlob = async (key) => {
     if (!key) return null;
     const db = await openDB();
     try {
-        if (db) return await getBlobFromDB(db, key);
+        if (db) return await idbOp(db, BLOB_STORE, 'readonly', (s) => s.get(key));
     } catch (error) {
         console.warn('[Storage] IndexedDB blob get failed', error);
     }
@@ -218,24 +177,12 @@ export const getBlob = async (key) => {
     return null;
 };
 
-const clearBlobFallback = async (key) => {
-    if (!key) return;
-    fallbackRemoveBlob(key);
-    try {
-        const db = await openDB();
-        if (!db) return;
-        await removeBlobFromDB(db, key);
-    } catch (error) {
-        console.warn('[Storage] blob cleanup failed', error);
-    }
-};
-
 export const setBlob = async (key, blob) => {
     if (!key || !blob) return false;
     const db = await openDB();
     try {
         if (!db) throw new Error('[Storage] IndexedDB unavailable');
-        await setBlobInDB(db, key, blob);
+        await idbOp(db, BLOB_STORE, 'readwrite', (s) => s.put(blob, key));
         return true;
     } catch (error) {
         console.warn('[Storage] IndexedDB blob set failed', error);
@@ -247,7 +194,14 @@ export const setBlob = async (key, blob) => {
 
 export const removeBlob = async (key) => {
     if (!key) return;
-    await clearBlobFallback(key);
+    fallbackRemoveBlob(key);
+    try {
+        const db = await openDB();
+        if (!db) return;
+        await idbOp(db, BLOB_STORE, 'readwrite', (s) => s.delete(key));
+    } catch (error) {
+        console.warn('[Storage] blob cleanup failed', error);
+    }
 };
 
 export const supportsIndexedDB = hasIndexedDB;

@@ -1,6 +1,4 @@
-import { clamp, todayDay } from './math.js';
-
-export { todayDay };
+import { clamp } from './math.js';
 
 export const starString = (score) => {
     const stars = clamp(Math.round(score / 20), 1, 5);

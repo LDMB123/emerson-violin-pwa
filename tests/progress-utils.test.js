@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { todayDay } from '../src/utils/math.js';
 import {
-    todayDay,
     minutesForInput,
     toTrackerTimestamp,
     formatRecentScore,

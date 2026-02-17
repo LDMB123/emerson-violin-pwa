@@ -1,7 +1,7 @@
 import { getJSON, setJSON, removeJSON } from '../persistence/storage.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
-import { todayDay, minutesForInput, toTrackerTimestamp, formatRecentScore, coachMessageFor, buildRadarPoints } from './progress-utils.js';
-import { clamp } from '../utils/math.js';
+import { minutesForInput, toTrackerTimestamp, formatRecentScore, coachMessageFor, buildRadarPoints } from './progress-utils.js';
+import { clamp, todayDay } from '../utils/math.js';
 import { EVENTS_KEY as EVENT_KEY, UI_STATE_KEY as PERSIST_KEY } from '../persistence/storage-keys.js';
 import { PRACTICE_RECORDED, GAME_RECORDED, GOAL_TARGET_CHANGE } from '../utils/event-names.js';
 
