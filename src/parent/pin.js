@@ -17,13 +17,6 @@ let pinReady = null;
 
 const normalizePin = (value) => (value || '').replace(/\D/g, '').slice(0, 4);
 
-// Legacy SHA-256 hash for migration
-const hashPinLegacy = async (pin) => {
-    const data = new TextEncoder().encode(pin);
-    const buf = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-};
-
 const updatePinDisplay = () => {
     if (pinDisplayEl) {
         pinDisplayEl.textContent = '🔒 PIN ••••';
