@@ -8,6 +8,7 @@ import {
     getPreferredOrientation,
 } from './platform-utils.js';
 import { PERSIST_REQUEST_KEY } from '../persistence/storage-keys.js';
+import { OFFLINE_MODE_CHANGE, SOUNDS_CHANGE, PERSIST_APPLIED } from '../utils/event-names.js';
 
 const storageStatusEl = document.querySelector('[data-storage-status]');
 const storageEstimateEl = document.querySelector('[data-storage-estimate]');
@@ -174,7 +175,7 @@ const bindStorageUI = () => {
         updateStorageStatus();
         maybeAutoPersist('online');
     }, { passive: true });
-    document.addEventListener('panda:offline-mode-change', () => {
+    document.addEventListener(OFFLINE_MODE_CHANGE, () => {
         maybeAutoPersist('offline-mode');
     });
 };
@@ -197,7 +198,7 @@ const bindNetworkStatus = () => {
     updateNetworkStatus();
     window.addEventListener('online', updateNetworkStatus, { passive: true });
     window.addEventListener('offline', updateNetworkStatus, { passive: true });
-    document.addEventListener('panda:offline-mode-change', updateNetworkStatus);
+    document.addEventListener(OFFLINE_MODE_CHANGE, updateNetworkStatus);
 };
 
 let wakeLock = null;
@@ -480,7 +481,7 @@ const bindAudioFocus = () => {
         });
     });
 
-    document.addEventListener('panda:sounds-change', (event) => {
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
             pauseOthers(null);
         }
@@ -513,7 +514,7 @@ const updateSoundState = () => {
             audio.currentTime = 0;
         }
     });
-    document.dispatchEvent(new CustomEvent('panda:sounds-change', { detail: { enabled } }));
+    document.dispatchEvent(new CustomEvent(SOUNDS_CHANGE, { detail: { enabled } }));
 };
 
 const bindSoundToggle = () => {
@@ -585,7 +586,7 @@ bindVisualViewport();
 bindInstallState();
 bindSoundToggle();
 
-document.addEventListener('panda:persist-applied', () => {
+document.addEventListener(PERSIST_APPLIED, () => {
     updateSoundState();
     requestWakeLock();
     requestOrientationLock();

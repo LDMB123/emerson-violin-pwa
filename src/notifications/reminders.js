@@ -1,3 +1,5 @@
+import { PERSIST_APPLIED } from '../utils/event-names.js';
+
 const notificationToggle = document.querySelector('#setting-notifications');
 const reminderToggle = document.querySelector('#parent-reminder-toggle');
 const notificationStatusEl = document.querySelector('[data-notification-status]');
@@ -179,4 +181,4 @@ if (reminderToggle) {
     reminderToggle.addEventListener('change', handleReminderToggle);
 }
 
-document.addEventListener('panda:persist-applied', syncStatuses);
+document.addEventListener(PERSIST_APPLIED, syncStatuses);

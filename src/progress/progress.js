@@ -3,6 +3,7 @@ import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { todayDay, minutesForInput, toTrackerTimestamp, formatRecentScore, coachMessageFor, buildRadarPoints } from './progress-utils.js';
 import { clamp } from '../utils/math.js';
 import { EVENTS_KEY as EVENT_KEY, UI_STATE_KEY as PERSIST_KEY } from '../persistence/storage-keys.js';
+import { PRACTICE_RECORDED, GAME_RECORDED, GOAL_TARGET_CHANGE } from '../utils/event-names.js';
 
 let wasmModule = null;
 const getCore = async () => {
@@ -461,7 +462,7 @@ const recordPracticeEvent = async (input) => {
 
     events.push(entry);
     await saveEvents(events);
-    document.dispatchEvent(new CustomEvent('panda:practice-recorded', { detail: entry }));
+    document.dispatchEvent(new CustomEvent(PRACTICE_RECORDED, { detail: entry }));
 
     const summary = await buildProgress(events);
     updateUI(summary);
@@ -521,13 +522,13 @@ const resetProgress = async () => {
 };
 
 document.addEventListener('change', handleChange);
-document.addEventListener('panda:game-recorded', async () => {
+document.addEventListener(GAME_RECORDED, async () => {
     const events = await loadEvents();
     const summary = await buildProgress(events);
     updateUI(summary);
 });
 
-document.addEventListener('panda:goal-target-change', async () => {
+document.addEventListener(GOAL_TARGET_CHANGE, async () => {
     const events = await loadEvents();
     const summary = await buildProgress(events);
     updateUI(summary);

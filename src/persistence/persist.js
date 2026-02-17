@@ -1,5 +1,6 @@
 import { getJSON, setJSON } from './storage.js';
 import { UI_STATE_KEY as STORAGE_KEY } from './storage-keys.js';
+import { PERSIST_APPLIED } from '../utils/event-names.js';
 
 const IGNORE_IDS = new Set(['focus-timer']);
 const IGNORE_PREFIXES = ['song-play-'];
@@ -49,7 +50,7 @@ const applyState = (state) => {
             }
         }
     });
-    document.dispatchEvent(new CustomEvent('panda:persist-applied', { detail: state }));
+    document.dispatchEvent(new CustomEvent(PERSIST_APPLIED, { detail: state }));
 };
 
 const initPersistence = async () => {

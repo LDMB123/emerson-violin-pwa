@@ -1,5 +1,6 @@
 import { getLearningRecommendations } from './recommendations.js';
 import { SKILL_LABELS } from '../utils/recommendations-utils.js';
+import { GOAL_TARGET_CHANGE, ML_UPDATE, ML_RESET, ML_RECS } from '../utils/event-names.js';
 
 const panels = Array.from(document.querySelectorAll('[data-lesson-plan]'));
 const stepLists = Array.from(document.querySelectorAll('[data-lesson-steps]'));
@@ -79,7 +80,7 @@ const setDailyGoalTarget = (total) => {
     if (root) root.dataset.dailyGoalTarget = String(value);
     const targetEl = document.querySelector('[data-progress="daily-goal-value"]');
     if (targetEl) targetEl.textContent = String(value);
-    document.dispatchEvent(new CustomEvent('panda:goal-target-change', { detail: { value } }));
+    document.dispatchEvent(new CustomEvent(GOAL_TARGET_CHANGE, { detail: { value } }));
 };
 
 const updateGoals = (steps = []) => {
@@ -113,6 +114,6 @@ const refreshPanels = async () => {
 
 refreshPanels();
 
-document.addEventListener('panda:ml-update', refreshPanels);
-document.addEventListener('panda:ml-reset', refreshPanels);
-document.addEventListener('panda:ml-recs', refreshPanels);
+document.addEventListener(ML_UPDATE, refreshPanels);
+document.addEventListener(ML_RESET, refreshPanels);
+document.addEventListener(ML_RECS, refreshPanels);

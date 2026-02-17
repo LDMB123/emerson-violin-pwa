@@ -1,5 +1,6 @@
 import '../styles/games.css';
 import { stopTonePlayer } from './shared.js';
+import { PERSIST_APPLIED, SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const gameModules = {
     'view-game-pitch-quest': () => import('./pitch-quest.js'),
@@ -80,11 +81,11 @@ if (document.readyState === 'loading') {
     initMetrics();
 }
 
-document.addEventListener('panda:persist-applied', () => {
+document.addEventListener(PERSIST_APPLIED, () => {
     scheduleUpdateAll();
 });
 
-document.addEventListener('panda:sounds-change', (event) => {
+document.addEventListener(SOUNDS_CHANGE, (event) => {
     if (event.detail?.enabled === false) {
         stopTonePlayer();
     }

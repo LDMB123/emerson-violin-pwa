@@ -11,6 +11,7 @@ import {
     getTonePlayer,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import {
     computeBeatInterval,
     computeBpm,
@@ -362,7 +363,7 @@ const bindRhythmDash = () => {
         }
     });
 
-    document.addEventListener('panda:sounds-change', (event) => {
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
             stopMetronome();
         } else if (runToggle?.checked) {

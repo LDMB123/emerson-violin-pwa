@@ -3,6 +3,7 @@ import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { clamp } from '../utils/math.js';
 import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
+import { RECORDINGS_UPDATED, SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const listEl = document.querySelector('[data-parent-recordings]');
 const statusEl = document.querySelector('[data-parent-recordings-status]');
@@ -23,7 +24,7 @@ const loadRecordings = async () => {
 
 const saveRecordings = async (recordings) => {
     await setJSON(RECORDINGS_KEY, recordings);
-    window.dispatchEvent(new Event('panda:recordings-updated'));
+    window.dispatchEvent(new Event(RECORDINGS_UPDATED));
 };
 
 const formatDuration = (seconds) => {
@@ -214,8 +215,8 @@ const init = () => {
         stopPlayback();
         render();
     };
-    window.addEventListener('panda:recordings-updated', handleUpdate);
-    document.addEventListener('panda:sounds-change', (event) => {
+    window.addEventListener(RECORDINGS_UPDATED, handleUpdate);
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
             stopPlayback();
         }

@@ -8,6 +8,7 @@ import {
     bindTap,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const updateTuningTime = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-tuning-time input[id^="tt-step-"]'));
@@ -103,7 +104,7 @@ const bindTuningTime = () => {
         });
     });
 
-    document.addEventListener('panda:sounds-change', (event) => {
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false && statusEl) {
             statusEl.textContent = 'Sounds are off. Enable Sounds to hear tones.';
         }

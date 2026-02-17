@@ -10,6 +10,7 @@ import {
     playToneSequence,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const updateDuetChallenge = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-duet-challenge input[id^="dc-step-"]'));
@@ -231,7 +232,7 @@ const bindDuetChallenge = () => {
         });
     });
 
-    document.addEventListener('panda:sounds-change', (event) => {
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
             stopPartnerPlayback();
         }

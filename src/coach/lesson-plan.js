@@ -1,5 +1,6 @@
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { formatTime } from '../games/session-timer.js';
+import { LESSON_STEP, LESSON_COMPLETE, ML_UPDATE, ML_RESET, ML_RECS } from '../utils/event-names.js';
 import {
     toLessonLink,
     computeStepDuration,
@@ -96,7 +97,7 @@ if (!planPanel) {
     };
 
     const dispatchLessonEvent = (state, step) => {
-        document.dispatchEvent(new CustomEvent('panda:lesson-step', {
+        document.dispatchEvent(new CustomEvent(LESSON_STEP, {
             detail: {
                 state,
                 step,
@@ -163,7 +164,7 @@ if (!planPanel) {
             if (startButton) startButton.textContent = 'Restart';
             if (nextButton) nextButton.disabled = true;
             if (ctaButton) ctaButton.setAttribute('href', '#view-games');
-            document.dispatchEvent(new CustomEvent('panda:lesson-complete'));
+            document.dispatchEvent(new CustomEvent(LESSON_COMPLETE));
         } else {
             currentIndex = completedSteps;
             setStatus(auto ? 'Step complete. Ready for the next one.' : 'Step marked complete. Tap Next to continue.');
@@ -259,9 +260,9 @@ if (!planPanel) {
 
     refreshPlan();
 
-    document.addEventListener('panda:ml-update', refreshPlan);
-    document.addEventListener('panda:ml-reset', refreshPlan);
-    document.addEventListener('panda:ml-recs', refreshPlan);
+    document.addEventListener(ML_UPDATE, refreshPlan);
+    document.addEventListener(ML_RESET, refreshPlan);
+    document.addEventListener(ML_RECS, refreshPlan);
 
     if (stepsList) {
         const observer = new MutationObserver(() => {

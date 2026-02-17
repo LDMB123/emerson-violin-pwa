@@ -1,5 +1,6 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
+import { PERSIST_APPLIED, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 
 const focusToggle = document.querySelector('#focus-timer');
 const focusArea = document.querySelector('.practice-focus');
@@ -178,17 +179,17 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', stopWhenInactive);
 
-document.addEventListener('panda:persist-applied', () => {
+document.addEventListener(PERSIST_APPLIED, () => {
     setFocusDuration(getSelectedMinutes());
 });
 
-document.addEventListener('panda:ml-update', (event) => {
+document.addEventListener(ML_UPDATE, (event) => {
     if (event.detail?.id === 'coach-focus') {
         applyTuning();
     }
 });
 
-document.addEventListener('panda:ml-reset', () => {
+document.addEventListener(ML_RESET, () => {
     if (focusArea) delete focusArea.dataset.userSet;
     applyTuning();
 });
