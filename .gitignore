@@ -13,3 +13,4 @@ node_modules/
 .worktrees/
 *.log
 _archived/original-assets/
+_mockups/
