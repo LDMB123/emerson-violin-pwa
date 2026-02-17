@@ -1,6 +1,7 @@
 import { getJSON, setJSON, getBlob, removeBlob } from '../persistence/storage.js';
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { clamp } from '../utils/math.js';
 
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
 
@@ -9,8 +10,6 @@ const statusEl = document.querySelector('[data-parent-recordings-status]');
 const clearButton = document.querySelector('[data-parent-clear-recordings]');
 const playbackAudio = new Audio();
 let playbackUrl = '';
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 playbackAudio.preload = 'none';
 

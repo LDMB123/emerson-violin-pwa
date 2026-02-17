@@ -1,8 +1,7 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
+import { clamp } from '../utils/math.js';
 
 const EVENT_KEY = 'panda-violin:events:v1';
-
-const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 
 const todayDay = () => Math.floor(Date.now() / 86400000);
 
