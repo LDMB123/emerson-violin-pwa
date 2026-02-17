@@ -164,7 +164,14 @@
                 <span class="recent-game-score" data-recent-game-score="">Score 0</span>
               </div>
             </div>
-            <p class="recent-games-empty" data-recent-games-empty="">Play a game to see your latest scores.</p>
+            <div class="empty-state recent-games-empty" data-recent-games-empty="">
+              <picture>
+                <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
+                <img src="./assets/illustrations/mascot-happy.png" alt="" class="empty-state-mascot" width="64" height="64" loading="lazy" decoding="async">
+              </picture>
+              <p class="empty-state-text">No games yet — pick one to get started!</p>
+              <a href="#view-games" class="btn btn-primary btn-sm">Play a game</a>
+            </div>
           </div>
 
           <div class="xp-panel glass">
