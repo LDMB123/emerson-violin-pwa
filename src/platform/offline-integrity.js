@@ -1,7 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAudioPath } from '../audio/format-detection.js';
-
-const METRICS_KEY = 'panda-violin:offline:metrics-v1';
+import { OFFLINE_METRICS_KEY as METRICS_KEY } from '../persistence/storage-keys.js';
 
 const statusEl = document.querySelector('[data-offline-status]');
 const assetsEl = document.querySelector('[data-offline-assets]');

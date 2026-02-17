@@ -1,6 +1,5 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
-
-const MODE_KEY = 'panda-violin:offline:mode-v1';
+import { OFFLINE_MODE_KEY as MODE_KEY } from '../persistence/storage-keys.js';
 const toggle = document.querySelector('#setting-offline-mode');
 const statusEl = document.querySelector('[data-offline-mode-status]');
 let currentEnabled = false;

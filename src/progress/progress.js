@@ -2,6 +2,7 @@ import { getJSON, setJSON, removeJSON } from '../persistence/storage.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { todayDay, minutesForInput, toTrackerTimestamp, formatRecentScore, coachMessageFor, buildRadarPoints } from './progress-utils.js';
 import { clamp } from '../utils/math.js';
+import { EVENTS_KEY as EVENT_KEY, UI_STATE_KEY as PERSIST_KEY } from '../persistence/storage-keys.js';
 
 let wasmModule = null;
 const getCore = async () => {
@@ -12,9 +13,6 @@ const getCore = async () => {
     }
     return wasmModule;
 };
-
-const EVENT_KEY = 'panda-violin:events:v1';
-const PERSIST_KEY = 'panda-violin:ui-state:v1';
 
 const xpFillEl = document.querySelector('[data-progress="xp-fill"]');
 const xpInfoEl = document.querySelector('[data-progress="xp-info"]');

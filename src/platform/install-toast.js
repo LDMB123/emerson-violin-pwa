@@ -8,8 +8,7 @@
  */
 
 import { getJSON, setJSON } from '../persistence/storage.js';
-
-const DISMISS_KEY = 'panda-violin:install-toast:v1';
+import { INSTALL_TOAST_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
 const SHOW_DELAY = 5000;
 const AUTO_DISMISS = 8000;
 

@@ -5,8 +5,7 @@ import {
     getSongIdFromHash,
     createBlobKey as createRecordingBlobKey,
 } from '../utils/recordings-utils.js';
-
-const RECORDINGS_KEY = 'panda-violin:recordings:v1';
+import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 const MAX_RECORDINGS = 4;
 const recordToggle = document.querySelector('#setting-recordings');
 const statusEl = document.querySelector('[data-recording-status]');

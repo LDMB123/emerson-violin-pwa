@@ -1,6 +1,5 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
-
-const DISMISS_KEY = 'panda-violin:install-guide:v1';
+import { INSTALL_GUIDE_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
 const helpButton = document.querySelector('[data-install-help]');
 let lastFocused = null;
 

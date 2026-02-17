@@ -9,9 +9,7 @@ const pinInputEl = document.querySelector('[data-parent-pin-input]');
 const pinSaveButton = document.querySelector('[data-parent-pin-save]');
 const pinStatusEl = document.querySelector('[data-parent-pin-status]');
 
-const PIN_KEY = 'panda-violin:parent-pin-v2'; // Changed to v2 for PBKDF2
-const PIN_KEY_LEGACY = 'panda-violin:parent-pin-v1'; // Old SHA-256 version
-const UNLOCK_KEY = 'panda-violin:parent-unlocked';
+import { PARENT_PIN_KEY as PIN_KEY, PARENT_PIN_LEGACY_KEY as PIN_KEY_LEGACY, PARENT_UNLOCK_KEY as UNLOCK_KEY } from '../persistence/storage-keys.js';
 let cachedPinData = null;
 let pinReady = null;
 

@@ -7,6 +7,7 @@ import {
     viewAllowsWake,
     getPreferredOrientation,
 } from './platform-utils.js';
+import { PERSIST_REQUEST_KEY } from '../persistence/storage-keys.js';
 
 const storageStatusEl = document.querySelector('[data-storage-status]');
 const storageEstimateEl = document.querySelector('[data-storage-estimate]');
@@ -22,7 +23,6 @@ const soundToggle = document.querySelector('#setting-sounds');
 const rootStyle = document.documentElement?.style;
 const root = document.documentElement;
 const installStatusEl = document.querySelector('[data-install-status]');
-const PERSIST_REQUEST_KEY = 'panda-violin:persist-request-v1';
 
 const loadPersistRequest = () => {
     try {

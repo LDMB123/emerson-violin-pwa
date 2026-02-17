@@ -2,8 +2,7 @@ import { getJSON, setJSON, getBlob, removeBlob } from '../persistence/storage.js
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { clamp } from '../utils/math.js';
-
-const RECORDINGS_KEY = 'panda-violin:recordings:v1';
+import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 
 const listEl = document.querySelector('[data-parent-recordings]');
 const statusEl = document.querySelector('[data-parent-recordings-status]');

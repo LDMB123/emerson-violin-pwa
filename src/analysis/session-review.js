@@ -23,8 +23,7 @@ const getCore = async () => {
     return wasmModule;
 };
 
-const EVENT_KEY = 'panda-violin:events:v1';
-const RECORDINGS_KEY = 'panda-violin:recordings:v1';
+import { EVENTS_KEY as EVENT_KEY, RECORDINGS_KEY } from '../persistence/storage-keys.js';
 
 const chartLine = document.querySelector('[data-analysis="chart-line"]');
 const chartPoints = document.querySelector('[data-analysis="chart-points"]');

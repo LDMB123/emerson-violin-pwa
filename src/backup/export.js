@@ -1,17 +1,18 @@
 import { getJSON, setJSON, getBlob, setBlob, removeBlob, supportsIndexedDB } from '../persistence/storage.js';
 import { dataUrlToBlob } from '../utils/recording-export.js';
+import {
+    EVENTS_KEY as EVENT_KEY,
+    UI_STATE_KEY as UI_KEY,
+    RECORDINGS_KEY,
+    ML_MODEL_KEY,
+    ML_LOG_KEY,
+} from '../persistence/storage-keys.js';
 
 const exportButton = document.querySelector('[data-export-json]');
 const exportStatus = document.querySelector('[data-export-status]');
 const importButton = document.querySelector('[data-import-json]');
 const importStatus = document.querySelector('[data-import-status]');
 const importInput = document.querySelector('[data-import-file]');
-
-const EVENT_KEY = 'panda-violin:events:v1';
-const UI_KEY = 'panda-violin:ui-state:v1';
-const RECORDINGS_KEY = 'panda-violin:recordings:v1';
-const ML_MODEL_KEY = 'panda-violin:ml:adaptive-v1';
-const ML_LOG_KEY = 'panda-violin:ml:events:v1';
 
 const blobToDataUrl = (blob) => new Promise((resolve) => {
     const reader = new FileReader();
