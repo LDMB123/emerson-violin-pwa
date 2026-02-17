@@ -423,8 +423,10 @@
 
     .xp-fill {
         height: 100%;
-        background: var(--color-primary);
+        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-primary));
+        background-size: 200% 100%;
         border-radius: var(--radius-full);
+        animation: progress-shimmer 2.5s ease-in-out infinite;
         transition: width var(--duration-slow) var(--ease-out);
     }
 
@@ -686,7 +688,9 @@
     .level-fill {
         height: 100%;
         width: 0%;
-        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary), var(--color-primary));
+        background-size: 200% 100%;
+        animation: progress-shimmer 2.5s ease-in-out infinite;
         border-radius: var(--radius-full);
     }
 
@@ -937,6 +941,11 @@
         }
     }
 
+    @keyframes progress-shimmer {
+        0% { background-position: 200% center; }
+        100% { background-position: -200% center; }
+    }
+
     .home-cards {
         display: grid;
         grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.9fr);
@@ -1013,10 +1022,25 @@
 
     .goal-fill {
         height: 100%;
-        background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+        background: linear-gradient(
+            90deg,
+            var(--color-primary),
+            var(--color-secondary),
+            var(--color-primary)
+        );
+        background-size: 200% 100%;
         border-radius: var(--radius-full);
         width: 0%;
         transition: width var(--duration-slow) var(--ease-out);
+        animation: progress-shimmer 2.5s ease-in-out infinite;
+        box-shadow: 1px 0 8px color-mix(in srgb, var(--color-secondary), transparent 40%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .goal-fill {
+            animation: none;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+        }
     }
 
     .goal-checklist {
@@ -3259,7 +3283,10 @@
     .xp-fill-large {
         height: 100%;
         width: 30%;
-        background: linear-gradient(90deg, #7b58ff, #ffb65f);
+        background: linear-gradient(90deg, #7b58ff, #ffb65f, #7b58ff);
+        background-size: 200% 100%;
+        animation: progress-shimmer 2.5s ease-in-out infinite;
+        box-shadow: 1px 0 8px rgba(123, 88, 255, 0.35);
     }
 
     .xp-info {
