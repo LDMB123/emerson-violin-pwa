@@ -1,5 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAudioPath } from '../audio/format-detection.js';
+import { formatTimestamp } from '../utils/math.js';
 import { OFFLINE_METRICS_KEY as METRICS_KEY } from '../persistence/storage-keys.js';
 
 const statusEl = document.querySelector('[data-offline-status]');
@@ -41,15 +42,6 @@ const defaultMetrics = () => ({
     selfTestTotal: 0,
     selfTestAt: 0,
 });
-
-const formatTimestamp = (value) => {
-    if (!value) return '—';
-    try {
-        return new Date(value).toLocaleString();
-    } catch {
-        return '—';
-    }
-};
 
 const loadMetrics = async () => {
     const stored = await getJSON(METRICS_KEY);

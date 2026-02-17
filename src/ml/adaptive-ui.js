@@ -1,5 +1,6 @@
 import { getAdaptiveSummary, resetAdaptiveModel, updateGameResult } from './adaptive-engine.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
+import { formatTimestamp } from '../utils/math.js';
 import { ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 
 const statusEl = document.querySelector('[data-ml-status]');
@@ -7,15 +8,6 @@ const detailEl = document.querySelector('[data-ml-detail]');
 const resetButton = document.querySelector('[data-ml-reset]');
 const demoToggle = document.querySelector('[data-ml-demo]');
 const simulateButton = document.querySelector('[data-ml-simulate]');
-
-const formatTimestamp = (value) => {
-    if (!value) return '—';
-    try {
-        return new Date(value).toLocaleString();
-    } catch {
-        return '—';
-    }
-};
 
 const updateSummary = async () => {
     if (!statusEl && !detailEl) return;
