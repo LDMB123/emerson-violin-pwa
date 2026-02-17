@@ -2,10 +2,11 @@ import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { createTonePlayer } from '../audio/tone-player.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { clamp } from '../utils/math.js';
 
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 export const cachedEl = (selector) => { let el; return () => (el ??= document.querySelector(selector)); };
-export const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
+export { clamp };
 export const EVENT_KEY = 'panda-violin:events:v1';
 export const MAX_EVENTS = 500;
 export const todayDay = () => Math.floor(Date.now() / 86400000);

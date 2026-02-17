@@ -1,4 +1,5 @@
 import { getJSON, setJSON, removeJSON } from '../persistence/storage.js';
+import { clamp as rawClamp } from '../utils/math.js';
 
 const MODEL_KEY = 'panda-violin:ml:adaptive-v1';
 const LOG_KEY = 'panda-violin:ml:events:v1';
@@ -9,7 +10,7 @@ const DEFAULT_MODEL = {
 };
 const LOG_LIMIT = 120;
 
-const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
+const clamp = (value, min = 0, max = 1) => rawClamp(value, min, max);
 
 const GAME_CONFIG = {
     'pitch-quest': {
