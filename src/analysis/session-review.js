@@ -4,8 +4,8 @@ import { SOUNDS_CHANGE, RECORDINGS_UPDATED } from '../utils/event-names.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { todayDay } from '../utils/math.js';
 import {
-    todayDay,
     starString,
     coachMessageFor,
     buildChart,

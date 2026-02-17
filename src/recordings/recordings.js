@@ -1,5 +1,5 @@
 import { getJSON, setJSON, setBlob, removeBlob, supportsIndexedDB } from '../persistence/storage.js';
-import { dataUrlToBlob } from '../utils/recording-export.js';
+import { dataUrlToBlob, blobToDataUrl } from '../utils/recording-export.js';
 import {
     getSongIdFromViewId,
     getSongIdFromHash,
@@ -34,12 +34,6 @@ const parseDuration = (sheet) => {
     const value = Number.parseFloat(raw);
     return Number.isNaN(value) ? 0 : value;
 };
-
-const blobToDataUrl = (blob) => new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-});
 
 const scheduleIdle = (task) => {
     if (globalThis.scheduler?.postTask) {

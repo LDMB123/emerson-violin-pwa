@@ -1,5 +1,6 @@
 import { getJSON, setJSON, getBlob, setBlob, removeBlob, supportsIndexedDB } from '../persistence/storage.js';
-import { dataUrlToBlob } from '../utils/recording-export.js';
+import { dataUrlToBlob, blobToDataUrl } from '../utils/recording-export.js';
+import { createBlobKey } from '../utils/recordings-utils.js';
 import {
     EVENTS_KEY as EVENT_KEY,
     UI_STATE_KEY as UI_KEY,
@@ -13,19 +14,6 @@ const exportStatus = document.querySelector('[data-export-status]');
 const importButton = document.querySelector('[data-import-json]');
 const importStatus = document.querySelector('[data-import-status]');
 const importInput = document.querySelector('[data-import-file]');
-
-const blobToDataUrl = (blob) => new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.readAsDataURL(blob);
-});
-
-const createBlobKey = (id) => {
-    if (globalThis.crypto?.randomUUID) {
-        return `recording:${id}:${crypto.randomUUID()}`;
-    }
-    return `recording:${id}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-};
 
 const normalizeRecordingForExport = async (recording) => {
     if (!recording || typeof recording !== 'object') return null;

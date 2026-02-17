@@ -1,5 +1,6 @@
 import { getLearningRecommendations } from './recommendations.js';
 import { SKILL_LABELS } from '../utils/recommendations-utils.js';
+import { toLessonLink } from '../utils/lesson-plan-utils.js';
 import { GOAL_TARGET_CHANGE, ML_UPDATE, ML_RESET, ML_RECS } from '../utils/event-names.js';
 
 const panels = Array.from(document.querySelectorAll('[data-lesson-plan]'));
@@ -8,12 +9,6 @@ const goalList = document.querySelector('[data-goal-list]');
 
 const formatBpm = (value) => `${Math.round(value)} BPM`;
 const formatMinutes = (value) => `${Math.max(0, Math.round(value || 0))} min`;
-
-const toLessonLink = (id) => {
-    if (!id) return '#view-games';
-    if (id.startsWith('view-')) return `#${id}`;
-    return `#view-game-${id}`;
-};
 
 const updatePanel = (panel, recs) => {
     if (!panel || !recs) return;

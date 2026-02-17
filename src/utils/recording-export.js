@@ -9,6 +9,16 @@ export const dataUrlToBlob = async (dataUrl) => {
     return response.blob();
 };
 
+export const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        if (reader.result) resolve(reader.result);
+        else reject(new Error('Unable to serialize blob to data URL.'));
+    };
+    reader.onerror = () => reject(reader.error || new Error('Unable to serialize blob to data URL.'));
+    reader.readAsDataURL(blob);
+});
+
 const resolveRecordingBlob = async (recording, blobOverride) => {
     if (blobOverride instanceof Blob) return blobOverride;
     if (recording?.blob instanceof Blob) return recording.blob;
