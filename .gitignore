@@ -12,5 +12,7 @@ node_modules/
 .claude/
 .worktrees/
 *.log
-_archived/original-assets/
+_archived/
 _mockups/
+dist-build/
+native/
