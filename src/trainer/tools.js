@@ -17,6 +17,14 @@ import {
     shouldClearTapTimes
 } from './trainer-utils.js';
 
+function updateSliderFill(slider) {
+    const min = Number(slider.min) || 0;
+    const max = Number(slider.max) || 100;
+    const val = Number(slider.value) || 0;
+    const pct = ((val - min) / (max - min)) * 100;
+    slider.style.setProperty('--slider-fill', `${pct}%`);
+}
+
 const metronomeSlider = document.querySelector('[data-metronome="slider"]');
 const metronomeBpmEl = document.querySelector('[data-metronome="bpm"]');
 const metronomeToggle = document.querySelector('[data-metronome="toggle"]');
@@ -180,6 +188,7 @@ const updateBpm = (value) => {
 };
 
 if (metronomeSlider) {
+    metronomeSlider.dataset.sliderFillBound = 'true';
     metronomeSlider.addEventListener('input', (event) => {
         const target = event.target;
         if (!(target instanceof HTMLInputElement)) return;
@@ -187,6 +196,7 @@ if (metronomeSlider) {
         metronomeReported = false;
         metronomeTouched = true;
         updateBpm(target.value);
+        updateSliderFill(metronomeSlider);
     });
 }
 
@@ -246,6 +256,15 @@ document.addEventListener(SOUNDS_CHANGE, (event) => {
 });
 
 updateMetronomeDisplay();
+
+document.querySelectorAll('input[type="range"]').forEach((s) => {
+    updateSliderFill(s);
+    if (!s.dataset.sliderFillBound) {
+        s.dataset.sliderFillBound = 'true';
+        s.addEventListener('input', () => updateSliderFill(s));
+    }
+});
+
 applyMetronomeTuning();
 applyPostureTuning();
 applyBowingTuning();
