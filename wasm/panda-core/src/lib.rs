@@ -602,26 +602,6 @@ pub fn calculate_streak(practice_dates: &[u32]) -> u32 {
     streak
 }
 
-/// Calculate adaptive difficulty based on recent scores
-#[wasm_bindgen]
-pub fn calculate_difficulty(recent_scores: &[u8]) -> u8 {
-    if recent_scores.is_empty() {
-        return 50; // Medium difficulty
-    }
-
-    let avg: f32 = recent_scores.iter().map(|&s| s as f32).sum::<f32>() / recent_scores.len() as f32;
-
-    // If averaging above 85%, increase difficulty
-    // If averaging below 60%, decrease difficulty
-    if avg >= 85.0 {
-        (avg as u8).min(100)
-    } else if avg < 60.0 {
-        (avg as u8).max(20)
-    } else {
-        avg as u8
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
