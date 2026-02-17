@@ -1,5 +1,6 @@
 import { PROGRESS_KEY, LESSON_PLAN_KEY, FOCUS_ACTIVE_KEY } from '../persistence/storage-keys.js';
 import { PRACTICE_RECORDED, LESSON_STEP } from '../utils/event-names.js';
+import { getJSON } from '../persistence/storage.js';
 
 /**
  * Badging API
@@ -113,10 +114,9 @@ const getIncompletePracticeTasks = async () => {
  */
 const checkPracticeToday = async (date) => {
     try {
-        const stored = localStorage.getItem(PROGRESS_KEY);
-        if (!stored) return false;
+        const progress = await getJSON(PROGRESS_KEY);
+        if (!progress) return false;
 
-        const progress = JSON.parse(stored);
         const todayEntry = progress.days?.find((day) => day.date === date);
         return todayEntry && todayEntry.totalTime > 0;
     } catch {
@@ -129,8 +129,7 @@ const checkPracticeToday = async (date) => {
  */
 const getLessonPlan = async () => {
     try {
-        const stored = localStorage.getItem(LESSON_PLAN_KEY);
-        return stored ? JSON.parse(stored) : null;
+        return await getJSON(LESSON_PLAN_KEY);
     } catch {
         return null;
     }
@@ -141,8 +140,7 @@ const getLessonPlan = async () => {
  */
 const getFocusGoal = async () => {
     try {
-        const stored = localStorage.getItem(FOCUS_ACTIVE_KEY);
-        return stored ? JSON.parse(stored) : null;
+        return await getJSON(FOCUS_ACTIVE_KEY);
     } catch {
         return null;
     }

@@ -153,15 +153,7 @@ const bindEarTrainer = () => {
         currentTone = tonePool[Math.floor(Math.random() * tonePool.length)];
         const audio = currentTone ? audioMap[currentTone] : null;
         if (audio) {
-            if (!isSoundEnabled()) {
-                setQuestion('Sounds are off. Turn on Sounds to play.');
-                return;
-            }
             audio.currentTime = 0;
-            if (!isSoundEnabled()) {
-                setQuestion('Sounds are off. Turn on Sounds to play.');
-                return;
-            }
             audio.play().catch(() => {});
         }
         const total = rounds || 10;

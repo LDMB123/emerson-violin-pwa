@@ -1,6 +1,5 @@
 import {
     readLiveNumber,
-    setLiveNumber,
     markChecklist,
     setDifficultyBadge,
     recordGameEvent,
@@ -8,6 +7,8 @@ import {
     bindTap,
     playToneNote,
     playToneSequence,
+    buildNoteSequence,
+    updateScoreCombo,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
@@ -53,10 +54,7 @@ const bindDuetChallenge = () => {
     let round = 1;
     let mistakes = 0;
 
-    const updateScoreboard = () => {
-        setLiveNumber(scoreEl, 'liveScore', score);
-        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
-    };
+    const updateScoreboard = () => updateScoreCombo(scoreEl, comboEl, score, combo);
 
     const reportResult = attachTuning('duet-challenge', (tuning) => {
         comboTarget = tuning.comboTarget ?? comboTarget;
@@ -64,12 +62,7 @@ const bindDuetChallenge = () => {
     });
 
     const buildSequence = () => {
-        const next = [];
-        for (let i = 0; i < 4; i += 1) {
-            const options = notePool.filter((note) => note !== next[i - 1]);
-            next.push(options[Math.floor(Math.random() * options.length)]);
-        }
-        sequence = next;
+        sequence = buildNoteSequence(notePool, 4);
         if (notesEl) notesEl.textContent = sequence.join(' · ');
         if (roundEl) roundEl.textContent = `Round ${round}`;
         seqIndex = 0;

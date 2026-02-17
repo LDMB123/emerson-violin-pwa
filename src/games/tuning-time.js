@@ -74,15 +74,7 @@ const bindTuningTime = () => {
             }
             const audio = audioMap[note];
             if (audio) {
-                if (!isSoundEnabled()) {
-                    if (statusEl) statusEl.textContent = 'Sounds are off. Enable Sounds to hear the tone.';
-                    return;
-                }
                 audio.currentTime = 0;
-                if (!isSoundEnabled()) {
-                    if (statusEl) statusEl.textContent = 'Sounds are off. Enable Sounds to hear the tone.';
-                    return;
-                }
                 audio.play().catch(() => {});
             }
             tunedNotes.add(note);

@@ -1,6 +1,5 @@
 import {
     readLiveNumber,
-    setLiveNumber,
     markChecklist,
     markChecklistIf,
     setDifficultyBadge,
@@ -9,6 +8,8 @@ import {
     bindTap,
     playToneNote,
     playToneSequence,
+    buildNoteSequence,
+    updateScoreCombo,
 } from './shared.js';
 
 const updatePizzicato = () => {
@@ -44,12 +45,7 @@ const bindPizzicato = () => {
     let comboTarget = 6;
 
     const buildSequence = () => {
-        const next = [];
-        for (let i = 0; i < 4; i += 1) {
-            const options = notePool.filter((note) => note !== next[i - 1]);
-            next.push(options[Math.floor(Math.random() * options.length)]);
-        }
-        sequence = next;
+        sequence = buildNoteSequence(notePool, 4);
         seqIndex = 0;
     };
 
@@ -66,10 +62,7 @@ const bindPizzicato = () => {
         }
     };
 
-    const updateScoreboard = () => {
-        setLiveNumber(scoreEl, 'liveScore', score);
-        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
-    };
+    const updateScoreboard = () => updateScoreCombo(scoreEl, comboEl, score, combo);
 
     const reportResult = attachTuning('pizzicato', (tuning) => {
         comboTarget = tuning.comboTarget ?? comboTarget;

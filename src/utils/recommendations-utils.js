@@ -29,6 +29,23 @@ export const GAME_BY_SKILL = {
     posture: 'view-posture',
 };
 
+export const GAME_LABELS = {
+    'pitch-quest': 'Pitch Quest',
+    'rhythm-dash': 'Rhythm Dash',
+    'note-memory': 'Note Memory',
+    'ear-trainer': 'Ear Trainer',
+    'bow-hero': 'Bow Hero',
+    'string-quest': 'String Quest',
+    'rhythm-painter': 'Rhythm Painter',
+    'story-song': 'Story Song Lab',
+    pizzicato: 'Pizzicato Pop',
+    'tuning-time': 'Tuning Time',
+    'melody-maker': 'Melody Maker',
+    'scale-practice': 'Scale Practice',
+    'duet-challenge': 'Duet Challenge',
+    'view-posture': 'Posture Mirror',
+};
+
 export const SKILL_LABELS = {
     pitch: 'Pitch',
     rhythm: 'Rhythm',

@@ -1,4 +1,4 @@
-import { clamp } from './math.js';
+import { clamp, deviationAccuracy } from './math.js';
 
 export const computeBeatInterval = (bpm) => {
     return 60000 / Math.max(1, bpm);
@@ -55,8 +55,7 @@ export const computeAccuracyFromTimingScores = (timingScores) => {
 export const computeAccuracyFromBpmHistory = (tapHistory, targetBpm) => {
     if (!tapHistory.length) return 0;
     const average = tapHistory.reduce((sum, value) => sum + value, 0) / tapHistory.length;
-    const delta = Math.abs(average - targetBpm) / Math.max(targetBpm, 1);
-    return clamp((1 - delta) * 100, 0, 100);
+    return deviationAccuracy(average, targetBpm);
 };
 
 export const shouldBreakCombo = (delta, timingScore) => {
