@@ -107,6 +107,13 @@ If both pass, you are at a known-good baseline.
   - `setUrl()` now revokes prior blob URLs when replaced, and `stop()` only revokes blob URLs.
   - Expanded coverage for overwrite and non-blob behavior:
     - `tests/audio-utils.test.js`
+- Completed bfcache-aware trainer lifecycle guard pass (2026-02-18, phase 11):
+  - Added reusable bfcache pagehide helper:
+    - `src/trainer/trainer-utils.js` (`isBfcachePagehide`)
+  - Prevented destructive posture cleanup/reporting on persisted pagehide snapshots:
+    - `src/trainer/tools.js`
+  - Expanded utility coverage:
+    - `tests/trainer-utils.test.js`
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -124,6 +131,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-5.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-6.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-7.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-8.md`
 
 ## Verification Gates
 
