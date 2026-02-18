@@ -125,6 +125,16 @@ const { bind } = createGame({
             });
         };
 
+        gameState._onDeactivate = () => {
+            gameState.currentTone = null;
+            Object.values(audioMap).forEach((audio) => {
+                if (audio && !audio.paused) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            });
+        };
+
         updateSoundState();
 
         const soundsHandler = (event) => {

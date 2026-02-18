@@ -70,6 +70,15 @@ const { bind } = createGame({
             if (progressBar) progressBar.setAttribute('aria-valuenow', Math.round(percent));
         }
 
+        gameState._onDeactivate = () => {
+            Object.values(audioMap).forEach((audio) => {
+                if (audio && !audio.paused) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            });
+        };
+
         buttons.forEach((button) => {
             bindTap(button, () => {
                 const note = button.dataset.tuningNote;
