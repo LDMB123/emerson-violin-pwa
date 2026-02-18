@@ -89,12 +89,6 @@ const handleReminderToggle = async () => {
 };
 
 const showNotification = async () => {
-    if (!('Notification' in window)) {
-        updateNotificationStatus('Notifications are not available on this device.');
-        if (notificationToggle) notificationToggle.checked = false;
-        return;
-    }
-
     let permission = 'default';
     try {
         permission = await Notification.requestPermission();
@@ -114,7 +108,7 @@ const showNotification = async () => {
         return;
     }
 
-    const registration = await navigator.serviceWorker?.getRegistration();
+    const registration = await navigator.serviceWorker.getRegistration();
     if (registration?.showNotification) {
         await registration.showNotification('Panda Violin', {
             body: 'Notifications are enabled for practice reminders.',
@@ -141,12 +135,6 @@ const handleNotificationToggle = () => {
 
 const syncNotificationPermission = () => {
     if (!notificationToggle) return;
-    if (!('Notification' in window)) {
-        notificationToggle.checked = false;
-        notificationToggle.disabled = true;
-        updateNotificationStatus('Notifications are not available on this device.');
-        return;
-    }
     if (Notification.permission === 'granted') {
         notificationToggle.disabled = false;
         updateNotificationStatus(notificationToggle.checked ? 'Notifications are on.' : 'Notifications are off.');

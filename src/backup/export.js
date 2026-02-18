@@ -1,4 +1,4 @@
-import { getJSON, setJSON, getBlob, setBlob, removeBlob, supportsIndexedDB } from '../persistence/storage.js';
+import { getJSON, setJSON, getBlob, setBlob, removeBlob } from '../persistence/storage.js';
 import { dataUrlToBlob, blobToDataUrl, createBlobKey } from '../utils/recording-export.js';
 import {
     EVENTS_KEY as EVENT_KEY,
@@ -31,7 +31,7 @@ const normalizeRecordingForExport = async (recording) => {
 
 const hydrateRecordingForImport = async (recording) => {
     if (!recording || typeof recording !== 'object') return null;
-    if (!recording.dataUrl || !supportsIndexedDB) return recording;
+    if (!recording.dataUrl) return recording;
     try {
         const blob = await dataUrlToBlob(recording.dataUrl);
         const blobKey = createBlobKey(recording.id || 'import');

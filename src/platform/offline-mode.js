@@ -12,14 +12,6 @@ const setStatus = (enabled) => {
         : 'Offline mode is off. Cached content will still be used when offline.';
 };
 
-const disableToggle = (message) => {
-    if (toggle) {
-        toggle.checked = false;
-        toggle.disabled = true;
-    }
-    if (statusEl && message) statusEl.textContent = message;
-};
-
 const setDataset = (enabled) => {
     if (!document.documentElement) return;
     if (enabled) {
@@ -30,7 +22,6 @@ const setDataset = (enabled) => {
 };
 
 const notifyServiceWorker = async (enabled) => {
-    if (!('serviceWorker' in navigator)) return;
     try {
         const registration = await navigator.serviceWorker.ready;
         if (registration?.active) {
@@ -59,10 +50,6 @@ const loadState = async () => {
 };
 
 const init = async () => {
-    if (!('serviceWorker' in navigator)) {
-        disableToggle('Offline mode requires the installed app and service worker support.');
-        return;
-    }
     const enabled = await loadState();
     currentEnabled = enabled;
     await applyState(enabled, false);
@@ -73,12 +60,10 @@ const init = async () => {
         });
     }
 
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            const next = toggle ? toggle.checked : currentEnabled;
-            applyState(next, false);
-        });
-    }
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        const next = toggle ? toggle.checked : currentEnabled;
+        applyState(next, false);
+    });
 
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {

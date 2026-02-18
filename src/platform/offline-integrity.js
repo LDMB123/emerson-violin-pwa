@@ -88,7 +88,6 @@ const setButtonsEnabled = (enabled) => {
 };
 
 const selectCache = async () => {
-    if (!('caches' in window)) return null;
     const keys = await caches.keys();
     const matches = keys
         .filter((key) => key.startsWith('panda-violin-local-'))
@@ -105,15 +104,6 @@ const selectCache = async () => {
 
 const runCheck = async () => {
     const metrics = await loadMetrics();
-    if (!('caches' in window)) {
-        metrics.cachedAssets = 0;
-        metrics.lastCheck = Date.now();
-        await saveMetrics(metrics);
-        updateUI(metrics);
-        setButtonsEnabled(false);
-        return;
-    }
-
     const cache = await selectCache();
     if (!cache) {
         metrics.cachedAssets = 0;
@@ -134,16 +124,6 @@ const runCheck = async () => {
 
 const runSelfTest = async () => {
     const metrics = await loadMetrics();
-    if (!('caches' in window)) {
-        metrics.selfTestPass = 0;
-        metrics.selfTestTotal = CRITICAL_ASSETS.length;
-        metrics.selfTestAt = Date.now();
-        await saveMetrics(metrics);
-        updateUI(metrics);
-        setButtonsEnabled(false);
-        return;
-    }
-
     const cache = await selectCache();
     if (!cache) {
         metrics.selfTestPass = 0;
@@ -173,7 +153,6 @@ const runSelfTest = async () => {
 };
 
 const triggerRepair = async () => {
-    if (!('serviceWorker' in navigator)) return;
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return;
     if (navigator.serviceWorker.controller) {
@@ -208,11 +187,9 @@ const handleMessage = async (event) => {
 const init = async () => {
     const metrics = await loadMetrics();
     updateUI(metrics);
-    setButtonsEnabled('caches' in window);
+    setButtonsEnabled(true);
 
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', handleMessage);
-    }
+    navigator.serviceWorker.addEventListener('message', handleMessage);
 
     window.addEventListener('online', () => runCheck(), { passive: true });
     window.addEventListener('offline', async () => {

@@ -54,8 +54,7 @@ const setMessage = (message) => {
 };
 
 const canSpeak = () => Boolean(voiceToggle?.checked)
-    && 'speechSynthesis' in window
-    && 'SpeechSynthesisUtterance' in window;
+    && 'speechSynthesis' in window;
 
 const speakMessage = (message) => {
     if (!message || !canSpeak()) return;
@@ -169,7 +168,7 @@ document.addEventListener(GAME_RECORDED, (e) => {
     }
 });
 
-if (voiceToggle && 'speechSynthesis' in window) {
+if (voiceToggle) {
     voiceToggle.addEventListener('change', () => {
         if (!voiceToggle.checked) {
             window.speechSynthesis.cancel();
