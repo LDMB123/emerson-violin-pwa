@@ -1,4 +1,4 @@
-import { GAME_RECORDED } from '../utils/event-names.js';
+import { GAME_RECORDED, GAME_PLAY_AGAIN } from '../utils/event-names.js';
 
 const dialog = document.getElementById('game-complete-modal');
 const scoreEl = document.getElementById('game-complete-score');
@@ -50,12 +50,13 @@ const close = () => {
     dialog.close();
 };
 
-// Play Again: go back then forward to re-trigger hashchange reset
+// Play Again: deterministically request a reset for the current game view
 if (playAgainBtn) {
     playAgainBtn.addEventListener('click', () => {
         close();
-        history.back();
-        setTimeout(() => history.forward(), 80);
+        const viewId = window.location.hash?.replace(/^#/, '') || '';
+        if (!viewId.startsWith('view-game-')) return;
+        document.dispatchEvent(new CustomEvent(GAME_PLAY_AGAIN, { detail: { viewId } }));
     });
 }
 

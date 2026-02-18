@@ -11,7 +11,7 @@ import {
 } from './shared.js';
 import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { SOUNDS_CHANGE } from '../utils/event-names.js';
+import { GAME_PLAY_AGAIN, SOUNDS_CHANGE } from '../utils/event-names.js';
 import {
     computeBeatInterval,
     computeBpm,
@@ -34,6 +34,7 @@ import {
 
 const rhythmScoreEl = cachedEl('[data-rhythm="score"]');
 const rhythmComboEl = cachedEl('[data-rhythm="combo"]');
+let resetRequestHandler = null;
 
 const updateRhythmDash = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-rhythm-dash input[id^="rd-set-"]'));
@@ -56,6 +57,9 @@ const updateRhythmDash = () => {
 const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-rhythm-dash');
     if (!stage) return;
+    if (resetRequestHandler) {
+        document.removeEventListener(GAME_PLAY_AGAIN, resetRequestHandler);
+    }
     const tapButton = stage.querySelector('.rhythm-tap');
     const runToggle = stage.querySelector('#rhythm-run');
     const pauseButton = stage.querySelector('[data-rhythm="pause"]');
@@ -345,6 +349,14 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
             reportSession();
         }
     }, { passive: true });
+
+    resetRequestHandler = (event) => {
+        const requestedViewId = event?.detail?.viewId;
+        if (requestedViewId && requestedViewId !== 'view-game-rhythm-dash') return;
+        if (window.location.hash !== '#view-game-rhythm-dash') return;
+        resetRun();
+    };
+    document.addEventListener(GAME_PLAY_AGAIN, resetRequestHandler);
 
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
