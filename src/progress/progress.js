@@ -1,4 +1,6 @@
-import { getJSON, setJSON, removeJSON } from '../persistence/storage.js';
+import { setJSON, removeJSON } from '../persistence/storage.js';
+import { loadEvents } from '../persistence/loaders.js';
+import { getCore } from '../wasm/load-core.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { minutesForInput, toTrackerTimestamp, formatRecentScore, coachMessageFor, buildRadarPoints } from './progress-utils.js';
 import { clamp, todayDay } from '../utils/math.js';
@@ -17,16 +19,6 @@ const BADGE_META = {
     bow_hero:      { name: 'Bow Hero',       artSrc: './assets/badges/badge_bow_hero_1769390964607.webp' },
     ear_training:  { name: 'Golden Ear',     artSrc: './assets/badges/badge_ear_training_1769391019017.webp' },
     all_games:     { name: 'Game Master',    artSrc: null },
-};
-
-let wasmModule = null;
-const getCore = async () => {
-    if (!wasmModule) {
-        const mod = await import('../wasm/panda_core.js');
-        await mod.default();
-        wasmModule = mod;
-    }
-    return wasmModule;
 };
 
 const xpFillEl = document.querySelector('[data-progress="xp-fill"]');
@@ -74,11 +66,6 @@ const getWeeklyGoalTarget = () => {
         || '90';
     const parsed = Number.parseInt(String(raw).trim(), 10);
     return Number.isNaN(parsed) || parsed <= 0 ? 90 : parsed;
-};
-
-const loadEvents = async () => {
-    const stored = await getJSON(EVENT_KEY);
-    return Array.isArray(stored) ? stored : [];
 };
 
 const saveEvents = async (events) => {

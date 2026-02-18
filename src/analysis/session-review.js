@@ -1,5 +1,7 @@
 import { getLearningRecommendations } from '../ml/recommendations.js';
-import { getJSON, getBlob } from '../persistence/storage.js';
+import { getBlob } from '../persistence/storage.js';
+import { loadEvents, loadRecordings, resolveRecordingSource } from '../persistence/loaders.js';
+import { getCore } from '../wasm/load-core.js';
 import { SOUNDS_CHANGE, RECORDINGS_UPDATED } from '../utils/event-names.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { exportRecording } from '../utils/recording-export.js';
@@ -14,17 +16,6 @@ import {
     getRecentEvents,
 } from '../utils/session-review-utils.js';
 
-let wasmModule = null;
-const getCore = async () => {
-    if (!wasmModule) {
-        const mod = await import('../wasm/panda_core.js');
-        await mod.default();
-        wasmModule = mod;
-    }
-    return wasmModule;
-};
-
-import { EVENTS_KEY as EVENT_KEY, RECORDINGS_KEY } from '../persistence/storage-keys.js';
 
 const chartLine = document.querySelector('[data-analysis="chart-line"]');
 const chartPoints = document.querySelector('[data-analysis="chart-points"]');
@@ -66,28 +57,6 @@ const stopPlayback = () => {
         playbackUrl = '';
     }
 };
-
-const loadEvents = async () => {
-    const stored = await getJSON(EVENT_KEY);
-    return Array.isArray(stored) ? stored : [];
-};
-
-const loadRecordings = async () => {
-    const stored = await getJSON(RECORDINGS_KEY);
-    return Array.isArray(stored) ? stored : [];
-};
-
-const resolveRecordingSource = async (recording) => {
-    if (!recording) return null;
-    if (recording.dataUrl) return { url: recording.dataUrl, revoke: false };
-    if (recording.blobKey) {
-        const blob = await getBlob(recording.blobKey);
-        if (!blob) return null;
-        return { url: URL.createObjectURL(blob), revoke: true };
-    }
-    return null;
-};
-
 
 const updateChart = (values) => {
     if (!chartLine || !chartPoints || !chartCaption) return;

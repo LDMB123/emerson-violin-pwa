@@ -1,4 +1,5 @@
-import { getJSON, setJSON, getBlob, removeBlob } from '../persistence/storage.js';
+import { setJSON, getBlob, removeBlob } from '../persistence/storage.js';
+import { loadRecordings, resolveRecordingSource } from '../persistence/loaders.js';
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { clamp } from '../utils/math.js';
@@ -17,11 +18,6 @@ const updateStatus = (message) => {
     if (statusEl) statusEl.textContent = message;
 };
 
-const loadRecordings = async () => {
-    const stored = await getJSON(RECORDINGS_KEY);
-    return Array.isArray(stored) ? stored : [];
-};
-
 const saveRecordings = async (recordings) => {
     await setJSON(RECORDINGS_KEY, recordings);
     window.dispatchEvent(new Event(RECORDINGS_UPDATED));
@@ -33,17 +29,6 @@ const formatDuration = (seconds) => {
     const remainder = value % 60;
     if (!minutes) return `${remainder}s`;
     return `${minutes}:${String(remainder).padStart(2, '0')}`;
-};
-
-const resolveRecordingSource = async (recording) => {
-    if (!recording) return null;
-    if (recording.dataUrl) return { url: recording.dataUrl, revoke: false };
-    if (recording.blobKey) {
-        const blob = await getBlob(recording.blobKey);
-        if (!blob) return null;
-        return { url: URL.createObjectURL(blob), revoke: true };
-    }
-    return null;
 };
 
 const stopPlayback = () => {
@@ -95,10 +80,8 @@ const buildRow = (recording, index) => {
     row.appendChild(saveBtn);
     row.appendChild(deleteBtn);
 
-    const titleEl = titleDiv;
-    const subEl = subDiv;
-    titleEl.textContent = recording.title || `Recording ${index + 1}`;
-    if (subEl) {
+    titleDiv.textContent = recording.title || `Recording ${index + 1}`;
+    if (subDiv) {
         let createdAt = '';
         if (recording.createdAt) {
             const stamp = new Date(recording.createdAt);
@@ -108,14 +91,13 @@ const buildRow = (recording, index) => {
         }
         const parts = [`Duration ${formatDuration(recording.duration || 0)}`];
         if (createdAt) parts.push(createdAt);
-        subEl.textContent = parts.join(' · ');
+        subDiv.textContent = parts.join(' · ');
     }
 
     const hasSource = Boolean(recording.dataUrl || recording.blobKey);
-    const playButton = playBtn;
-    if (playButton) {
-        playButton.disabled = !isSoundEnabled() || !hasSource;
-        playButton.addEventListener('click', async () => {
+    if (playBtn) {
+        playBtn.disabled = !isSoundEnabled() || !hasSource;
+        playBtn.addEventListener('click', async () => {
             if (!isSoundEnabled()) return;
             if (!hasSource) return;
             const source = await resolveRecordingSource(recording);
@@ -131,32 +113,30 @@ const buildRow = (recording, index) => {
         });
     }
 
-    const saveButton = saveBtn;
-    if (saveButton) {
-        saveButton.disabled = !hasSource;
-        saveButton.addEventListener('click', async () => {
+    if (saveBtn) {
+        saveBtn.disabled = !hasSource;
+        saveBtn.addEventListener('click', async () => {
             if (!hasSource) return;
-            saveButton.disabled = true;
-            const original = saveButton.textContent;
-            saveButton.textContent = '…';
+            saveBtn.disabled = true;
+            const original = saveBtn.textContent;
+            saveBtn.textContent = '…';
             try {
                 const blob = recording.blobKey ? await getBlob(recording.blobKey) : null;
                 await exportRecording(recording, index, blob);
-                saveButton.textContent = '✓';
+                saveBtn.textContent = '✓';
             } catch {
-                saveButton.textContent = '!';
+                saveBtn.textContent = '!';
             } finally {
                 setTimeout(() => {
-                    saveButton.textContent = original || '⬇';
-                    saveButton.disabled = false;
+                    saveBtn.textContent = original || '⬇';
+                    saveBtn.disabled = false;
                 }, 800);
             }
         });
     }
 
-    const deleteButton = deleteBtn;
-    if (deleteButton) {
-        deleteButton.addEventListener('click', async () => {
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
             const ok = window.confirm('Delete this recording?');
             if (!ok) return;
             stopPlayback();

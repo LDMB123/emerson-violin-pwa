@@ -3,10 +3,10 @@ import {
     shouldRetryPersist,
     formatBytes,
     isStandalone,
-    getViewId,
     viewAllowsWake,
     getPreferredOrientation,
 } from './platform-utils.js';
+import { getViewId } from '../utils/app-utils.js';
 import { PERSIST_REQUEST_KEY } from '../persistence/storage-keys.js';
 import { OFFLINE_MODE_CHANGE, SOUNDS_CHANGE, PERSIST_APPLIED } from '../utils/event-names.js';
 
@@ -230,7 +230,7 @@ const requestWakeLock = async () => {
         return;
     }
     if (document.hidden) return;
-    const viewId = getViewId();
+    const viewId = getViewId(window.location.hash);
     if (!viewAllowsWake(viewId)) {
         await releaseWakeLock();
         updateWakeStatus('Enable this while practicing to keep the screen awake.');
@@ -292,7 +292,7 @@ const requestOrientationLock = async () => {
         return;
     }
     if (document.hidden) return;
-    const viewId = getViewId();
+    const viewId = getViewId(window.location.hash);
     if (!viewAllowsWake(viewId)) {
         unlockOrientation();
         updateOrientationStatus('Enable this while practicing to keep the orientation fixed.');

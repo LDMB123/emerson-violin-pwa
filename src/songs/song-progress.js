@@ -1,12 +1,8 @@
-import { getJSON, setJSON } from '../persistence/storage.js';
+import { setJSON } from '../persistence/storage.js';
+import { loadEvents } from '../persistence/loaders.js';
 import { clamp, todayDay } from '../utils/math.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
 import { SONG_RECORDED } from '../utils/event-names.js';
-
-const loadEvents = async () => {
-    const stored = await getJSON(EVENT_KEY);
-    return Array.isArray(stored) ? stored : [];
-};
 
 const saveEvents = async (events) => {
     await setJSON(EVENT_KEY, events);
