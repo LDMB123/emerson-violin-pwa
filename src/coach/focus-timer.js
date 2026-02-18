@@ -1,6 +1,7 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { PERSIST_APPLIED, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import { setDifficultyBadge } from '../games/shared.js';
+import { shouldStopFocusTimer } from './focus-timer-utils.js';
 
 const focusToggle = document.querySelector('#focus-timer');
 const focusArea = document.querySelector('.practice-focus');
@@ -126,14 +127,16 @@ const handleToggle = () => {
     }
 };
 
-const stopWhenInactive = () => {
-    if (!focusToggle?.checked) return;
-    if (isCompleting) return;
+const stopWhenInactive = ({ force = false } = {}) => {
     const viewId = window.location.hash || '#view-home';
-    if (viewId !== '#view-coach') {
-        focusToggle.checked = false;
-        stopSession(false);
-    }
+    if (!shouldStopFocusTimer({
+        isChecked: Boolean(focusToggle?.checked),
+        isCompleting,
+        viewId,
+        force
+    })) return;
+    focusToggle.checked = false;
+    stopSession(false);
 };
 
 if (durationRadios.length) {
@@ -156,13 +159,13 @@ if (focusToggle) {
 applyTuning();
 setFocusDuration(getSelectedMinutes());
 
-window.addEventListener('hashchange', stopWhenInactive, { passive: true });
+window.addEventListener('hashchange', () => stopWhenInactive(), { passive: true });
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        stopWhenInactive();
+        stopWhenInactive({ force: true });
     }
 });
-window.addEventListener('pagehide', stopWhenInactive);
+window.addEventListener('pagehide', () => stopWhenInactive({ force: true }));
 
 document.addEventListener(PERSIST_APPLIED, () => {
     setFocusDuration(getSelectedMinutes());
