@@ -21,6 +21,8 @@ const updateEarTrainer = () => {
     }
 };
 
+let _soundsHandler = null;
+
 const { bind } = createGame({
     id: 'ear-trainer',
     computeAccuracy: (state) => state.totalAnswered
@@ -125,7 +127,7 @@ const { bind } = createGame({
 
         updateSoundState();
 
-        document.addEventListener(SOUNDS_CHANGE, (event) => {
+        const soundsHandler = (event) => {
             if (event.detail?.enabled === false) {
                 setQuestion('Sounds are off. Turn on Sounds to play.');
                 Object.values(audioMap).forEach((audio) => {
@@ -136,7 +138,12 @@ const { bind } = createGame({
                 });
             }
             updateSoundState();
-        });
+        };
+        if (_soundsHandler) {
+            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
+        }
+        _soundsHandler = soundsHandler;
+        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
 
         bindTap(playButton, () => {
             if (!isSoundEnabled()) {
@@ -199,9 +206,6 @@ const { bind } = createGame({
             });
         });
 
-        if (window.location.hash === '#view-game-ear-trainer') {
-            resetSession();
-        }
     },
 });
 

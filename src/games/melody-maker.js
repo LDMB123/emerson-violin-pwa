@@ -21,6 +21,8 @@ const updateMelodyMaker = () => {
     if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 30);
 };
 
+let _soundsHandler = null;
+
 const { bind } = createGame({
     id: 'melody-maker',
     computeAccuracy: (state) => state._lengthTarget
@@ -52,61 +54,53 @@ const { bind } = createGame({
         const playButton = stage.querySelector('[data-melody="play"]');
         const playTargetButton = stage.querySelector('[data-melody="play-target"]');
         const clearButton = stage.querySelector('[data-melody="clear"]');
-        const track = [];
-        let score = 0;
-        let lastSequence = '';
-        let repeatMarked = false;
-        const uniqueNotes = new Set();
         // difficulty.speed: scales playback tempo; speed=1.0 keeps tempo=92 BPM (current behavior)
         // difficulty.complexity: adjusts lengthTarget; complexity=1 (medium) = 4 notes (current behavior)
         const complexityLengthTargets = [3, 4, 6];
         const lengthTarget = complexityLengthTargets[difficulty.complexity] ?? 4;
-        let maxTrack = Math.max(lengthTarget + 2, 6);
         const tempo = Math.round(92 * difficulty.speed);
-        let targetMotif = ['G', 'A', 'B', 'C'];
-        let matchCount = 0;
-        let isPlaying = false;
-        let playToken = 0;
         const notePool = buttons.map((button) => button.dataset.melodyNote).filter(Boolean);
 
-        // Store on gameState for computeAccuracy and onReset
+        // Store ALL mutable state on gameState exclusively (no parallel local lets)
         gameState.score = 0;
-        gameState._track = track;
+        gameState._track = [];
         gameState._lengthTarget = lengthTarget;
-        gameState._maxTrack = maxTrack;
-        gameState._uniqueNotes = uniqueNotes;
-        gameState._lastSequence = lastSequence;
+        gameState._maxTrack = Math.max(lengthTarget + 2, 6);
+        gameState._uniqueNotes = new Set();
+        gameState._lastSequence = '';
         gameState._repeatMarked = false;
         gameState._matchCount = 0;
+        gameState._targetMotif = ['G', 'A', 'B', 'C'];
+        gameState._isPlaying = false;
+        gameState._playToken = 0;
 
         const setStatus = (message) => {
             if (statusEl) statusEl.textContent = message;
         };
 
         const updateTrack = () => {
-            if (trackEl) trackEl.textContent = track.length ? track.join(' · ') : 'Tap notes to build a melody.';
+            if (trackEl) trackEl.textContent = gameState._track.length ? gameState._track.join(' · ') : 'Tap notes to build a melody.';
         };
 
         const updateScore = () => {
-            setLiveNumber(scoreEl, 'liveScore', score);
+            setLiveNumber(scoreEl, 'liveScore', gameState.score);
         };
 
         const updateTarget = () => {
             if (!targetEl) return;
-            targetEl.textContent = `Target: ${targetMotif.join(' · ')}`;
+            targetEl.textContent = `Target: ${gameState._targetMotif.join(' · ')}`;
         };
 
         const buildTarget = () => {
             if (!notePool.length) return;
-            targetMotif = buildNoteSequence(notePool, lengthTarget);
-            matchCount = 0;
+            gameState._targetMotif = buildNoteSequence(notePool, lengthTarget);
             gameState._matchCount = 0;
             updateTarget();
         };
 
         const stopPlayback = (message) => {
-            playToken += 1;
-            isPlaying = false;
+            gameState._playToken += 1;
+            gameState._isPlaying = false;
             stopTonePlayer();
             if (message) setStatus(message);
         };
@@ -134,8 +128,8 @@ const { bind } = createGame({
                 setStatus('Audio is unavailable on this device.');
                 return;
             }
-            const token = ++playToken;
-            isPlaying = true;
+            const token = ++gameState._playToken;
+            gameState._isPlaying = true;
             setStatus(message);
             const played = await player.playSequence(notes, {
                 tempo,
@@ -144,14 +138,14 @@ const { bind } = createGame({
                 volume: 0.22,
                 type: 'triangle',
             });
-            if (token !== playToken || !played) return;
-            isPlaying = false;
+            if (token !== gameState._playToken || !played) return;
+            gameState._isPlaying = false;
             setStatus('Nice! Try a new variation or hit Play again.');
             markChecklist('mm-step-4');
             reportSession();
         };
 
-        // Store helpers for onReset
+        // Store helpers for onReset (closures that read exclusively from gameState)
         gameState._stopPlayback = stopPlayback;
         gameState._updateTrack = updateTrack;
         gameState._updateScore = updateScore;
@@ -163,15 +157,13 @@ const { bind } = createGame({
             bindTap(button, () => {
                 const note = button.dataset.melodyNote;
                 if (!note) return;
-                if (isPlaying) {
+                if (gameState._isPlaying) {
                     stopPlayback('Editing melody. Tap Play to hear it.');
                 }
-                track.push(note);
-                maxTrack = gameState._maxTrack;
-                if (track.length > maxTrack) track.shift();
-                score += 20;
-                gameState.score = score;
-                uniqueNotes.add(note);
+                gameState._track.push(note);
+                if (gameState._track.length > gameState._maxTrack) gameState._track.shift();
+                gameState.score += 20;
+                gameState._uniqueNotes.add(note);
                 if (isSoundEnabled()) {
                     const player = getTonePlayer();
                     if (player) {
@@ -180,32 +172,28 @@ const { bind } = createGame({
                 }
                 updateTrack();
                 updateScore();
-                if (track.length >= lengthTarget) {
+                if (gameState._track.length >= lengthTarget) {
                     markChecklist('mm-step-1');
-                    const currentSequence = track.slice(-lengthTarget).join('');
-                    if (lastSequence && currentSequence === lastSequence && !repeatMarked) {
-                        repeatMarked = true;
+                    const currentSequence = gameState._track.slice(-lengthTarget).join('');
+                    if (gameState._lastSequence && currentSequence === gameState._lastSequence && !gameState._repeatMarked) {
                         gameState._repeatMarked = true;
                         markChecklist('mm-step-2');
                     }
-                    lastSequence = currentSequence;
-                    gameState._lastSequence = lastSequence;
+                    gameState._lastSequence = currentSequence;
                 }
-                markChecklistIf(uniqueNotes.size >= 3, 'mm-step-3');
+                markChecklistIf(gameState._uniqueNotes.size >= 3, 'mm-step-3');
 
-                if (track.length >= targetMotif.length) {
-                    const attempt = track.slice(-targetMotif.length).join('');
-                    const target = targetMotif.join('');
+                if (gameState._track.length >= gameState._targetMotif.length) {
+                    const attempt = gameState._track.slice(-gameState._targetMotif.length).join('');
+                    const target = gameState._targetMotif.join('');
                     if (attempt === target) {
-                        matchCount += 1;
-                        gameState._matchCount = matchCount;
-                        score += 50;
-                        gameState.score = score;
+                        gameState._matchCount += 1;
+                        gameState.score += 50;
                         updateScore();
-                        setStatus(`Target hit! ${matchCount} in a row.`);
-                        if (matchCount >= 1) markChecklist('mm-step-1');
-                        if (matchCount >= 2) markChecklist('mm-step-2');
-                        if (matchCount >= 3) reportSession();
+                        setStatus(`Target hit! ${gameState._matchCount} in a row.`);
+                        if (gameState._matchCount >= 1) markChecklist('mm-step-1');
+                        if (gameState._matchCount >= 2) markChecklist('mm-step-2');
+                        if (gameState._matchCount >= 3) reportSession();
                         buildTarget();
                     }
                 }
@@ -214,15 +202,11 @@ const { bind } = createGame({
 
         bindTap(clearButton, () => {
             reportSession();
-            track.length = 0;
-            score = 0;
+            gameState._track.length = 0;
             gameState.score = 0;
-            lastSequence = '';
             gameState._lastSequence = '';
-            repeatMarked = false;
             gameState._repeatMarked = false;
-            uniqueNotes.clear();
-            matchCount = 0;
+            gameState._uniqueNotes.clear();
             gameState._matchCount = 0;
             stopPlayback();
             updateTrack();
@@ -232,21 +216,26 @@ const { bind } = createGame({
         });
 
         bindTap(playButton, () => {
-            playSequence(track, 'Playing your melody\u2026');
+            playSequence(gameState._track, 'Playing your melody\u2026');
         });
 
         bindTap(playTargetButton, () => {
-            playSequence(targetMotif, 'Playing target motif\u2026');
+            playSequence(gameState._targetMotif, 'Playing target motif\u2026');
         });
 
-        document.addEventListener(SOUNDS_CHANGE, (event) => {
+        const soundsHandler = (event) => {
             if (event.detail?.enabled === false) {
                 stopPlayback('Sounds are off. Enable Sounds to play your melody.');
             } else if (event.detail?.enabled === true) {
                 setStatus('Sounds on. Tap Play to hear your melody.');
             }
             updateSoundState();
-        });
+        };
+        if (_soundsHandler) {
+            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
+        }
+        _soundsHandler = soundsHandler;
+        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
 
         updateTrack();
         updateScore();

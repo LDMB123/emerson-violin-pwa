@@ -34,6 +34,8 @@ const updateNoteMemory = () => {
     }
 };
 
+let _soundsHandler = null;
+
 const { bind } = createGame({
     id: 'note-memory',
     computeAccuracy: (state) => state._totalPairs
@@ -255,11 +257,16 @@ const { bind } = createGame({
             resetGame();
         });
 
-        document.addEventListener(SOUNDS_CHANGE, (event) => {
+        const soundsHandler = (event) => {
             if (event.detail?.enabled === false) {
                 stopTonePlayer();
             }
-        });
+        };
+        if (_soundsHandler) {
+            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
+        }
+        _soundsHandler = soundsHandler;
+        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
 
         updateHud();
 

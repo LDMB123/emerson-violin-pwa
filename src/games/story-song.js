@@ -21,6 +21,8 @@ const updateStorySong = () => {
     }
 };
 
+let _soundsHandler = null;
+
 const { bind } = createGame({
     id: 'story-song',
     computeAccuracy: (state) => state._storyPages?.length
@@ -212,13 +214,18 @@ const { bind } = createGame({
         updatePage(0);
         updateStatus();
 
-        document.addEventListener(SOUNDS_CHANGE, (event) => {
+        const soundsHandler = (event) => {
             if (event.detail?.enabled === false) {
                 stopPlayback({ message: 'Sounds are off. Enable Sounds to play along.' });
             } else if (event.detail?.enabled === true) {
                 updateStatus('Sounds on. Tap Play-Along to start.');
             }
-        });
+        };
+        if (_soundsHandler) {
+            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
+        }
+        _soundsHandler = soundsHandler;
+        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
 
         document.addEventListener('visibilitychange', () => {
             if (!toggle) return;

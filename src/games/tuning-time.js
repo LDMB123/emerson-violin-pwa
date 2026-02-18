@@ -13,6 +13,8 @@ const updateTuningTime = () => {
     if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 25);
 };
 
+let _soundsHandler = null;
+
 const { bind } = createGame({
     id: 'tuning-time',
     computeAccuracy: (state) => state.tunedNotes
@@ -101,11 +103,16 @@ const { bind } = createGame({
             });
         });
 
-        document.addEventListener(SOUNDS_CHANGE, (event) => {
+        const soundsHandler = (event) => {
             if (event.detail?.enabled === false && statusEl) {
                 statusEl.textContent = 'Sounds are off. Enable Sounds to hear tones.';
             }
-        });
+        };
+        if (_soundsHandler) {
+            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
+        }
+        _soundsHandler = soundsHandler;
+        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
     },
 });
 
