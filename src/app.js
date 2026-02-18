@@ -144,13 +144,7 @@ const registerServiceWorker = () => {
     });
 };
 
-const boot = async () => {
-    if (document.prerendering) {
-        document.addEventListener('prerenderingchange', boot, { once: true });
-        return;
-    }
-
-    // Update all audio elements to use Opus or MP3 based on browser support
+const rewriteAudioSources = () => {
     const audioElements = document.querySelectorAll('audio[src*="/assets/audio/"]');
     audioElements.forEach((audio) => {
         const currentSrc = audio.getAttribute('src');
@@ -158,14 +152,18 @@ const boot = async () => {
             audio.setAttribute('src', getAudioPath(currentSrc));
         }
     });
+};
 
+const loadEagerModules = () => {
     loadModule('platform');
     loadModule('dataSaver');
     loadModule('offlineRecovery');
     loadModule('ipadosCapabilities');
     loadModule('inputCapabilities');
     loadModule('progress');
-    await loadModule('persist');
+};
+
+const loadIdleModules = () => {
     loadIdle('installToast');
     loadIdle('installGuide');
     loadIdle('installGuideClose');
@@ -176,6 +174,18 @@ const boot = async () => {
     loadIdle('reminders');
     loadIdle('badging');
     loadIdle('audioPlayer');
+};
+
+const boot = async () => {
+    if (document.prerendering) {
+        document.addEventListener('prerenderingchange', boot, { once: true });
+        return;
+    }
+
+    rewriteAudioSources();
+    loadEagerModules();
+    await loadModule('persist');
+    loadIdleModules();
 
     const reduceMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
     const prefersReducedMotion = () => reduceMotionMedia.matches;
