@@ -177,6 +177,10 @@ If both pass, you are at a known-good baseline.
   - Added non-bfcache `pagehide` handling and listener rebind cleanup for:
     - `src/games/rhythm-dash.js`
   - Ensures non-shell games now align with shell lifecycle reporting/deactivation behavior on real page unload.
+- Completed game-enhancements bfcache lifecycle guard pass (2026-02-18, phase 23):
+  - Added persisted-pagehide guard for lifecycle stop behavior in:
+    - `src/games/game-enhancements.js`
+  - Prevents destructive session stop side effects during bfcache snapshot transitions.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -206,6 +210,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-17.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-18.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-19.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-20.md`
 
 ## Verification Gates
 

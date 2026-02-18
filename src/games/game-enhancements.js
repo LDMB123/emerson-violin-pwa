@@ -92,7 +92,10 @@ const bindLifecycle = () => {
     if (lifecycleBound) return;
     lifecycleBound = true;
     window.addEventListener('hashchange', () => handleLifecycle(false), { passive: true });
-    window.addEventListener('pagehide', () => handleLifecycle(true), { passive: true });
+    window.addEventListener('pagehide', (event) => {
+        if (event?.persisted) return;
+        handleLifecycle(true);
+    }, { passive: true });
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) handleLifecycle(true);
     }, { passive: true });
