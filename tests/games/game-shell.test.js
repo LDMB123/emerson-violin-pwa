@@ -104,4 +104,50 @@ describe('createGame play-again integration', () => {
 
         expect(onDeactivate).toHaveBeenCalledTimes(1);
     });
+
+    it('runs deactivate + reporting on non-bfcache pagehide for active game view', () => {
+        const id = 'unit-e';
+        const onDeactivate = vi.fn();
+        mountStage(id);
+        window.location.hash = '#view-game-unit-e';
+
+        const game = createGame({
+            id,
+            onBind: (_stage, _difficulty, { gameState }) => {
+                gameState._onDeactivate = onDeactivate;
+                gameState.score = 15;
+            },
+            computeAccuracy: () => 88
+        });
+
+        game.bind();
+        window.dispatchEvent(new Event('pagehide'));
+
+        expect(onDeactivate).toHaveBeenCalledTimes(1);
+        expect(sharedMocks.recordGameEvent).toHaveBeenCalledWith('unit-e', { accuracy: 88, score: 15 });
+    });
+
+    it('ignores bfcache-persisted pagehide events', () => {
+        const id = 'unit-f';
+        const onDeactivate = vi.fn();
+        mountStage(id);
+        window.location.hash = '#view-game-unit-f';
+
+        const game = createGame({
+            id,
+            onBind: (_stage, _difficulty, { gameState }) => {
+                gameState._onDeactivate = onDeactivate;
+                gameState.score = 20;
+            },
+            computeAccuracy: () => 91
+        });
+
+        game.bind();
+        const pagehideEvent = new Event('pagehide');
+        Object.defineProperty(pagehideEvent, 'persisted', { value: true });
+        window.dispatchEvent(pagehideEvent);
+
+        expect(onDeactivate).not.toHaveBeenCalled();
+        expect(sharedMocks.recordGameEvent).not.toHaveBeenCalled();
+    });
 });
