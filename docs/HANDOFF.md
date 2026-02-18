@@ -35,6 +35,16 @@ If both pass, you are at a known-good baseline.
     - generic game-view checkbox detection (removed brittle hardcoded ID-prefix regex)
   - Added registry test coverage in `tests/app/module-registry.test.js`.
   - Preserved static per-game import map in `game-metrics` intentionally so `knip` dead-code audit remains accurate (current toolchain does not reliably resolve `import.meta.glob` for this case).
+- Completed QA + effectiveness deep pass (2026-02-18, phase 4):
+  - Added critical coverage gate script: `scripts/assert-critical-coverage.mjs`.
+  - Added `qa:effectiveness` script (`npm run test:coverage` + critical threshold assertions).
+  - `audit:full` now enforces QA effectiveness gate before build.
+  - Expanded recommendations tests from a single smoke case to branch-heavy cache/refresh/fallback coverage:
+    - `tests/recommendations.test.js`
+  - Added onboarding coverage:
+    - `tests/onboarding/onboarding-check.test.js`
+    - `tests/onboarding/onboarding.test.js`
+  - Coverage reporters now include `json-summary` to support machine-validated thresholds.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -45,6 +55,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-debug-optimization-report.md`
   - `docs/plans/2026-02-18-10x-simplification-optimization.md`
   - `docs/plans/2026-02-18-10x-deeper-pass.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deep-pass.md`
 
 ## Verification Gates
 
@@ -69,11 +80,12 @@ If both pass, you are at a known-good baseline.
 ## Files to Read Before Editing
 
 1. `docs/HANDOFF.md` (this file)
-2. `docs/plans/2026-02-18-10x-deeper-pass.md`
-3. `docs/plans/2026-02-18-10x-simplification-optimization.md`
-4. `docs/plans/2026-02-18-debug-optimization-report.md`
-5. `CLAUDE.md`
-6. `README.md`
+2. `docs/plans/2026-02-18-qa-effectiveness-deep-pass.md`
+3. `docs/plans/2026-02-18-10x-deeper-pass.md`
+4. `docs/plans/2026-02-18-10x-simplification-optimization.md`
+5. `docs/plans/2026-02-18-debug-optimization-report.md`
+6. `CLAUDE.md`
+7. `README.md`
 
 ## Recommended Next Work (Ordered)
 
