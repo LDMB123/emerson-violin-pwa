@@ -46,7 +46,6 @@ const bindTuningTime = (difficulty = { speed: 1.0, complexity: 1 }) => {
     let reported = false;
 
     const reportResult = attachTuning('tuning-time', (tuning) => {
-        targetStrings = tuning.targetStrings ?? targetStrings;
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         if (statusEl && tunedNotes.size === 0) {
             statusEl.textContent = `Tune ${targetStrings} strings to warm up.`;

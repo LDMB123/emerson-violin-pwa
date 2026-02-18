@@ -124,8 +124,6 @@ const bindMelodyMaker = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
 
     const reportResult = attachTuning('melody-maker', (tuning) => {
-        lengthTarget = tuning.lengthTarget ?? lengthTarget;
-        tempo = tuning.tempo ?? tuning.melodyTempo ?? tempo;
         maxTrack = Math.max(lengthTarget + 2, 6);
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         buildTarget();

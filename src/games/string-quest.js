@@ -75,7 +75,6 @@ const bindStringQuest = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const updateScoreboard = () => updateScoreCombo(scoreEl, comboEl, score, combo);
 
     const reportResult = attachTuning('string-quest', (tuning) => {
-        comboTarget = tuning.comboTarget ?? comboTarget;
         buildSequence();
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         updateTargets();

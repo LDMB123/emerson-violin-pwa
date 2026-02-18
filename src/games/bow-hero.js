@@ -67,8 +67,6 @@ const bindBowHero = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
 
     const reportResult = attachTuning('bow-hero', (tuning) => {
-        timeLimit = tuning.timeLimit ?? timeLimit;
-        targetTempo = tuning.targetTempo ?? targetTempo;
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         if (!timerId) {
             remaining = timeLimit;

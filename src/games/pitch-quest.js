@@ -121,10 +121,6 @@ const bindPitchQuest = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
 
     const reportResult = attachTuning('pitch-quest', (tuning) => {
-        const nextTolerance = tuning.tolerance ?? tolerance;
-        if (!(toleranceSlider && toleranceSlider.dataset.userSet)) {
-            updateTolerance(nextTolerance);
-        }
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         updateTargetStatus();
     });
