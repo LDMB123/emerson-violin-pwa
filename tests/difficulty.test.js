@@ -71,4 +71,9 @@ describe('difficulty service', () => {
     it('falls back to medium for completely unknown game ID', () => {
         expect(getDifficulty('nonexistent')).toEqual({ speed: 1.0, complexity: 1 });
     });
+
+    it('setDifficulty ignores invalid level and does not persist', () => {
+        setDifficulty('pitch-quest', 'extreme');
+        expect(getCurrentLevel('pitch-quest')).toBe('medium');
+    });
 });
