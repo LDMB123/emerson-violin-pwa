@@ -1,5 +1,6 @@
 import { GAME_META } from './game-config.js';
 import { formatMinutes, createSessionTimer } from './session-timer.js';
+import { renderDifficultyPickers } from './difficulty-picker.js';
 
 const activeSessions = new Map();
 let lifecycleBound = false;
@@ -357,8 +358,13 @@ const bindGameEnhancements = () => {
     });
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindGameEnhancements);
-} else {
+const initGameEnhancements = () => {
     bindGameEnhancements();
+    renderDifficultyPickers();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGameEnhancements);
+} else {
+    initGameEnhancements();
 }
