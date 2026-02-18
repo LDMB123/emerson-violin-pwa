@@ -67,13 +67,10 @@ export const setRootDataset = (key, value) => {
 };
 
 /**
- * Gets current view ID from URL hash
- * @returns {string} View ID (e.g., "view-tuner") or "view-home" if no hash
+ * Detects automated/headless browser (e.g., Playwright, Puppeteer)
+ * @returns {boolean} True if running under automation
  */
-export const getViewId = () => {
-    const hash = window.location.hash.replace('#', '').trim();
-    return hash || 'view-home';
-};
+export const isAutomated = () => Boolean(navigator.webdriver);
 
 /**
  * Determines if a view allows wake lock

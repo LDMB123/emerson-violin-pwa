@@ -1,5 +1,6 @@
 import { whenReady } from '../utils/dom-ready.js';
-import { getJSON, setJSON, setBlob, removeBlob } from '../persistence/storage.js';
+import { setJSON, setBlob, removeBlob } from '../persistence/storage.js';
+import { loadRecordings } from '../persistence/loaders.js';
 import { dataUrlToBlob, blobToDataUrl } from '../utils/recording-export.js';
 import {
     getSongIdFromViewId,
@@ -41,11 +42,6 @@ const pruneBlobs = async (previous, next) => {
         .filter((key) => key && !keep.has(key));
     if (!removals.length) return;
     await Promise.allSettled(removals.map((key) => removeBlob(key)));
-};
-
-const loadRecordings = async () => {
-    const stored = await getJSON(RECORDINGS_KEY);
-    return Array.isArray(stored) ? stored : [];
 };
 
 const migrateRecordingsToBlobs = async () => {

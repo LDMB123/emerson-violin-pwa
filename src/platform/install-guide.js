@@ -1,11 +1,9 @@
 import { whenReady } from '../utils/dom-ready.js';
 import { INSTALL_GUIDE_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
-import { isIPadOS, isStandalone, setRootDataset } from './platform-utils.js';
+import { isIPadOS, isStandalone, isAutomated, setRootDataset } from './platform-utils.js';
 import { markDismissed, wasDismissed } from './dismiss-helpers.js';
 const helpButton = document.querySelector('[data-install-help]');
 let lastFocused = null;
-
-const isAutomated = () => Boolean(navigator.webdriver);
 
 const buildGuide = () => {
     const backdrop = document.createElement('div');
