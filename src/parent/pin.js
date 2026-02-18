@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { createPinHash, verifyPin } from './pin-crypto.js';
 
@@ -158,12 +159,7 @@ if (pinSaveButton) {
 
 window.addEventListener('hashchange', checkGate, { passive: true });
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        loadPin();
-        checkGate();
-    });
-} else {
+whenReady(() => {
     loadPin();
     checkGate();
-}
+});

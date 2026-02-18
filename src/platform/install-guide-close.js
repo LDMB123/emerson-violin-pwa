@@ -1,3 +1,5 @@
+import { whenReady } from '../utils/dom-ready.js';
+
 /**
  * Install Guide Close Button Enhancement
  * Adds a visual close (×) button to the install prompt
@@ -58,8 +60,4 @@ const addCloseButton = (backdrop) => {
 };
 
 // Initialize on load
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', enhanceInstallGuide);
-} else {
-    enhanceInstallGuide();
-}
+whenReady(enhanceInstallGuide);

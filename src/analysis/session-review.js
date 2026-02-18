@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { getJSON, getBlob } from '../persistence/storage.js';
 import { SOUNDS_CHANGE, RECORDINGS_UPDATED } from '../utils/event-names.js';
@@ -303,8 +304,4 @@ const initSessionReview = async () => {
     }
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSessionReview);
-} else {
-    initSessionReview();
-}
+whenReady(initSessionReview);

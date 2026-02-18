@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON, setBlob, removeBlob } from '../persistence/storage.js';
 import { dataUrlToBlob, blobToDataUrl } from '../utils/recording-export.js';
 import {
@@ -272,8 +273,4 @@ const updatePermissionState = async (announce = false) => {
     }
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initRecordings);
-} else {
-    initRecordings();
-}
+whenReady(initRecordings);

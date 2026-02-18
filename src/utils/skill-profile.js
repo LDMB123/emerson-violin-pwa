@@ -48,13 +48,7 @@ const createSkillProfileUtils = (SkillCategory) => {
         updateAllSkills(profile, scoreFromMinutes(minutes, 50, 4));
     };
 
-    return {
-        clamp,
-        scoreFromMinutes,
-        updateAllSkills,
-        updateSkillProfile,
-        SKILL_RULES,
-    };
+    return { updateSkillProfile };
 };
 
 export {

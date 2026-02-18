@@ -1,3 +1,4 @@
+import { whenReady } from './utils/dom-ready.js';
 import {
     getViewId,
     getModulesForView,
@@ -336,8 +337,4 @@ const boot = async () => {
     }, { passive: true });
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-} else {
-    boot();
-}
+whenReady(boot);

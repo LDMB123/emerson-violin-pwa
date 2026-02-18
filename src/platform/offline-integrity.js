@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAudioPath } from '../audio/format-detection.js';
 import { formatTimestamp } from '../utils/math.js';
@@ -218,8 +219,4 @@ const init = async () => {
     runSelfTest();
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+whenReady(init);

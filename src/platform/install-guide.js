@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { INSTALL_GUIDE_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
 import { isIPadOS, isStandalone, setRootDataset } from './platform-utils.js';
 import { markDismissed, wasDismissed } from './dismiss-helpers.js';
@@ -155,8 +156,4 @@ const init = () => {
     showGuide(false);
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+whenReady(init);

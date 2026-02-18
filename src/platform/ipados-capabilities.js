@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { isIPadOS, isStandalone, setRootDataset } from './platform-utils.js';
 
 const statusEl = document.querySelector('[data-platform-status]');
@@ -65,8 +66,4 @@ const init = () => {
     });
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+whenReady(init);

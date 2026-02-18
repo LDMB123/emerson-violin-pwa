@@ -122,6 +122,7 @@ self.__ASSETS__ = [
   "./src/tuner/tuner.js",
   "./src/utils/app-utils.js",
   "./src/utils/audio-utils.js",
+  "./src/utils/dom-ready.js",
   "./src/utils/event-names.js",
   "./src/utils/lesson-plan-utils.js",
   "./src/utils/math.js",
