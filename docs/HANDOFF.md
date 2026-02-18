@@ -189,6 +189,17 @@ If both pass, you are at a known-good baseline.
   - Added focused lifecycle tests for:
     - `tests/games/rhythm-dash-lifecycle.test.js`
   - Covers non-persisted pagehide active-run stop behavior and persisted-pagehide bfcache preservation behavior.
+- Completed service-worker support hardening pass (2026-02-18, phase 26):
+  - Added shared service-worker capability helpers:
+    - `src/platform/sw-support.js`
+  - Guarded registration and SW-dependent runtime paths for unsupported/insecure contexts in:
+    - `src/app.js`
+    - `src/platform/offline-recovery.js`
+    - `src/platform/offline-mode.js`
+    - `src/platform/offline-integrity.js`
+    - `src/platform/sw-updates.js`
+  - Added focused regression coverage for support/registration rules:
+    - `tests/sw-support.test.js`
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -221,6 +232,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-20.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-21.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-22.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-23.md`
 
 ## Verification Gates
 
