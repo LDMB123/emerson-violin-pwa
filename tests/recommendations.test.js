@@ -113,6 +113,18 @@ describe('learning recommendations', () => {
         });
     });
 
+    it('dedupes concurrent refreshes into a single compute/write cycle', async () => {
+        const [first, second] = await Promise.all([
+            refreshRecommendationsCache(),
+            refreshRecommendationsCache(),
+        ]);
+
+        expect(first).toEqual(second);
+        expect(loaderMocks.loadEvents).toHaveBeenCalledTimes(1);
+        expect(adaptiveMocks.getAdaptiveLog).toHaveBeenCalledTimes(1);
+        expect(storageMocks.setJSON).toHaveBeenCalledTimes(1);
+    });
+
     it('falls back to default metronome target when tuning fails', async () => {
         state.tuningFails = true;
         const recs = await getLearningRecommendations({ allowCached: false });

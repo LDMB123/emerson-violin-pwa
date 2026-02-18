@@ -12,6 +12,7 @@ import {
 } from '../utils/recommendations-utils.js';
 import { ML_RECS_KEY as CACHE_KEY } from '../persistence/storage-keys.js';
 const CACHE_TTL = 5 * 60 * 1000;
+let refreshPromise = null;
 
 const COACH_MESSAGES = {
     pitch: 'Pitch focus: aim for clean, centered notes today.',
@@ -228,7 +229,7 @@ const readCache = async () => {
     return cached;
 };
 
-export const refreshRecommendationsCache = async () => {
+const runRefreshRecommendations = async () => {
     const recommendations = await computeRecommendations();
     const payload = {
         updatedAt: Date.now(),
@@ -236,6 +237,16 @@ export const refreshRecommendationsCache = async () => {
     };
     await setJSON(CACHE_KEY, payload);
     return recommendations;
+};
+
+export const refreshRecommendationsCache = async () => {
+    if (refreshPromise) {
+        return refreshPromise;
+    }
+    refreshPromise = runRefreshRecommendations().finally(() => {
+        refreshPromise = null;
+    });
+    return refreshPromise;
 };
 
 export const getLearningRecommendations = async ({ allowCached = true } = {}) => {
