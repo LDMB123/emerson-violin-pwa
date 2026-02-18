@@ -42,6 +42,10 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         if (!stage) return;
 
         reported = false;
+        // Remove previous hashchange listener before clearing gameState.
+        if (gameState._hashHandler) {
+            window.removeEventListener('hashchange', gameState._hashHandler, { passive: true });
+        }
         // Clear gameState without replacing the reference (onBind captures the same object).
         Object.keys(gameState).forEach((key) => {
             delete gameState[key];
@@ -70,13 +74,15 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
 
         onBind(stage, difficulty, shell);
 
-        window.addEventListener('hashchange', () => {
+        const hashHandler = () => {
             if (window.location.hash === `#view-game-${id}`) {
                 resetSession();
                 return;
             }
             reportSession();
-        }, { passive: true });
+        };
+        gameState._hashHandler = hashHandler;
+        window.addEventListener('hashchange', hashHandler, { passive: true });
     }
 
     return { update, bind };

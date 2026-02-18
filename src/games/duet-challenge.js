@@ -26,6 +26,8 @@ const updateDuetChallenge = () => {
     }
 };
 
+let _soundsHandler = null;
+
 const { bind } = createGame({
     id: 'duet-challenge',
     computeAccuracy: (state) => state._sequence?.length
@@ -232,12 +234,17 @@ const { bind } = createGame({
             });
         });
 
-        document.addEventListener(SOUNDS_CHANGE, (event) => {
+        const soundsHandler = (event) => {
             if (event.detail?.enabled === false) {
                 stopPartnerPlayback();
             }
             updateSoundState();
-        });
+        };
+        if (_soundsHandler) {
+            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
+        }
+        _soundsHandler = soundsHandler;
+        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
 
         updateSoundState();
         setButtonsDisabled(true);
