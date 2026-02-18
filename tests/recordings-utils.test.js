@@ -9,7 +9,7 @@ import {
     filterValidRecordings,
     limitRecordings,
     pruneOldRecordings,
-} from '../src/utils/recordings-utils.js';
+} from '../src/utils/recording-export.js';
 
 describe('recordings-utils', () => {
     describe('getSongIdFromViewId', () => {
