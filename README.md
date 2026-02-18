@@ -30,9 +30,12 @@ npm run dev
 Useful commands:
 
 ```bash
+npm run handoff:status
+npm run handoff:verify
 npm run lint
 npm run lint:all
 npm test
+npm run test:e2e
 npx playwright test
 npm run build
 npm run preview
@@ -45,8 +48,9 @@ npm run audit:full
 
 - Dead code and unused exports are checked by `knip` using `knip.json`.
 - Duplicate dependency versions are checked by `scripts/audit-dependency-duplicates.mjs`.
-- CI runs `lint:all`, dead-code/dependency audits, unit tests, and build on PRs and pushes to `main`.
+- CI runs `lint:all`, dead-code/dependency audits, unit tests, build, and Playwright E2E on PRs and pushes to `main`.
 - Detailed handoff/debug report: `docs/plans/2026-02-18-debug-optimization-report.md`.
+- Operator runbook for zero-context pickup: `docs/HANDOFF.md`.
 
 ## Architecture Notes
 

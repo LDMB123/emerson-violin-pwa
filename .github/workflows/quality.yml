@@ -36,3 +36,9 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Install Playwright (WebKit)
+        run: npx playwright install --with-deps webkit
+
+      - name: E2E tests
+        run: npm run test:e2e
