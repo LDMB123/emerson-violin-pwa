@@ -105,6 +105,11 @@ const { bind } = createGame({
             if (message) setStatus(message);
         };
 
+        gameState._onDeactivate = () => {
+            if (!gameState._isPlaying) return;
+            stopPlayback();
+        };
+
         const updateSoundState = () => {
             const enabled = isSoundEnabled();
             if (playButton) playButton.disabled = !enabled;
