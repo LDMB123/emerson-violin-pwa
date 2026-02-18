@@ -54,11 +54,6 @@ const moduleLoaders = {
 
 const loaded = new Map();
 const scheduleIdle = (task) => {
-    if (typeof window === 'undefined') return;
-    if (document.prerendering) {
-        document.addEventListener('prerenderingchange', () => scheduleIdle(task), { once: true });
-        return;
-    }
     window.setTimeout(() => task({ timeRemaining: () => 0, didTimeout: true }), 300);
 };
 
@@ -130,7 +125,6 @@ const showView = async (viewId, enhanceCallback) => {
 };
 
 const registerServiceWorker = () => {
-    if (!('serviceWorker' in navigator)) return;
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch((err) => console.warn('[SW] registration failed', err));
     });
@@ -315,11 +309,6 @@ const setupNavigation = (ctx) => {
 };
 
 const boot = async () => {
-    if (document.prerendering) {
-        document.addEventListener('prerenderingchange', boot, { once: true });
-        return;
-    }
-
     rewriteAudioSources();
     loadEagerModules();
     await loadModule('persist');

@@ -1,4 +1,4 @@
-import { getJSON, setJSON, setBlob, removeBlob, supportsIndexedDB } from '../persistence/storage.js';
+import { getJSON, setJSON, setBlob, removeBlob } from '../persistence/storage.js';
 import { dataUrlToBlob, blobToDataUrl } from '../utils/recording-export.js';
 import {
     getSongIdFromViewId,
@@ -34,7 +34,6 @@ const scheduleIdle = (task) => window.setTimeout(task, 400);
 const createBlobKey = (songId) => createRecordingBlobKey(songId);
 
 const pruneBlobs = async (previous, next) => {
-    if (!supportsIndexedDB) return;
     const keep = new Set(next.map((entry) => entry.blobKey).filter(Boolean));
     const removals = previous
         .map((entry) => entry.blobKey)
@@ -49,7 +48,6 @@ const loadRecordings = async () => {
 };
 
 const migrateRecordingsToBlobs = async () => {
-    if (!supportsIndexedDB) return;
     const recordings = await loadRecordings();
     const candidates = recordings.filter((recording) => recording?.dataUrl && !recording?.blobKey);
     if (!candidates.length) return;
@@ -86,7 +84,7 @@ const saveRecording = async (songId, duration, blob) => {
     const recordings = await loadRecordings();
 
     let blobKey = null;
-    if (supportsIndexedDB && blob) {
+    if (blob) {
         blobKey = createBlobKey(songId);
         const stored = await setBlob(blobKey, blob);
         if (!stored) blobKey = null;
@@ -108,7 +106,6 @@ const saveRecording = async (songId, duration, blob) => {
 };
 
 const pickMimeType = () => {
-    if (!('MediaRecorder' in window)) return '';
     const candidates = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
     return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || '';
 };
@@ -139,7 +136,6 @@ const stopRecording = async () => {
 
 const startRecording = async (songId) => {
     if (!recordToggle?.checked) return;
-    if (!navigator.mediaDevices?.getUserMedia) return;
     if (recorder) await stopRecording();
 
     try {
@@ -214,16 +210,6 @@ const bindSongViews = () => {
 };
 
 const initRecordings = () => {
-    if (!('MediaRecorder' in window) || !navigator.mediaDevices?.getUserMedia) {
-        if (recordToggle) {
-            recordToggle.checked = false;
-            recordToggle.disabled = true;
-        }
-        if (statusEl) {
-            statusEl.textContent = 'Recording status: unavailable on this device.';
-        }
-        return;
-    }
     bindSongViews();
     if (statusEl) {
         statusEl.textContent = 'Recording status: ready.';

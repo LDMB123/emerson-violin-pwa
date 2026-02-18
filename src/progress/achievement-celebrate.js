@@ -23,8 +23,7 @@ const FALLBACK_EMOJI = {
 
 const canSpeak = () =>
     Boolean(document.querySelector('#setting-voice')?.checked)
-    && 'speechSynthesis' in window
-    && 'SpeechSynthesisUtterance' in window;
+    && 'speechSynthesis' in window;
 
 const speakBadge = (name) => {
     if (!canSpeak() || document.hidden) return;

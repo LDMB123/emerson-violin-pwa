@@ -20,7 +20,7 @@ const updateStandaloneState = () => {
 };
 
 const updateVoiceSupport = () => {
-    const supported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    const supported = 'speechSynthesis' in window;
     if (voiceToggle) {
         voiceToggle.disabled = !supported;
         if (!supported) voiceToggle.checked = false;

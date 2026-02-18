@@ -43,7 +43,6 @@ const savePersistRequest = (state) => {
 };
 
 const requestPersistentStorage = async (reason) => {
-    if (!navigator.storage?.persist) return false;
     if (document.hidden) return false;
     const previous = loadPersistRequest();
     if (!shouldRetryPersist(previous)) return false;
@@ -64,7 +63,6 @@ const requestPersistentStorage = async (reason) => {
 };
 
 const maybeAutoPersist = async (reason) => {
-    if (!navigator.storage?.persisted) return;
     const persisted = await navigator.storage.persisted();
     if (persisted) return;
     const offlineMode = document.documentElement?.dataset?.offlineMode === 'on';
@@ -78,13 +76,6 @@ const maybeAutoPersist = async (reason) => {
 
 
 const updateStorageEstimate = async () => {
-    if (!navigator.storage?.estimate) {
-        if (storageEstimateEl) {
-            storageEstimateEl.textContent = 'Storage estimate unavailable on this device.';
-        }
-        setRootDataset('storagePressure', null);
-        return;
-    }
     try {
         const { usage, quota } = await navigator.storage.estimate();
         if (Number.isFinite(quota) && quota > 0) {
@@ -113,34 +104,26 @@ const updateStorageEstimate = async () => {
 };
 
 const updateStorageStatus = async (request = false) => {
-    if (!navigator.storage?.persisted) {
-        if (storageStatusEl) {
-            storageStatusEl.textContent = 'Persistent storage is not available on this device.';
-        }
-        if (storageRequestButton) storageRequestButton.disabled = true;
-        setRootDataset('storagePersisted', 'unsupported');
-        return { supported: false, persisted: false };
-    }
     try {
         let persisted = await navigator.storage.persisted();
-        if (!persisted && request && navigator.storage.persist) {
+        if (!persisted && request) {
             persisted = await navigator.storage.persist();
         }
         setRootDataset('storagePersisted', persisted ? 'true' : 'false');
         if (storageRequestButton) {
-            storageRequestButton.disabled = persisted || !navigator.storage.persist;
+            storageRequestButton.disabled = persisted;
         }
         if (storageStatusEl) {
             storageStatusEl.textContent = persisted
                 ? 'Offline storage is protected.'
                 : 'Offline storage may be cleared if the device is low on space.';
         }
-        return { supported: true, persisted };
+        return { persisted };
     } catch {
         if (storageStatusEl) {
             storageStatusEl.textContent = 'Unable to confirm offline storage status.';
         }
-        return { supported: true, persisted: false };
+        return { persisted: false };
     }
 };
 
@@ -213,10 +196,6 @@ const requestWakeLock = async () => {
     if (!wakeToggle.checked) {
         await releaseWakeLock();
         updateWakeStatus('Screen stays on during practice sessions.');
-        return;
-    }
-    if (!('wakeLock' in navigator)) {
-        updateWakeStatus('Screen wake lock not available on this device.');
         return;
     }
     if (document.hidden) return;
@@ -360,14 +339,12 @@ const bindShareSummary = () => {
                 // User cancelled or share failed; continue to fallback
             }
         }
-        if (navigator.clipboard?.writeText) {
-            try {
-                await navigator.clipboard.writeText(text);
-                if (shareStatusEl) shareStatusEl.textContent = 'Summary copied to clipboard.';
-                return;
-            } catch {
-                // fall through
-            }
+        try {
+            await navigator.clipboard.writeText(text);
+            if (shareStatusEl) shareStatusEl.textContent = 'Summary copied to clipboard.';
+            return;
+        } catch {
+            // fall through
         }
         if (shareStatusEl) shareStatusEl.textContent = 'Sharing not available on this device.';
     });
@@ -388,7 +365,6 @@ const buildAudioLabel = (audio) => {
 };
 
 const bindMediaSession = () => {
-    if (!('mediaSession' in navigator)) return;
     const audios = Array.from(document.querySelectorAll('audio'));
     if (!audios.length) return;
     let currentAudio = null;
@@ -534,10 +510,7 @@ const updateInstallState = () => {
 const bindInstallState = () => {
     updateInstallState();
     window.addEventListener('appinstalled', updateInstallState);
-    const media = window.matchMedia('(display-mode: standalone)');
-    if (media?.addEventListener) {
-        media.addEventListener('change', updateInstallState);
-    }
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', updateInstallState);
 };
 
 const updateKeyboardOffset = () => {

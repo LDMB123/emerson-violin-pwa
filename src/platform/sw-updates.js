@@ -99,13 +99,6 @@ const registerBackgroundRefresh = async (registration) => {
 };
 
 const init = async () => {
-    if (!('serviceWorker' in navigator)) {
-        setStatus('Service worker not supported on this device.');
-        setSyncStatus('Background refresh not supported on this device.');
-        if (updateButton) updateButton.disabled = true;
-        return;
-    }
-
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) {
         setStatus('Service worker not ready yet.');
