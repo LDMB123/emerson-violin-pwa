@@ -131,11 +131,3 @@ export const pickDailyCue = (list, seed = 0) => {
     return list[index] || list[0];
 };
 
-export const filterEventsByType = (events, type) => {
-    return events.filter((event) => event.type === type);
-};
-
-export const cacheFresh = (cached, ttl = 5 * 60 * 1000) => {
-    if (!cached?.updatedAt) return false;
-    return (Date.now() - cached.updatedAt) < ttl;
-};

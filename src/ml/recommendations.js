@@ -8,8 +8,6 @@ import {
     findWeakestSkill,
     computeSongLevel,
     pickDailyCue,
-    filterEventsByType,
-    cacheFresh,
 } from '../utils/recommendations-utils.js';
 import { EVENTS_KEY as EVENT_KEY, ML_RECS_KEY as CACHE_KEY } from '../persistence/storage-keys.js';
 const CACHE_TTL = 5 * 60 * 1000;
@@ -188,7 +186,7 @@ const computeRecommendations = async () => {
 
     const skillScores = computeSkillScores(adaptiveLog);
     const weakestSkill = findWeakestSkill(skillScores);
-    const songEvents = filterEventsByType(events, 'song');
+    const songEvents = events.filter((e) => e.type === 'song');
     const songLevel = computeSongLevel(songEvents);
 
     const recommendedGameId = GAME_BY_SKILL[weakestSkill] || 'pitch-quest';
@@ -248,7 +246,7 @@ export const getLearningRecommendations = async ({ allowCached = true } = {}) =>
     if (allowCached) {
         const cached = await readCache();
         if (cached?.recommendations) {
-            if (!cacheFresh(cached, CACHE_TTL)) {
+            if (!cached?.updatedAt || (Date.now() - cached.updatedAt) >= CACHE_TTL) {
                 refreshRecommendationsCache().catch(() => {});
             }
             return cached.recommendations;
