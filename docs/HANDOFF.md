@@ -91,6 +91,16 @@ If both pass, you are at a known-good baseline.
   - Added focused unit coverage:
     - `tests/games/game-complete.test.js`
     - `tests/games/game-shell.test.js`
+- Completed tuning-listener lifecycle hardening pass (2026-02-18, phase 9):
+  - Added explicit disposal for tuning subscriptions:
+    - `src/games/shared.js` (`attachTuning().dispose()`)
+  - Prevented stale ML-reset listeners across potential rebind paths:
+    - `src/games/game-shell.js`
+    - `src/games/sequence-game.js`
+    - `src/games/rhythm-dash.js`
+  - Added regression coverage:
+    - `tests/games/shared.test.js`
+    - `tests/games/game-shell.test.js` (rebind disposal assertion)
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -106,6 +116,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-3.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-4.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-5.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-6.md`
 
 ## Verification Gates
 
