@@ -9,7 +9,8 @@ sw.js
 sw-assets.js
 wasm/target/
 node_modules/
-.claude/
+.claude/*
+!.claude/agents
 .worktrees/
 *.log
 _archived/
