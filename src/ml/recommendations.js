@@ -1,4 +1,5 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
+import { loadEvents } from '../persistence/loaders.js';
 import { getAdaptiveLog, getGameTuning } from './adaptive-engine.js';
 import {
     GAME_BY_SKILL,
@@ -9,7 +10,7 @@ import {
     computeSongLevel,
     pickDailyCue,
 } from '../utils/recommendations-utils.js';
-import { EVENTS_KEY as EVENT_KEY, ML_RECS_KEY as CACHE_KEY } from '../persistence/storage-keys.js';
+import { ML_RECS_KEY as CACHE_KEY } from '../persistence/storage-keys.js';
 const CACHE_TTL = 5 * 60 * 1000;
 
 const COACH_MESSAGES = {
@@ -170,11 +171,6 @@ const buildLessonSteps = ({ weakestSkill, recommendedGameId, metronomeTarget, so
             },
         ],
     };
-};
-
-const loadEvents = async () => {
-    const stored = await getJSON(EVENT_KEY);
-    return Array.isArray(stored) ? stored : [];
 };
 
 const computeRecommendations = async () => {

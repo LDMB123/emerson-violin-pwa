@@ -8,7 +8,7 @@
  */
 
 import { INSTALL_TOAST_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
-import { isStandalone } from './platform-utils.js';
+import { isStandalone, isAutomated } from './platform-utils.js';
 import { markDismissed, wasDismissed } from './dismiss-helpers.js';
 const SHOW_DELAY = 5000;
 const AUTO_DISMISS = 8000;
@@ -17,8 +17,6 @@ const toast = document.getElementById('install-toast');
 const actionBtn = toast?.querySelector('[data-install-toast-action]');
 const closeBtn = toast?.querySelector('.install-toast-close');
 const moreBtn = document.querySelector('[popovertarget="more-menu"]');
-
-const isAutomated = () => Boolean(navigator.webdriver);
 
 let autoDismissTimer = null;
 
