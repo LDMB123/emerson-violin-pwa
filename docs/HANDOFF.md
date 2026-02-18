@@ -25,6 +25,16 @@ If both pass, you are at a known-good baseline.
   - Replaced branch-heavy `getModulesForView` with declarative rules + deduped/memoized output in `src/utils/app-utils.js`.
   - Hardened sequence game lifecycle by removing stale `hashchange` listeners before rebind in `src/games/sequence-game.js`.
   - Expanded tests for module rule behavior and view prefetch error handling.
+- Completed deeper architecture pass (2026-02-18, phase 3):
+  - Added shared module registry: `src/app/module-registry.js` now owns loader map, eager/idle plans, prefetch view IDs, and view→module resolution.
+  - `src/app.js` and `src/utils/app-utils.js` now consume the same registry source (eliminates drift between module keys and routing rules).
+  - Hardened `src/games/game-metrics.js` loading pipeline:
+    - promise-based game load cache
+    - retry on loader failure (failed load is removed from cache)
+    - deduped update handlers via `Set`
+    - generic game-view checkbox detection (removed brittle hardcoded ID-prefix regex)
+  - Added registry test coverage in `tests/app/module-registry.test.js`.
+  - Preserved static per-game import map in `game-metrics` intentionally so `knip` dead-code audit remains accurate (current toolchain does not reliably resolve `import.meta.glob` for this case).
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -34,6 +44,7 @@ If both pass, you are at a known-good baseline.
 - Added phase report:
   - `docs/plans/2026-02-18-debug-optimization-report.md`
   - `docs/plans/2026-02-18-10x-simplification-optimization.md`
+  - `docs/plans/2026-02-18-10x-deeper-pass.md`
 
 ## Verification Gates
 
@@ -58,10 +69,11 @@ If both pass, you are at a known-good baseline.
 ## Files to Read Before Editing
 
 1. `docs/HANDOFF.md` (this file)
-2. `docs/plans/2026-02-18-10x-simplification-optimization.md`
-3. `docs/plans/2026-02-18-debug-optimization-report.md`
-4. `CLAUDE.md`
-5. `README.md`
+2. `docs/plans/2026-02-18-10x-deeper-pass.md`
+3. `docs/plans/2026-02-18-10x-simplification-optimization.md`
+4. `docs/plans/2026-02-18-debug-optimization-report.md`
+5. `CLAUDE.md`
+6. `README.md`
 
 ## Recommended Next Work (Ordered)
 
