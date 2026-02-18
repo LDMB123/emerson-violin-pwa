@@ -5885,9 +5885,12 @@
     margin-bottom: 1rem;
 }
 
-/* ============================================================
-   GAME-COMPLETE MODAL
-   ============================================================ */
+/* ===========================================================================
+   Game complete modal
+   =========================================================================== */
+
+@layer games {
+
 .game-complete-dialog {
     border: none;
     background: transparent;
@@ -6031,3 +6034,5 @@
 :root:has(#setting-reduce-motion:checked) .game-complete-mascot { animation: none; opacity: 1; }
 :root:has(#setting-reduce-motion:checked) .confetti-piece { animation: none; opacity: 0; }
 :root:has(#setting-reduce-motion:checked) .game-complete-star { opacity: 1; transform: none; transition: none; }
+
+} /* end @layer games */
