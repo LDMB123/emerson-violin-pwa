@@ -185,6 +185,10 @@ If both pass, you are at a known-good baseline.
   - Added focused lifecycle tests for:
     - `tests/games/sequence-game.test.js`
   - Covers non-persisted pagehide reporting, persisted-pagehide ignore behavior, and rebind listener cleanup.
+- Completed rhythm-dash pagehide regression coverage pass (2026-02-18, phase 25):
+  - Added focused lifecycle tests for:
+    - `tests/games/rhythm-dash-lifecycle.test.js`
+  - Covers non-persisted pagehide active-run stop behavior and persisted-pagehide bfcache preservation behavior.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -216,6 +220,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-19.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-20.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-21.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-22.md`
 
 ## Verification Gates
 
