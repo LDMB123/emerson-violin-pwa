@@ -6035,4 +6035,122 @@
 :root:has(#setting-reduce-motion:checked) .confetti-piece { animation: none; opacity: 0; }
 :root:has(#setting-reduce-motion:checked) .game-complete-star { opacity: 1; transform: none; transition: none; }
 
+    /* ===========================================================================
+       Achievement Celebration Overlay
+       =========================================================================== */
+
+    #achievement-modal {
+        border: none;
+        background: transparent;
+        padding: 0;
+        max-width: 100vw;
+        max-height: 100vh;
+        overflow: visible;
+    }
+
+    #achievement-modal::backdrop {
+        background: rgba(53, 32, 25, 0.55);
+        backdrop-filter: blur(8px) saturate(120%);
+    }
+
+    .achievement-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-4);
+        padding: var(--space-8) var(--space-6);
+        max-width: 360px;
+        width: calc(100vw - var(--space-8));
+        text-align: center;
+        background: var(--color-surface);
+        border: 1px solid rgba(255, 249, 243, 0.18);
+        border-radius: var(--radius-2xl);
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .achievement-confetti {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+
+    .achievement-badge-art {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 3px solid var(--color-primary);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-bg-alt);
+        animation: mascot-bounce 0.6s var(--ease-bounce) both;
+        flex-shrink: 0;
+    }
+
+    #achievement-badge-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    #achievement-badge-img[src=""] {
+        display: none;
+    }
+
+    .achievement-badge-fallback {
+        font-size: 3rem;
+        line-height: 1;
+    }
+
+    .achievement-heading {
+        font-family: var(--font-display);
+        font-size: var(--text-2xl);
+        font-weight: 700;
+        color: var(--color-secondary);
+        margin: 0;
+    }
+
+    .achievement-badge-name {
+        font-weight: 700;
+        font-size: var(--text-lg);
+        color: var(--color-text);
+        margin: 0;
+    }
+
+    .achievement-cheer {
+        font-size: var(--text-sm);
+        color: var(--color-text-muted);
+        margin: 0;
+    }
+
+    .achievement-yay {
+        min-width: 140px;
+        margin-top: var(--space-2);
+    }
+
+    /* Reduced motion — @media query */
+    @media (prefers-reduced-motion: reduce) {
+        .achievement-badge-art {
+            animation: none;
+        }
+
+        #achievement-modal .confetti-piece {
+            animation: none;
+        }
+    }
+
+    /* Reduced motion — in-app toggle */
+    :root:has(#setting-reduce-motion:checked) .achievement-badge-art {
+        animation: none;
+    }
+
+    :root:has(#setting-reduce-motion:checked) #achievement-modal .confetti-piece {
+        animation: none;
+    }
+
 } /* end @layer games */
