@@ -47,14 +47,13 @@ const saveWithFilePicker = async (file) => {
     }
 };
 
-export const shareFile = async (file) => {
+export const tryShareFile = async (file, { title = 'Panda Violin', text = '' } = {}) => {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
-            await navigator.share({
-                title: 'Panda Violin Recording',
-                text: 'Practice recording',
-                files: [file],
-            });
+            const payload = { files: [file] };
+            if (title) payload.title = title;
+            if (text) payload.text = text;
+            await navigator.share(payload);
             return true;
         } catch {
             return false;
@@ -99,7 +98,10 @@ export const exportRecording = async (recording, index = 0, blobOverride = null)
     if (!file) return false;
     const saved = await saveWithFilePicker(file);
     if (!saved) {
-        const shared = await shareFile(file);
+        const shared = await tryShareFile(file, {
+            title: 'Panda Violin Recording',
+            text: 'Practice recording',
+        });
         if (!shared) {
             downloadFile(file);
         }

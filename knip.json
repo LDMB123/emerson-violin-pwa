@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "index.html",
+    "scripts/**/*.js",
+    "scripts/**/*.mjs",
+    "tests/**/*.test.js",
+    "tests/e2e/**/*.spec.js",
+    "eslint.config.js"
+  ],
+  "project": [
+    "src/**/*.js",
+    "scripts/**/*.js",
+    "scripts/**/*.mjs",
+    "tests/**/*.js",
+    "*.config.js"
+  ],
+  "ignore": [
+    "src/wasm/**",
+    "wasm/**",
+    "public/views/**",
+    "dist/**"
+  ]
+}

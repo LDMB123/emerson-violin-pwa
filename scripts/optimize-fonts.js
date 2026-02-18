@@ -40,7 +40,7 @@ function checkPyftsubset() {
             // pyftsubset doesn't support --version, but --help returns exit code 0
             execSync(`${path} --help`, { stdio: 'ignore' });
             return path;
-        } catch (e) {
+        } catch {
             continue;
         }
     }

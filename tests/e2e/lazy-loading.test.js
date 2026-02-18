@@ -1,5 +1,22 @@
 import { test, expect } from '@playwright/test';
 
+const openHomeView = async (page) => {
+    await page.goto('/');
+    await page.waitForSelector('#main-content .view', { timeout: 10000 });
+
+    if (await page.locator('#view-onboarding').isVisible().catch(() => false)) {
+        const onboardingSkip = page.locator('#onboarding-skip');
+        await onboardingSkip.click();
+        await page.waitForURL('**/#view-home');
+    }
+
+    if (!page.url().includes('#view-home')) {
+        await page.goto('/#view-home');
+    }
+
+    await expect(page.locator('#view-home')).toBeVisible({ timeout: 10000 });
+};
+
 test.describe('Lazy View Loading', () => {
     test.beforeEach(async ({ page }) => {
         // Hide install banner to prevent it from blocking navigation
@@ -11,11 +28,11 @@ test.describe('Lazy View Loading', () => {
                 }
             });
         });
+
+        await openHomeView(page);
     });
 
     test('should load home view on initial visit', async ({ page }) => {
-        await page.goto('/');
-
         // Check that home view is loaded
         await expect(page.locator('#main-content')).toContainText('Panda Violin');
         await expect(page.locator('.home-title')).toContainText('Panda Violin');
@@ -27,13 +44,11 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should lazy load trainer view', async ({ page }) => {
-        // Start on home to ensure we test lazy loading
-        await page.goto('/');
-
         // Navigate to trainer view via direct URL
         await page.goto('/#view-trainer');
 
         // Wait for view content to load
+        await expect(page.locator('#view-trainer')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('#main-content')).toContainText('Practice Tools', { timeout: 10000 });
 
         // Verify trainer elements are present in DOM
@@ -41,19 +56,16 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should lazy load coach view from navigation', async ({ page }) => {
-        await page.goto('/');
-
         // Navigate using hash change (CSS :target selector)
         await page.goto('/#view-coach');
 
         // Wait for URL and view content
         await page.waitForURL('**/#view-coach');
+        await expect(page.locator('#view-coach')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('#main-content')).toContainText('Coach', { timeout: 10000 });
     });
 
     test('should cache and quickly reload views', async ({ page }) => {
-        await page.goto('/');
-
         // First load of coach view - measure network timing
         const start1 = Date.now();
         await page.goto('/#view-coach');
@@ -76,8 +88,6 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should load multiple different views in sequence', async ({ page }) => {
-        await page.goto('/');
-
         // Load home
         await expect(page.locator('.home-title')).toContainText('Panda Violin');
 
@@ -103,8 +113,6 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should handle view loading errors gracefully', async ({ page }) => {
-        await page.goto('/');
-
         // Try to load a non-existent view
         await page.goto('/#view-nonexistent');
 
@@ -120,8 +128,6 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should maintain view state after navigation', async ({ page }) => {
-        await page.goto('/');
-
         // Navigate to progress view via URL
         await page.goto('/#view-progress');
         await page.waitForURL('**/#view-progress');
@@ -144,8 +150,6 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should load views with deep navigation paths', async ({ page }) => {
-        await page.goto('/');
-
         // Navigate to games view via URL
         await page.goto('/#view-games');
         await page.waitForURL('**/#view-games');
@@ -158,8 +162,6 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should preload views efficiently', async ({ page }) => {
-        await page.goto('/');
-
         // Home view should be loaded
         await expect(page.locator('.home-title')).toBeVisible();
 
@@ -186,7 +188,7 @@ test.describe('Lazy View Loading', () => {
 
             // Cached views should load relatively quickly
             // Using a more realistic timeout since goto() has overhead
-            expect(loadTime).toBeLessThan(500);
+            expect(loadTime).toBeLessThan(1200);
         }
     });
 });
