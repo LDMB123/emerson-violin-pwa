@@ -13,7 +13,7 @@ const STAR_COUNT = 3;
 
 const renderStars = (stars) => {
     if (!starsEl) return;
-    const filled = Number.isFinite(stars) ? Math.max(0, Math.min(STAR_COUNT, Math.round(stars))) : STAR_COUNT;
+    const filled = Number.isFinite(stars) ? Math.max(0, Math.min(STAR_COUNT, Math.round(stars))) : 0;
     const starEls = starsEl.querySelectorAll('.game-complete-star');
     starEls.forEach((el, i) => {
         el.classList.remove('filled', 'empty', 'revealed');
@@ -73,7 +73,9 @@ dialog.addEventListener('click', (e) => {
 document.addEventListener(GAME_RECORDED, (e) => {
     const detail = e.detail || {};
     const { score, accuracy } = detail;
-    // Guard: only show if there's something to celebrate
+    // Guard: only show if game produced a meaningful result.
+    // First guard: no numeric values at all (e.g. game type with no scoring).
+    // Second guard: both explicitly zero means no attempts were made.
     if (!Number.isFinite(score) && !Number.isFinite(accuracy)) return;
     if (score === 0 && accuracy === 0) return;
     open(detail);
