@@ -1,4 +1,5 @@
 import { whenReady } from '../utils/dom-ready.js';
+import { hasServiceWorkerSupport } from './sw-support.js';
 
 const statusEl = document.querySelector('[data-sw-status]');
 const syncStatusEl = document.querySelector('[data-sync-status]');
@@ -51,12 +52,20 @@ const bindUpdateFlow = (registration) => {
 };
 
 const applyUpdate = async () => {
+    if (!hasServiceWorkerSupport()) {
+        setStatus('Service worker not supported on this browser.');
+        return;
+    }
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration?.waiting) return;
     registration.waiting.postMessage({ type: 'SKIP_WAITING' });
 };
 
 const checkForUpdates = async () => {
+    if (!hasServiceWorkerSupport()) {
+        setStatus('Service worker not supported on this browser.');
+        return;
+    }
     setStatus('Checking for updates…');
     try {
         const registration = await navigator.serviceWorker.getRegistration();
@@ -101,6 +110,14 @@ const registerBackgroundRefresh = async (registration) => {
 };
 
 const init = async () => {
+    if (!hasServiceWorkerSupport()) {
+        setStatus('Service worker not supported on this browser.');
+        setSyncStatus('Background refresh unavailable on this browser.');
+        showApply(false);
+        if (updateButton) updateButton.disabled = true;
+        if (applyButton) applyButton.disabled = true;
+        return;
+    }
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) {
         setStatus('Service worker not ready yet.');

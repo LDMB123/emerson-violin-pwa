@@ -9,6 +9,7 @@ import { getAudioPath } from './audio/format-detection.js';
 import { ViewLoader } from './views/view-loader.js';
 import { getViewPath } from './views/view-paths.js';
 import { showViewError } from './views/view-error.js';
+import { canRegisterServiceWorker } from './platform/sw-support.js';
 import {
     MODULE_LOADERS as moduleLoaders,
     EAGER_MODULES,
@@ -118,6 +119,7 @@ const showView = async (viewId, enhanceCallback) => {
 };
 
 const registerServiceWorker = () => {
+    if (!canRegisterServiceWorker()) return;
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch((err) => console.warn('[SW] registration failed', err));
     });

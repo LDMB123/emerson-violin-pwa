@@ -2,6 +2,7 @@ import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { OFFLINE_MODE_KEY as MODE_KEY } from '../persistence/storage-keys.js';
 import { OFFLINE_MODE_CHANGE } from '../utils/event-names.js';
+import { hasServiceWorkerSupport } from './sw-support.js';
 const toggle = document.querySelector('#setting-offline-mode');
 const statusEl = document.querySelector('[data-offline-mode-status]');
 let currentEnabled = false;
@@ -22,6 +23,7 @@ const setDataset = (enabled) => {
 };
 
 const notifyServiceWorker = async (enabled) => {
+    if (!hasServiceWorkerSupport()) return;
     try {
         const registration = await navigator.serviceWorker.ready;
         if (registration?.active) {
@@ -60,10 +62,12 @@ const init = async () => {
         });
     }
 
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        const next = toggle ? toggle.checked : currentEnabled;
-        applyState(next, false);
-    });
+    if (hasServiceWorkerSupport()) {
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            const next = toggle ? toggle.checked : currentEnabled;
+            applyState(next, false);
+        });
+    }
 
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {

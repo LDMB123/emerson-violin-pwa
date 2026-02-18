@@ -111,6 +111,7 @@ self.__ASSETS__ = [
   "./src/platform/offline-mode.js",
   "./src/platform/offline-recovery.js",
   "./src/platform/platform-utils.js",
+  "./src/platform/sw-support.js",
   "./src/platform/sw-updates.js",
   "./src/progress/achievement-celebrate.js",
   "./src/progress/progress-utils.js",

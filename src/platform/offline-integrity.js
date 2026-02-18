@@ -3,6 +3,7 @@ import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAudioPath } from '../audio/format-detection.js';
 import { formatTimestamp } from '../utils/math.js';
 import { OFFLINE_METRICS_KEY as METRICS_KEY } from '../persistence/storage-keys.js';
+import { hasServiceWorkerSupport } from './sw-support.js';
 
 const statusEl = document.querySelector('[data-offline-status]');
 const assetsEl = document.querySelector('[data-offline-assets]');
@@ -154,6 +155,7 @@ const runSelfTest = async () => {
 };
 
 const triggerRepair = async () => {
+    if (!hasServiceWorkerSupport()) return;
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) return;
     if (navigator.serviceWorker.controller) {
@@ -189,6 +191,17 @@ const init = async () => {
     const metrics = await loadMetrics();
     updateUI(metrics);
     setButtonsEnabled(true);
+
+    if (!hasServiceWorkerSupport()) {
+        setButtonsEnabled(false);
+        if (statusEl) {
+            statusEl.textContent = 'Offline integrity: Service worker not supported on this browser.';
+        }
+        if (selfTestStatusEl) {
+            selfTestStatusEl.textContent = 'Offline self-test: unavailable without service worker support.';
+        }
+        return;
+    }
 
     navigator.serviceWorker.addEventListener('message', handleMessage);
 

@@ -1,4 +1,5 @@
 import { isIPadOS } from './platform-utils.js';
+import { canRegisterServiceWorker, hasServiceWorkerSupport } from './sw-support.js';
 
 const SW_PATH = './sw.js';
 const MIN_REFRESH_INTERVAL = isIPadOS() ? 3 * 60 * 1000 : 10 * 60 * 1000;
@@ -13,6 +14,7 @@ const waitForLoad = () => new Promise((resolve) => {
 });
 
 const ensureRegistration = async () => {
+    if (!canRegisterServiceWorker()) return null;
     await waitForLoad();
     const existing = await navigator.serviceWorker.getRegistration();
     if (existing) return existing;
@@ -24,6 +26,7 @@ const ensureRegistration = async () => {
 };
 
 const refreshAssets = async (reason) => {
+    if (!hasServiceWorkerSupport()) return;
     const now = Date.now();
     if (now - lastRefresh < MIN_REFRESH_INTERVAL) return;
     lastRefresh = now;
@@ -48,6 +51,7 @@ const refreshAssets = async (reason) => {
 };
 
 const bindLifecycleRefresh = () => {
+    if (!hasServiceWorkerSupport()) return;
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
             refreshAssets('visible');
@@ -70,5 +74,7 @@ const bindLifecycleRefresh = () => {
     }, { once: true });
 };
 
-bindLifecycleRefresh();
-refreshAssets('boot');
+if (hasServiceWorkerSupport()) {
+    bindLifecycleRefresh();
+    refreshAssets('boot');
+}
