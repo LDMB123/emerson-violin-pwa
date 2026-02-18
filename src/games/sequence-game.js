@@ -100,6 +100,7 @@ export function createSequenceGame(config) {
     // Cached element lookups for update() which is called before bind() runs.
     const cachedScoreEl = cachedEl(`[data-${prefix}="score"]`);
     const cachedComboEl = cachedEl(`[data-${prefix}="combo"]`);
+    let hashHandler = null;
 
     /**
      * update() — lightweight display refresh called when the view is first rendered.
@@ -135,6 +136,9 @@ export function createSequenceGame(config) {
     const bind = (difficulty = { speed: 1.0, complexity: 1 }) => {
         const stage = document.querySelector(viewId);
         if (!stage) return;
+        if (hashHandler) {
+            window.removeEventListener('hashchange', hashHandler);
+        }
 
         const scoreEl = stage.querySelector(`[data-${prefix}="score"]`);
         const comboEl = stage.querySelector(`[data-${prefix}="combo"]`);
@@ -257,17 +261,14 @@ export function createSequenceGame(config) {
             });
         });
 
-        window.addEventListener(
-            'hashchange',
-            () => {
-                if (window.location.hash === hashId) {
-                    resetSession();
-                    return;
-                }
-                reportSession();
-            },
-            { passive: true },
-        );
+        hashHandler = () => {
+            if (window.location.hash === hashId) {
+                resetSession();
+                return;
+            }
+            reportSession();
+        };
+        window.addEventListener('hashchange', hashHandler, { passive: true });
     };
 
     return { update, bind };
