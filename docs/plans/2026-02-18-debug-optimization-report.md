@@ -75,6 +75,7 @@ Notes:
   - dependency duplicate audit
   - unit tests
   - build
+  - Playwright E2E (`iPad Safari`)
 
 ## Validation Snapshot
 
@@ -103,4 +104,3 @@ All executed successfully on this worktree:
 
 4. Pages deploy pipeline and quality pipeline are now separate workflows
 - Keep `quality.yml` green before merging
-
