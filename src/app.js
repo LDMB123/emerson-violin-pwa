@@ -59,14 +59,6 @@ const scheduleIdle = (task) => {
         document.addEventListener('prerenderingchange', () => scheduleIdle(task), { once: true });
         return;
     }
-    if (globalThis.scheduler?.postTask) {
-        globalThis.scheduler.postTask(() => task(), { priority: 'background' });
-        return;
-    }
-    if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(task, { timeout: 800 });
-        return;
-    }
     window.setTimeout(() => task({ timeRemaining: () => 0, didTimeout: true }), 300);
 };
 
@@ -225,96 +217,23 @@ const setupPopoverSystem = (ctx) => {
         }
     };
 
-    const openPopoverFallback = (popover) => {
-        if (!popover) return;
-        popover.dataset.fallbackOpen = 'true';
-        setPopoverExpanded(popover, true);
-        focusFirstPopoverItem(popover);
-        document.documentElement.classList.add('popover-open');
-        if (ctx.popoverBackdrop) {
-            ctx.popoverBackdrop.hidden = false;
-            ctx.popoverBackdrop.classList.add('is-open');
-        }
-    };
-
-    const closePopoverFallback = (popover) => {
-        if (popover) {
-            delete popover.dataset.fallbackOpen;
-            setPopoverExpanded(popover, false);
-        }
-        if (ctx.popoverBackdrop) {
-            ctx.popoverBackdrop.classList.remove('is-open');
-            ctx.popoverBackdrop.hidden = true;
-        }
-        document.documentElement.classList.remove('popover-open');
-        if (ctx.lastPopoverTrigger instanceof HTMLElement) {
-            ctx.lastPopoverTrigger.focus();
-        }
-    };
-
-    // Expose on ctx so setupNavigation's click handler can call it
-    ctx.closePopoverFallback = closePopoverFallback;
-
-    if (ctx.supportsPopover) {
-        document.querySelectorAll('[popover]').forEach((popover) => {
-            popover.addEventListener('toggle', () => {
-                const open = popover.matches(':popover-open');
-                setPopoverExpanded(popover, open);
-                if (open) {
-                    focusFirstPopoverItem(popover);
-                } else if (ctx.lastPopoverTrigger instanceof HTMLElement) {
-                    ctx.lastPopoverTrigger.focus();
-                }
-            });
+    document.querySelectorAll('[popover]').forEach((popover) => {
+        popover.addEventListener('toggle', () => {
+            const open = popover.matches(':popover-open');
+            setPopoverExpanded(popover, open);
+            if (open) {
+                focusFirstPopoverItem(popover);
+            } else if (ctx.lastPopoverTrigger instanceof HTMLElement) {
+                ctx.lastPopoverTrigger.focus();
+            }
         });
-    }
+    });
 
     document.querySelectorAll('[popovertarget]').forEach((button) => {
         button.addEventListener('click', () => {
             ctx.lastPopoverTrigger = button;
         });
     });
-
-    if (!ctx.supportsPopover) {
-        document.querySelectorAll('[popovertarget]').forEach((button) => {
-            button.addEventListener('click', (event) => {
-                const targetId = button.getAttribute('popovertarget');
-                const popover = targetId ? document.getElementById(targetId) : null;
-                if (!popover) return;
-                event.preventDefault();
-                if (popover.dataset.fallbackOpen === 'true') {
-                    closePopoverFallback(popover);
-                } else {
-                    openPopoverFallback(popover);
-                }
-            });
-        });
-
-        ctx.popoverBackdrop?.addEventListener('click', () => {
-            const openPopover = document.querySelector('[data-fallback-open="true"]');
-            if (openPopover) closePopoverFallback(openPopover);
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape') return;
-            const openPopover = document.querySelector('[data-fallback-open="true"]');
-            if (openPopover) closePopoverFallback(openPopover);
-        });
-
-        window.addEventListener('hashchange', () => {
-            const openPopover = document.querySelector('[data-fallback-open="true"]');
-            if (openPopover) closePopoverFallback(openPopover);
-        }, { passive: true });
-
-        document.querySelectorAll('[popovertargetaction="hide"]').forEach((button) => {
-            button.addEventListener('click', (event) => {
-                const popover = button.closest('[popover]');
-                if (!popover) return;
-                event.preventDefault();
-                closePopoverFallback(popover);
-            });
-        });
-    }
 };
 
 const setupNavigation = (ctx) => {
@@ -386,12 +305,7 @@ const setupNavigation = (ctx) => {
         const popover = link.closest('[popover]');
         event.preventDefault();
         if (popover) {
-            if (typeof popover.hidePopover === 'function') {
-                popover.hidePopover();
-            } else {
-                popover.removeAttribute('open');
-                ctx.closePopoverFallback?.(popover);
-            }
+            popover.hidePopover();
         }
         if (link.classList.contains('back-btn')) {
             navDirection = 'back';
@@ -413,13 +327,10 @@ const boot = async () => {
 
     const ctx = {
         navItems: Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]')),
-        popoverBackdrop: document.querySelector('[data-popover-backdrop]'),
-        supportsPopover: 'showPopover' in HTMLElement.prototype,
         prefersReducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         reduceMotionToggle: document.querySelector('#setting-reduce-motion'),
         lastPopoverTrigger: null,
         updateNavState: null,
-        closePopoverFallback: null,
     };
 
     const initialViewId = await resolveInitialView();

@@ -33,15 +33,10 @@ const init = () => {
     const fine = window.matchMedia('(pointer: fine)').matches;
     updateInputType(fine ? 'mouse' : 'touch');
 
-    if ('PointerEvent' in window) {
-        window.addEventListener('pointerdown', (event) => {
-            if (!event.pointerType) return;
-            updateInputType(event.pointerType);
-        }, { passive: true });
-    } else {
-        window.addEventListener('touchstart', () => updateInputType('touch'), { passive: true });
-        window.addEventListener('mousedown', () => updateInputType('mouse'), { passive: true });
-    }
+    window.addEventListener('pointerdown', (event) => {
+        if (!event.pointerType) return;
+        updateInputType(event.pointerType);
+    }, { passive: true });
 
     window.matchMedia('(pointer: fine)').addEventListener('change', updateHoverCapability);
     window.matchMedia('(hover: hover)').addEventListener('change', updateHoverCapability);
