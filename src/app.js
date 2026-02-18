@@ -8,6 +8,7 @@ import { getAudioPath } from './audio/format-detection.js';
 import { ViewLoader } from './views/view-loader.js';
 import { getViewPath } from './views/view-paths.js';
 import { showViewError } from './views/view-error.js';
+import './progress/achievement-celebrate.js';
 
 const viewLoader = new ViewLoader();
 
