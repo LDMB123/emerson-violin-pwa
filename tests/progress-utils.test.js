@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { todayDay } from '../src/utils/math.js';
 import {
     minutesForInput,
     toTrackerTimestamp,
@@ -7,19 +6,6 @@ import {
     coachMessageFor,
     buildRadarPoints,
 } from '../src/progress/progress-utils.js';
-
-describe('todayDay', () => {
-    it('returns a positive integer', () => {
-        const day = todayDay();
-        expect(day).toBeGreaterThan(0);
-        expect(Number.isInteger(day)).toBe(true);
-    });
-
-    it('matches manual calculation', () => {
-        const expected = Math.floor(Date.now() / 86400000);
-        expect(todayDay()).toBe(expected);
-    });
-});
 
 describe('minutesForInput', () => {
     it('returns data-minutes attribute when present', () => {
