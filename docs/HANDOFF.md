@@ -114,6 +114,11 @@ If both pass, you are at a known-good baseline.
     - `src/trainer/tools.js`
   - Expanded utility coverage:
     - `tests/trainer-utils.test.js`
+- Completed bfcache-safe metronome lifecycle pass (2026-02-18, phase 12):
+  - Prevented metronome reporting/stop side effects on persisted pagehide snapshots:
+    - `src/trainer/tools.js`
+  - Reused existing bfcache helper:
+    - `src/trainer/trainer-utils.js` (`isBfcachePagehide`)
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -132,6 +137,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-6.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-7.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-8.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-9.md`
 
 ## Verification Gates
 

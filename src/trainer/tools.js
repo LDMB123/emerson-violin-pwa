@@ -215,7 +215,8 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-window.addEventListener('pagehide', () => {
+window.addEventListener('pagehide', (event) => {
+    if (isBfcachePagehide(event)) return;
     reportMetronome();
     stopMetronome({ silent: true });
 });
