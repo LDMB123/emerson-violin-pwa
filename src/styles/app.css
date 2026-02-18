@@ -6153,4 +6153,55 @@
         animation: none;
     }
 
+    /* ===========================================================================
+       Difficulty Picker
+       =========================================================================== */
+
+    .difficulty-picker {
+        display: flex;
+        gap: var(--space-1);
+        justify-content: center;
+        margin-top: var(--space-2);
+        pointer-events: auto;
+    }
+
+    .difficulty-btn {
+        font-family: var(--font-body);
+        font-size: var(--text-xs);
+        font-weight: 600;
+        line-height: 1;
+        padding: var(--space-1) var(--space-2);
+        border-radius: var(--radius-full);
+        border: 1.5px solid var(--color-primary);
+        background: transparent;
+        color: var(--color-primary);
+        cursor: pointer;
+        transition: background var(--duration-fast) var(--ease-out),
+                    color var(--duration-fast) var(--ease-out),
+                    transform var(--duration-fast) var(--ease-out);
+        touch-action: manipulation;
+        min-height: 28px;
+        min-width: 40px;
+    }
+
+    .difficulty-btn:active {
+        transform: scale(0.92);
+    }
+
+    .difficulty-btn.is-selected {
+        background: var(--color-primary);
+        color: #fff;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        .difficulty-btn {
+            transition: none;
+        }
+    }
+
+    :root:has(#setting-reduce-motion:checked) .difficulty-btn {
+        transition: none;
+    }
+
 } /* end @layer games */
