@@ -1,1 +1,1 @@
-export const isSoundEnabled = () => document.documentElement?.dataset?.sounds !== 'off';
+export const isSoundEnabled = () => document.documentElement.dataset.sounds !== 'off';

@@ -1,12 +1,10 @@
-const root = document.documentElement;
-const media = window.matchMedia ? window.matchMedia('(prefers-reduced-data: reduce)') : null;
+const media = window.matchMedia('(prefers-reduced-data: reduce)');
 
 const setRootFlag = (enabled) => {
-    if (!root) return;
     if (enabled) {
-        root.dataset.saveData = 'on';
+        document.documentElement.dataset.saveData = 'on';
     } else {
-        delete root.dataset.saveData;
+        delete document.documentElement.dataset.saveData;
     }
 };
 
@@ -21,11 +19,11 @@ const updateAudioPreload = (saveData) => {
 };
 
 const evaluate = () => {
-    const saveData = Boolean(media?.matches);
+    const saveData = media.matches;
     setRootFlag(saveData);
     updateAudioPreload(saveData);
 };
 
 evaluate();
 
-media?.addEventListener('change', evaluate);
+media.addEventListener('change', evaluate);
