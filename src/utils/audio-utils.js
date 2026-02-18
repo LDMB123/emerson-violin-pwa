@@ -9,20 +9,27 @@ export const createAudioController = () => {
     const audio = new Audio();
     audio.preload = 'none';
     let currentUrl = '';
+    const isBlobUrl = (url) => typeof url === 'string' && url.startsWith('blob:');
+    const revokeCurrentUrl = () => {
+        if (!isBlobUrl(currentUrl)) return;
+        URL.revokeObjectURL(currentUrl);
+    };
 
     const stop = () => {
         if (!audio.paused) {
             audio.pause();
             audio.currentTime = 0;
         }
-        if (currentUrl) {
-            URL.revokeObjectURL(currentUrl);
-            currentUrl = '';
-        }
+        revokeCurrentUrl();
+        currentUrl = '';
     };
 
     const setUrl = (url) => {
-        currentUrl = url;
+        const nextUrl = typeof url === 'string' ? url : '';
+        if (nextUrl !== currentUrl) {
+            revokeCurrentUrl();
+        }
+        currentUrl = nextUrl;
     };
 
     return { audio, stop, setUrl };

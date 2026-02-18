@@ -101,6 +101,12 @@ If both pass, you are at a known-good baseline.
   - Added regression coverage:
     - `tests/games/shared.test.js`
     - `tests/games/game-shell.test.js` (rebind disposal assertion)
+- Completed audio URL lifecycle hardening pass (2026-02-18, phase 10):
+  - Eliminated superseded blob URL leak risk in audio playback controller:
+    - `src/utils/audio-utils.js`
+  - `setUrl()` now revokes prior blob URLs when replaced, and `stop()` only revokes blob URLs.
+  - Expanded coverage for overwrite and non-blob behavior:
+    - `tests/audio-utils.test.js`
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -117,6 +123,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-4.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-5.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-6.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-7.md`
 
 ## Verification Gates
 

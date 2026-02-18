@@ -80,13 +80,22 @@ describe('createAudioController', () => {
             expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/xyz');
         });
 
-        it('overwrites a previous URL', () => {
+        it('revokes a previous blob URL when overwriting it', () => {
             const { stop, setUrl } = createAudioController();
             setUrl('blob:http://localhost/first');
             setUrl('blob:http://localhost/second');
+
+            expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/first');
+            vi.clearAllMocks();
             stop();
             expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/second');
-            expect(URL.revokeObjectURL).not.toHaveBeenCalledWith('blob:http://localhost/first');
+        });
+
+        it('does not call revokeObjectURL for non-blob URLs', () => {
+            const { stop, setUrl } = createAudioController();
+            setUrl('https://example.com/audio.mp3');
+            stop();
+            expect(URL.revokeObjectURL).not.toHaveBeenCalled();
         });
     });
 });
