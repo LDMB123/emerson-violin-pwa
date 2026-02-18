@@ -61,6 +61,7 @@ import {
     bindTap,
     playToneNote,
     playToneSequence,
+    stopTonePlayer,
     buildNoteSequence,
     updateScoreCombo,
 } from './shared.js';
@@ -223,6 +224,7 @@ export function createSequenceGame(config) {
         };
 
         const resetSession = () => {
+            stopTonePlayer();
             combo = 0;
             score = 0;
             seqIndex = 0;
@@ -275,6 +277,7 @@ export function createSequenceGame(config) {
                 resetSession();
                 return;
             }
+            stopTonePlayer();
             reportSession();
         };
         playAgainHandler = (event) => {
