@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
     shouldRetryPersist,
     formatBytes,
+    isIPadOS,
     isStandalone,
+    setRootDataset,
     getViewId,
     viewAllowsWake,
     getPreferredOrientation,
@@ -104,6 +106,93 @@ describe('formatBytes', () => {
 
     it('handles exactly 1 GB', () => {
         expect(formatBytes(1073741824)).toBe('1.0 GB');
+    });
+});
+
+describe('isIPadOS', () => {
+    let originalUserAgent;
+    let originalPlatform;
+    let originalMaxTouchPoints;
+
+    beforeEach(() => {
+        originalUserAgent = navigator.userAgent;
+        originalPlatform = navigator.platform;
+        originalMaxTouchPoints = navigator.maxTouchPoints;
+    });
+
+    afterEach(() => {
+        Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
+        Object.defineProperty(navigator, 'platform', { value: originalPlatform, configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: originalMaxTouchPoints, configurable: true });
+    });
+
+    it('returns true when userAgent contains iPad', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)',
+            configurable: true,
+        });
+        expect(isIPadOS()).toBe(true);
+    });
+
+    it('returns true when platform is MacIntel with touch points > 1', () => {
+        Object.defineProperty(navigator, 'userAgent', { value: 'Mozilla/5.0 (Macintosh)', configurable: true });
+        Object.defineProperty(navigator, 'platform', { value: 'MacIntel', configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: 5, configurable: true });
+        expect(isIPadOS()).toBe(true);
+    });
+
+    it('returns false when platform is MacIntel with 0 touch points', () => {
+        Object.defineProperty(navigator, 'userAgent', { value: 'Mozilla/5.0 (Macintosh)', configurable: true });
+        Object.defineProperty(navigator, 'platform', { value: 'MacIntel', configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
+        expect(isIPadOS()).toBe(false);
+    });
+
+    it('returns false for desktop Chrome', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120',
+            configurable: true,
+        });
+        Object.defineProperty(navigator, 'platform', { value: 'Win32', configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
+        expect(isIPadOS()).toBe(false);
+    });
+});
+
+describe('setRootDataset', () => {
+    afterEach(() => {
+        // Clean up any dataset keys set during tests
+        Object.keys(document.documentElement.dataset).forEach((k) => {
+            delete document.documentElement.dataset[k];
+        });
+    });
+
+    it('sets a key on document.documentElement.dataset', () => {
+        setRootDataset('testKey', 'hello');
+        expect(document.documentElement.dataset.testKey).toBe('hello');
+    });
+
+    it('converts number values to string', () => {
+        setRootDataset('count', 42);
+        expect(document.documentElement.dataset.count).toBe('42');
+    });
+
+    it('removes the key when value is null', () => {
+        document.documentElement.dataset.toRemove = 'exists';
+        setRootDataset('toRemove', null);
+        expect(document.documentElement.dataset.toRemove).toBeUndefined();
+    });
+
+    it('removes the key when value is undefined', () => {
+        document.documentElement.dataset.toRemove2 = 'exists';
+        setRootDataset('toRemove2', undefined);
+        expect(document.documentElement.dataset.toRemove2).toBeUndefined();
+    });
+
+    it('overwrites an existing key', () => {
+        document.documentElement.dataset.overwrite = 'old';
+        setRootDataset('overwrite', 'new');
+        expect(document.documentElement.dataset.overwrite).toBe('new');
     });
 });
 
