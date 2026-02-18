@@ -119,12 +119,6 @@ describe('createTonePlayer', () => {
         expect(typeof player.stopAll).toBe('function');
     });
 
-    it('returns null when AudioContext is unavailable', () => {
-        delete globalThis.AudioContext;
-        delete globalThis.webkitAudioContext;
-        const player = createTonePlayer();
-        expect(player).toBeNull();
-    });
 
     it('playNote resolves true for valid note', async () => {
         const player = createTonePlayer();

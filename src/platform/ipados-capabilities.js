@@ -20,17 +20,9 @@ const updateStandaloneState = () => {
 };
 
 const updateVoiceSupport = () => {
-    const supported = 'speechSynthesis' in window;
-    if (voiceToggle) {
-        voiceToggle.disabled = !supported;
-        if (!supported) voiceToggle.checked = false;
-    }
-    if (voiceNote) {
-        voiceNote.textContent = supported
-            ? 'Spoken coach tips use built-in iPad voices and work offline.'
-            : 'Voice coach is unavailable on this device.';
-    }
-    setRootDataset('voiceCoach', supported ? 'true' : 'false');
+    if (voiceToggle) voiceToggle.disabled = false;
+    if (voiceNote) voiceNote.textContent = 'Spoken coach tips use built-in iPad voices and work offline.';
+    setRootDataset('voiceCoach', 'true');
 };
 
 const updateStatus = () => {
@@ -63,13 +55,10 @@ const init = () => {
     updateStatus();
     updateVoiceSupport();
 
-    const media = window.matchMedia('(display-mode: standalone)');
-    if (media?.addEventListener) {
-        media.addEventListener('change', () => {
-            updateStandaloneState();
-            updateStatus();
-        });
-    }
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', () => {
+        updateStandaloneState();
+        updateStatus();
+    });
     window.addEventListener('appinstalled', () => {
         updateStandaloneState();
         updateStatus();

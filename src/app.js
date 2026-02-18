@@ -53,10 +53,6 @@ const moduleLoaders = {
 };
 
 const loaded = new Map();
-const scheduleIdle = (task) => {
-    window.setTimeout(() => task({ timeRemaining: () => 0, didTimeout: true }), 300);
-};
-
 const loadModule = (key) => {
     const loader = moduleLoaders[key];
     if (!loader) return Promise.resolve();
@@ -69,7 +65,7 @@ const loadModule = (key) => {
 };
 
 const loadIdle = (key) => {
-    scheduleIdle(() => loadModule(key));
+    window.setTimeout(() => loadModule(key), 300);
 };
 
 const getCurrentViewId = () => {
@@ -234,7 +230,7 @@ const setupNavigation = (ctx) => {
     const shouldAnimateNav = () => {
         if (ctx.prefersReducedMotion()) return false;
         if (ctx.reduceMotionToggle?.checked) return false;
-        return 'startViewTransition' in document;
+        return true;
     };
 
     const scrollToTarget = (targetId) => {

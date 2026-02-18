@@ -117,12 +117,7 @@ export const getSongIdFromHash = (hash) => {
     return hash.replace('#view-song-', '');
 };
 
-export const createBlobKey = (songId) => {
-    if (globalThis.crypto?.randomUUID) {
-        return `recording:${songId}:${crypto.randomUUID()}`;
-    }
-    return `recording:${songId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-};
+export const createBlobKey = (songId) => `recording:${songId}:${crypto.randomUUID()}`;
 
 export const isRecordingKey = (key) => {
     return typeof key === 'string' && key.startsWith('recording:');

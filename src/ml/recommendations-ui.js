@@ -26,9 +26,7 @@ const updatePanel = (panel, recs) => {
 
     if (ctaEl) {
         ctaEl.setAttribute('href', toLessonLink(recs.recommendedGameId));
-        ctaEl.textContent = panel.dataset.lessonPlan === 'progress'
-            ? `Start ${recs.recommendedGameLabel || 'practice'}`
-            : `Start ${recs.recommendedGameLabel || 'practice'}`;
+        ctaEl.textContent = `Start ${recs.recommendedGameLabel || 'practice'}`;
     }
 };
 
@@ -71,8 +69,7 @@ const renderSteps = (container, steps = []) => {
 
 const setDailyGoalTarget = (total) => {
     const value = Math.max(5, Math.round(total || 15));
-    const root = document.documentElement;
-    if (root) root.dataset.dailyGoalTarget = String(value);
+    document.documentElement.dataset.dailyGoalTarget = String(value);
     const targetEl = document.querySelector('[data-progress="daily-goal-value"]');
     if (targetEl) targetEl.textContent = String(value);
     document.dispatchEvent(new CustomEvent(GOAL_TARGET_CHANGE, { detail: { value } }));

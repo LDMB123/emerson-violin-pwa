@@ -41,10 +41,6 @@ export const normalizeNote = (note) => {
 };
 
 export const createTonePlayer = () => {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) {
-        return null;
-    }
     let context = null;
     let sequenceToken = 0;
     let playbackEnabled = isSoundEnabled();
@@ -52,7 +48,7 @@ export const createTonePlayer = () => {
 
     const ensureContext = async () => {
         if (!context) {
-            context = new AudioCtx();
+            context = new AudioContext();
         }
         if (context.state === 'suspended') {
             await context.resume();
