@@ -108,7 +108,7 @@ const { bind } = createGame({
             if (window.location.hash !== '#view-game-note-memory') return;
             if (timeLeft <= 0) return;
             paused = false;
-            startTimer(); // eslint-disable-line no-use-before-define
+            startTimer();
         };
 
         const finalizeGame = () => {

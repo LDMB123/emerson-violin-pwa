@@ -125,7 +125,7 @@ const { bind } = createGame({
             }
             paused = false;
             pausedAt = 0;
-            startTimer(); // eslint-disable-line no-use-before-define
+            startTimer();
         };
 
         const startTimer = () => {
@@ -153,20 +153,6 @@ const { bind } = createGame({
             gameState._timerId = timerId;
             updateTimer();
             setStatus('Timer running. Keep bow strokes steady.');
-        };
-
-        const resetRun = () => {
-            stopTimer();
-            runStartedAt = 0;
-            paused = false;
-            pausedAt = 0;
-            lastStrokeAt = 0;
-            smoothStreak = 0;
-            remaining = timeLimit;
-            resetStars();
-            if (runToggle) runToggle.checked = false;
-            updateTimer();
-            setStatus('Press Start to begin the timer.');
         };
 
         bindTap(strokeButton, () => {

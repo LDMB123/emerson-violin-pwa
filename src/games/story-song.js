@@ -70,7 +70,6 @@ const { bind } = createGame({
         let completedNotes = 0;
         let completedPages = 0;
         let playToken = 0;
-        let isPlaying = false;
 
         // Initialize gameState
         gameState._storyPages = storyPages;
@@ -109,7 +108,6 @@ const { bind } = createGame({
 
         const stopPlayback = ({ keepToggle = false, message } = {}) => {
             playToken += 1;
-            isPlaying = false;
             gameState._isPlaying = false;
             stopTonePlayer();
             if (!keepToggle && toggle) {
@@ -156,7 +154,6 @@ const { bind } = createGame({
                 gameState._completedPages = 0;
             }
             const token = ++playToken;
-            isPlaying = true;
             gameState._isPlaying = true;
             markChecklist('ss-step-1');
             updateStatus('Play-along running — follow the notes.');
@@ -188,7 +185,6 @@ const { bind } = createGame({
             }
 
             if (token !== playToken) return;
-            isPlaying = false;
             gameState._isPlaying = false;
             if (pageIndex >= storyPages.length) {
                 updateStatus('Story complete! Tap Play-Along to replay.');

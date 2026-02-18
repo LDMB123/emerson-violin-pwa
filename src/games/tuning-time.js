@@ -30,7 +30,7 @@ const { bind } = createGame({
             if (progressBar) progressBar.setAttribute('aria-valuenow', 0);
         }
     },
-    onBind: (stage, difficulty, { reportSession, resetSession, gameState }) => {
+    onBind: (stage, difficulty, { reportSession, gameState }) => {
         const statusEl = stage.querySelector('[data-tuning="status"]');
         const progressEl = stage.querySelector('[data-tuning="progress"]');
         const progressBar = progressEl?.parentElement;
