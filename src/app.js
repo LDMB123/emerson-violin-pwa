@@ -176,6 +176,39 @@ const loadIdleModules = () => {
     loadIdle('audioPlayer');
 };
 
+const enhanceToggleLabels = () => {
+    const labels = document.querySelectorAll(
+        '.toggle-ui label[for], .song-controls label[for], .focus-controls label[for]'
+    );
+    labels.forEach((label) => {
+        if (label.dataset.keybound === 'true') return;
+        label.dataset.keybound = 'true';
+        label.setAttribute('role', 'button');
+        label.setAttribute('tabindex', '0');
+        label.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                label.click();
+            }
+        });
+    });
+};
+
+const resolveInitialView = async () => {
+    let initialViewId = getCurrentViewId() || 'view-home';
+    if (initialViewId === 'view-home') {
+        try {
+            const { shouldShowOnboarding } = await import('./onboarding/onboarding-check.js');
+            if (await shouldShowOnboarding()) {
+                initialViewId = 'view-onboarding';
+            }
+        } catch {
+            // Onboarding check failed — proceed to home
+        }
+    }
+    return initialViewId;
+};
+
 const boot = async () => {
     if (document.prerendering) {
         document.addEventListener('prerenderingchange', boot, { once: true });
@@ -195,36 +228,7 @@ const boot = async () => {
     const navItems = Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]'));
     let lastPopoverTrigger = null;
 
-    const enhanceToggleLabels = () => {
-        const labels = document.querySelectorAll(
-            '.toggle-ui label[for], .song-controls label[for], .focus-controls label[for]'
-        );
-        labels.forEach((label) => {
-            if (label.dataset.keybound === 'true') return;
-            label.dataset.keybound = 'true';
-            label.setAttribute('role', 'button');
-            label.setAttribute('tabindex', '0');
-            label.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    label.click();
-                }
-            });
-        });
-    };
-
-    // Check first-run onboarding
-    let initialViewId = getCurrentViewId() || 'view-home';
-    if (initialViewId === 'view-home') {
-        try {
-            const { shouldShowOnboarding } = await import('./onboarding/onboarding-check.js');
-            if (await shouldShowOnboarding()) {
-                initialViewId = 'view-onboarding';
-            }
-        } catch {
-            // Onboarding check failed — proceed to home
-        }
-    }
+    const initialViewId = await resolveInitialView();
     await showView(initialViewId, enhanceToggleLabels);
     if (initialViewId === 'view-onboarding') {
         loadModule('onboarding');
