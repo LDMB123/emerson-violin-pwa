@@ -76,7 +76,6 @@ const bindStringQuest = (difficulty = { speed: 1.0, complexity: 1 }) => {
 
     const reportResult = attachTuning('string-quest', (tuning) => {
         comboTarget = tuning.comboTarget ?? comboTarget;
-        sequenceLength = comboTarget >= 7 ? 5 : 4;
         buildSequence();
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         updateTargets();

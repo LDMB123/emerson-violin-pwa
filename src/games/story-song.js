@@ -50,7 +50,7 @@ const bindStorySong = (difficulty = { speed: 1.0, complexity: 1 }) => {
         },
     ];
     // difficulty.speed: scales playback tempo; speed=1.0 keeps tempo=92 BPM (current behavior)
-    // difficulty.complexity: adjusts note count per page; complexity=1 (medium) = 3 pages (current behavior)
+    // difficulty.complexity: visual feedback only (pages are fixed); speed scales tempo
     let stageSeconds = 4;
     let tempo = Math.round(92 * difficulty.speed);
     let reported = false;
