@@ -25,8 +25,6 @@ export const LESSON_COMPLETE = 'panda:lesson-complete';
 
 // Goals
 export const GOAL_TARGET_CHANGE = 'panda:goal-target-change';
-export const WEEKLY_GOAL_CHANGE = 'panda:weekly-goal-change';
-
 // Offline
 export const OFFLINE_MODE_CHANGE = 'panda:offline-mode-change';
 

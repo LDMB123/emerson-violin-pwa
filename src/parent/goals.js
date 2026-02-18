@@ -2,7 +2,6 @@ import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { clamp } from '../utils/math.js';
 import { PARENT_GOAL_KEY as GOAL_KEY } from '../persistence/storage-keys.js';
-import { WEEKLY_GOAL_CHANGE } from '../utils/event-names.js';
 const DEFAULT_GOAL = {
     title: 'Next Recital Piece',
     weeklyMinutes: 90,
@@ -20,7 +19,6 @@ const setStatus = (message) => {
 
 const applyWeeklyTarget = (value) => {
     document.documentElement.dataset.weeklyGoalTarget = String(value);
-    document.dispatchEvent(new CustomEvent(WEEKLY_GOAL_CHANGE, { detail: { value } }));
 };
 
 const normalizeGoal = (stored) => {

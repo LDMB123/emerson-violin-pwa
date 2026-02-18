@@ -1,9 +1,13 @@
-import { getJSON, getBlob } from './storage.js';
+import { getJSON, setJSON, getBlob } from './storage.js';
 import { EVENTS_KEY, RECORDINGS_KEY } from './storage-keys.js';
 
 export const loadEvents = async () => {
     const stored = await getJSON(EVENTS_KEY);
     return Array.isArray(stored) ? stored : [];
+};
+
+export const saveEvents = async (events) => {
+    await setJSON(EVENTS_KEY, events);
 };
 
 export const loadRecordings = async () => {

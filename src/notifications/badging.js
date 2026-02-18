@@ -41,7 +41,7 @@ const updatePracticeBadge = async () => {
     }
 };
 
-export const initializeBadging = () => {
+const initializeBadging = () => {
     if (!supportsBadging()) return;
 
     document.addEventListener('visibilitychange', () => {

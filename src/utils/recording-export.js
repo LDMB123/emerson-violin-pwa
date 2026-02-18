@@ -1,4 +1,4 @@
-export const safeFileName = (title) => {
+const safeFileName = (title) => {
     if (!title) return 'panda-violin-recording';
     const sanitized = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     return sanitized.slice(0, 48) || 'panda-violin-recording';
@@ -26,7 +26,7 @@ const resolveRecordingBlob = async (recording, blobOverride) => {
     return null;
 };
 
-export const saveWithFilePicker = async (file) => {
+const saveWithFilePicker = async (file) => {
     if (!('showSaveFilePicker' in window)) return false;
     try {
         const handle = await window.showSaveFilePicker({
@@ -72,7 +72,7 @@ export const downloadFile = (file) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
-export const buildRecordingFile = async (recording, index = 0, blobOverride = null) => {
+const buildRecordingFile = async (recording, index = 0, blobOverride = null) => {
     const blob = await resolveRecordingBlob(recording, blobOverride);
     if (!blob) return null;
     const type = blob.type || recording?.mimeType || 'audio/webm';
@@ -118,38 +118,6 @@ export const getSongIdFromHash = (hash) => {
 };
 
 export const createBlobKey = (songId) => `recording:${songId}:${crypto.randomUUID()}`;
-
-export const isRecordingKey = (key) => {
-    return typeof key === 'string' && key.startsWith('recording:');
-};
-
-export const extractRecordingMetadata = (recording) => {
-    return {
-        title: recording?.title || 'Practice Clip',
-        duration: recording?.duration || 0,
-        timestamp: recording?.timestamp || Date.now(),
-        songId: recording?.songId || '',
-    };
-};
-
-export const validateRecording = (recording) => {
-    if (!recording) return false;
-    return Boolean(recording.dataUrl || recording.blobKey);
-};
-
-export const filterValidRecordings = (recordings) => {
-    return Array.isArray(recordings) ? recordings.filter(validateRecording) : [];
-};
-
-export const limitRecordings = (recordings, maxCount = 4) => {
-    return recordings.slice(0, maxCount);
-};
-
-export const pruneOldRecordings = (recordings, maxCount = 4) => {
-    if (recordings.length <= maxCount) return recordings;
-    const sorted = [...recordings].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    return sorted.slice(0, maxCount);
-};
 
 export const parseDuration = (sheet) => {
     if (!sheet) return 0;

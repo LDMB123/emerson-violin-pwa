@@ -1,5 +1,5 @@
 import { getJSON, setJSON, getBlob, setBlob, removeBlob } from '../persistence/storage.js';
-import { dataUrlToBlob, blobToDataUrl, createBlobKey } from '../utils/recording-export.js';
+import { dataUrlToBlob, blobToDataUrl, createBlobKey, downloadFile } from '../utils/recording-export.js';
 import {
     EVENTS_KEY as EVENT_KEY,
     UI_STATE_KEY as UI_KEY,
@@ -95,15 +95,6 @@ const shareFile = async (file) => {
         }
     }
     return false;
-};
-
-const downloadFile = (file) => {
-    const url = URL.createObjectURL(file);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = file.name;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 const handleExport = async () => {
