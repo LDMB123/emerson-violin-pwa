@@ -120,6 +120,11 @@ const { bind } = createGame({
             }
         };
 
+        gameState._onDeactivate = () => {
+            if (!gameState._isPlaying && !toggle?.checked) return;
+            stopPlayback({ message: 'Play-along paused.' });
+        };
+
         const resetStory = () => {
             pageIndex = 0;
             completedNotes = 0;

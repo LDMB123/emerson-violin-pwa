@@ -134,6 +134,10 @@ If both pass, you are at a known-good baseline.
     - `src/games/bow-hero.js`
   - Added regression coverage for deactivation hook execution:
     - `tests/games/game-shell.test.js`
+- Completed story-song deactivation lifecycle pass (2026-02-18, phase 15):
+  - Wired play-along stop behavior into the shell deactivation hook:
+    - `src/games/story-song.js`
+  - Ensures hash-navigation away pauses play-along before leave reporting.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -155,6 +159,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-9.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-10.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-11.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-12.md`
 
 ## Verification Gates
 
