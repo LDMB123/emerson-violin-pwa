@@ -1,5 +1,9 @@
 # Emerson Violin PWA
 
+## Project Scope
+
+**This project is ONLY the Emerson Violin PWA.** Do not reference, suggest, or pull context from any other project in this workspace (dmb-almanac, blaires-kind-heart, imagen-experiments, gemini-mcp-server). All work here is scoped exclusively to this repository. The Rust/WASM modules under `wasm/` (panda-audio, panda-core) belong to this project, not dmb-almanac.
+
 Progressive Web App for violin tuning and practice assistance.
 
 ## Quick Start
@@ -21,6 +25,7 @@ Violin tuner PWA with real-time pitch detection using Web Audio API.
 - Framework: Vite 6 + vanilla JavaScript (ES modules)
 - Audio: Web Audio API
 - PWA: Service Workers, Web App Manifest
+- Browser Target: Modern evergreen browsers (Chrome, Firefox, Safari) — no legacy IE/Edge fallbacks
 
 ## Common Commands
 
