@@ -45,6 +45,19 @@ If both pass, you are at a known-good baseline.
     - `tests/onboarding/onboarding-check.test.js`
     - `tests/onboarding/onboarding.test.js`
   - Coverage reporters now include `json-summary` to support machine-validated thresholds.
+- Completed QA + effectiveness deeper pass (2026-02-18, phase 5):
+  - Added persistence edge-case coverage:
+    - `tests/persistence/storage.test.js`
+    - `tests/persistence/loaders.test.js`
+  - Added runtime health E2E guard for critical views:
+    - `tests/e2e/runtime-health.spec.js`
+  - Tightened critical coverage thresholds for:
+    - `src/ml/recommendations.js`
+    - `src/onboarding/onboarding.js`
+    - `src/persistence/loaders.js`
+    - `src/persistence/storage.js`
+    - `src/app/module-registry.js`
+  - Optimized runtime-health navigation checks to use in-app hash routing (faster and less reload churn than full `page.goto` per view).
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -56,13 +69,14 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-10x-simplification-optimization.md`
   - `docs/plans/2026-02-18-10x-deeper-pass.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deep-pass.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-2.md`
 
 ## Verification Gates
 
 - `npm run lint:all`
 - `npm run audit:deadcode`
 - `npm run audit:deps`
-- `npm test`
+- `npm run qa:effectiveness`
 - `npm run build`
 - `npm run test:e2e`
 
