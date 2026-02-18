@@ -154,6 +154,12 @@ const { bind } = createGame({
             });
         };
 
+        gameState._onDeactivate = () => {
+            active = false;
+            stopPartnerPlayback();
+            setButtonsDisabled(true);
+        };
+
         const doResetSession = () => {
             combo = 0;
             score = 0;

@@ -142,6 +142,10 @@ If both pass, you are at a known-good baseline.
   - Wired melody playback stop behavior into the shell deactivation hook:
     - `src/games/melody-maker.js`
   - Ensures hash-navigation away stops active melody playback before leave reporting.
+- Completed duet-challenge deactivation lifecycle pass (2026-02-18, phase 17):
+  - Wired partner playback stop behavior into the shell deactivation hook:
+    - `src/games/duet-challenge.js`
+  - Ensures hash-navigation away stops partner audio and deactivates round controls.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -165,6 +169,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-11.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-12.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-13.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-14.md`
 
 ## Verification Gates
 
