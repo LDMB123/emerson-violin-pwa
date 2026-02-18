@@ -307,6 +307,16 @@ describe('app-utils', () => {
             expect(modules).toContain('gameEnhancements');
         });
 
+        it('loads gameComplete for view-game-pitch-quest', () => {
+            const modules = getModulesForView('view-game-pitch-quest');
+            expect(modules).toContain('gameComplete');
+        });
+
+        it('loads gameComplete for view-games', () => {
+            const modules = getModulesForView('view-games');
+            expect(modules).toContain('gameComplete');
+        });
+
         it('returns progress modules', () => {
             const modules = getModulesForView('view-progress');
             expect(modules).toContain('recommendationsUi');

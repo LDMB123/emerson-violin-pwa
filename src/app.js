@@ -38,6 +38,7 @@ const moduleLoaders = {
     backupExport: () => import('./backup/export.js'),
     gameMetrics: () => import('./games/game-metrics.js'),
     gameEnhancements: () => import('./games/game-enhancements.js'),
+    gameComplete: () => import('./games/game-complete.js'),
     trainerTools: () => import('./trainer/tools.js'),
     recordings: () => import('./recordings/recordings.js'),
     parentPin: () => import('./parent/pin.js'),
