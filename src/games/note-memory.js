@@ -107,6 +107,7 @@ const { bind } = createGame({
 
         gameState._onDeactivate = () => {
             pauseTimer();
+            stopTonePlayer();
         };
 
         const resumeTimer = () => {

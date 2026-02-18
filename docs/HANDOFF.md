@@ -158,6 +158,13 @@ If both pass, you are at a known-good baseline.
     - `src/games/rhythm-painter.js`
     - `src/games/duet-challenge.js`
   - Ensures hash-navigation away stops active tone-player output in these games.
+- Completed sequence/timer tone deactivation lifecycle pass (2026-02-18, phase 20):
+  - Added synthesized tone stop-on-deactivate for sequence factory games:
+    - `src/games/sequence-game.js` (covers `pizzicato` and `string-quest`)
+  - Extended existing deactivation hooks to stop active tones for:
+    - `src/games/note-memory.js`
+    - `src/games/bow-hero.js`
+  - Ensures hash-navigation away and session reset paths stop active synthesized tone output.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -184,6 +191,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-14.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-15.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-16.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-17.md`
 
 ## Verification Gates
 

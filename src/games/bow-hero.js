@@ -8,6 +8,7 @@ import {
     markChecklistIf,
     bindTap,
     playToneNote,
+    stopTonePlayer,
 } from './shared.js';
 
 const bowStarsEl = cachedEl('[data-bow="stars"]');
@@ -117,6 +118,7 @@ const { bind } = createGame({
 
         gameState._onDeactivate = () => {
             pauseTimer();
+            stopTonePlayer();
         };
 
         const resumeTimer = () => {
