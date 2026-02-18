@@ -4,7 +4,6 @@ import {
     GAME_BY_SKILL,
     SKILL_LABELS,
     recencyWeight,
-    average,
     weightedAverage,
     computeSkillScores,
     findWeakestSkill,
@@ -86,24 +85,6 @@ describe('recommendations-utils', () => {
             const twoDaysAgo = 1000000000 - (2 * 86400000);
             const weight = recencyWeight(twoDaysAgo);
             expect(weight).toBeLessThan(0.6);
-        });
-    });
-
-    describe('average', () => {
-        it('returns 0 for empty array', () => {
-            expect(average([])).toBe(0);
-        });
-
-        it('calculates average of single value', () => {
-            expect(average([42])).toBe(42);
-        });
-
-        it('calculates average of multiple values', () => {
-            expect(average([10, 20, 30])).toBe(20);
-        });
-
-        it('handles decimal results', () => {
-            expect(average([1, 2, 3])).toBeCloseTo(2, 5);
         });
     });
 
