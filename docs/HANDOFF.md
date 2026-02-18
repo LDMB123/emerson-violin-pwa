@@ -181,6 +181,10 @@ If both pass, you are at a known-good baseline.
   - Added persisted-pagehide guard for lifecycle stop behavior in:
     - `src/games/game-enhancements.js`
   - Prevents destructive session stop side effects during bfcache snapshot transitions.
+- Completed sequence-game pagehide regression coverage pass (2026-02-18, phase 24):
+  - Added focused lifecycle tests for:
+    - `tests/games/sequence-game.test.js`
+  - Covers non-persisted pagehide reporting, persisted-pagehide ignore behavior, and rebind listener cleanup.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -211,6 +215,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-18.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-19.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-20.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-21.md`
 
 ## Verification Gates
 
