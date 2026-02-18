@@ -28,15 +28,3 @@ export const formatStepCue = (step) => {
     return step.cue ? `${step.label} · ${step.cue}` : step.label;
 };
 
-export const shouldResetLesson = (completedSteps, totalSteps) => {
-    return completedSteps >= totalSteps;
-};
-
-export const getNextStepIndex = (currentIndex, completedSteps, totalSteps) => {
-    if (completedSteps >= totalSteps) return 0;
-    return completedSteps;
-};
-
-export const canAdvanceStep = (completedSteps, totalSteps) => {
-    return completedSteps < totalSteps;
-};

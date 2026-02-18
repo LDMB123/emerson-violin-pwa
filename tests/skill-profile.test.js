@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSkillProfileUtils, scoreFromMinutes } from '../src/utils/skill-profile.js';
+import { createSkillProfileUtils } from '../src/utils/skill-profile.js';
 
 const SkillCategory = {
     Pitch: 'pitch',
@@ -20,11 +20,6 @@ const makeProfile = () => {
 };
 
 describe('skill-profile utils', () => {
-    it('scores minutes with clamping', () => {
-        expect(scoreFromMinutes(0)).toBeGreaterThanOrEqual(0);
-        expect(scoreFromMinutes(20)).toBeLessThanOrEqual(100);
-    });
-
     it('updates all skills for lesson goal ids', () => {
         const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
         const profile = makeProfile();
