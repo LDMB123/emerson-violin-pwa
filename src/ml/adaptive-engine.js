@@ -59,11 +59,7 @@ const scheduleSave = (model) => {
     const persist = () => {
         saveTimer = null;
         model.updatedAt = Date.now();
-        if (globalThis.scheduler?.postTask) {
-            globalThis.scheduler.postTask(() => setJSON(MODEL_KEY, model), { priority: 'background' });
-        } else {
-            setJSON(MODEL_KEY, model);
-        }
+        scheduler.postTask(() => setJSON(MODEL_KEY, model), { priority: 'background' });
     };
     saveTimer = window.setTimeout(persist, 120);
 };

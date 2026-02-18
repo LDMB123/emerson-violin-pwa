@@ -72,7 +72,7 @@ export const bindTap = (element, handler, { threshold = 160, clickIgnoreWindow =
 };
 
 export const readLiveNumber = (el, key) => {
-    if (!el || !el.dataset) return null;
+    if (!el) return null;
     const value = Number(el.dataset[key]);
     return Number.isFinite(value) ? value : null;
 };

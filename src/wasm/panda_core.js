@@ -482,18 +482,10 @@ function __wbg_get_imports() {
     };
 }
 
-const AchievementFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_achievement_free(ptr >>> 0, 1));
-const AchievementTrackerFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_achievementtracker_free(ptr >>> 0, 1));
-const PlayerProgressFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_playerprogress_free(ptr >>> 0, 1));
-const SkillProfileFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_skillprofile_free(ptr >>> 0, 1));
+const AchievementFinalization = new FinalizationRegistry(ptr => wasm.__wbg_achievement_free(ptr >>> 0, 1));
+const AchievementTrackerFinalization = new FinalizationRegistry(ptr => wasm.__wbg_achievementtracker_free(ptr >>> 0, 1));
+const PlayerProgressFinalization = new FinalizationRegistry(ptr => wasm.__wbg_playerprogress_free(ptr >>> 0, 1));
+const SkillProfileFinalization = new FinalizationRegistry(ptr => wasm.__wbg_skillprofile_free(ptr >>> 0, 1));
 
 function _assertClass(instance, klass) {
     if (!(instance instanceof klass)) {
@@ -585,32 +577,13 @@ function passStringToWasm0(arg, malloc, realloc) {
     return ptr;
 }
 
-let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+const cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
 cachedTextDecoder.decode();
-const MAX_SAFARI_DECODE_BYTES = 2146435072;
-let numBytesDecoded = 0;
 function decodeText(ptr, len) {
-    numBytesDecoded += len;
-    if (numBytesDecoded >= MAX_SAFARI_DECODE_BYTES) {
-        cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
-        cachedTextDecoder.decode();
-        numBytesDecoded = len;
-    }
     return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
 }
 
 const cachedTextEncoder = new TextEncoder();
-
-if (!('encodeInto' in cachedTextEncoder)) {
-    cachedTextEncoder.encodeInto = function (arg, view) {
-        const buf = cachedTextEncoder.encode(arg);
-        view.set(buf);
-        return {
-            read: arg.length,
-            written: buf.length
-        };
-    };
-}
 
 let WASM_VECTOR_LEN = 0;
 

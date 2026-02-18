@@ -81,7 +81,7 @@ const showDialog = () => {
     if (!dialog) return;
     dialog.dataset.error = 'false';
     if (input) input.value = '';
-    if (typeof dialog.showModal === 'function' && !dialog.open) {
+    if (!dialog.open) {
         dialog.showModal();
         input?.focus();
     }
@@ -117,23 +117,10 @@ const handleSubmit = async (event) => {
     }
 };
 
-const checkGate = async () => {
+const checkGate = () => {
     if (window.location.hash !== '#view-parent') return;
     if (isUnlocked()) return;
-    if (dialog && typeof dialog.showModal === 'function') {
-        showDialog();
-        return;
-    }
-    const entry = window.prompt('Enter Parent PIN');
-    const pinData = await getPinData();
-    const enteredPin = normalizePin(entry);
-    const isValid = await verifyPin(enteredPin, pinData.hash, pinData.salt);
-
-    if (isValid) {
-        sessionStorage.setItem(UNLOCK_KEY, 'true');
-    } else {
-        window.location.hash = '#view-home';
-    }
+    showDialog();
 };
 
 if (form) {

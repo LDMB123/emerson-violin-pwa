@@ -18,9 +18,7 @@ const setStatus = (message) => {
 };
 
 const applyWeeklyTarget = (value) => {
-    if (document.documentElement) {
-        document.documentElement.dataset.weeklyGoalTarget = String(value);
-    }
+    document.documentElement.dataset.weeklyGoalTarget = String(value);
     document.dispatchEvent(new CustomEvent(WEEKLY_GOAL_CHANGE, { detail: { value } }));
 };
 

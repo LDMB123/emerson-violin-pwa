@@ -126,11 +126,7 @@ const startTuner = async () => {
             return;
         }
 
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) {
-            throw new Error('AudioContext not supported');
-        }
-        audioContext = new AudioCtx({ latencyHint: 'interactive' });
+        audioContext = new AudioContext({ latencyHint: 'interactive' });
         if (!audioContext.audioWorklet) {
             throw new Error('AudioWorklet not supported');
         }
