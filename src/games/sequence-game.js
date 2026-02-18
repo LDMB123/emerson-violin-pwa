@@ -33,11 +33,18 @@
  *   stepPrefix      {string}   Input id prefix for update() checklist query, e.g. 'pz' or 'sq'
  *   stepScore       {number}   Per-checked-step score used in update() fallback display;
  *                              also used as the completion bonus (same value in both games)
+ *   hashId          {string}   Hash string compared against window.location.hash to detect
+ *                              navigation back to this view, e.g. '#view-game-pizzicato'.
+ *                              Defaults to viewId. Provide explicitly if viewId is a compound
+ *                              CSS selector that does not equal the expected hash string.
  *   onCorrectHit    {function} Optional callback(note, state) for per-hit side effects.
  *                              Runs after score/seqIndex are updated but before sequence
  *                              completion check. state has: combo, score, seqIndex, sequence,
  *                              hitNotes, lastCorrectNote (writable), markChecklist,
  *                              markChecklistIf.
+ *                              NOTE: callers that track cross-string transitions (e.g. D→A
+ *                              detection) MUST update state.lastCorrectNote inside this
+ *                              callback; the factory does not set it automatically.
  *   onReset         {function} Optional callback(state) invoked during session reset after
  *                              base state is cleared (combo/score/seqIndex/hitNotes/
  *                              lastCorrectNote), for any game-specific cleanup.
@@ -71,6 +78,7 @@ export function createSequenceGame(config) {
         id,
         prefix,
         viewId,
+        hashId = viewId,
         buttonClass,
         btnDataAttr,
         targetDataAttr,
@@ -252,7 +260,7 @@ export function createSequenceGame(config) {
         window.addEventListener(
             'hashchange',
             () => {
-                if (window.location.hash === viewId) {
+                if (window.location.hash === hashId) {
                     resetSession();
                     return;
                 }
