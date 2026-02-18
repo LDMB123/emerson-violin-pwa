@@ -13,7 +13,6 @@ const setStatus = (enabled) => {
 };
 
 const setDataset = (enabled) => {
-    if (!document.documentElement) return;
     if (enabled) {
         document.documentElement.dataset.offlineMode = 'on';
     } else {

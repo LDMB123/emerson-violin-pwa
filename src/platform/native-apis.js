@@ -22,7 +22,7 @@ const orientationStatusEl = document.querySelector('[data-orientation-status]');
 const shareButton = document.querySelector('[data-share-summary]');
 const shareStatusEl = document.querySelector('[data-share-status]');
 const soundToggle = document.querySelector('#setting-sounds');
-const rootStyle = document.documentElement?.style;
+const rootStyle = document.documentElement.style;
 const installStatusEl = document.querySelector('[data-install-status]');
 
 const loadPersistRequest = () => {
@@ -65,7 +65,7 @@ const requestPersistentStorage = async (reason) => {
 const maybeAutoPersist = async (reason) => {
     const persisted = await navigator.storage.persisted();
     if (persisted) return;
-    const offlineMode = document.documentElement?.dataset?.offlineMode === 'on';
+    const offlineMode = document.documentElement.dataset.offlineMode === 'on';
     const shouldAttempt = isStandalone() || offlineMode;
     if (!shouldAttempt) return;
     const didPersist = await requestPersistentStorage(reason);
@@ -156,7 +156,7 @@ const bindStorageUI = () => {
 const updateNetworkStatus = () => {
     if (!networkStatusEl) return;
     const online = navigator.onLine;
-    const offlineMode = document.documentElement?.dataset?.offlineMode === 'on';
+    const offlineMode = document.documentElement.dataset.offlineMode === 'on';
     if (offlineMode) {
         networkStatusEl.textContent = 'Network status: Offline mode enabled (cached-only).';
         return;
@@ -470,9 +470,7 @@ const resolveSoundState = () => (soundToggle ? soundToggle.checked : isSoundEnab
 
 const updateSoundState = () => {
     const enabled = resolveSoundState();
-    if (document.documentElement) {
-        document.documentElement.dataset.sounds = enabled ? 'on' : 'off';
-    }
+    document.documentElement.dataset.sounds = enabled ? 'on' : 'off';
     document.querySelectorAll('audio').forEach((audio) => {
         audio.muted = !enabled;
         if (!enabled && !audio.paused) {
