@@ -1,5 +1,23 @@
 import { getLearningRecommendations } from '../ml/recommendations.js';
-import { ML_UPDATE, LESSON_STEP, LESSON_COMPLETE } from '../utils/event-names.js';
+import { ML_UPDATE, LESSON_STEP, LESSON_COMPLETE, GAME_RECORDED } from '../utils/event-names.js';
+
+const GAME_MESSAGES = {
+    'pitch-quest':    'Nice pitch work! Try using less pressure on the bow next.',
+    'rhythm-dash':    'Great rhythm! See if you can keep that tempo in a real song.',
+    'bow-hero':       'Smooth bowing! Remember to keep your elbow relaxed.',
+    'ear-trainer':    'Sharp ears! That listening skill helps everything.',
+    'note-memory':    'Good note memory! Try naming them out loud next time.',
+    'tuning-time':    'Perfect — staying in tune is a superpower.',
+    'scale-practice': 'Scales are the foundation. That work pays off.',
+    'melody-maker':   'You made music! How did it feel?',
+    'rhythm-painter': 'Rhythm painter sharpens your inner beat.',
+    'string-quest':   'Nice string work! Feel how each string vibrates differently.',
+    'pizzicato':      'Pizzicato builds finger strength. Great session.',
+    'duet-challenge': 'Playing together takes real listening. Well done.',
+    'story-song':     'Stories make music come alive. Lovely session.',
+};
+
+let pendingGameMessage = null;
 
 const bubble = document.querySelector('[data-progress="coach-speech"]');
 const buttons = Array.from(document.querySelectorAll('[data-coach-action]'));
@@ -57,6 +75,10 @@ const speakMessage = (message) => {
 const buildMessages = (recs) => {
     const next = [...baseMessages];
     if (recs?.coachMessage) next.unshift(recs.coachMessage);
+    if (pendingGameMessage) {
+        next.unshift(pendingGameMessage);
+        pendingGameMessage = null;
+    }
     if (recs?.coachCue) next.unshift(recs.coachCue);
     if (Array.isArray(recs?.lessonSteps)) {
         recs.lessonSteps.forEach((step) => {
@@ -140,6 +162,12 @@ applyRecommendations();
 document.addEventListener(ML_UPDATE, applyRecommendations);
 document.addEventListener(LESSON_STEP, handleLessonStep);
 document.addEventListener(LESSON_COMPLETE, handleLessonComplete);
+document.addEventListener(GAME_RECORDED, (e) => {
+    const id = e.detail?.id;
+    if (id && GAME_MESSAGES[id]) {
+        pendingGameMessage = GAME_MESSAGES[id];
+    }
+});
 
 if (voiceToggle && 'speechSynthesis' in window) {
     voiceToggle.addEventListener('change', () => {
