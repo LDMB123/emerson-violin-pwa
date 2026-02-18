@@ -5,9 +5,9 @@ import {
     markChecklistIf,
     getTonePlayer,
     stopTonePlayer,
+    createSoundsChangeBinding,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const storyTitleEl = cachedEl('#view-game-story-song [data-story="title"]');
 
@@ -21,7 +21,7 @@ const updateStorySong = () => {
     }
 };
 
-let _soundsHandler = null;
+const bindSoundsChange = createSoundsChangeBinding();
 
 const { bind } = createGame({
     id: 'story-song',
@@ -221,11 +221,7 @@ const { bind } = createGame({
                 updateStatus('Sounds on. Tap Play-Along to start.');
             }
         };
-        if (_soundsHandler) {
-            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
-        }
-        _soundsHandler = soundsHandler;
-        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
+        bindSoundsChange(soundsHandler);
 
         document.addEventListener('visibilitychange', () => {
             if (!toggle) return;

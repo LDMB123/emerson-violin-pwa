@@ -5,7 +5,7 @@ import { isSoundEnabled } from '../utils/sound-state.js';
 import { todayDay } from '../utils/math.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
-import { GAME_RECORDED, ML_RESET } from '../utils/event-names.js';
+import { GAME_RECORDED, ML_RESET, SOUNDS_CHANGE } from '../utils/event-names.js';
 
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 export const cachedEl = (selector) => { let el; return () => (el ??= document.querySelector(selector)); };
@@ -140,6 +140,15 @@ export const recordGameEvent = async (id, payload = {}) => {
     }
     await setJSON(EVENT_KEY, list);
     document.dispatchEvent(new CustomEvent(GAME_RECORDED, { detail: entry }));
+};
+
+export const createSoundsChangeBinding = () => {
+    let _handler = null;
+    return (handler) => {
+        if (_handler) document.removeEventListener(SOUNDS_CHANGE, _handler);
+        _handler = handler;
+        document.addEventListener(SOUNDS_CHANGE, handler);
+    };
 };
 
 export const attachTuning = (id, onUpdate) => {

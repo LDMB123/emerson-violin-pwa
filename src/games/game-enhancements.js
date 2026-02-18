@@ -19,16 +19,11 @@ const resetGameView = (view, { forceEvents = false } = {}) => {
         }
     });
 
+    const liveKeys = ['liveScore', 'liveStars', 'liveCombo', 'liveMatches', 'liveCreativity'];
     view.querySelectorAll('[data-live-score], [data-live-stars], [data-live-combo], [data-live-matches], [data-live-creativity]').forEach((el) => {
-        delete el.dataset.liveScore;
-        delete el.dataset.liveStars;
-        delete el.dataset.liveCombo;
-        delete el.dataset.liveMatches;
-        delete el.dataset.liveCreativity;
+        liveKeys.forEach((key) => delete el.dataset[key]);
     });
-    view.querySelectorAll('[data-live]').forEach((el) => {
-        delete el.dataset.live;
-    });
+    view.querySelectorAll('[data-live]').forEach((el) => delete el.dataset.live);
 };
 
 const attachSessionTimer = (view, timerEl, fillEl, trackEl, targetMinutes, scoreEl, announceEl) => {

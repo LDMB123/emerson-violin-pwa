@@ -20,57 +20,46 @@ export const isViewHash = (href) => {
     return href.startsWith('#view-');
 };
 
-export const shouldLoadTuner = (viewId) => viewId === 'view-tuner';
-export const shouldLoadSessionReview = (viewId) => viewId === 'view-session-review' || viewId === 'view-analysis';
-export const shouldLoadSongs = (viewId) => viewId === 'view-songs' || viewId.startsWith('view-song-');
-export const shouldLoadCoach = (viewId) => viewId === 'view-coach';
-export const shouldLoadTrainer = (viewId) => viewId === 'view-trainer' || viewId === 'view-bowing' || viewId === 'view-posture';
-export const shouldLoadSettings = (viewId) => viewId === 'view-settings';
-export const shouldLoadBackup = (viewId) => viewId === 'view-backup';
-export const shouldLoadParent = (viewId) => viewId === 'view-parent';
-export const shouldLoadGames = (viewId) => viewId === 'view-games' || viewId.startsWith('view-game-');
-export const shouldLoadProgress = (viewId) => viewId === 'view-progress';
-
 export const getModulesForView = (viewId) => {
     const modules = [];
 
-    if (shouldLoadTuner(viewId)) {
+    if (viewId === 'view-tuner') {
         modules.push('tuner');
     }
 
-    if (shouldLoadSessionReview(viewId)) {
+    if (viewId === 'view-session-review' || viewId === 'view-analysis') {
         modules.push('sessionReview', 'recordings');
     }
 
-    if (shouldLoadSongs(viewId)) {
+    if (viewId === 'view-songs' || viewId.startsWith('view-song-')) {
         modules.push('songProgress', 'songSearch', 'recordings');
     }
 
-    if (shouldLoadCoach(viewId)) {
+    if (viewId === 'view-coach') {
         modules.push('coachActions', 'focusTimer', 'lessonPlan', 'recommendationsUi');
     }
 
-    if (shouldLoadTrainer(viewId)) {
+    if (viewId === 'view-trainer' || viewId === 'view-bowing' || viewId === 'view-posture') {
         modules.push('trainerTools');
     }
 
-    if (shouldLoadSettings(viewId)) {
+    if (viewId === 'view-settings') {
         modules.push('swUpdates', 'adaptiveUi', 'offlineMode', 'reminders');
     }
 
-    if (shouldLoadBackup(viewId)) {
+    if (viewId === 'view-backup') {
         modules.push('backupExport');
     }
 
-    if (shouldLoadParent(viewId)) {
+    if (viewId === 'view-parent') {
         modules.push('parentPin', 'parentGoals', 'parentRecordings', 'reminders');
     }
 
-    if (shouldLoadGames(viewId)) {
+    if (viewId === 'view-games' || viewId.startsWith('view-game-')) {
         modules.push('gameMetrics', 'gameEnhancements', 'gameComplete');
     }
 
-    if (shouldLoadProgress(viewId)) {
+    if (viewId === 'view-progress') {
         modules.push('recommendationsUi');
     }
 

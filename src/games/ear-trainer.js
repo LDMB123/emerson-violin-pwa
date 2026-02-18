@@ -5,9 +5,9 @@ import {
     markChecklistIf,
     bindTap,
     playToneNote,
+    createSoundsChangeBinding,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const earQuestionEl = cachedEl('[data-ear="question"]');
 
@@ -21,7 +21,7 @@ const updateEarTrainer = () => {
     }
 };
 
-let _soundsHandler = null;
+const bindSoundsChange = createSoundsChangeBinding();
 
 const { bind } = createGame({
     id: 'ear-trainer',
@@ -139,11 +139,7 @@ const { bind } = createGame({
             }
             updateSoundState();
         };
-        if (_soundsHandler) {
-            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
-        }
-        _soundsHandler = soundsHandler;
-        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
+        bindSoundsChange(soundsHandler);
 
         bindTap(playButton, () => {
             if (!isSoundEnabled()) {

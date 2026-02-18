@@ -8,8 +8,8 @@ import {
     playToneNote,
     playToneSequence,
     stopTonePlayer,
+    createSoundsChangeBinding,
 } from './shared.js';
-import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const memoryMatchesEl = cachedEl('[data-memory="matches"]');
 const memoryScoreEl = cachedEl('[data-memory="score"]');
@@ -34,7 +34,7 @@ const updateNoteMemory = () => {
     }
 };
 
-let _soundsHandler = null;
+const bindSoundsChange = createSoundsChangeBinding();
 
 const { bind } = createGame({
     id: 'note-memory',
@@ -262,11 +262,7 @@ const { bind } = createGame({
                 stopTonePlayer();
             }
         };
-        if (_soundsHandler) {
-            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
-        }
-        _soundsHandler = soundsHandler;
-        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
+        bindSoundsChange(soundsHandler);
 
         updateHud();
 
