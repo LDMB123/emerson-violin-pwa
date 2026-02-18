@@ -59,4 +59,109 @@ describe('persistence/storage fallback behavior', () => {
         await expect(getBlob('blob-key')).resolves.toBeNull();
         await expect(removeBlob('blob-key')).resolves.toBeUndefined();
     });
+
+    it('retries IndexedDB open after a transient open failure', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const open = vi.fn(() => {
+            const request = {
+                result: null,
+                error: new Error('open failed'),
+                onupgradeneeded: null,
+                onsuccess: null,
+                onerror: null,
+                onblocked: null,
+            };
+            queueMicrotask(() => {
+                request.onerror?.();
+            });
+            return request;
+        });
+
+        globalThis.indexedDB = { open };
+        const { getJSON } = await import('../../src/persistence/storage.js');
+        await expect(getJSON('first')).resolves.toBeNull();
+        await expect(getJSON('second')).resolves.toBeNull();
+        expect(open).toHaveBeenCalledTimes(2);
+        warnSpy.mockRestore();
+    });
+
+    it('uses IndexedDB stores when available for JSON and blob operations', async () => {
+        const stores = new Map();
+        const ensureStore = (name) => {
+            if (!stores.has(name)) {
+                stores.set(name, new Map());
+            }
+            return stores.get(name);
+        };
+        const createSuccessRequest = (result) => {
+            const request = {
+                result,
+                error: null,
+                onsuccess: null,
+                onerror: null,
+            };
+            queueMicrotask(() => {
+                request.onsuccess?.();
+            });
+            return request;
+        };
+
+        const db = {
+            objectStoreNames: {
+                contains: (name) => stores.has(name),
+            },
+            createObjectStore: (name) => {
+                ensureStore(name);
+            },
+            transaction: (storeName) => {
+                const tx = {
+                    error: null,
+                    onabort: null,
+                    onerror: null,
+                    objectStore: () => ({
+                        get: (key) => createSuccessRequest(ensureStore(storeName).get(key)),
+                        put: (value, key) => {
+                            ensureStore(storeName).set(key, value);
+                            return createSuccessRequest(key);
+                        },
+                        delete: (key) => {
+                            ensureStore(storeName).delete(key);
+                            return createSuccessRequest(undefined);
+                        },
+                    }),
+                };
+                return tx;
+            },
+        };
+
+        globalThis.indexedDB = {
+            open: vi.fn(() => {
+                const request = {
+                    result: db,
+                    error: null,
+                    onupgradeneeded: null,
+                    onsuccess: null,
+                    onerror: null,
+                    onblocked: null,
+                };
+                queueMicrotask(() => {
+                    request.onupgradeneeded?.();
+                    request.onsuccess?.();
+                });
+                return request;
+            }),
+        };
+
+        const { setJSON, getJSON, removeJSON, setBlob, getBlob, removeBlob } = await import('../../src/persistence/storage.js');
+        await setJSON('idb-key', { ok: true });
+        await expect(getJSON('idb-key')).resolves.toEqual({ ok: true });
+        await removeJSON('idb-key');
+        await expect(getJSON('idb-key')).resolves.toBeNull();
+
+        const blob = new Blob(['blob-data'], { type: 'text/plain' });
+        await expect(setBlob('blob-key', blob)).resolves.toBe(true);
+        await expect(getBlob('blob-key')).resolves.toBe(blob);
+        await removeBlob('blob-key');
+        await expect(getBlob('blob-key')).resolves.toBeNull();
+    });
 });

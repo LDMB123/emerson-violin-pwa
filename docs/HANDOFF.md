@@ -58,6 +58,16 @@ If both pass, you are at a known-good baseline.
     - `src/persistence/storage.js`
     - `src/app/module-registry.js`
   - Optimized runtime-health navigation checks to use in-app hash routing (faster and less reload churn than full `page.goto` per view).
+- Completed runtime resilience + dedupe pass (2026-02-18, phase 6):
+  - Hardened IndexedDB lifecycle in `src/persistence/storage.js`:
+    - retries DB open after transient `open` failure/block instead of permanently caching `null`
+    - clears cached DB handle on `onversionchange`
+    - added stronger transaction/request error handling in `idbOp`
+  - Eliminated duplicate recommendation recompute/write work in `src/ml/recommendations.js`:
+    - concurrent `refreshRecommendationsCache()` calls now share one in-flight promise
+  - Added/expanded tests:
+    - `tests/persistence/storage.test.js` now covers IndexedDB success-path + transient-open retry behavior
+    - `tests/recommendations.test.js` now verifies concurrent refresh deduplication
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -70,6 +80,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-10x-deeper-pass.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deep-pass.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-2.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-3.md`
 
 ## Verification Gates
 

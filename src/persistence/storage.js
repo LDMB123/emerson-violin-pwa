@@ -5,6 +5,9 @@ const BLOB_STORE = 'blobs';
 const FALLBACK_PREFIX = 'panda-violin:kv:';
 
 let dbPromise = null;
+const clearDBPromise = () => {
+    dbPromise = null;
+};
 
 const openDB = () => {
     if (dbPromise) return dbPromise;
@@ -13,6 +16,13 @@ const openDB = () => {
     }
     dbPromise = new Promise((resolve) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
+        const resolveWith = (db) => {
+            // Do not permanently cache a null DB handle on transient failures.
+            if (!db) {
+                clearDBPromise();
+            }
+            resolve(db);
+        };
         request.onupgradeneeded = () => {
             const db = request.result;
             if (!db.objectStoreNames.contains(STORE)) {
@@ -22,12 +32,26 @@ const openDB = () => {
                 db.createObjectStore(BLOB_STORE);
             }
         };
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => {
+            const db = request.result;
+            db.onversionchange = () => {
+                try {
+                    db.close();
+                } catch {
+                    // Ignore close failures.
+                }
+                clearDBPromise();
+            };
+            resolveWith(db);
+        };
         request.onerror = () => {
             console.warn('[Storage] IndexedDB open failed', request.error);
-            resolve(null);
+            resolveWith(null);
         };
-        request.onblocked = () => resolve(null);
+        request.onblocked = () => {
+            console.warn('[Storage] IndexedDB open blocked');
+            resolveWith(null);
+        };
     });
     return dbPromise;
 };
@@ -62,11 +86,45 @@ const fallbackRemoveJSON = (key) => {
 /* ── IDB transaction helper ─────────────────────────────── */
 
 const idbOp = (db, storeName, mode, fn) => new Promise((resolve, reject) => {
-    const tx = db.transaction(storeName, mode);
+    let settled = false;
+    const finishReject = (error) => {
+        if (settled) return;
+        settled = true;
+        reject(error || new Error('[Storage] IndexedDB transaction failed'));
+    };
+    const finishResolve = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value ?? null);
+    };
+
+    let tx;
+    try {
+        tx = db.transaction(storeName, mode);
+    } catch (error) {
+        finishReject(error);
+        return;
+    }
+
+    tx.onabort = () => finishReject(tx.error);
+    tx.onerror = () => finishReject(tx.error);
+
     const store = tx.objectStore(storeName);
-    const request = fn(store);
-    request.onsuccess = () => resolve(request.result ?? null);
-    request.onerror = () => reject(request.error);
+    let request;
+    try {
+        request = fn(store);
+    } catch (error) {
+        finishReject(error);
+        return;
+    }
+
+    if (!request) {
+        finishReject(new Error(`[Storage] IndexedDB request missing for store "${storeName}"`));
+        return;
+    }
+
+    request.onsuccess = () => finishResolve(request.result);
+    request.onerror = () => finishReject(request.error);
 });
 
 /* ── Public API: JSON (KV store) ────────────────────────── */
