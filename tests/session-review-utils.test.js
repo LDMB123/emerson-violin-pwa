@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { todayDay } from '../src/utils/math.js';
+import { describe, it, expect } from 'vitest';
 import {
     starString,
     coachMessageFor,
@@ -10,28 +9,6 @@ import {
 } from '../src/utils/session-review-utils.js';
 
 describe('session-review-utils', () => {
-    describe('todayDay', () => {
-        let originalNow;
-
-        beforeEach(() => {
-            originalNow = Date.now;
-            Date.now = vi.fn(() => 86400000 * 100);
-        });
-
-        afterEach(() => {
-            Date.now = originalNow;
-        });
-
-        it('returns day number', () => {
-            expect(todayDay()).toBe(100);
-        });
-
-        it('changes with Date.now', () => {
-            Date.now = vi.fn(() => 86400000 * 150);
-            expect(todayDay()).toBe(150);
-        });
-    });
-
     describe('starString', () => {
         it('returns 1 star for score 0-19', () => {
             expect(starString(0)).toBe('★☆☆☆☆');
