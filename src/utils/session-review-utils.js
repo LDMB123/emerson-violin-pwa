@@ -52,18 +52,3 @@ export const filterSongEvents = (events) => {
 export const getRecentEvents = (events, count = 2) => {
     return events.slice(-count).reverse();
 };
-
-export const computeTotalMinutes = (events) => {
-    if (!events.length) return 0;
-    return events.reduce((sum, event) => sum + (event.duration || 0), 0);
-};
-
-export const computeAverageAccuracy = (events) => {
-    if (!events.length) return 0;
-    const total = events.reduce((sum, event) => sum + (event.accuracy || 0), 0);
-    return Math.round(total / events.length);
-};
-
-export const extractAccuracyValues = (events, maxCount = 7) => {
-    return events.slice(-maxCount).map((event) => clamp(event.accuracy || 0, 0, 100));
-};
