@@ -119,6 +119,13 @@ If both pass, you are at a known-good baseline.
     - `src/trainer/tools.js`
   - Reused existing bfcache helper:
     - `src/trainer/trainer-utils.js` (`isBfcachePagehide`)
+- Completed focus timer hidden-state lifecycle fix (2026-02-18, phase 13):
+  - Added explicit decision helper for timer stop rules:
+    - `src/coach/focus-timer-utils.js` (`shouldStopFocusTimer`)
+  - Forced stop path on hidden/pagehide lifecycle events:
+    - `src/coach/focus-timer.js`
+  - Added focused utility coverage:
+    - `tests/focus-timer-utils.test.js`
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -138,6 +145,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-7.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-8.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-9.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-10.md`
 
 ## Verification Gates
 

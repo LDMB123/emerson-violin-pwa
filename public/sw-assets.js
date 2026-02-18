@@ -55,6 +55,7 @@ self.__ASSETS__ = [
   "./src/audio/tone-player.js",
   "./src/backup/export.js",
   "./src/coach/coach-actions.js",
+  "./src/coach/focus-timer-utils.js",
   "./src/coach/focus-timer.js",
   "./src/coach/lesson-plan.js",
   "./src/games/bow-hero.js",
