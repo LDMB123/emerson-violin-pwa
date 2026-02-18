@@ -74,4 +74,26 @@ describe('ViewLoader', () => {
     await expect(viewLoader.load('views/error.html'))
       .rejects.toThrow('Network error');
   });
+
+  it('should warm the cache via prefetch', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      text: async () => '<div>Prefetched</div>'
+    });
+
+    await viewLoader.prefetch('views/prefetch.html');
+    const html = await viewLoader.load('views/prefetch.html');
+
+    expect(html).toBe('<div>Prefetched</div>');
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('should swallow prefetch failures', async () => {
+    global.fetch.mockResolvedValue({
+      ok: false,
+      status: 500
+    });
+
+    await expect(viewLoader.prefetch('views/broken.html')).resolves.toBeUndefined();
+  });
 });

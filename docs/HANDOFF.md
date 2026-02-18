@@ -18,6 +18,13 @@ If both pass, you are at a known-good baseline.
 - Stabilized lazy-view routing and onboarding-aware E2E behavior.
 - Added IndexedDB fallback to localStorage for JSON persistence paths.
 - Consolidated duplicated file share/download logic via `tryShareFile()` in `src/utils/recording-export.js`.
+- Completed 10x simplification/optimization pass (2026-02-18, phase 2):
+  - Refactored app bootstrap module scheduling to declarative plans (`EAGER_MODULES`, `IDLE_MODULE_PLAN`) in `src/app.js`.
+  - Added retry-safe dynamic import handling (`loadModule` now clears failed cache entries so later attempts can recover).
+  - Added idle HTML prefetch for likely next views via `ViewLoader.prefetch()` to reduce route switch latency.
+  - Replaced branch-heavy `getModulesForView` with declarative rules + deduped/memoized output in `src/utils/app-utils.js`.
+  - Hardened sequence game lifecycle by removing stale `hashchange` listeners before rebind in `src/games/sequence-game.js`.
+  - Expanded tests for module rule behavior and view prefetch error handling.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -26,6 +33,7 @@ If both pass, you are at a known-good baseline.
   - Includes lint/audit/unit/build plus Playwright E2E (`iPad Safari`)
 - Added phase report:
   - `docs/plans/2026-02-18-debug-optimization-report.md`
+  - `docs/plans/2026-02-18-10x-simplification-optimization.md`
 
 ## Verification Gates
 
@@ -50,9 +58,10 @@ If both pass, you are at a known-good baseline.
 ## Files to Read Before Editing
 
 1. `docs/HANDOFF.md` (this file)
-2. `docs/plans/2026-02-18-debug-optimization-report.md`
-3. `CLAUDE.md`
-4. `README.md`
+2. `docs/plans/2026-02-18-10x-simplification-optimization.md`
+3. `docs/plans/2026-02-18-debug-optimization-report.md`
+4. `CLAUDE.md`
+5. `README.md`
 
 ## Recommended Next Work (Ordered)
 

@@ -53,12 +53,45 @@ const moduleLoaders = {
     onboarding: () => import('./onboarding/onboarding.js'),
 };
 
+const EAGER_MODULES = [
+    'platform',
+    'dataSaver',
+    'offlineRecovery',
+    'ipadosCapabilities',
+    'inputCapabilities',
+    'progress',
+    'persist',
+];
+
+const IDLE_MODULE_PLAN = [
+    ['installToast', 0],
+    ['installGuide', 60],
+    ['installGuideClose', 120],
+    ['mlScheduler', 180],
+    ['mlAccelerator', 240],
+    ['offlineIntegrity', 300],
+    ['offlineMode', 360],
+    ['reminders', 420],
+    ['badging', 480],
+    ['audioPlayer', 540],
+];
+
+const PREFETCH_VIEW_IDS = [
+    'view-home',
+    'view-coach',
+    'view-games',
+    'view-progress',
+    'view-songs',
+    'view-trainer',
+];
+
 const loaded = new Map();
 const loadModule = (key) => {
     const loader = moduleLoaders[key];
     if (!loader) return Promise.resolve();
     if (loaded.has(key)) return loaded.get(key);
     const promise = loader().catch((error) => {
+        loaded.delete(key);
         console.warn(`[App] Failed to load ${key}`, error);
     });
     loaded.set(key, promise);
@@ -86,9 +119,7 @@ const loadIdle = (key, delay = 0) => {
     queueIdleTask(() => loadModule(key), delay);
 };
 
-const getCurrentViewId = () => {
-    return getViewId(window.location.hash);
-};
+const getCurrentViewId = () => getViewId(window.location.hash);
 
 const loadForView = (viewId) => {
     if (!viewId) return;
@@ -164,25 +195,22 @@ const rewriteAudioSources = () => {
 };
 
 const loadEagerModules = () => {
-    loadModule('platform');
-    loadModule('dataSaver');
-    loadModule('offlineRecovery');
-    loadModule('ipadosCapabilities');
-    loadModule('inputCapabilities');
-    loadModule('progress');
+    EAGER_MODULES.forEach((key) => loadModule(key));
 };
 
 const loadIdleModules = () => {
-    loadIdle('installToast', 0);
-    loadIdle('installGuide', 60);
-    loadIdle('installGuideClose', 120);
-    loadIdle('mlScheduler', 180);
-    loadIdle('mlAccelerator', 240);
-    loadIdle('offlineIntegrity', 300);
-    loadIdle('offlineMode', 360);
-    loadIdle('reminders', 420);
-    loadIdle('badging', 480);
-    loadIdle('audioPlayer', 540);
+    IDLE_MODULE_PLAN.forEach(([key, delay]) => loadIdle(key, delay));
+};
+
+const prefetchLikelyViews = (currentViewId) => {
+    PREFETCH_VIEW_IDS.filter((viewId) => viewId !== currentViewId).forEach((viewId, index) => {
+        queueIdleTask(() => {
+            const viewPath = getViewPath(viewId);
+            if (!viewLoader.has(viewPath)) {
+                viewLoader.prefetch(viewPath);
+            }
+        }, 150 + index * 120);
+    });
 };
 
 const enhanceToggleLabels = () => {
@@ -350,8 +378,8 @@ const boot = async () => {
     setupNavigation(ctx);
     setupPopoverSystem(ctx);
     loadEagerModules();
-    loadModule('persist');
     loadIdleModules();
+    prefetchLikelyViews(initialViewId);
 
     window.addEventListener('hashchange', async () => {
         const viewId = getCurrentViewId() || 'view-home';

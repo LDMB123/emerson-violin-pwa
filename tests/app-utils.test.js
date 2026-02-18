@@ -151,6 +151,20 @@ describe('app-utils', () => {
             const modules = getModulesForView('view-progress');
             expect(modules).toContain('recommendationsUi');
         });
+
+        it('dedupes module names', () => {
+            const modules = getModulesForView('view-game-pitch-quest');
+            expect(new Set(modules).size).toBe(modules.length);
+        });
+
+        it('returns a frozen module list', () => {
+            const modules = getModulesForView('view-coach');
+            expect(Object.isFrozen(modules)).toBe(true);
+        });
+
+        it('returns empty modules for invalid view id', () => {
+            expect(getModulesForView(null)).toEqual([]);
+        });
     });
 
     describe('getActiveNavHref', () => {

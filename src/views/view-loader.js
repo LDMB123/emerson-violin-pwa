@@ -18,23 +18,29 @@ export class ViewLoader {
     }
 
     const promise = fetch(viewPath)
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
           throw new Error(`Failed to load view: HTTP ${response.status}`);
         }
         return response.text();
       })
-      .then(html => {
+      .then((html) => {
         this.cache.set(viewPath, html);
-        this.loading.delete(viewPath);
         return html;
       })
-      .catch(err => {
+      .finally(() => {
         this.loading.delete(viewPath);
-        throw err;
       });
 
     this.loading.set(viewPath, promise);
     return promise;
+  }
+
+  async prefetch(viewPath) {
+    try {
+      await this.load(viewPath);
+    } catch {
+      // Prefetch failures are non-blocking; normal navigation retries.
+    }
   }
 }
