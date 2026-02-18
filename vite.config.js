@@ -6,15 +6,6 @@ export default defineConfig({
     base: './',
     publicDir: 'public',
 
-    resolve: {
-        alias: {
-            '@': resolve(__dirname, 'src'),
-            '@modules': resolve(__dirname, 'src/modules'),
-            '@styles': resolve(__dirname, 'src/styles'),
-            '@ml': resolve(__dirname, 'src/ml'),
-        },
-    },
-
     build: {
         target: 'es2022',
         outDir: 'dist',
