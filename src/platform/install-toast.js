@@ -9,6 +9,7 @@
 
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { INSTALL_TOAST_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
+import { isAutomated } from './platform-utils.js';
 const SHOW_DELAY = 5000;
 const AUTO_DISMISS = 8000;
 
@@ -21,8 +22,6 @@ const isStandalone = () =>
     window.matchMedia('(display-mode: standalone)').matches
     || window.matchMedia('(display-mode: fullscreen)').matches
     || window.navigator.standalone === true;
-
-const isAutomated = () => Boolean(navigator.webdriver);
 
 const markDismissed = async () => {
     await setJSON(DISMISS_KEY, { dismissed: true, timestamp: Date.now() });

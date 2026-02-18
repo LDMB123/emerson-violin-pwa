@@ -3,7 +3,6 @@ import {
     shouldRetryPersist,
     formatBytes,
     isStandalone,
-    getViewId,
     viewAllowsWake,
     getPreferredOrientation,
 } from '../src/platform/platform-utils.js';
@@ -146,40 +145,6 @@ describe('isStandalone', () => {
 
     it('returns false when not standalone', () => {
         expect(isStandalone()).toBe(false);
-    });
-});
-
-describe('getViewId', () => {
-    let originalLocation;
-
-    beforeEach(() => {
-        originalLocation = window.location;
-        delete window.location;
-        window.location = { hash: '' };
-    });
-
-    afterEach(() => {
-        window.location = originalLocation;
-    });
-
-    it('returns "view-home" when hash is empty', () => {
-        window.location.hash = '';
-        expect(getViewId()).toBe('view-home');
-    });
-
-    it('returns "view-home" when hash is only "#"', () => {
-        window.location.hash = '#';
-        expect(getViewId()).toBe('view-home');
-    });
-
-    it('returns the hash without "#" when hash is present', () => {
-        window.location.hash = '#view-tuner';
-        expect(getViewId()).toBe('view-tuner');
-    });
-
-    it('trims whitespace from hash', () => {
-        window.location.hash = '#  view-coach  ';
-        expect(getViewId()).toBe('view-coach');
     });
 });
 
