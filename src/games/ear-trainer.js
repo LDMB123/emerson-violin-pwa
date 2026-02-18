@@ -1,10 +1,8 @@
+import { createGame } from './game-shell.js';
 import {
     cachedEl,
     markChecklist,
     markChecklistIf,
-    setDifficultyBadge,
-    recordGameEvent,
-    attachTuning,
     bindTap,
     playToneNote,
 } from './shared.js';
@@ -23,198 +21,188 @@ const updateEarTrainer = () => {
     }
 };
 
-const bindEarTrainer = (difficulty = { speed: 1.0, complexity: 1 }) => {
-    const stage = document.querySelector('#view-game-ear-trainer');
-    if (!stage) return;
-    const playButton = stage.querySelector('[data-ear="play"]');
-    const questionEl = stage.querySelector('[data-ear="question"]');
-    const streakEl = stage.querySelector('[data-ear="streak"]');
-    const dots = Array.from(stage.querySelectorAll('.ear-dot'));
-    const choices = Array.from(stage.querySelectorAll('.ear-choice'));
-    const audioG = stage.querySelector('audio[aria-labelledby="ear-g-label"]');
-    const audioD = stage.querySelector('audio[aria-labelledby="ear-d-label"]');
-    const audioA = stage.querySelector('audio[aria-labelledby="ear-a-label"]');
-    const audioE = stage.querySelector('audio[aria-labelledby="ear-e-label"]');
-    const audioMap = {
-        G: audioG,
-        D: audioD,
-        A: audioA,
-        E: audioE,
-    };
-    // difficulty.speed: visual feedback only for this game (audio files play at fixed speed)
-    // difficulty.complexity: narrows the note pool; complexity=1 (medium) = all 4 strings (current behavior)
-    const allTones = ['G', 'D', 'A', 'E'];
-    const tonePool = difficulty.complexity === 0
-        ? ['G', 'D']
-        : difficulty.complexity === 2
-            ? ['G', 'D', 'A', 'E']
-            : allTones;
-    const checklistMap = {
-        G: 'et-step-1',
-        D: 'et-step-2',
-        A: 'et-step-3',
-        E: 'et-step-4',
-    };
-
-    let currentIndex = 0;
-    let currentTone = null;
-    let correctStreak = 0;
-    let correctCount = 0;
-    let totalAnswered = 0;
-    let rounds = dots.length;
-    let reported = false;
-
-    const setActiveDot = () => {
-        dots.forEach((dot, index) => {
-            dot.classList.toggle('is-active', index === currentIndex && index < rounds);
-            dot.classList.toggle('is-disabled', index >= rounds);
-        });
-    };
-
-    const setQuestion = (text) => {
-        if (!questionEl) return;
-        questionEl.textContent = text;
-        questionEl.dataset.live = 'true';
-    };
-
-    const updateStreak = () => {
-        if (streakEl) streakEl.textContent = String(correctStreak);
-    };
-
-    const reportResult = attachTuning('ear-trainer', (tuning) => {
-        setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
-        if (!totalAnswered && !currentTone) {
-            setQuestion(`Question 1 of ${rounds}`);
-        }
-    });
-
-    setActiveDot();
-
-    const reportSession = () => {
-        if (reported || totalAnswered === 0) return;
-        reported = true;
-        const accuracy = totalAnswered ? (correctCount / totalAnswered) * 100 : 0;
-        reportResult({ accuracy, score: correctCount * 10 });
-        recordGameEvent('ear-trainer', { accuracy, score: correctCount * 10 });
-    };
-
-    const resetTrainer = (message = `Question 1 of ${rounds}`) => {
-        currentIndex = 0;
-        currentTone = null;
-        correctStreak = 0;
-        correctCount = 0;
-        totalAnswered = 0;
-        reported = false;
-        dots.forEach((dot) => {
-            dot.classList.remove('is-correct', 'is-wrong');
-        });
-        choices.forEach((choice) => {
-            choice.checked = false;
-        });
-        setActiveDot();
-        setQuestion(message);
-        updateStreak();
-    };
-
-    const updateSoundState = () => {
-        const enabled = isSoundEnabled();
-        if (playButton) playButton.disabled = !enabled;
-        choices.forEach((choice) => {
-            choice.disabled = !enabled;
-        });
-    };
-
-    updateSoundState();
-
-    document.addEventListener(SOUNDS_CHANGE, (event) => {
-        if (event.detail?.enabled === false) {
-            setQuestion('Sounds are off. Turn on Sounds to play.');
-            Object.values(audioMap).forEach((audio) => {
-                if (audio && !audio.paused) {
-                    audio.pause();
-                    audio.currentTime = 0;
-                }
+const { bind } = createGame({
+    id: 'ear-trainer',
+    computeAccuracy: (state) => state.totalAnswered
+        ? (state.correctCount / state.totalAnswered) * 100
+        : 0,
+    onReset: (gameState) => {
+        gameState.currentIndex = 0;
+        gameState.currentTone = null;
+        gameState.correctStreak = 0;
+        gameState.correctCount = 0;
+        gameState.totalAnswered = 0;
+        const rounds = gameState._rounds || 0;
+        if (gameState._dots) {
+            gameState._dots.forEach((dot) => {
+                dot.classList.remove('is-correct', 'is-wrong');
             });
         }
+        if (gameState._choices) {
+            gameState._choices.forEach((choice) => {
+                choice.checked = false;
+            });
+        }
+        if (gameState._setActiveDot) gameState._setActiveDot();
+        if (gameState._setQuestion) gameState._setQuestion(`Question 1 of ${rounds}`);
+        if (gameState._updateStreak) gameState._updateStreak();
+    },
+    onBind: (stage, difficulty, { reportSession, resetSession, gameState }) => {
+        const playButton = stage.querySelector('[data-ear="play"]');
+        const questionEl = stage.querySelector('[data-ear="question"]');
+        const streakEl = stage.querySelector('[data-ear="streak"]');
+        const dots = Array.from(stage.querySelectorAll('.ear-dot'));
+        const choices = Array.from(stage.querySelectorAll('.ear-choice'));
+        const audioG = stage.querySelector('audio[aria-labelledby="ear-g-label"]');
+        const audioD = stage.querySelector('audio[aria-labelledby="ear-d-label"]');
+        const audioA = stage.querySelector('audio[aria-labelledby="ear-a-label"]');
+        const audioE = stage.querySelector('audio[aria-labelledby="ear-e-label"]');
+        const audioMap = {
+            G: audioG,
+            D: audioD,
+            A: audioA,
+            E: audioE,
+        };
+
+        // difficulty.speed: visual feedback only for this game (audio files play at fixed speed)
+        // difficulty.complexity: narrows the note pool; complexity=1 (medium) = all 4 strings (current behavior)
+        const allTones = ['G', 'D', 'A', 'E'];
+        const tonePool = difficulty.complexity === 0
+            ? ['G', 'D']
+            : difficulty.complexity === 2
+                ? ['G', 'D', 'A', 'E']
+                : allTones;
+        const checklistMap = {
+            G: 'et-step-1',
+            D: 'et-step-2',
+            A: 'et-step-3',
+            E: 'et-step-4',
+        };
+        const rounds = dots.length;
+
+        // Initialize state
+        gameState.currentIndex = 0;
+        gameState.currentTone = null;
+        gameState.correctStreak = 0;
+        gameState.correctCount = 0;
+        gameState.totalAnswered = 0;
+        gameState._rounds = rounds;
+        gameState._dots = dots;
+        gameState._choices = choices;
+
+        const setActiveDot = () => {
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('is-active', index === gameState.currentIndex && index < rounds);
+                dot.classList.toggle('is-disabled', index >= rounds);
+            });
+        };
+
+        const setQuestion = (text) => {
+            if (!questionEl) return;
+            questionEl.textContent = text;
+            questionEl.dataset.live = 'true';
+        };
+
+        const updateStreak = () => {
+            if (streakEl) streakEl.textContent = String(gameState.correctStreak);
+        };
+
+        // Store helpers on gameState for onReset
+        gameState._setActiveDot = setActiveDot;
+        gameState._setQuestion = setQuestion;
+        gameState._updateStreak = updateStreak;
+
+        setActiveDot();
+        setQuestion(`Question 1 of ${rounds}`);
+
+        const updateSoundState = () => {
+            const enabled = isSoundEnabled();
+            if (playButton) playButton.disabled = !enabled;
+            choices.forEach((choice) => {
+                choice.disabled = !enabled;
+            });
+        };
+
         updateSoundState();
-    });
 
-    bindTap(playButton, () => {
-        if (!isSoundEnabled()) {
-            setQuestion('Sounds are off. Turn on Sounds to play.');
-            return;
-        }
-        if (currentIndex >= rounds) {
-            resetTrainer('New round! Listen and tap the matching note.');
-        }
-        currentTone = tonePool[Math.floor(Math.random() * tonePool.length)];
-        const audio = currentTone ? audioMap[currentTone] : null;
-        if (audio) {
-            audio.currentTime = 0;
-            audio.play().catch(() => {});
-        }
-        const total = rounds || 10;
-        setQuestion(`Question ${Math.min(currentIndex + 1, total)} of ${total} · Tap the matching note.`);
-    });
+        document.addEventListener(SOUNDS_CHANGE, (event) => {
+            if (event.detail?.enabled === false) {
+                setQuestion('Sounds are off. Turn on Sounds to play.');
+                Object.values(audioMap).forEach((audio) => {
+                    if (audio && !audio.paused) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }
+                });
+            }
+            updateSoundState();
+        });
 
-    choices.forEach((choice) => {
-        choice.addEventListener('change', () => {
-            if (!currentTone) {
-                setQuestion('Tap Play to hear the note.');
+        bindTap(playButton, () => {
+            if (!isSoundEnabled()) {
+                setQuestion('Sounds are off. Turn on Sounds to play.');
                 return;
             }
-            const selected = choice.dataset.earNote || '';
-            const dot = dots[currentIndex];
-            const isCorrect = selected === currentTone;
-            if (dot) {
-                dot.classList.toggle('is-correct', isCorrect);
-                dot.classList.toggle('is-wrong', !isCorrect);
+            if (gameState.currentIndex >= rounds) {
+                resetSession();
+                setQuestion('New round! Listen and tap the matching note.');
             }
-            totalAnswered += 1;
-            if (isCorrect) {
-                correctStreak += 1;
-                correctCount += 1;
-                const checklistId = checklistMap[selected];
-                if (checklistId) markChecklist(checklistId);
-                markChecklistIf(correctStreak >= 3, 'et-step-5');
-                playToneNote(selected, { duration: 0.22, volume: 0.18, type: 'triangle' });
-            } else {
-                correctStreak = 0;
-                playToneNote('F', { duration: 0.18, volume: 0.14, type: 'sawtooth' });
+            gameState.currentTone = tonePool[Math.floor(Math.random() * tonePool.length)];
+            const audio = gameState.currentTone ? audioMap[gameState.currentTone] : null;
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
             }
-            currentTone = null;
-            currentIndex = Math.min(currentIndex + 1, rounds);
-            choices.forEach((choiceItem) => {
-                choiceItem.checked = false;
-            });
-            setActiveDot();
-            if (currentIndex >= rounds) {
-                markChecklist('et-step-6');
-                setQuestion(`Great job! All ${rounds} rounds complete. Tap Play to restart.`);
-                if (!reported) {
-                    reported = true;
-                    const accuracy = rounds ? (correctCount / rounds) * 100 : 0;
-                    reportResult({ accuracy, score: correctCount * 10 });
-                    recordGameEvent('ear-trainer', { accuracy, score: correctCount * 10 });
-                }
-            } else {
-                setQuestion(`Question ${currentIndex + 1} of ${rounds}`);
-            }
-            updateStreak();
+            const total = rounds || 10;
+            setQuestion(`Question ${Math.min(gameState.currentIndex + 1, total)} of ${total} · Tap the matching note.`);
         });
-    });
 
-    window.addEventListener('hashchange', () => {
+        choices.forEach((choice) => {
+            choice.addEventListener('change', () => {
+                if (!gameState.currentTone) {
+                    setQuestion('Tap Play to hear the note.');
+                    return;
+                }
+                const selected = choice.dataset.earNote || '';
+                const dot = dots[gameState.currentIndex];
+                const isCorrect = selected === gameState.currentTone;
+                if (dot) {
+                    dot.classList.toggle('is-correct', isCorrect);
+                    dot.classList.toggle('is-wrong', !isCorrect);
+                }
+                gameState.totalAnswered += 1;
+                if (isCorrect) {
+                    gameState.correctStreak += 1;
+                    gameState.correctCount += 1;
+                    const checklistId = checklistMap[selected];
+                    if (checklistId) markChecklist(checklistId);
+                    markChecklistIf(gameState.correctStreak >= 3, 'et-step-5');
+                    playToneNote(selected, { duration: 0.22, volume: 0.18, type: 'triangle' });
+                } else {
+                    gameState.correctStreak = 0;
+                    playToneNote('F', { duration: 0.18, volume: 0.14, type: 'sawtooth' });
+                }
+                gameState.currentTone = null;
+                gameState.currentIndex = Math.min(gameState.currentIndex + 1, rounds);
+                choices.forEach((choiceItem) => {
+                    choiceItem.checked = false;
+                });
+                setActiveDot();
+                if (gameState.currentIndex >= rounds) {
+                    markChecklist('et-step-6');
+                    setQuestion(`Great job! All ${rounds} rounds complete. Tap Play to restart.`);
+                    reportSession();
+                } else {
+                    setQuestion(`Question ${gameState.currentIndex + 1} of ${rounds}`);
+                }
+                updateStreak();
+            });
+        });
+
         if (window.location.hash === '#view-game-ear-trainer') {
-            resetTrainer();
-            return;
+            resetSession();
         }
-        reportSession();
-    }, { passive: true });
+    },
+});
 
-    if (window.location.hash === '#view-game-ear-trainer') {
-        resetTrainer();
-    }
-};
-
-export { updateEarTrainer as update, bindEarTrainer as bind };
+export { updateEarTrainer as update, bind };
