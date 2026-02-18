@@ -46,6 +46,7 @@ self.__ASSETS__ = [
   "./offline.html",
   "./src/analysis/session-review.js",
   "./src/app.js",
+  "./src/app/module-registry.js",
   "./src/assets/fonts/fraunces-vf.woff2",
   "./src/assets/fonts/nunito-vf.woff2",
   "./src/audio/audio-player.js",

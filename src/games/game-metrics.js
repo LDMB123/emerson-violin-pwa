@@ -20,11 +20,8 @@ const gameModules = {
     'view-game-duet-challenge': () => import('./duet-challenge.js'),
 };
 
-const shouldUpdate = (id) =>
-    /^(pq-step-|rd-set-|nm-card-|et-step-|bh-step-|sq-step-|rp-pattern-|ss-step-|pz-step-|tt-step-|mm-step-|sp-step-|dc-step-)/.test(id);
-
 const loaded = new Map();
-const updates = [];
+const updates = new Set();
 
 let updateScheduled = false;
 const scheduleUpdateAll = () => {
@@ -36,17 +33,27 @@ const scheduleUpdateAll = () => {
     });
 };
 
-const loadGame = async (viewId) => {
-    if (loaded.has(viewId)) return;
+const loadGame = (viewId) => {
+    if (loaded.has(viewId)) return loaded.get(viewId);
     const loader = gameModules[viewId];
-    if (!loader) return;
-    loaded.set(viewId, null);
-    const mod = await loader();
-    loaded.set(viewId, mod);
-    updates.push(mod.update);
-    const gameId = viewId.replace('view-game-', '');
-    mod.bind(getDifficulty(gameId));
-    scheduleUpdateAll();
+    if (!loader) return Promise.resolve();
+    const promise = loader()
+        .then((mod) => {
+            if (typeof mod?.update === 'function') {
+                updates.add(mod.update);
+            }
+            if (typeof mod?.bind === 'function') {
+                const gameId = viewId.replace('view-game-', '');
+                mod.bind(getDifficulty(gameId));
+            }
+            scheduleUpdateAll();
+        })
+        .catch((error) => {
+            loaded.delete(viewId);
+            console.warn(`[game-metrics] Failed to load ${viewId}`, error);
+        });
+    loaded.set(viewId, promise);
+    return promise;
 };
 
 const loadGamesForView = (viewId) => {
@@ -61,8 +68,8 @@ const loadGamesForView = (viewId) => {
 const handleChange = (event) => {
     const input = event.target;
     if (!(input instanceof HTMLInputElement)) return;
-    if (input.type !== 'checkbox' || !input.id) return;
-    if (!shouldUpdate(input.id)) return;
+    if (input.type !== 'checkbox') return;
+    if (!input.closest('[id^="view-game-"]')) return;
     scheduleUpdateAll();
 };
 
