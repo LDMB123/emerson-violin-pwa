@@ -1,14 +1,8 @@
-const root = document.documentElement;
+import { isIPadOS, isStandalone, setRootDataset } from './platform-utils.js';
+
 const statusEl = document.querySelector('[data-platform-status]');
 const voiceToggle = document.querySelector('#setting-voice');
 const voiceNote = document.querySelector('[data-voice-note]');
-
-const isIPadOS = () => /iPad/.test(navigator.userAgent)
-    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
-    || window.matchMedia('(display-mode: fullscreen)').matches
-    || window.navigator.standalone === true;
 
 const parseIPadOSVersion = () => {
     const match = navigator.userAgent.match(/OS (\d+)[_\.](\d+)/i);
@@ -19,18 +13,9 @@ const parseIPadOSVersion = () => {
     return { major, minor, raw: `${major}.${minor}` };
 };
 
-const setDataset = (key, value) => {
-    if (!root) return;
-    if (value === null || value === undefined) {
-        delete root.dataset[key];
-    } else {
-        root.dataset[key] = String(value);
-    }
-};
-
 const updateStandaloneState = () => {
     const standalone = isStandalone();
-    setDataset('standalone', standalone ? 'true' : 'false');
+    setRootDataset('standalone', standalone ? 'true' : 'false');
     return standalone;
 };
 
@@ -45,7 +30,7 @@ const updateVoiceSupport = () => {
             ? 'Spoken coach tips use built-in iPad voices and work offline.'
             : 'Voice coach is unavailable on this device.';
     }
-    setDataset('voiceCoach', supported ? 'true' : 'false');
+    setRootDataset('voiceCoach', supported ? 'true' : 'false');
 };
 
 const updateStatus = () => {
@@ -62,17 +47,17 @@ const updateStatus = () => {
 
 const init = () => {
     const ipados = isIPadOS();
-    setDataset('platform', ipados ? 'ipados' : 'other');
+    setRootDataset('platform', ipados ? 'ipados' : 'other');
 
     const version = parseIPadOSVersion();
     if (version) {
-        setDataset('ipadosMajor', version.major);
-        setDataset('ipadosMinor', version.minor);
+        setRootDataset('ipadosMajor', version.major);
+        setRootDataset('ipadosMinor', version.minor);
     }
 
-    setDataset('fsAccess', 'showOpenFilePicker' in window ? 'true' : 'false');
-    setDataset('share', navigator.share ? 'true' : 'false');
-    setDataset('badge', 'setAppBadge' in navigator ? 'true' : 'false');
+    setRootDataset('fsAccess', 'showOpenFilePicker' in window ? 'true' : 'false');
+    setRootDataset('share', navigator.share ? 'true' : 'false');
+    setRootDataset('badge', 'setAppBadge' in navigator ? 'true' : 'false');
 
     updateStandaloneState();
     updateStatus();

@@ -4,14 +4,12 @@ import { isSoundEnabled } from '../utils/sound-state.js';
 import { clamp } from '../utils/math.js';
 import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 import { RECORDINGS_UPDATED, SOUNDS_CHANGE } from '../utils/event-names.js';
+import { createAudioController } from '../utils/audio-utils.js';
 
 const listEl = document.querySelector('[data-parent-recordings]');
 const statusEl = document.querySelector('[data-parent-recordings-status]');
 const clearButton = document.querySelector('[data-parent-clear-recordings]');
-const playbackAudio = new Audio();
-let playbackUrl = '';
-
-playbackAudio.preload = 'none';
+const { audio: playbackAudio, stop: stopPlayback, setUrl: setPlaybackUrl } = createAudioController();
 
 const updateStatus = (message) => {
     if (statusEl) statusEl.textContent = message;
@@ -44,18 +42,6 @@ const resolveRecordingSource = async (recording) => {
         return { url: URL.createObjectURL(blob), revoke: true };
     }
     return null;
-};
-
-const stopPlayback = () => {
-    if (!playbackAudio) return;
-    if (!playbackAudio.paused) {
-        playbackAudio.pause();
-        playbackAudio.currentTime = 0;
-    }
-    if (playbackUrl) {
-        URL.revokeObjectURL(playbackUrl);
-        playbackUrl = '';
-    }
 };
 
 const buildRow = (recording, index) => {
@@ -121,11 +107,11 @@ const buildRow = (recording, index) => {
             const source = await resolveRecordingSource(recording);
             if (!source) return;
             stopPlayback();
+            setPlaybackUrl(source.revoke ? source.url : '');
             playbackAudio.src = source.url;
             if (!isSoundEnabled()) return;
             playbackAudio.play().catch(() => {});
             if (source.revoke) {
-                playbackUrl = source.url;
                 playbackAudio.addEventListener('ended', () => stopPlayback(), { once: true });
             }
         });

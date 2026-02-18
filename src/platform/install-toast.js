@@ -7,8 +7,9 @@
  * - Adds a pulsing dot on the More nav button while install is available
  */
 
-import { getJSON, setJSON } from '../persistence/storage.js';
 import { INSTALL_TOAST_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
+import { isStandalone } from './platform-utils.js';
+import { markDismissed, wasDismissed } from './dismiss-helpers.js';
 const SHOW_DELAY = 5000;
 const AUTO_DISMISS = 8000;
 
@@ -17,21 +18,7 @@ const actionBtn = toast?.querySelector('[data-install-toast-action]');
 const closeBtn = toast?.querySelector('.install-toast-close');
 const moreBtn = document.querySelector('[popovertarget="more-menu"]');
 
-const isStandalone = () =>
-    window.matchMedia('(display-mode: standalone)').matches
-    || window.matchMedia('(display-mode: fullscreen)').matches
-    || window.navigator.standalone === true;
-
 const isAutomated = () => Boolean(navigator.webdriver);
-
-const markDismissed = async () => {
-    await setJSON(DISMISS_KEY, { dismissed: true, timestamp: Date.now() });
-};
-
-const wasDismissed = async () => {
-    const data = await getJSON(DISMISS_KEY);
-    return Boolean(data?.dismissed);
-};
 
 let autoDismissTimer = null;
 
@@ -61,7 +48,7 @@ const dismiss = async (persist = true) => {
     }
 
     if (persist) {
-        await markDismissed();
+        await markDismissed(DISMISS_KEY);
         removePulsingDot();
     }
 };
@@ -106,7 +93,7 @@ closeBtn?.addEventListener('click', () => dismiss(true));
 // Init
 const init = async () => {
     if (isAutomated() || isStandalone()) return;
-    if (await wasDismissed()) return;
+    if (await wasDismissed(DISMISS_KEY)) return;
 
     addPulsingDot();
     setTimeout(show, SHOW_DELAY);

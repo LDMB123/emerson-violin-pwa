@@ -1,9 +1,7 @@
-const SW_PATH = './sw.js';
-const IPADOS_UA = /iPad/;
-const isIPadOS = IPADOS_UA.test(navigator.userAgent)
-    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+import { isIPadOS } from './platform-utils.js';
 
-const MIN_REFRESH_INTERVAL = isIPadOS ? 3 * 60 * 1000 : 10 * 60 * 1000;
+const SW_PATH = './sw.js';
+const MIN_REFRESH_INTERVAL = isIPadOS() ? 3 * 60 * 1000 : 10 * 60 * 1000;
 let lastRefresh = 0;
 
 const waitForLoad = () => new Promise((resolve) => {

@@ -3,6 +3,7 @@ import {
     shouldRetryPersist,
     formatBytes,
     isStandalone,
+    setRootDataset,
     getViewId,
     viewAllowsWake,
     getPreferredOrientation,
@@ -22,7 +23,6 @@ const shareButton = document.querySelector('[data-share-summary]');
 const shareStatusEl = document.querySelector('[data-share-status]');
 const soundToggle = document.querySelector('#setting-sounds');
 const rootStyle = document.documentElement?.style;
-const root = document.documentElement;
 const installStatusEl = document.querySelector('[data-install-status]');
 
 const loadPersistRequest = () => {
@@ -41,16 +41,6 @@ const savePersistRequest = (state) => {
         // Ignore storage failures
     }
 };
-
-const setRootDataset = (key, value) => {
-    if (!root) return;
-    if (value === null || value === undefined) {
-        delete root.dataset[key];
-        return;
-    }
-    root.dataset[key] = String(value);
-};
-
 
 const requestPersistentStorage = async (reason) => {
     if (!navigator.storage?.persist) return false;
@@ -526,18 +516,16 @@ const bindSoundToggle = () => {
 };
 
 const updateInstallState = () => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-        || window.matchMedia('(display-mode: fullscreen)').matches
-        || window.navigator.standalone === true;
+    const standalone = isStandalone();
     if (document.documentElement) {
-        document.documentElement.dataset.installed = isStandalone ? 'true' : 'false';
+        document.documentElement.dataset.installed = standalone ? 'true' : 'false';
     }
     if (installStatusEl) {
-        installStatusEl.textContent = isStandalone
+        installStatusEl.textContent = standalone
             ? 'Install status: Installed on Home Screen.'
             : 'Install status: Use Add to Home Screen for the best offline experience.';
     }
-    if (isStandalone) {
+    if (standalone) {
         updateStorageStatus(true);
         maybeAutoPersist('installed');
     }

@@ -244,11 +244,6 @@ export const refreshRecommendationsCache = async () => {
     return recommendations;
 };
 
-export const getCachedRecommendations = async () => {
-    const cached = await readCache();
-    return cached?.recommendations || null;
-};
-
 export const getLearningRecommendations = async ({ allowCached = true } = {}) => {
     if (allowCached) {
         const cached = await readCache();
