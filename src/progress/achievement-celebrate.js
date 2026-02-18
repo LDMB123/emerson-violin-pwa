@@ -21,10 +21,8 @@ const FALLBACK_EMOJI = {
     all_games:     '🎮',
 };
 
-const voiceToggle = document.querySelector('#setting-voice');
-
 const canSpeak = () =>
-    Boolean(voiceToggle?.checked)
+    Boolean(document.querySelector('#setting-voice')?.checked)
     && 'speechSynthesis' in window
     && 'SpeechSynthesisUtterance' in window;
 
