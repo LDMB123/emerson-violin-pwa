@@ -6,17 +6,7 @@ const MIN_INTERVAL = deviceMemory <= 4 ? 4 * 60 * 1000 : 2 * 60 * 1000;
 let lastRun = 0;
 let pending = false;
 
-const scheduleTask = (task) => {
-    if (globalThis.scheduler?.postTask) {
-        globalThis.scheduler.postTask(task, { priority: 'background' });
-        return;
-    }
-    if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(() => task(), { timeout: 1200 });
-        return;
-    }
-    window.setTimeout(task, 200);
-};
+const scheduleTask = (task) => window.setTimeout(task, 200);
 
 const scheduleRefresh = (reason) => {
     const now = Date.now();

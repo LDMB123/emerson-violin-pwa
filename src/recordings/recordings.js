@@ -29,17 +29,7 @@ const getSongTitle = (songId) => {
     return title || songId || 'Practice Clip';
 };
 
-const scheduleIdle = (task) => {
-    if (globalThis.scheduler?.postTask) {
-        globalThis.scheduler.postTask(task, { priority: 'background' });
-        return;
-    }
-    if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(() => task(), { timeout: 1200 });
-        return;
-    }
-    window.setTimeout(task, 400);
-};
+const scheduleIdle = (task) => window.setTimeout(task, 400);
 
 const createBlobKey = (songId) => createRecordingBlobKey(songId);
 
