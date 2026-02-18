@@ -1,6 +1,6 @@
 import { whenReady } from '../utils/dom-ready.js';
-import { setJSON, removeJSON } from '../persistence/storage.js';
-import { loadEvents } from '../persistence/loaders.js';
+import { removeJSON } from '../persistence/storage.js';
+import { loadEvents, saveEvents } from '../persistence/loaders.js';
 import { getCore } from '../wasm/load-core.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { minutesForInput, toTrackerTimestamp, formatRecentScore, coachMessageFor, buildRadarPoints } from './progress-utils.js';
@@ -67,10 +67,6 @@ const getWeeklyGoalTarget = () => {
         || '90';
     const parsed = Number.parseInt(String(raw).trim(), 10);
     return Number.isNaN(parsed) || parsed <= 0 ? 90 : parsed;
-};
-
-const saveEvents = async (events) => {
-    await setJSON(EVENT_KEY, events);
 };
 
 const updateProgressTrack = (el, percent, text) => {

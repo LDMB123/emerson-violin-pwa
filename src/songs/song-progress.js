@@ -1,14 +1,8 @@
 import { whenReady } from '../utils/dom-ready.js';
-import { setJSON } from '../persistence/storage.js';
-import { loadEvents } from '../persistence/loaders.js';
+import { loadEvents, saveEvents } from '../persistence/loaders.js';
 import { clamp, todayDay } from '../utils/math.js';
-import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
 import { SONG_RECORDED } from '../utils/event-names.js';
 import { getSongIdFromViewId, parseDuration } from '../utils/recording-export.js';
-
-const saveEvents = async (events) => {
-    await setJSON(EVENT_KEY, events);
-};
 
 const tierFromAccuracy = (accuracy) => {
     if (accuracy >= 95) return 100;
