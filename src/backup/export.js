@@ -1,5 +1,5 @@
 import { getJSON, setJSON, getBlob, setBlob, removeBlob } from '../persistence/storage.js';
-import { dataUrlToBlob, blobToDataUrl, createBlobKey, downloadFile } from '../utils/recording-export.js';
+import { dataUrlToBlob, blobToDataUrl, createBlobKey, downloadFile, tryShareFile } from '../utils/recording-export.js';
 import {
     EVENTS_KEY as EVENT_KEY,
     UI_STATE_KEY as UI_KEY,
@@ -81,22 +81,6 @@ const buildPayload = async () => {
     };
 };
 
-const shareFile = async (file) => {
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-            await navigator.share({
-                title: 'Panda Violin Backup',
-                text: 'Local backup file for Panda Violin.',
-                files: [file],
-            });
-            return true;
-        } catch {
-            return false;
-        }
-    }
-    return false;
-};
-
 const handleExport = async () => {
     updateStatus('Preparing backup…');
     try {
@@ -104,7 +88,10 @@ const handleExport = async () => {
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const file = new File([blob], 'panda-violin-backup.json', { type: 'application/json' });
 
-        const shared = await shareFile(file);
+        const shared = await tryShareFile(file, {
+            title: 'Panda Violin Backup',
+            text: 'Local backup file for Panda Violin.',
+        });
         if (!shared) {
             downloadFile(file);
         }

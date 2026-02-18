@@ -14,6 +14,7 @@ npm run dev    # Development server
 npm run build  # Production build
 npm run lint   # Lint source files
 npm run preview # Preview build
+npm run audit:full # Full local quality gate (lint + dead code + deps + tests + build)
 ```
 
 ## Project Overview
@@ -34,6 +35,10 @@ npm run dev      # Start development
 npm run build    # Build for production
 npm run test     # Run unit tests
 npm run lint     # Run linter
+npm run lint:all # Lint src + scripts + tests
+npm run audit:deadcode # Unused file/export/dependency scan
+npm run audit:deps # Duplicate dependency scan with allowlist
+npm run audit:full # Full pre-handoff/pre-merge quality gate
 ```
 
 For QA checks:
@@ -53,7 +58,19 @@ npx playwright test tests/e2e
 
 ## Architecture
 
-Check package.json and src/ directory for current structure.
+- App shell + nav in `index.html`, view content injected into `#main-content`
+- Lazy view HTML loaded from `public/views/**` via `src/views/view-loader.js`
+- View visibility is controlled with `.view.is-active` (JS-applied on render)
+- Persistence is IndexedDB-first (`src/persistence/storage.js`) with localStorage fallback
+
+## Worktree Notes (2026-02-18)
+
+- E2E runs should account for onboarding-first behavior on fresh contexts.
+- Audio source rewriting now occurs after each view render in `showView()`.
+- Idle module imports are staggered with `requestIdleCallback` fallback to reduce startup contention.
+- Sharing fallback logic is centralized via `tryShareFile()` in `src/utils/recording-export.js`.
+- Known transitive duplicate versions are intentionally allowlisted in `scripts/audit-dependency-duplicates.mjs`.
+- CI quality guard is defined in `.github/workflows/quality.yml`.
 
 ## Report Writing Standards
 

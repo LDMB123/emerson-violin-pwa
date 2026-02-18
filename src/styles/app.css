@@ -545,6 +545,7 @@
     }
 
     /* Target-based visibility */
+    .view.is-active,
     .view:target {
         display: block;
         opacity: 1;
@@ -564,6 +565,7 @@
                 view-transition-name: none;
             }
 
+            .view.is-active,
             .view:target {
                 view-transition-name: view;
             }
@@ -1410,6 +1412,7 @@
         min-width: 60px;
         touch-action: manipulation;
         min-height: 52px;
+        color: var(--color-brand-brown);
     }
 
     /* CSS-first nav active state based on :target */

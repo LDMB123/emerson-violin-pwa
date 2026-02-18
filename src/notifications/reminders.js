@@ -1,4 +1,5 @@
 import { PERSIST_APPLIED } from '../utils/event-names.js';
+import { downloadFile, tryShareFile } from '../utils/recording-export.js';
 
 const notificationToggle = document.querySelector('#setting-notifications');
 const reminderToggle = document.querySelector('#parent-reminder-toggle');
@@ -51,25 +52,15 @@ const shareICS = async () => {
     const ics = buildReminderICS();
     const file = new File([ics], 'panda-violin-reminder.ics', { type: 'text/calendar' });
 
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-            await navigator.share({
-                title: 'Panda Violin Practice Reminder',
-                text: 'Add a daily practice reminder to your calendar.',
-                files: [file],
-            });
-            return true;
-        } catch {
-            // Fall back to download below.
-        }
+    const shared = await tryShareFile(file, {
+        title: 'Panda Violin Practice Reminder',
+        text: 'Add a daily practice reminder to your calendar.',
+    });
+    if (shared) {
+        return true;
     }
 
-    const url = URL.createObjectURL(file);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = file.name;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadFile(file);
     return true;
 };
 

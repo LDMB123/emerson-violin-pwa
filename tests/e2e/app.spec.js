@@ -1,13 +1,30 @@
 import { test, expect } from '@playwright/test';
 
+const openHomeView = async (page) => {
+    await page.goto('/');
+    await page.waitForSelector('#main-content .view', { timeout: 10000 });
+
+    if (await page.locator('#view-onboarding').isVisible().catch(() => false)) {
+        const onboardingSkip = page.locator('#onboarding-skip');
+        await onboardingSkip.click();
+        await page.waitForURL('**/#view-home');
+    }
+
+    if (!page.url().includes('#view-home')) {
+        await page.goto('/#view-home');
+    }
+
+    await expect(page.locator('#view-home')).toBeVisible({ timeout: 10000 });
+};
+
 test.describe('Panda Violin PWA', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/');
+        await openHomeView(page);
     });
 
     test('should load home page with correct title and elements', async ({ page }) => {
         await expect(page).toHaveTitle(/Panda Violin/);
-        await expect(page.locator('h1')).toContainText('Panda Violin');
+        await expect(page.locator('.home-title')).toContainText('Panda Violin');
         // Check for mascot
         await expect(page.locator('.home-mascot')).toBeVisible();
         // Check for nav items
@@ -69,6 +86,7 @@ test.describe('Panda Violin PWA', () => {
 
     test('should load song library and open a song sheet', async ({ page }) => {
         await page.goto('/#view-songs');
+        await expect(page.locator('#view-songs')).toBeVisible();
         await expect(page.locator('.song-card').first()).toBeVisible();
 
         // Click a song
@@ -95,7 +113,7 @@ test.describe('Panda Violin PWA', () => {
         // We can't easily test the native install prompt, but we can check if our component is initialized
         // or simulate the event if possible.
         // For now, let's just ensure the component code doesn't crash the page.
-        const banner = page.locator('.install-banner');
+        await expect(page.locator('main')).toBeVisible();
         // It's hidden by default if not strictly installable criteria met or already installed
         // forcing it might be tricky without mocking.
         // We'll skip asserting visibility for now, but ensure no console errors.

@@ -65,8 +65,25 @@ const loadModule = (key) => {
     return promise;
 };
 
-const loadIdle = (key) => {
-    window.setTimeout(() => loadModule(key), 300);
+const queueIdleTask = (task, delay = 0) => {
+    const run = () => {
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(() => task(), { timeout: 1500 });
+            return;
+        }
+        window.setTimeout(() => task(), 0);
+    };
+
+    if (delay > 0) {
+        window.setTimeout(run, delay);
+        return;
+    }
+
+    run();
+};
+
+const loadIdle = (key, delay = 0) => {
+    queueIdleTask(() => loadModule(key), delay);
 };
 
 const getCurrentViewId = () => {
@@ -89,6 +106,13 @@ const skeletonHTML = `<div class="skeleton-view" aria-hidden="true">
     <div class="skeleton-bar skeleton-card-sm"></div>
 </div>`;
 
+const activateLoadedView = (container) => {
+    container.querySelectorAll('.view').forEach((view) => {
+        view.classList.add('is-active');
+        view.removeAttribute('hidden');
+    });
+};
+
 const showView = async (viewId, enhanceCallback) => {
     if (!viewId) return;
 
@@ -107,6 +131,8 @@ const showView = async (viewId, enhanceCallback) => {
 
         const html = await viewLoader.load(viewPath);
         container.innerHTML = html;
+        activateLoadedView(container);
+        rewriteAudioSources();
 
         // Re-enhance any toggle labels in the new view
         if (enhanceCallback) {
@@ -147,16 +173,16 @@ const loadEagerModules = () => {
 };
 
 const loadIdleModules = () => {
-    loadIdle('installToast');
-    loadIdle('installGuide');
-    loadIdle('installGuideClose');
-    loadIdle('mlScheduler');
-    loadIdle('mlAccelerator');
-    loadIdle('offlineIntegrity');
-    loadIdle('offlineMode');
-    loadIdle('reminders');
-    loadIdle('badging');
-    loadIdle('audioPlayer');
+    loadIdle('installToast', 0);
+    loadIdle('installGuide', 60);
+    loadIdle('installGuideClose', 120);
+    loadIdle('mlScheduler', 180);
+    loadIdle('mlAccelerator', 240);
+    loadIdle('offlineIntegrity', 300);
+    loadIdle('offlineMode', 360);
+    loadIdle('reminders', 420);
+    loadIdle('badging', 480);
+    loadIdle('audioPlayer', 540);
 };
 
 const enhanceToggleLabels = () => {
@@ -306,10 +332,11 @@ const setupNavigation = (ctx) => {
 };
 
 const boot = async () => {
-    rewriteAudioSources();
-    loadEagerModules();
-    await loadModule('persist');
-    loadIdleModules();
+    const initialViewId = await resolveInitialView();
+    await showView(initialViewId, enhanceToggleLabels);
+    if (initialViewId === 'view-onboarding') {
+        loadModule('onboarding');
+    }
 
     const ctx = {
         navItems: Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]')),
@@ -319,16 +346,12 @@ const boot = async () => {
         updateNavState: null,
     };
 
-    const initialViewId = await resolveInitialView();
-    await showView(initialViewId, enhanceToggleLabels);
-    if (initialViewId === 'view-onboarding') {
-        loadModule('onboarding');
-    }
-
     registerServiceWorker();
-
     setupNavigation(ctx);
     setupPopoverSystem(ctx);
+    loadEagerModules();
+    loadModule('persist');
+    loadIdleModules();
 
     window.addEventListener('hashchange', async () => {
         const viewId = getCurrentViewId() || 'view-home';

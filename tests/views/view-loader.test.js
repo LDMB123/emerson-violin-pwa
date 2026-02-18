@@ -37,11 +37,9 @@ describe('ViewLoader', () => {
   });
 
   it('should prevent duplicate fetches for same view', async () => {
-    let resolveCount = 0;
     global.fetch.mockImplementation(() => {
       return new Promise(resolve => {
         setTimeout(() => {
-          resolveCount++;
           resolve({
             ok: true,
             text: async () => '<div>Slow</div>'
