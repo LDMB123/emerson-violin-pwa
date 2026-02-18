@@ -115,6 +115,10 @@ const { bind } = createGame({
             setStatus('Paused while app is in the background.');
         };
 
+        gameState._onDeactivate = () => {
+            pauseTimer();
+        };
+
         const resumeTimer = () => {
             if (!paused) return;
             if (!runToggle?.checked) return;

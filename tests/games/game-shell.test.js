@@ -81,4 +81,27 @@ describe('createGame play-again integration', () => {
         expect(firstReport.dispose).toHaveBeenCalledTimes(1);
         expect(secondReport.dispose).not.toHaveBeenCalled();
     });
+
+    it('runs game-specific deactivate hook when leaving the game hash', () => {
+        const id = 'unit-d';
+        const onDeactivate = vi.fn();
+        mountStage(id);
+        window.location.hash = '#view-game-unit-d';
+
+        const game = createGame({
+            id,
+            onBind: (_stage, _difficulty, { gameState }) => {
+                gameState._onDeactivate = onDeactivate;
+                gameState.score = 10;
+            },
+            computeAccuracy: () => 90
+        });
+
+        game.bind();
+
+        window.location.hash = '#view-home';
+        window.dispatchEvent(new Event('hashchange'));
+
+        expect(onDeactivate).toHaveBeenCalledTimes(1);
+    });
 });
