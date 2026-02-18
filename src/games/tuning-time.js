@@ -1,8 +1,7 @@
 import { createGame } from './game-shell.js';
-import { markChecklist, bindTap, readLiveNumber } from './shared.js';
+import { markChecklist, bindTap, readLiveNumber, createSoundsChangeBinding } from './shared.js';
 import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const updateTuningTime = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-tuning-time input[id^="tt-step-"]'));
@@ -13,7 +12,7 @@ const updateTuningTime = () => {
     if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 25);
 };
 
-let _soundsHandler = null;
+const bindSoundsChange = createSoundsChangeBinding();
 
 const { bind } = createGame({
     id: 'tuning-time',
@@ -108,11 +107,7 @@ const { bind } = createGame({
                 statusEl.textContent = 'Sounds are off. Enable Sounds to hear tones.';
             }
         };
-        if (_soundsHandler) {
-            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
-        }
-        _soundsHandler = soundsHandler;
-        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
+        bindSoundsChange(soundsHandler);
     },
 });
 

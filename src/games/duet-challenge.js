@@ -7,9 +7,9 @@ import {
     playToneSequence,
     buildNoteSequence,
     updateScoreCombo,
+    createSoundsChangeBinding,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const updateDuetChallenge = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-duet-challenge input[id^="dc-step-"]'));
@@ -26,7 +26,7 @@ const updateDuetChallenge = () => {
     }
 };
 
-let _soundsHandler = null;
+const bindSoundsChange = createSoundsChangeBinding();
 
 const { bind } = createGame({
     id: 'duet-challenge',
@@ -240,11 +240,7 @@ const { bind } = createGame({
             }
             updateSoundState();
         };
-        if (_soundsHandler) {
-            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
-        }
-        _soundsHandler = soundsHandler;
-        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
+        bindSoundsChange(soundsHandler);
 
         updateSoundState();
         setButtonsDisabled(true);

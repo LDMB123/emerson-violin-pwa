@@ -8,9 +8,9 @@ import {
     getTonePlayer,
     stopTonePlayer,
     buildNoteSequence,
+    createSoundsChangeBinding,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const updateMelodyMaker = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-melody-maker input[id^="mm-step-"]'));
@@ -21,7 +21,7 @@ const updateMelodyMaker = () => {
     if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 30);
 };
 
-let _soundsHandler = null;
+const bindSoundsChange = createSoundsChangeBinding();
 
 const { bind } = createGame({
     id: 'melody-maker',
@@ -231,11 +231,7 @@ const { bind } = createGame({
             }
             updateSoundState();
         };
-        if (_soundsHandler) {
-            document.removeEventListener(SOUNDS_CHANGE, _soundsHandler);
-        }
-        _soundsHandler = soundsHandler;
-        document.addEventListener(SOUNDS_CHANGE, soundsHandler);
+        bindSoundsChange(soundsHandler);
 
         updateTrack();
         updateScore();
