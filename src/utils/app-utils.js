@@ -67,7 +67,7 @@ export const getModulesForView = (viewId) => {
     }
 
     if (shouldLoadGames(viewId)) {
-        modules.push('gameMetrics', 'gameEnhancements');
+        modules.push('gameMetrics', 'gameEnhancements', 'gameComplete');
     }
 
     if (shouldLoadProgress(viewId)) {
