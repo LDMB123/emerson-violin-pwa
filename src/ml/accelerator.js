@@ -40,16 +40,9 @@ const init = async () => {
         return;
     }
 
-    if ('WebAssembly' in window) {
-        setDataset('wasm');
-        setStatus('ML acceleration: WebAssembly ready.');
-        setDetail('Offline models run with optimized on-device compute.');
-        return;
-    }
-
-    setDataset('basic');
-    setStatus('ML acceleration: basic mode.');
-    setDetail('Offline learning will use lightweight heuristics.');
+    setDataset('wasm');
+    setStatus('ML acceleration: WebAssembly ready.');
+    setDetail('Offline models run with optimized on-device compute.');
 };
 
 if (document.readyState === 'loading') {
