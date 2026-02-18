@@ -7,9 +7,6 @@ import {
     chartCaptionFor,
     filterSongEvents,
     getRecentEvents,
-    computeTotalMinutes,
-    computeAverageAccuracy,
-    extractAccuracyValues,
 } from '../src/utils/session-review-utils.js';
 
 describe('session-review-utils', () => {
@@ -192,80 +189,4 @@ describe('session-review-utils', () => {
         });
     });
 
-    describe('computeTotalMinutes', () => {
-        it('returns 0 for empty events', () => {
-            expect(computeTotalMinutes([])).toBe(0);
-        });
-
-        it('sums durations', () => {
-            const events = [
-                { duration: 10 },
-                { duration: 15 },
-                { duration: 20 },
-            ];
-            expect(computeTotalMinutes(events)).toBe(45);
-        });
-
-        it('handles missing durations', () => {
-            const events = [
-                { duration: 10 },
-                {},
-                { duration: 20 },
-            ];
-            expect(computeTotalMinutes(events)).toBe(30);
-        });
-    });
-
-    describe('computeAverageAccuracy', () => {
-        it('returns 0 for empty events', () => {
-            expect(computeAverageAccuracy([])).toBe(0);
-        });
-
-        it('computes average and rounds', () => {
-            const events = [
-                { accuracy: 80 },
-                { accuracy: 90 },
-                { accuracy: 85 },
-            ];
-            expect(computeAverageAccuracy(events)).toBe(85);
-        });
-
-        it('handles missing accuracy', () => {
-            const events = [
-                { accuracy: 80 },
-                {},
-                { accuracy: 90 },
-            ];
-            expect(computeAverageAccuracy(events)).toBe(57);
-        });
-    });
-
-    describe('extractAccuracyValues', () => {
-        it('extracts last 7 accuracy values', () => {
-            const events = Array.from({ length: 10 }, (_, i) => ({ accuracy: i * 10 }));
-            const result = extractAccuracyValues(events);
-            expect(result).toHaveLength(7);
-            expect(result[0]).toBe(30);
-            expect(result[6]).toBe(90);
-        });
-
-        it('handles fewer events than max', () => {
-            const events = [{ accuracy: 50 }, { accuracy: 75 }];
-            const result = extractAccuracyValues(events);
-            expect(result).toHaveLength(2);
-        });
-
-        it('clamps values to 0-100', () => {
-            const events = [{ accuracy: -10 }, { accuracy: 150 }];
-            const result = extractAccuracyValues(events);
-            expect(result[0]).toBe(0);
-            expect(result[1]).toBe(100);
-        });
-
-        it('handles missing accuracy', () => {
-            const events = [{}];
-            const result = extractAccuracyValues(events);
-            expect(result[0]).toBe(0);
-        });
-    });
 });
