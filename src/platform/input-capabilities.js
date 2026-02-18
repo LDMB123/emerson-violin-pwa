@@ -1,4 +1,5 @@
-const root = document.documentElement;
+import { setRootDataset } from './platform-utils.js';
+
 const statusEl = document.querySelector('[data-input-status]');
 
 const inputLabels = {
@@ -10,28 +11,19 @@ const inputLabels = {
 const setStatus = (type) => {
     if (!statusEl) return;
     const label = inputLabels[type] || 'Touch';
-    statusEl.textContent = `Input: ${label}.`; 
-};
-
-const setDataset = (key, value) => {
-    if (!root) return;
-    if (value === null || value === undefined) {
-        delete root.dataset[key];
-    } else {
-        root.dataset[key] = String(value);
-    }
+    statusEl.textContent = `Input: ${label}.`;
 };
 
 const updateHoverCapability = () => {
     const hover = window.matchMedia('(hover: hover)').matches;
     const fine = window.matchMedia('(pointer: fine)').matches;
-    setDataset('hover', hover ? 'true' : 'false');
-    setDataset('pointer', fine ? 'fine' : 'coarse');
+    setRootDataset('hover', hover ? 'true' : 'false');
+    setRootDataset('pointer', fine ? 'fine' : 'coarse');
 };
 
 const updateInputType = (type) => {
     const normalized = type || 'touch';
-    setDataset('input', normalized);
+    setRootDataset('input', normalized);
     setStatus(normalized);
 };
 

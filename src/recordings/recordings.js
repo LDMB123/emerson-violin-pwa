@@ -4,7 +4,8 @@ import {
     getSongIdFromViewId,
     getSongIdFromHash,
     createBlobKey as createRecordingBlobKey,
-} from '../utils/recordings-utils.js';
+    parseDuration,
+} from '../utils/recording-export.js';
 import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 import { RECORDINGS_UPDATED } from '../utils/event-names.js';
 const MAX_RECORDINGS = 4;
@@ -26,13 +27,6 @@ const getSongTitle = (songId) => {
     const view = document.getElementById(`view-song-${songId}`);
     const title = view?.querySelector('h2')?.textContent?.trim();
     return title || songId || 'Practice Clip';
-};
-
-const parseDuration = (sheet) => {
-    if (!sheet) return 0;
-    const raw = sheet.style.getPropertyValue('--song-duration') || getComputedStyle(sheet).getPropertyValue('--song-duration');
-    const value = Number.parseFloat(raw);
-    return Number.isNaN(value) ? 0 : value;
 };
 
 const scheduleIdle = (task) => {

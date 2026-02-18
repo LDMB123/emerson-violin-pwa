@@ -1,25 +1,10 @@
-import { getJSON, setJSON } from '../persistence/storage.js';
 import { INSTALL_GUIDE_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
+import { isIPadOS, isStandalone, setRootDataset } from './platform-utils.js';
+import { markDismissed, wasDismissed } from './dismiss-helpers.js';
 const helpButton = document.querySelector('[data-install-help]');
 let lastFocused = null;
 
-const isIPadOS = () => /iPad/.test(navigator.userAgent)
-    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
-    || window.matchMedia('(display-mode: fullscreen)').matches
-    || window.navigator.standalone === true;
-
 const isAutomated = () => Boolean(navigator.webdriver);
-
-const markDismissed = async () => {
-    await setJSON(DISMISS_KEY, { dismissed: true, timestamp: Date.now() });
-};
-
-const wasDismissed = async () => {
-    const data = await getJSON(DISMISS_KEY);
-    return Boolean(data?.dismissed);
-};
 
 const buildGuide = () => {
     const backdrop = document.createElement('div');
@@ -78,7 +63,7 @@ const buildGuide = () => {
 
     const dismiss = async (persist) => {
         if (persist) {
-            await markDismissed();
+            await markDismissed(DISMISS_KEY);
         }
         backdrop.remove();
         document.documentElement.classList.remove('install-guide-open');
@@ -137,7 +122,7 @@ const showGuide = async (force = false) => {
         return;
     }
 
-    if (!force && await wasDismissed()) return;
+    if (!force && await wasDismissed(DISMISS_KEY)) return;
     if (document.querySelector('.install-guide-backdrop')) return;
 
     lastFocused = document.activeElement;
@@ -159,7 +144,7 @@ const init = () => {
         return;
     }
 
-    document.documentElement.dataset.platform = 'ipados';
+    setRootDataset('platform', 'ipados');
 
     if (helpButton) {
         helpButton.addEventListener('click', () => {

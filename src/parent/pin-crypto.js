@@ -45,7 +45,7 @@ const hexToBuffer = (hex) => {
  * @param {Uint8Array} salt - Random salt (16 bytes)
  * @returns {Promise<string>} Hex-encoded hash
  */
-export const hashPinSecure = async (pin, salt) => {
+const hashPinSecure = async (pin, salt) => {
     const encoder = new TextEncoder();
     const pinData = encoder.encode(pin);
 
@@ -106,49 +106,4 @@ export const verifyPin = async (pin, storedHash, storedSalt) => {
         console.error('[PinCrypto] Verification error:', error);
         return false;
     }
-};
-
-/**
- * Migrate old SHA-256 hash to PBKDF2
- *
- * @param {string} pin - Plain PIN (if available for migration)
- * @returns {Promise<{hash: string, salt: string}>}
- */
-export const migrateToSecureHash = async (pin) => {
-    return createPinHash(pin);
-};
-
-/**
- * Check if Web Crypto API is available
- */
-export const supportsWebCrypto = () => {
-    return 'crypto' in window && 'subtle' in window.crypto;
-};
-
-/**
- * Fallback: Simple SHA-256 hash (for legacy support)
- * Only use if PBKDF2 unavailable
- */
-export const hashPinLegacy = async (pin) => {
-    if (!supportsWebCrypto()) {
-        throw new Error('Web Crypto API not available');
-    }
-
-    const data = new TextEncoder().encode(pin);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    return bufferToHex(hashBuffer);
-};
-
-/**
- * Get recommended security settings
- */
-export const getSecurityInfo = () => {
-    return {
-        algorithm: 'PBKDF2',
-        hash: 'SHA-256',
-        iterations: ITERATIONS,
-        saltLength: SALT_LENGTH,
-        keyLength: 256,
-        supported: supportsWebCrypto(),
-    };
 };

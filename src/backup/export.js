@@ -1,6 +1,6 @@
 import { getJSON, setJSON, getBlob, setBlob, removeBlob, supportsIndexedDB } from '../persistence/storage.js';
 import { dataUrlToBlob, blobToDataUrl } from '../utils/recording-export.js';
-import { createBlobKey } from '../utils/recordings-utils.js';
+import { createBlobKey } from '../utils/recording-export.js';
 import {
     EVENTS_KEY as EVENT_KEY,
     UI_STATE_KEY as UI_KEY,

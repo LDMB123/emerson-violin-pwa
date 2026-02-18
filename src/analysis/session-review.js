@@ -4,7 +4,7 @@ import { SOUNDS_CHANGE, RECORDINGS_UPDATED } from '../utils/event-names.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { todayDay } from '../utils/math.js';
+import { clamp, todayDay } from '../utils/math.js';
 import {
     starString,
     coachMessageFor,
@@ -13,6 +13,7 @@ import {
     filterSongEvents,
     getRecentEvents,
 } from '../utils/session-review-utils.js';
+import { createAudioController } from '../utils/audio-utils.js';
 
 let wasmModule = null;
 const getCore = async () => {
@@ -35,12 +36,9 @@ const coachMessageEl = document.querySelector('[data-analysis="coach-message"]')
 const coachAltEl = document.querySelector('[data-analysis="coach-message-alt"]');
 const recordingEls = Array.from(document.querySelectorAll('[data-analysis="recording"]'));
 const skillEls = Array.from(document.querySelectorAll('[data-analysis="skill"]'));
-const playbackAudio = new Audio();
+const { audio: playbackAudio, stop: stopPlayback, setUrl: setPlaybackUrl } = createAudioController();
 let soundListenerBound = false;
-let playbackUrl = '';
 let currentRecordings = [];
-
-playbackAudio.preload = 'none';
 
 const updatePlaybackButtons = (enabled) => {
     recordingEls.forEach((el) => {
@@ -53,18 +51,6 @@ const updatePlaybackButtons = (enabled) => {
 const syncPlaybackSound = (enabled = isSoundEnabled()) => {
     playbackAudio.muted = !enabled;
     updatePlaybackButtons(enabled);
-};
-
-const stopPlayback = () => {
-    if (!playbackAudio) return;
-    if (!playbackAudio.paused) {
-        playbackAudio.pause();
-        playbackAudio.currentTime = 0;
-    }
-    if (playbackUrl) {
-        URL.revokeObjectURL(playbackUrl);
-        playbackUrl = '';
-    }
 };
 
 const loadEvents = async () => {
@@ -173,9 +159,9 @@ const bindRecordingPlayback = () => {
             const source = await resolveRecordingSource(recording);
             if (!source) return;
             stopPlayback();
+            setPlaybackUrl(source.revoke ? source.url : '');
             playbackAudio.src = source.url;
             if (source.revoke) {
-                playbackUrl = source.url;
                 playbackAudio.addEventListener('ended', () => stopPlayback(), { once: true });
             }
             syncPlaybackSound();

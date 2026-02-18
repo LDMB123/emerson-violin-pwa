@@ -9,7 +9,7 @@ import { GAME_RECORDED, ML_RESET } from '../utils/event-names.js';
 
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 export const cachedEl = (selector) => { let el; return () => (el ??= document.querySelector(selector)); };
-export const MAX_EVENTS = 500;
+const MAX_EVENTS = 500;
 export const formatCountdown = (seconds) => {
     const safe = Math.max(0, Math.ceil(seconds));
     const minutes = Math.floor(safe / 60);

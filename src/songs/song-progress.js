@@ -2,6 +2,7 @@ import { getJSON, setJSON } from '../persistence/storage.js';
 import { clamp, todayDay } from '../utils/math.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
 import { SONG_RECORDED } from '../utils/event-names.js';
+import { getSongIdFromViewId, parseDuration } from '../utils/recording-export.js';
 
 const loadEvents = async () => {
     const stored = await getJSON(EVENT_KEY);
@@ -37,19 +38,6 @@ const recordSongEvent = async (songId, accuracy, duration, elapsed) => {
     await saveEvents(events);
     document.dispatchEvent(new CustomEvent(SONG_RECORDED, { detail: entry }));
     updateBestAccuracyUI(events);
-};
-
-const parseDuration = (sheet) => {
-    if (!sheet) return 0;
-    const raw = sheet.style.getPropertyValue('--song-duration') || getComputedStyle(sheet).getPropertyValue('--song-duration');
-    if (!raw) return 0;
-    const value = Number.parseFloat(raw);
-    return Number.isNaN(value) ? 0 : value;
-};
-
-const getSongId = (section) => {
-    if (!section?.id) return '';
-    return section.id.replace('view-song-', '');
 };
 
 const runs = new Map();
@@ -143,7 +131,7 @@ const initSongProgress = () => {
         const toggle = view.querySelector('.song-play-toggle');
         const sheet = view.querySelector('.song-sheet');
         const playhead = view.querySelector('.song-playhead');
-        const songId = getSongId(view);
+        const songId = getSongIdFromViewId(view?.id);
         const duration = parseDuration(sheet);
 
         if (!toggle || !songId || !duration) return;
