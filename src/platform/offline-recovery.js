@@ -13,7 +13,6 @@ const waitForLoad = () => new Promise((resolve) => {
 });
 
 const ensureRegistration = async () => {
-    if (!('serviceWorker' in navigator)) return null;
     await waitForLoad();
     const existing = await navigator.serviceWorker.getRegistration();
     if (existing) return existing;
@@ -25,7 +24,6 @@ const ensureRegistration = async () => {
 };
 
 const refreshAssets = async (reason) => {
-    if (!('serviceWorker' in navigator)) return;
     const now = Date.now();
     if (now - lastRefresh < MIN_REFRESH_INTERVAL) return;
     lastRefresh = now;
@@ -72,10 +70,5 @@ const bindLifecycleRefresh = () => {
     }, { once: true });
 };
 
-const init = () => {
-    if (!('serviceWorker' in navigator)) return;
-    bindLifecycleRefresh();
-    refreshAssets('boot');
-};
-
-init();
+bindLifecycleRefresh();
+refreshAssets('boot');

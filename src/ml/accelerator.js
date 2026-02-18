@@ -11,7 +11,6 @@ const setDetail = (message) => {
 };
 
 const setDataset = (value) => {
-    if (!root) return;
     if (!value) {
         delete root.dataset.mlAccel;
         return;

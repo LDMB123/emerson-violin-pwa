@@ -62,14 +62,14 @@ const radarShapeEl = document.querySelector('[data-radar="shape"]');
 const radarPointEls = Array.from(document.querySelectorAll('.radar-point[data-skill]'));
 
 const getDailyGoalTarget = () => {
-    const raw = document.documentElement?.dataset?.dailyGoalTarget
+    const raw = document.documentElement.dataset.dailyGoalTarget
         || dailyGoalValueEl?.textContent
         || '15';
     const parsed = Number.parseInt(raw, 10);
     return Number.isNaN(parsed) || parsed <= 0 ? 15 : parsed;
 };
 const getWeeklyGoalTarget = () => {
-    const raw = document.documentElement?.dataset?.weeklyGoalTarget
+    const raw = document.documentElement.dataset.weeklyGoalTarget
         || parentGoalValueEl?.textContent?.split('/')?.[1]
         || '90';
     const parsed = Number.parseInt(String(raw).trim(), 10);

@@ -81,27 +81,6 @@ const buildPayload = async () => {
     };
 };
 
-const saveFile = async (file) => {
-    if (!('showSaveFilePicker' in window)) return false;
-    try {
-        const handle = await window.showSaveFilePicker({
-            suggestedName: file.name,
-            types: [
-                {
-                    description: 'Panda Violin Backup',
-                    accept: { 'application/json': ['.json'] },
-                },
-            ],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(file);
-        await writable.close();
-        return true;
-    } catch {
-        return false;
-    }
-};
-
 const shareFile = async (file) => {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
@@ -134,12 +113,9 @@ const handleExport = async () => {
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const file = new File([blob], 'panda-violin-backup.json', { type: 'application/json' });
 
-        const saved = await saveFile(file);
-        if (!saved) {
-            const shared = await shareFile(file);
-            if (!shared) {
-                downloadFile(file);
-            }
+        const shared = await shareFile(file);
+        if (!shared) {
+            downloadFile(file);
         }
         updateStatus('Backup ready. Saved to Files or shared.');
     } catch {
@@ -187,25 +163,7 @@ const pickBackupFile = () => new Promise((resolve) => {
     importInput.click();
 });
 
-const getBackupFile = async () => {
-    if ('showOpenFilePicker' in window) {
-        try {
-            const [handle] = await window.showOpenFilePicker({
-                multiple: false,
-                types: [
-                    {
-                        description: 'Panda Violin Backup',
-                        accept: { 'application/json': ['.json'] },
-                    },
-                ],
-            });
-            return await handle.getFile();
-        } catch {
-            return null;
-        }
-    }
-    return pickBackupFile();
-};
+const getBackupFile = () => pickBackupFile();
 
 const handleImport = async () => {
     updateImportStatus('Choose a backup file…');

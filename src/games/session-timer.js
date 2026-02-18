@@ -46,12 +46,12 @@ export const createSessionTimer = ({ targetMinutes, onUpdate, onMilestone }) => 
         startedAt = Date.now();
         announced.clear();
         tick();
-        interval = globalThis.setInterval(tick, 1000);
+        interval = setInterval(tick, 1000);
     };
 
     const stop = () => {
         if (!interval) return;
-        globalThis.clearInterval(interval);
+        clearInterval(interval);
         interval = null;
     };
 
