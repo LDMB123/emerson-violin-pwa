@@ -104,6 +104,7 @@ export function createSequenceGame(config) {
     const cachedComboEl = cachedEl(`[data-${prefix}="combo"]`);
     let hashHandler = null;
     let playAgainHandler = null;
+    let pagehideHandler = null;
     let reportResult = null;
 
     /**
@@ -145,6 +146,9 @@ export function createSequenceGame(config) {
         }
         if (playAgainHandler) {
             document.removeEventListener(GAME_PLAY_AGAIN, playAgainHandler);
+        }
+        if (pagehideHandler) {
+            window.removeEventListener('pagehide', pagehideHandler, { passive: true });
         }
         if (reportResult?.dispose) {
             reportResult.dispose();
@@ -288,7 +292,16 @@ export function createSequenceGame(config) {
             if (currentViewId !== expectedViewId) return;
             resetSession();
         };
+        pagehideHandler = (event) => {
+            const currentViewId = window.location.hash.replace(/^#/, '');
+            const expectedViewId = hashId.replace(/^#/, '');
+            if (currentViewId !== expectedViewId) return;
+            if (event?.persisted) return;
+            stopTonePlayer();
+            reportSession();
+        };
         window.addEventListener('hashchange', hashHandler, { passive: true });
+        window.addEventListener('pagehide', pagehideHandler, { passive: true });
         document.addEventListener(GAME_PLAY_AGAIN, playAgainHandler);
     };
 
