@@ -159,6 +159,50 @@
 
   </div>
 
+  <!-- Game Complete Modal -->
+  <dialog id="game-complete-modal" class="game-complete-dialog" aria-labelledby="game-complete-heading" aria-modal="true">
+    <div class="game-complete-inner">
+      <div class="game-complete-confetti" aria-hidden="true">
+        <span class="confetti-piece" style="left:10%;--fall-delay:0s;--fall-dur:1.6s;--fall-drift:20px;background:#E95639"></span>
+        <span class="confetti-piece" style="left:20%;--fall-delay:0.1s;--fall-dur:1.9s;--fall-drift:-15px;background:#F9A93F"></span>
+        <span class="confetti-piece" style="left:30%;--fall-delay:0.2s;--fall-dur:1.7s;--fall-drift:30px;background:#4FB69E"></span>
+        <span class="confetti-piece" style="left:40%;--fall-delay:0.05s;--fall-dur:2.0s;--fall-drift:-25px;background:#E95639"></span>
+        <span class="confetti-piece" style="left:50%;--fall-delay:0.15s;--fall-dur:1.5s;--fall-drift:10px;background:#F9A93F"></span>
+        <span class="confetti-piece" style="left:60%;--fall-delay:0.3s;--fall-dur:1.8s;--fall-drift:-20px;background:#4FB69E"></span>
+        <span class="confetti-piece" style="left:70%;--fall-delay:0.0s;--fall-dur:2.1s;--fall-drift:25px;background:#E95639"></span>
+        <span class="confetti-piece" style="left:80%;--fall-delay:0.25s;--fall-dur:1.6s;--fall-drift:-10px;background:#F9A93F"></span>
+        <span class="confetti-piece" style="left:90%;--fall-delay:0.1s;--fall-dur:1.9s;--fall-drift:15px;background:#4FB69E"></span>
+        <span class="confetti-piece" style="left:15%;--fall-delay:0.4s;--fall-dur:1.7s;--fall-drift:-30px;background:#E95639"></span>
+        <span class="confetti-piece" style="left:55%;--fall-delay:0.35s;--fall-dur:2.0s;--fall-drift:20px;background:#F9A93F"></span>
+        <span class="confetti-piece" style="left:75%;--fall-delay:0.2s;--fall-dur:1.5s;--fall-drift:-15px;background:#4FB69E"></span>
+      </div>
+      <picture>
+        <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
+        <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-complete-mascot" width="100" height="100" decoding="async">
+      </picture>
+      <h2 id="game-complete-heading" class="game-complete-heading">Great job, Emerson!</h2>
+      <div class="game-complete-stars" aria-label="Stars earned" id="game-complete-stars">
+        <span class="game-complete-star filled" aria-hidden="true">★</span>
+        <span class="game-complete-star filled" aria-hidden="true">★</span>
+        <span class="game-complete-star filled" aria-hidden="true">★</span>
+      </div>
+      <div class="game-complete-stats">
+        <div class="game-complete-stat">
+          <span class="game-complete-stat-value" id="game-complete-score">—</span>
+          <span class="game-complete-stat-label">Score</span>
+        </div>
+        <div class="game-complete-stat">
+          <span class="game-complete-stat-value" id="game-complete-accuracy">—</span>
+          <span class="game-complete-stat-label">Accuracy</span>
+        </div>
+      </div>
+      <div class="game-complete-actions">
+        <button type="button" id="game-complete-play-again" class="btn btn-primary">Play Again</button>
+        <a href="#view-games" id="game-complete-back" class="btn btn-secondary">Back to Games</a>
+      </div>
+    </div>
+  </dialog>
+
   <div class="install-toast glass" id="install-toast" role="status" aria-live="polite" hidden>
     <picture>
       <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
