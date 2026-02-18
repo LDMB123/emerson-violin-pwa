@@ -7,6 +7,7 @@ import {
     markChecklist,
     bindTap,
     playToneNote,
+    stopTonePlayer,
 } from './shared.js';
 import { clamp } from '../utils/math.js';
 
@@ -95,6 +96,10 @@ const { bind } = createGame({
         gameState._starsEl = starsEl;
         gameState._stabilityEl = stabilityEl;
         gameState._slider = slider;
+
+        gameState._onDeactivate = () => {
+            stopTonePlayer();
+        };
 
         const targetNoteFromInput = (input) => {
             const raw = input?.id?.split('-').pop();

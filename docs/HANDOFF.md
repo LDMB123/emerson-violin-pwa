@@ -151,6 +151,13 @@ If both pass, you are at a known-good baseline.
     - `src/games/ear-trainer.js`
     - `src/games/tuning-time.js`
   - Ensures hash-navigation away pauses active sample playback in these games.
+- Completed tone-player deactivation lifecycle pass (2026-02-18, phase 19):
+  - Wired synthesized tone cleanup into shell deactivation hook for:
+    - `src/games/scale-practice.js`
+    - `src/games/pitch-quest.js`
+    - `src/games/rhythm-painter.js`
+    - `src/games/duet-challenge.js`
+  - Ensures hash-navigation away stops active tone-player output in these games.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -176,6 +183,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-13.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-14.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-15.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-16.md`
 
 ## Verification Gates
 
