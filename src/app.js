@@ -209,49 +209,10 @@ const resolveInitialView = async () => {
     return initialViewId;
 };
 
-const boot = async () => {
-    if (document.prerendering) {
-        document.addEventListener('prerenderingchange', boot, { once: true });
-        return;
-    }
-
-    rewriteAudioSources();
-    loadEagerModules();
-    await loadModule('persist');
-    loadIdleModules();
-
-    const reduceMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const prefersReducedMotion = () => reduceMotionMedia.matches;
-    const reduceMotionToggle = document.querySelector('#setting-reduce-motion');
-    const popoverBackdrop = document.querySelector('[data-popover-backdrop]');
-    const supportsPopover = 'showPopover' in HTMLElement.prototype;
-    const navItems = Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]'));
-    let lastPopoverTrigger = null;
-
-    const initialViewId = await resolveInitialView();
-    await showView(initialViewId, enhanceToggleLabels);
-    if (initialViewId === 'view-onboarding') {
-        loadModule('onboarding');
-    }
-
-    registerServiceWorker();
-
-    window.addEventListener('hashchange', async () => {
-        const viewId = getCurrentViewId() || 'view-home';
-        await showView(viewId, enhanceToggleLabels);
-        updateNavState();
-    }, { passive: true });
-
-    const setPopoverExpanded = (popover, expanded) => {
-        if (!popover?.id) return;
-        document.querySelectorAll(`[popovertarget="${popover.id}"]`).forEach((button) => {
-            button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-        });
-    };
-
+const setupNavigation = (ctx) => {
     const shouldAnimateNav = () => {
-        if (prefersReducedMotion()) return false;
-        if (reduceMotionToggle?.checked) return false;
+        if (ctx.prefersReducedMotion()) return false;
+        if (ctx.reduceMotionToggle?.checked) return false;
         return 'startViewTransition' in document;
     };
 
@@ -291,10 +252,10 @@ const boot = async () => {
         }
     };
 
-    const updateNavState = () => {
+    ctx.updateNavState = () => {
         const viewId = getCurrentViewId();
         const activeHref = getActiveNavHref(viewId);
-        navItems.forEach((item) => {
+        ctx.navItems.forEach((item) => {
             const itemHref = item.getAttribute('href');
             const active = isNavItemActive(itemHref, activeHref);
             item.classList.toggle('is-active', active);
@@ -306,7 +267,75 @@ const boot = async () => {
         });
     };
 
-    updateNavState();
+    ctx.updateNavState();
+
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href^="#view-"]');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href) return;
+        const targetId = link.dataset.scrollTarget;
+        const popover = link.closest('[popover]');
+        event.preventDefault();
+        if (popover) {
+            if (typeof popover.hidePopover === 'function') {
+                popover.hidePopover();
+            } else {
+                popover.removeAttribute('open');
+                ctx.closePopoverFallback?.(popover);
+            }
+        }
+        if (link.classList.contains('back-btn')) {
+            navDirection = 'back';
+        }
+        navigateTo(href, targetId ? () => scrollToTarget(targetId) : null);
+    });
+};
+
+const boot = async () => {
+    if (document.prerendering) {
+        document.addEventListener('prerenderingchange', boot, { once: true });
+        return;
+    }
+
+    rewriteAudioSources();
+    loadEagerModules();
+    await loadModule('persist');
+    loadIdleModules();
+
+    const ctx = {
+        navItems: Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]')),
+        popoverBackdrop: document.querySelector('[data-popover-backdrop]'),
+        supportsPopover: 'showPopover' in HTMLElement.prototype,
+        prefersReducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        reduceMotionToggle: document.querySelector('#setting-reduce-motion'),
+        lastPopoverTrigger: null,
+        updateNavState: null,
+        closePopoverFallback: null,
+    };
+
+    const initialViewId = await resolveInitialView();
+    await showView(initialViewId, enhanceToggleLabels);
+    if (initialViewId === 'view-onboarding') {
+        loadModule('onboarding');
+    }
+
+    registerServiceWorker();
+
+    setupNavigation(ctx);
+
+    window.addEventListener('hashchange', async () => {
+        const viewId = getCurrentViewId() || 'view-home';
+        await showView(viewId, enhanceToggleLabels);
+        ctx.updateNavState();
+    }, { passive: true });
+
+    const setPopoverExpanded = (popover, expanded) => {
+        if (!popover?.id) return;
+        document.querySelectorAll(`[popovertarget="${popover.id}"]`).forEach((button) => {
+            button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        });
+    };
 
     const openPopoverFallback = (popover) => {
         if (!popover) return;
@@ -314,36 +343,36 @@ const boot = async () => {
         setPopoverExpanded(popover, true);
         focusFirstPopoverItem(popover);
         document.documentElement.classList.add('popover-open');
-        if (popoverBackdrop) {
-            popoverBackdrop.hidden = false;
-            popoverBackdrop.classList.add('is-open');
+        if (ctx.popoverBackdrop) {
+            ctx.popoverBackdrop.hidden = false;
+            ctx.popoverBackdrop.classList.add('is-open');
         }
     };
 
-    const closePopoverFallback = (popover) => {
+    ctx.closePopoverFallback = (popover) => {
         if (popover) {
             delete popover.dataset.fallbackOpen;
             setPopoverExpanded(popover, false);
         }
-        if (popoverBackdrop) {
-            popoverBackdrop.classList.remove('is-open');
-            popoverBackdrop.hidden = true;
+        if (ctx.popoverBackdrop) {
+            ctx.popoverBackdrop.classList.remove('is-open');
+            ctx.popoverBackdrop.hidden = true;
         }
         document.documentElement.classList.remove('popover-open');
-        if (lastPopoverTrigger instanceof HTMLElement) {
-            lastPopoverTrigger.focus();
+        if (ctx.lastPopoverTrigger instanceof HTMLElement) {
+            ctx.lastPopoverTrigger.focus();
         }
     };
 
-    if (supportsPopover) {
+    if (ctx.supportsPopover) {
         document.querySelectorAll('[popover]').forEach((popover) => {
             popover.addEventListener('toggle', () => {
                 const open = popover.matches(':popover-open');
                 setPopoverExpanded(popover, open);
                 if (open) {
                     focusFirstPopoverItem(popover);
-                } else if (lastPopoverTrigger instanceof HTMLElement) {
-                    lastPopoverTrigger.focus();
+                } else if (ctx.lastPopoverTrigger instanceof HTMLElement) {
+                    ctx.lastPopoverTrigger.focus();
                 }
             });
         });
@@ -359,11 +388,11 @@ const boot = async () => {
 
     document.querySelectorAll('[popovertarget]').forEach((button) => {
         button.addEventListener('click', () => {
-            lastPopoverTrigger = button;
+            ctx.lastPopoverTrigger = button;
         });
     });
 
-    if (!supportsPopover) {
+    if (!ctx.supportsPopover) {
         document.querySelectorAll('[popovertarget]').forEach((button) => {
             button.addEventListener('click', (event) => {
                 const targetId = button.getAttribute('popovertarget');
@@ -371,59 +400,37 @@ const boot = async () => {
                 if (!popover) return;
                 event.preventDefault();
                 if (popover.dataset.fallbackOpen === 'true') {
-                    closePopoverFallback(popover);
+                    ctx.closePopoverFallback(popover);
                 } else {
                     openPopoverFallback(popover);
                 }
             });
         });
 
-        popoverBackdrop?.addEventListener('click', () => {
+        ctx.popoverBackdrop?.addEventListener('click', () => {
             const openPopover = document.querySelector('[data-fallback-open="true"]');
-            if (openPopover) closePopoverFallback(openPopover);
+            if (openPopover) ctx.closePopoverFallback(openPopover);
         });
 
         document.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape') return;
             const openPopover = document.querySelector('[data-fallback-open="true"]');
-            if (openPopover) closePopoverFallback(openPopover);
+            if (openPopover) ctx.closePopoverFallback(openPopover);
         });
 
         window.addEventListener('hashchange', () => {
             const openPopover = document.querySelector('[data-fallback-open="true"]');
-            if (openPopover) closePopoverFallback(openPopover);
+            if (openPopover) ctx.closePopoverFallback(openPopover);
         }, { passive: true });
     }
 
-    document.addEventListener('click', (event) => {
-        const link = event.target.closest('a[href^="#view-"]');
-        if (!link) return;
-        const href = link.getAttribute('href');
-        if (!href) return;
-        const targetId = link.dataset.scrollTarget;
-        const popover = link.closest('[popover]');
-        event.preventDefault();
-        if (popover) {
-            if (typeof popover.hidePopover === 'function') {
-                popover.hidePopover();
-            } else {
-                popover.removeAttribute('open');
-                closePopoverFallback(popover);
-            }
-        }
-        if (link.classList.contains('back-btn')) {
-            navDirection = 'back';
-        }
-        navigateTo(href, targetId ? () => scrollToTarget(targetId) : null);
-    });
-
-    if (!supportsPopover) {
+    if (!ctx.supportsPopover) {
         document.querySelectorAll('[popovertargetaction="hide"]').forEach((button) => {
             button.addEventListener('click', (event) => {
                 const popover = button.closest('[popover]');
                 if (!popover) return;
                 event.preventDefault();
-                closePopoverFallback(popover);
+                ctx.closePopoverFallback(popover);
             });
         });
     }
