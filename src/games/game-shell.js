@@ -50,6 +50,9 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         if (gameState._playAgainHandler) {
             document.removeEventListener(GAME_PLAY_AGAIN, gameState._playAgainHandler);
         }
+        if (reportResult?.dispose) {
+            reportResult.dispose();
+        }
         // Clear gameState without replacing the reference (onBind captures the same object).
         Object.keys(gameState).forEach((key) => {
             delete gameState[key];

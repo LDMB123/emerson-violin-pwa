@@ -25,6 +25,11 @@ describe('createGame play-again integration', () => {
         sharedMocks.attachTuning.mockClear();
         sharedMocks.recordGameEvent.mockClear();
         sharedMocks.setDifficultyBadge.mockClear();
+        sharedMocks.attachTuning.mockImplementation(() => {
+            const report = vi.fn();
+            report.dispose = vi.fn();
+            return report;
+        });
     });
 
     it('resets when play-again targets the active game view', () => {
@@ -55,5 +60,25 @@ describe('createGame play-again integration', () => {
         document.dispatchEvent(new CustomEvent(GAME_PLAY_AGAIN, { detail: { viewId: 'view-game-other' } }));
 
         expect(onReset).not.toHaveBeenCalled();
+    });
+
+    it('disposes prior tuning binding when re-bound', () => {
+        const id = 'unit-c';
+        mountStage(id);
+        window.location.hash = '#view-game-unit-c';
+        const firstReport = vi.fn();
+        firstReport.dispose = vi.fn();
+        const secondReport = vi.fn();
+        secondReport.dispose = vi.fn();
+        sharedMocks.attachTuning
+            .mockReturnValueOnce(firstReport)
+            .mockReturnValueOnce(secondReport);
+
+        const game = createGame({ id, onBind: () => {} });
+        game.bind();
+        game.bind();
+
+        expect(firstReport.dispose).toHaveBeenCalledTimes(1);
+        expect(secondReport.dispose).not.toHaveBeenCalled();
     });
 });

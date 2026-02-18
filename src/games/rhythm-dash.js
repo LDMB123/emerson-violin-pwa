@@ -35,6 +35,7 @@ import {
 const rhythmScoreEl = cachedEl('[data-rhythm="score"]');
 const rhythmComboEl = cachedEl('[data-rhythm="combo"]');
 let resetRequestHandler = null;
+let tuningReport = null;
 
 const updateRhythmDash = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-rhythm-dash input[id^="rd-set-"]'));
@@ -59,6 +60,9 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     if (!stage) return;
     if (resetRequestHandler) {
         document.removeEventListener(GAME_PLAY_AGAIN, resetRequestHandler);
+    }
+    if (tuningReport?.dispose) {
+        tuningReport.dispose();
     }
     const tapButton = stage.querySelector('.rhythm-tap');
     const runToggle = stage.querySelector('#rhythm-run');
@@ -136,7 +140,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         }
     };
 
-    const reportResult = attachTuning('rhythm-dash', (tuning) => {
+    tuningReport = attachTuning('rhythm-dash', (tuning) => {
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         if (!wasRunning) {
             setStatus(`Tap Start to begin the run. Target ${targetBpm} BPM.`);
@@ -154,7 +158,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         if (reported || tapCount === 0) return;
         reported = true;
         const accuracy = computeAccuracy();
-        reportResult({ score, accuracy });
+        tuningReport?.({ score, accuracy });
         recordGameEvent('rhythm-dash', { accuracy, score });
     };
 

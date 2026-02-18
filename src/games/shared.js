@@ -159,9 +159,18 @@ export const attachTuning = (id, onUpdate) => {
     const refresh = () => {
         getGameTuning(id).then(apply).catch(() => {});
     };
+    const handleReset = () => {
+        refresh();
+    };
+    let disposed = false;
     refresh();
-    document.addEventListener(ML_RESET, refresh);
+    document.addEventListener(ML_RESET, handleReset);
     const report = (payload) => updateGameResult(id, payload).then(apply).catch(() => {});
     report.refresh = refresh;
+    report.dispose = () => {
+        if (disposed) return;
+        disposed = true;
+        document.removeEventListener(ML_RESET, handleReset);
+    };
     return report;
 };

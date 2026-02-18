@@ -103,6 +103,7 @@ export function createSequenceGame(config) {
     const cachedComboEl = cachedEl(`[data-${prefix}="combo"]`);
     let hashHandler = null;
     let playAgainHandler = null;
+    let reportResult = null;
 
     /**
      * update() — lightweight display refresh called when the view is first rendered.
@@ -143,6 +144,9 @@ export function createSequenceGame(config) {
         }
         if (playAgainHandler) {
             document.removeEventListener(GAME_PLAY_AGAIN, playAgainHandler);
+        }
+        if (reportResult?.dispose) {
+            reportResult.dispose();
         }
 
         const scoreEl = stage.querySelector(`[data-${prefix}="score"]`);
@@ -191,7 +195,7 @@ export function createSequenceGame(config) {
 
         const updateScoreboard = () => updateScoreCombo(scoreEl, comboEl, score, combo);
 
-        const reportResult = attachTuning(id, (tuning) => {
+        reportResult = attachTuning(id, (tuning) => {
             buildSequence();
             setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
             updateTargets();
