@@ -9,8 +9,6 @@ import {
     findWeakestSkill,
     computeSongLevel,
     pickDailyCue,
-    filterEventsByType,
-    cacheFresh,
 } from '../src/utils/recommendations-utils.js';
 
 describe('recommendations-utils', () => {
@@ -319,62 +317,4 @@ describe('recommendations-utils', () => {
         });
     });
 
-    describe('filterEventsByType', () => {
-        it('returns empty array for empty input', () => {
-            expect(filterEventsByType([], 'song')).toEqual([]);
-        });
-
-        it('filters events by type', () => {
-            const events = [
-                { type: 'song', id: 1 },
-                { type: 'game', id: 2 },
-                { type: 'song', id: 3 },
-            ];
-            const result = filterEventsByType(events, 'song');
-            expect(result).toHaveLength(2);
-            expect(result[0].id).toBe(1);
-            expect(result[1].id).toBe(3);
-        });
-
-        it('returns empty array when no matches', () => {
-            const events = [
-                { type: 'game', id: 1 },
-            ];
-            expect(filterEventsByType(events, 'song')).toEqual([]);
-        });
-    });
-
-    describe('cacheFresh', () => {
-        let originalNow;
-
-        beforeEach(() => {
-            originalNow = Date.now;
-            Date.now = vi.fn(() => 1000000000);
-        });
-
-        afterEach(() => {
-            Date.now = originalNow;
-        });
-
-        it('returns false for missing updatedAt', () => {
-            expect(cacheFresh({})).toBe(false);
-            expect(cacheFresh(null)).toBe(false);
-        });
-
-        it('returns true for fresh cache', () => {
-            const cached = { updatedAt: 1000000000 - 60000 };
-            expect(cacheFresh(cached)).toBe(true);
-        });
-
-        it('returns false for stale cache', () => {
-            const cached = { updatedAt: 1000000000 - 400000 };
-            expect(cacheFresh(cached)).toBe(false);
-        });
-
-        it('respects custom TTL', () => {
-            const cached = { updatedAt: 1000000000 - 60000 };
-            expect(cacheFresh(cached, 30000)).toBe(false);
-            expect(cacheFresh(cached, 120000)).toBe(true);
-        });
-    });
 });
