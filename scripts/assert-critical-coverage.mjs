@@ -7,9 +7,12 @@ const summaryPath = resolve(process.cwd(), 'coverage/coverage-summary.json');
 const thresholds = {
     'src/utils/app-utils.js': { lines: 100, functions: 100 },
     'src/views/view-loader.js': { lines: 90, functions: 80 },
-    'src/ml/recommendations.js': { lines: 80, functions: 60 },
+    'src/ml/recommendations.js': { lines: 90, functions: 75 },
     'src/onboarding/onboarding-check.js': { lines: 100, functions: 100 },
-    'src/onboarding/onboarding.js': { lines: 35, functions: 30 },
+    'src/onboarding/onboarding.js': { lines: 50, functions: 35 },
+    'src/persistence/loaders.js': { lines: 90, functions: 85 },
+    'src/persistence/storage.js': { lines: 50, functions: 40 },
+    'src/app/module-registry.js': { lines: 35, functions: 20 },
 };
 
 const metricKeyMap = {
