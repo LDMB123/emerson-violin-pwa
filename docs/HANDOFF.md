@@ -68,6 +68,17 @@ If both pass, you are at a known-good baseline.
   - Added/expanded tests:
     - `tests/persistence/storage.test.js` now covers IndexedDB success-path + transient-open retry behavior
     - `tests/recommendations.test.js` now verifies concurrent refresh deduplication
+- Completed navigation race-condition simplification pass (2026-02-18, phase 7):
+  - Added lightweight async render gate:
+    - `src/app/async-gate.js`
+  - Updated `src/app.js` view rendering flow:
+    - each `showView()` call gets a gate token
+    - stale async loads are ignored instead of overwriting newer navigation state
+    - stale load errors no longer surface spurious error UI
+  - Added unit coverage:
+    - `tests/app/async-gate.test.js`
+  - Regenerated service worker asset manifest:
+    - `public/sw-assets.js`
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -81,6 +92,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deep-pass.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-2.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-3.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-4.md`
 
 ## Verification Gates
 

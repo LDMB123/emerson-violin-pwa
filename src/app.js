@@ -15,9 +15,11 @@ import {
     IDLE_MODULE_PLAN,
     PREFETCH_VIEW_IDS,
 } from './app/module-registry.js';
+import { createAsyncGate } from './app/async-gate.js';
 import './progress/achievement-celebrate.js';
 
 const viewLoader = new ViewLoader();
+const viewRenderGate = createAsyncGate();
 
 const loaded = new Map();
 const loadModule = (key) => {
@@ -80,6 +82,7 @@ const activateLoadedView = (container) => {
 
 const showView = async (viewId, enhanceCallback) => {
     if (!viewId) return;
+    const renderToken = viewRenderGate.begin();
 
     try {
         const container = document.getElementById('main-content');
@@ -95,6 +98,7 @@ const showView = async (viewId, enhanceCallback) => {
         }
 
         const html = await viewLoader.load(viewPath);
+        if (!viewRenderGate.isActive(renderToken)) return;
         container.innerHTML = html;
         activateLoadedView(container);
         rewriteAudioSources();
@@ -107,6 +111,7 @@ const showView = async (viewId, enhanceCallback) => {
         // Load modules for this view
         loadForView(viewId);
     } catch (err) {
+        if (!viewRenderGate.isActive(renderToken)) return;
         console.error('[App] View load failed:', err);
         showViewError('Failed to load view. Please check your connection and try again.');
     }
