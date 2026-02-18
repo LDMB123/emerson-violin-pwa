@@ -23,7 +23,7 @@ const updateEarTrainer = () => {
     }
 };
 
-const bindEarTrainer = () => {
+const bindEarTrainer = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-ear-trainer');
     if (!stage) return;
     const playButton = stage.querySelector('[data-ear="play"]');
@@ -41,7 +41,14 @@ const bindEarTrainer = () => {
         A: audioA,
         E: audioE,
     };
-    const tonePool = ['G', 'D', 'A', 'E'];
+    // difficulty.speed: visual feedback only for this game (audio files play at fixed speed)
+    // difficulty.complexity: narrows the note pool; complexity=1 (medium) = all 4 strings (current behavior)
+    const allTones = ['G', 'D', 'A', 'E'];
+    const tonePool = difficulty.complexity === 0
+        ? ['G', 'D']
+        : difficulty.complexity === 2
+            ? ['G', 'D', 'A', 'E']
+            : allTones;
     const checklistMap = {
         G: 'et-step-1',
         D: 'et-step-2',

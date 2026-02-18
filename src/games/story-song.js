@@ -23,7 +23,7 @@ const updateStorySong = () => {
     }
 };
 
-const bindStorySong = () => {
+const bindStorySong = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-story-song');
     if (!stage) return;
     const toggle = stage.querySelector('#story-play');
@@ -49,8 +49,10 @@ const bindStorySong = () => {
             notes: ['D', 'C', 'B', 'A'],
         },
     ];
+    // difficulty.speed: scales playback tempo; speed=1.0 keeps tempo=92 BPM (current behavior)
+    // difficulty.complexity: adjusts note count per page; complexity=1 (medium) = 3 pages (current behavior)
     let stageSeconds = 4;
-    let tempo = 92;
+    let tempo = Math.round(92 * difficulty.speed);
     let reported = false;
     let wasPlaying = false;
     let pageIndex = 0;

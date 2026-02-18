@@ -32,7 +32,7 @@ const updateRhythmPainter = () => {
     }
 };
 
-const bindRhythmPainter = () => {
+const bindRhythmPainter = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-rhythm-painter');
     if (!stage) return;
     const dots = Array.from(stage.querySelectorAll('.paint-dot'));
@@ -52,7 +52,11 @@ const bindRhythmPainter = () => {
     let tapCount = 0;
     let rounds = 0;
     const tappedDots = new Set();
-    let creativityTarget = 70;
+    // difficulty.speed: scales flourish playback tempo; speed=1.0 = 180 BPM (current behavior)
+    // difficulty.complexity: adjusts creativityTarget; complexity=1 (medium) = 70 (current behavior)
+    const flourishTempo = Math.round(180 * difficulty.speed);
+    const complexityCreativityTargets = [50, 70, 90];
+    let creativityTarget = complexityCreativityTargets[difficulty.complexity] ?? 70;
     let reported = false;
     let flourishPlayed = false;
 
@@ -124,7 +128,7 @@ const bindRhythmPainter = () => {
             if (creativity >= creativityTarget) {
                 if (!flourishPlayed) {
                     flourishPlayed = true;
-                    playToneSequence(['G', 'D', 'A', 'E'], { tempo: 180, gap: 0.08, duration: 0.16, volume: 0.18, type: 'sine' });
+                    playToneSequence(['G', 'D', 'A', 'E'], { tempo: flourishTempo, gap: 0.08, duration: 0.16, volume: 0.18, type: 'sine' });
                 }
                 reportSession();
             }

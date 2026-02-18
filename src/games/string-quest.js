@@ -33,7 +33,7 @@ const updateStringQuest = () => {
     }
 };
 
-const bindStringQuest = () => {
+const bindStringQuest = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-string-quest');
     if (!stage) return;
     const scoreEl = stage.querySelector('[data-string="score"]');
@@ -48,8 +48,11 @@ const bindStringQuest = () => {
     let combo = 0;
     let score = 0;
     let lastCorrectNote = null;
+    // difficulty.speed: visual feedback only for this game (no timing loop to scale)
+    // difficulty.complexity: adjusts sequenceLength; complexity=1 (medium) = 4 notes (current behavior)
+    const complexitySeqLengths = [3, 4, 5];
     let comboTarget = 8;
-    let sequenceLength = 4;
+    let sequenceLength = complexitySeqLengths[difficulty.complexity] ?? 4;
 
     const buildSequence = () => {
         sequence = buildNoteSequence(notePool, sequenceLength);

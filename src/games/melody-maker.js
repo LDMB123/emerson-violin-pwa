@@ -23,7 +23,7 @@ const updateMelodyMaker = () => {
     if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 30);
 };
 
-const bindMelodyMaker = () => {
+const bindMelodyMaker = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-melody-maker');
     if (!stage) return;
     const buttons = Array.from(stage.querySelectorAll('.melody-btn'));
@@ -39,9 +39,12 @@ const bindMelodyMaker = () => {
     let lastSequence = '';
     let repeatMarked = false;
     const uniqueNotes = new Set();
-    let lengthTarget = 4;
-    let maxTrack = 6;
-    let tempo = 92;
+    // difficulty.speed: scales playback tempo; speed=1.0 keeps tempo=92 BPM (current behavior)
+    // difficulty.complexity: adjusts lengthTarget; complexity=1 (medium) = 4 notes (current behavior)
+    const complexityLengthTargets = [3, 4, 6];
+    let lengthTarget = complexityLengthTargets[difficulty.complexity] ?? 4;
+    let maxTrack = Math.max(lengthTarget + 2, 6);
+    let tempo = Math.round(92 * difficulty.speed);
     let reported = false;
     let targetMotif = ['G', 'A', 'B', 'C'];
     let matchCount = 0;

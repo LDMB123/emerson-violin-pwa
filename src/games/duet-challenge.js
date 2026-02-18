@@ -28,7 +28,7 @@ const updateDuetChallenge = () => {
     }
 };
 
-const bindDuetChallenge = () => {
+const bindDuetChallenge = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-duet-challenge');
     if (!stage) return;
     const playButton = stage.querySelector('[data-duet="play"]');
@@ -43,6 +43,11 @@ const bindDuetChallenge = () => {
     );
     const notePool = ['G', 'D', 'A', 'E'];
     let sequence = ['G', 'D', 'A', 'E'];
+    // difficulty.speed: scales partner playback timeout; speed=1.0 = 900ms per note (current behavior)
+    // difficulty.complexity: adjusts sequence length; complexity=1 (medium) = length 4 (current behavior)
+    const duetSeqLengths = [3, 4, 5];
+    const duetSeqLength = duetSeqLengths[difficulty.complexity] ?? 4;
+    const partnerNoteTimeout = Math.round(900 / difficulty.speed);
     let seqIndex = 0;
     let combo = 0;
     let score = 0;
@@ -62,7 +67,7 @@ const bindDuetChallenge = () => {
     });
 
     const buildSequence = () => {
-        sequence = buildNoteSequence(notePool, 4);
+        sequence = buildNoteSequence(notePool, duetSeqLength);
         if (notesEl) notesEl.textContent = sequence.join(' · ');
         if (roundEl) roundEl.textContent = `Round ${round}`;
         seqIndex = 0;
@@ -98,7 +103,7 @@ const bindDuetChallenge = () => {
         audio.play().catch(() => {
             finish();
         });
-        setTimeout(finish, 900);
+        setTimeout(finish, partnerNoteTimeout);
     });
 
     const stopPartnerPlayback = () => {

@@ -27,7 +27,7 @@ const updatePizzicato = () => {
     }
 };
 
-const bindPizzicato = () => {
+const bindPizzicato = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-pizzicato');
     if (!stage) return;
     const scoreEl = stage.querySelector('[data-pizzicato="score"]');
@@ -42,10 +42,14 @@ const bindPizzicato = () => {
     let combo = 0;
     let score = 0;
     const hitNotes = new Set();
+    // difficulty.speed: visual feedback only for this game (no timing loop to scale)
+    // difficulty.complexity: adjusts sequence length; complexity=1 (medium) = length 4 (current behavior)
+    const complexitySeqLengths = [3, 4, 5];
+    const pizzicatoSeqLength = complexitySeqLengths[difficulty.complexity] ?? 4;
     let comboTarget = 6;
 
     const buildSequence = () => {
-        sequence = buildNoteSequence(notePool, 4);
+        sequence = buildNoteSequence(notePool, pizzicatoSeqLength);
         seqIndex = 0;
     };
 
