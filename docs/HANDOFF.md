@@ -79,6 +79,18 @@ If both pass, you are at a known-good baseline.
     - `tests/app/async-gate.test.js`
   - Regenerated service worker asset manifest:
     - `public/sw-assets.js`
+- Completed game replay reset simplification pass (2026-02-18, phase 8):
+  - Removed timing-based history navigation hack from game completion flow:
+    - `src/games/game-complete.js`
+  - Added deterministic custom event for replay reset:
+    - `src/utils/event-names.js` (`GAME_PLAY_AGAIN`)
+  - Wired game engines to handle replay reset directly (no hash/history trick needed):
+    - `src/games/game-shell.js`
+    - `src/games/sequence-game.js`
+    - `src/games/rhythm-dash.js`
+  - Added focused unit coverage:
+    - `tests/games/game-complete.test.js`
+    - `tests/games/game-shell.test.js`
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -93,6 +105,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-2.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-3.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-4.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-5.md`
 
 ## Verification Gates
 

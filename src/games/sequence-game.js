@@ -64,6 +64,7 @@ import {
     buildNoteSequence,
     updateScoreCombo,
 } from './shared.js';
+import { GAME_PLAY_AGAIN } from '../utils/event-names.js';
 
 const NOTE_POOL = ['G', 'D', 'A', 'E'];
 const COMPLEXITY_SEQ_LENGTHS = [3, 4, 5];
@@ -101,6 +102,7 @@ export function createSequenceGame(config) {
     const cachedScoreEl = cachedEl(`[data-${prefix}="score"]`);
     const cachedComboEl = cachedEl(`[data-${prefix}="combo"]`);
     let hashHandler = null;
+    let playAgainHandler = null;
 
     /**
      * update() — lightweight display refresh called when the view is first rendered.
@@ -138,6 +140,9 @@ export function createSequenceGame(config) {
         if (!stage) return;
         if (hashHandler) {
             window.removeEventListener('hashchange', hashHandler);
+        }
+        if (playAgainHandler) {
+            document.removeEventListener(GAME_PLAY_AGAIN, playAgainHandler);
         }
 
         const scoreEl = stage.querySelector(`[data-${prefix}="score"]`);
@@ -268,7 +273,16 @@ export function createSequenceGame(config) {
             }
             reportSession();
         };
+        playAgainHandler = (event) => {
+            const requestedViewId = event?.detail?.viewId;
+            const expectedViewId = hashId.replace(/^#/, '');
+            const currentViewId = window.location.hash.replace(/^#/, '');
+            if (requestedViewId && requestedViewId !== expectedViewId) return;
+            if (currentViewId !== expectedViewId) return;
+            resetSession();
+        };
         window.addEventListener('hashchange', hashHandler, { passive: true });
+        document.addEventListener(GAME_PLAY_AGAIN, playAgainHandler);
     };
 
     return { update, bind };

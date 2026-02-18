@@ -11,6 +11,7 @@ export const ML_RECS = 'panda:ml-recs';
 // Practice & game recording
 export const PRACTICE_RECORDED = 'panda:practice-recorded';
 export const GAME_RECORDED = 'panda:game-recorded';
+export const GAME_PLAY_AGAIN = 'panda:game-play-again';
 export const SONG_RECORDED = 'panda:song-recorded';
 
 // Recordings (audio)

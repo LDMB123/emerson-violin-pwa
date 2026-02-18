@@ -3,6 +3,7 @@ import {
     attachTuning,
     setDifficultyBadge,
 } from './shared.js';
+import { GAME_PLAY_AGAIN } from '../utils/event-names.js';
 
 /**
  * createGame — factory for universal game boilerplate.
@@ -46,6 +47,9 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         if (gameState._hashHandler) {
             window.removeEventListener('hashchange', gameState._hashHandler, { passive: true });
         }
+        if (gameState._playAgainHandler) {
+            document.removeEventListener(GAME_PLAY_AGAIN, gameState._playAgainHandler);
+        }
         // Clear gameState without replacing the reference (onBind captures the same object).
         Object.keys(gameState).forEach((key) => {
             delete gameState[key];
@@ -81,8 +85,17 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             }
             reportSession();
         };
+        const playAgainHandler = (event) => {
+            const requestedViewId = event?.detail?.viewId;
+            const currentViewId = window.location.hash.replace(/^#/, '');
+            if (requestedViewId && requestedViewId !== `view-game-${id}`) return;
+            if (currentViewId !== `view-game-${id}`) return;
+            resetSession();
+        };
         gameState._hashHandler = hashHandler;
+        gameState._playAgainHandler = playAgainHandler;
         window.addEventListener('hashchange', hashHandler, { passive: true });
+        document.addEventListener(GAME_PLAY_AGAIN, playAgainHandler);
     }
 
     return { update, bind };
