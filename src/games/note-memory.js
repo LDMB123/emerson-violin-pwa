@@ -36,7 +36,7 @@ const updateNoteMemory = () => {
     }
 };
 
-const bindNoteMemory = () => {
+const bindNoteMemory = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-note-memory');
     if (!stage) return;
     const cards = Array.from(stage.querySelectorAll('.memory-card'));
@@ -54,7 +54,9 @@ const bindNoteMemory = () => {
     let matches = 0;
     let score = 0;
     let matchStreak = 0;
-    let timeLimit = 45;
+    // difficulty.speed: scales timeLimit; speed=1.0 keeps timeLimit=45s (current behavior)
+    // difficulty.complexity: visual feedback only for this game (card grid is fixed in HTML)
+    let timeLimit = Math.round(45 * difficulty.speed);
     let timeLeft = timeLimit;
     let timerId = null;
     let endTime = null;

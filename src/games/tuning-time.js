@@ -19,7 +19,7 @@ const updateTuningTime = () => {
     if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 25);
 };
 
-const bindTuningTime = () => {
+const bindTuningTime = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-tuning-time');
     if (!stage) return;
     const statusEl = stage.querySelector('[data-tuning="status"]');
@@ -39,7 +39,10 @@ const bindTuningTime = () => {
         E: 'tt-step-4',
     };
     const tunedNotes = new Set();
-    let targetStrings = 3;
+    // difficulty.speed: visual feedback only for this game (no time limit to scale)
+    // difficulty.complexity: sets initial targetStrings; complexity=1 (medium) = 3 strings (current behavior)
+    const complexityTargets = [2, 3, 4];
+    let targetStrings = complexityTargets[difficulty.complexity] ?? 3;
     let reported = false;
 
     const reportResult = attachTuning('tuning-time', (tuning) => {

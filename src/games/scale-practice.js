@@ -19,7 +19,7 @@ const updateScalePractice = () => {
     if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 28);
 };
 
-const bindScalePractice = () => {
+const bindScalePractice = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-scale-practice');
     if (!stage) return;
     const slider = stage.querySelector('[data-scale="slider"]');
@@ -30,7 +30,9 @@ const bindScalePractice = () => {
     const ratingEl = stage.querySelector('[data-scale="rating"]');
     const tempoTags = new Set();
     const scaleNotes = ['G', 'A', 'B', 'C', 'D', 'E', 'F#', 'G'];
-    let targetTempo = 85;
+    // difficulty.speed: scales targetTempo; speed=1.0 keeps targetTempo=85 (current behavior)
+    // difficulty.complexity: visual feedback only for this game (single scale, no content pool to select)
+    let targetTempo = Math.round(85 * difficulty.speed);
     let reported = false;
     let lastTap = 0;
     let score = 0;

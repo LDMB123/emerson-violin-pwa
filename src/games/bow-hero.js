@@ -23,7 +23,7 @@ const updateBowHero = () => {
     if (starsEl) starsEl.textContent = String(Number.isFinite(liveStars) ? liveStars : checked);
 };
 
-const bindBowHero = () => {
+const bindBowHero = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-bow-hero');
     if (!stage) return;
     const strokeButton = stage.querySelector('.bow-stroke');
@@ -34,8 +34,10 @@ const bindBowHero = () => {
     const statusEl = stage.querySelector('[data-bow="status"]');
     let starCount = 0;
     let strokeCount = 0;
-    let targetTempo = 72;
-    let timeLimit = 105;
+    // difficulty.speed: scales targetTempo and timeLimit; speed=1.0 keeps targetTempo=72, timeLimit=105 (current behavior)
+    // difficulty.complexity: visual feedback only for this game (star/stroke milestones are fixed)
+    let targetTempo = Math.round(72 * difficulty.speed);
+    let timeLimit = Math.round(105 * difficulty.speed);
     let remaining = timeLimit;
     let timerId = null;
     let endTime = null;

@@ -36,7 +36,7 @@ const updatePitchQuest = () => {
     }
 };
 
-const bindPitchQuest = () => {
+const bindPitchQuest = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-pitch-quest');
     if (!stage) return;
     const slider = stage.querySelector('[data-pitch="slider"]');
@@ -58,7 +58,9 @@ const bindPitchQuest = () => {
     let streak = 0;
     let stabilityStreak = 0;
     let lastMatchAt = 0;
-    let tolerance = 6;
+    // difficulty.speed: scales initial tolerance window; speed=1.0 keeps tolerance=6
+    // difficulty.complexity: visual feedback only for this game (no content pool to select)
+    let tolerance = Math.round(6 * difficulty.speed);
     let attempts = 0;
     let hits = 0;
     let reported = false;

@@ -53,7 +53,7 @@ const updateRhythmDash = () => {
     }
 };
 
-const bindRhythmDash = () => {
+const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-rhythm-dash');
     if (!stage) return;
     const tapButton = stage.querySelector('.rhythm-tap');
@@ -79,7 +79,9 @@ const bindRhythmDash = () => {
     let tapCount = 0;
     let runStartedAt = 0;
     const tapHistory = [];
-    let targetBpm = 90;
+    // difficulty.speed: scales targetBpm; speed=1.0 keeps targetBpm=90 (current behavior)
+    // difficulty.complexity: visual feedback only for this game (tap timing game, no content pool)
+    let targetBpm = Math.round(90 * difficulty.speed);
     let coachTarget = targetBpm;
     let reported = false;
     let timingScores = [];
