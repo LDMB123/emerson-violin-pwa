@@ -15,7 +15,8 @@ import {
     calculateBowingScore,
     formatPostureHint,
     formatBowingIntroText,
-    shouldClearTapTimes
+    shouldClearTapTimes,
+    isBfcachePagehide
 } from './trainer-utils.js';
 
 function updateSliderFill(slider) {
@@ -391,7 +392,8 @@ postureClear?.addEventListener('click', () => {
     reportPosture();
 });
 
-window.addEventListener('pagehide', () => {
+window.addEventListener('pagehide', (event) => {
+    if (isBfcachePagehide(event)) return;
     reportPosture();
     clearPosturePreview();
 });

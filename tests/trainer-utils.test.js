@@ -11,7 +11,8 @@ import {
     calculateBowingScore,
     formatPostureHint,
     formatBowingIntroText,
-    shouldClearTapTimes
+    shouldClearTapTimes,
+    isBfcachePagehide
 } from '../src/trainer/trainer-utils.js';
 
 describe('trainer-utils', () => {
@@ -214,6 +215,19 @@ describe('trainer-utils', () => {
 
         it('returns false when times are equal', () => {
             expect(shouldClearTapTimes(1000, 1000, 2000)).toBe(false);
+        });
+    });
+
+    describe('isBfcachePagehide', () => {
+        it('returns true for persisted pagehide-like events', () => {
+            expect(isBfcachePagehide({ persisted: true })).toBe(true);
+        });
+
+        it('returns false for non-persisted or missing events', () => {
+            expect(isBfcachePagehide({ persisted: false })).toBe(false);
+            expect(isBfcachePagehide({})).toBe(false);
+            expect(isBfcachePagehide(null)).toBe(false);
+            expect(isBfcachePagehide(undefined)).toBe(false);
         });
     });
 });

@@ -128,3 +128,12 @@ export const formatBowingIntroText = (baseText, target) => {
 export const shouldClearTapTimes = (lastTapTime, currentTime, threshold = 2000) => {
     return (currentTime - lastTapTime) > threshold;
 };
+
+/**
+ * Determines whether a pagehide event indicates the page is entering bfcache.
+ * @param {Event | { persisted?: boolean } | undefined | null} event
+ * @returns {boolean} True when the event is persisted (bfcache snapshot)
+ */
+export const isBfcachePagehide = (event) => {
+    return Boolean(event && typeof event === 'object' && event.persisted === true);
+};
