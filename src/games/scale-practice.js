@@ -62,12 +62,7 @@ const bindScalePractice = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
 
     const reportResult = attachTuning('scale-practice', (tuning) => {
-        targetTempo = tuning.targetTempo ?? targetTempo;
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
-        if (slider && !slider.dataset.userSet) {
-            slider.value = String(targetTempo);
-            updateTempo();
-        }
     });
 
     const reportSession = (accuracy, score) => {

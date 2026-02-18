@@ -76,7 +76,6 @@ const bindNoteMemory = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
 
     const reportResult = attachTuning('note-memory', (tuning) => {
-        timeLimit = tuning.timeLimit ?? timeLimit;
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         if (!timerId && !ended) {
             timeLeft = timeLimit;

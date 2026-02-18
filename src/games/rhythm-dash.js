@@ -133,14 +133,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
 
     const reportResult = attachTuning('rhythm-dash', (tuning) => {
-        coachTarget = tuning.targetBpm ?? coachTarget;
-        if (!(targetSlider && targetSlider.dataset.userSet)) {
-            updateTargetBpm(coachTarget);
-        } else if (suggestedEl) {
-            suggestedEl.textContent = String(coachTarget);
-        }
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
-        if (suggestedEl && !tapHistory.length) suggestedEl.textContent = String(coachTarget);
         if (!wasRunning) {
             setStatus(`Tap Start to begin the run. Target ${targetBpm} BPM.`);
         }

@@ -71,15 +71,6 @@ const bindEarTrainer = (difficulty = { speed: 1.0, complexity: 1 }) => {
         });
     };
 
-    const applyRounds = (nextRounds) => {
-        const resolved = Math.min(dots.length, nextRounds || dots.length);
-        rounds = resolved;
-        if (currentIndex > rounds) {
-            currentIndex = rounds;
-        }
-        setActiveDot();
-    };
-
     const setQuestion = (text) => {
         if (!questionEl) return;
         questionEl.textContent = text;
@@ -91,7 +82,6 @@ const bindEarTrainer = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
 
     const reportResult = attachTuning('ear-trainer', (tuning) => {
-        applyRounds(tuning.rounds ?? rounds);
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         if (!totalAnswered && !currentTone) {
             setQuestion(`Question 1 of ${rounds}`);

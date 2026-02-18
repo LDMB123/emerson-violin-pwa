@@ -12,36 +12,6 @@ const LOG_LIMIT = 120;
 const clamp = (value, min = 0, max = 1) => rawClamp(value, min, max);
 
 const GAME_CONFIG = {
-    'pitch-quest': {
-        tolerance: { easy: 8, medium: 6, hard: 4 },
-    },
-    'rhythm-dash': {
-        targetBpm: { easy: 70, medium: 90, hard: 110 },
-    },
-    'note-memory': {
-        timeLimit: { easy: 60, medium: 45, hard: 35 },
-    },
-    'ear-trainer': {
-        rounds: { easy: 6, medium: 8, hard: 10 },
-    },
-    'bow-hero': {
-        timeLimit: { easy: 120, medium: 105, hard: 90 },
-    },
-    'scale-practice': {
-        targetTempo: { easy: 70, medium: 85, hard: 105 },
-    },
-    'string-quest': {
-        comboTarget: { easy: 4, medium: 6, hard: 8 },
-    },
-    'pizzicato': {
-        comboTarget: { easy: 4, medium: 6, hard: 8 },
-    },
-    'melody-maker': {
-        lengthTarget: { easy: 4, medium: 5, hard: 6 },
-    },
-    'duet-challenge': {
-        comboTarget: { easy: 2, medium: 3, hard: 4 },
-    },
     tuner: {
         tolerance: { easy: 10, medium: 8, hard: 6 },
     },
@@ -53,15 +23,6 @@ const GAME_CONFIG = {
     },
     'trainer-posture': {
         targetChecks: { easy: 1, medium: 2, hard: 3 },
-    },
-    'rhythm-painter': {
-        creativityTarget: { easy: 55, medium: 70, hard: 85 },
-    },
-    'story-song': {
-        stageSeconds: { easy: 5, medium: 4, hard: 3 },
-    },
-    'tuning-time': {
-        targetStrings: { easy: 2, medium: 3, hard: 4 },
     },
     'bowing-coach': {
         targetSets: { easy: 2, medium: 3, hard: 4 },

@@ -82,7 +82,6 @@ const bindRhythmPainter = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
 
     const reportResult = attachTuning('rhythm-painter', (tuning) => {
-        creativityTarget = tuning.creativityTarget ?? creativityTarget;
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         update();
     });

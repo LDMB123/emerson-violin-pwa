@@ -62,7 +62,6 @@ const bindDuetChallenge = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const updateScoreboard = () => updateScoreCombo(scoreEl, comboEl, score, combo);
 
     const reportResult = attachTuning('duet-challenge', (tuning) => {
-        comboTarget = tuning.comboTarget ?? comboTarget;
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
     });
 

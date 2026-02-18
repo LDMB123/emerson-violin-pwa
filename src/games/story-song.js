@@ -99,8 +99,6 @@ const bindStorySong = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
 
     const reportResult = attachTuning('story-song', (tuning) => {
-        stageSeconds = tuning.stageSeconds ?? stageSeconds;
-        tempo = tuning.tempo ?? tuning.storyTempo ?? tempo;
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         updatePage();
     });
