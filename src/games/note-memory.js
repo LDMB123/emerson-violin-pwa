@@ -105,6 +105,10 @@ const { bind } = createGame({
             paused = true;
         };
 
+        gameState._onDeactivate = () => {
+            pauseTimer();
+        };
+
         const resumeTimer = () => {
             if (!paused || ended) return;
             if (window.location.hash !== '#view-game-note-memory') return;

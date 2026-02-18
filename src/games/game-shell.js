@@ -22,6 +22,8 @@ import { GAME_PLAY_AGAIN } from '../utils/event-names.js';
  * @param {function} [options.computeUpdate] - Optional. Called in update() after the stage is
  *   confirmed to exist. Use for live DOM refresh logic. When omitted, update() is a no-op
  *   (stage-check only).
+ * Games may also assign `gameState._onDeactivate = () => { ... }` inside onBind to run
+ * game-specific cleanup when the user navigates away from that game view.
  * @returns {{ update: function, bind: function }}
  */
 export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate } = {}) {
@@ -85,6 +87,9 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             if (window.location.hash === `#view-game-${id}`) {
                 resetSession();
                 return;
+            }
+            if (typeof gameState._onDeactivate === 'function') {
+                gameState._onDeactivate();
             }
             reportSession();
         };

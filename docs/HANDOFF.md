@@ -126,6 +126,14 @@ If both pass, you are at a known-good baseline.
     - `src/coach/focus-timer.js`
   - Added focused utility coverage:
     - `tests/focus-timer-utils.test.js`
+- Completed game deactivation lifecycle hook pass (2026-02-18, phase 14):
+  - Added generic per-game deactivation hook support in shell:
+    - `src/games/game-shell.js` (`gameState._onDeactivate`)
+  - Paused active timers on hash-navigation deactivation for:
+    - `src/games/note-memory.js`
+    - `src/games/bow-hero.js`
+  - Added regression coverage for deactivation hook execution:
+    - `tests/games/game-shell.test.js`
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -146,6 +154,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-8.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-9.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-10.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-11.md`
 
 ## Verification Gates
 
