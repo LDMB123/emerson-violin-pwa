@@ -138,6 +138,10 @@ If both pass, you are at a known-good baseline.
   - Wired play-along stop behavior into the shell deactivation hook:
     - `src/games/story-song.js`
   - Ensures hash-navigation away pauses play-along before leave reporting.
+- Completed melody-maker deactivation lifecycle pass (2026-02-18, phase 16):
+  - Wired melody playback stop behavior into the shell deactivation hook:
+    - `src/games/melody-maker.js`
+  - Ensures hash-navigation away stops active melody playback before leave reporting.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -160,6 +164,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-10.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-11.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-12.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-13.md`
 
 ## Verification Gates
 
