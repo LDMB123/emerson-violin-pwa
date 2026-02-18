@@ -162,139 +162,43 @@ const buildCoachPanel = (view, meta) => {
     const content = view.querySelector('.game-content');
     if (!content || content.querySelector('[data-game-coach]')) return null;
 
+    const stepsHtml = meta.steps.map((step, index) => `
+        <div class="game-coach-step">
+            <span class="game-coach-step-index">${index + 1}</span>
+            <span class="game-coach-step-time">${formatMinutes(step.minutes)}</span>
+            <span class="game-coach-step-text">${step.label}</span>
+            <span class="game-coach-step-cue">${step.cue || ''}</span>
+        </div>`).join('');
+
     const panel = document.createElement('div');
     panel.className = 'game-coach glass';
     panel.dataset.gameCoach = 'true';
-
-    const header = document.createElement('div');
-    header.className = 'game-coach-header';
-
-    const headerText = document.createElement('div');
-    headerText.className = 'game-coach-text';
-
-    const kicker = document.createElement('span');
-    kicker.className = 'game-coach-kicker';
-    kicker.textContent = 'Coach Focus';
-
-    const heading = document.createElement('h3');
-    heading.textContent = `${meta.skill} · ${meta.goal}`;
-
-    const goalP = document.createElement('p');
-    goalP.className = 'game-coach-goal';
-    goalP.textContent = `Target session: ${formatMinutes(meta.targetMinutes)}`;
-
-    headerText.appendChild(kicker);
-    headerText.appendChild(heading);
-    headerText.appendChild(goalP);
-
-    const badge = document.createElement('div');
-    badge.className = 'game-coach-badge';
-    badge.textContent = meta.skill;
-
-    header.appendChild(headerText);
-    header.appendChild(badge);
-
-    const steps = document.createElement('div');
-    steps.className = 'game-coach-steps';
-    meta.steps.forEach((step, index) => {
-        const stepEl = document.createElement('div');
-        stepEl.className = 'game-coach-step';
-
-        const stepIndex = document.createElement('span');
-        stepIndex.className = 'game-coach-step-index';
-        stepIndex.textContent = String(index + 1);
-
-        const stepTime = document.createElement('span');
-        stepTime.className = 'game-coach-step-time';
-        stepTime.textContent = formatMinutes(step.minutes);
-
-        const stepText = document.createElement('span');
-        stepText.className = 'game-coach-step-text';
-        stepText.textContent = step.label;
-
-        const stepCue = document.createElement('span');
-        stepCue.className = 'game-coach-step-cue';
-        stepCue.textContent = step.cue || '';
-
-        stepEl.appendChild(stepIndex);
-        stepEl.appendChild(stepTime);
-        stepEl.appendChild(stepText);
-        stepEl.appendChild(stepCue);
-        steps.appendChild(stepEl);
-    });
-
-    const session = document.createElement('div');
-    session.className = 'game-session';
-
-    const sessionRow = document.createElement('div');
-    sessionRow.className = 'game-session-row';
-
-    const sessionLabel = document.createElement('span');
-    sessionLabel.className = 'game-session-label';
-    sessionLabel.textContent = 'Session Timer';
-
-    const sessionTime = document.createElement('span');
-    sessionTime.className = 'game-session-time';
-    sessionTime.dataset.gameSessionTime = '';
-    sessionTime.textContent = '00:00';
-
-    const sessionTarget = document.createElement('span');
-    sessionTarget.className = 'game-session-target';
-    sessionTarget.textContent = `/ ${formatMinutes(meta.targetMinutes)}`;
-
-    sessionRow.appendChild(sessionLabel);
-    sessionRow.appendChild(sessionTime);
-    sessionRow.appendChild(sessionTarget);
-
-    const sessionTrack = document.createElement('div');
-    sessionTrack.className = 'game-session-track';
-    sessionTrack.dataset.gameSessionTrack = '';
-    sessionTrack.setAttribute('role', 'progressbar');
-    sessionTrack.setAttribute('aria-valuemin', '0');
-    sessionTrack.setAttribute('aria-valuemax', '100');
-    sessionTrack.setAttribute('aria-valuenow', '0');
-
-    const sessionFill = document.createElement('span');
-    sessionFill.className = 'game-session-fill';
-    sessionFill.dataset.gameSessionFill = '';
-    sessionFill.style.width = '0%';
-
-    sessionTrack.appendChild(sessionFill);
-
-    const sessionActions = document.createElement('div');
-    sessionActions.className = 'game-session-actions';
-
-    const startBtn = document.createElement('button');
-    startBtn.className = 'btn btn-primary';
-    startBtn.type = 'button';
-    startBtn.dataset.gameSessionStart = '';
-    startBtn.textContent = 'Start session';
-
-    const stopBtn = document.createElement('button');
-    stopBtn.className = 'btn btn-secondary';
-    stopBtn.type = 'button';
-    stopBtn.dataset.gameSessionStop = '';
-    stopBtn.disabled = true;
-    stopBtn.textContent = 'Finish';
-
-    sessionActions.appendChild(startBtn);
-    sessionActions.appendChild(stopBtn);
-
-    session.appendChild(sessionRow);
-    session.appendChild(sessionTrack);
-    session.appendChild(sessionActions);
-
-    const tip = document.createElement('div');
-    tip.className = 'game-coach-tip';
-    const tipLabel = document.createElement('span');
-    tipLabel.textContent = 'Coach tip:';
-    tip.appendChild(tipLabel);
-    tip.appendChild(document.createTextNode(` ${meta.tip}`));
-
-    panel.appendChild(header);
-    panel.appendChild(steps);
-    panel.appendChild(session);
-    panel.appendChild(tip);
+    panel.innerHTML = `
+        <div class="game-coach-header">
+            <div class="game-coach-text">
+                <span class="game-coach-kicker">Coach Focus</span>
+                <h3>${meta.skill} · ${meta.goal}</h3>
+                <p class="game-coach-goal">Target session: ${formatMinutes(meta.targetMinutes)}</p>
+            </div>
+            <div class="game-coach-badge">${meta.skill}</div>
+        </div>
+        <div class="game-coach-steps">${stepsHtml}</div>
+        <div class="game-session">
+            <div class="game-session-row">
+                <span class="game-session-label">Session Timer</span>
+                <span class="game-session-time" data-game-session-time="">00:00</span>
+                <span class="game-session-target">/ ${formatMinutes(meta.targetMinutes)}</span>
+            </div>
+            <div class="game-session-track" data-game-session-track=""
+                role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <span class="game-session-fill" data-game-session-fill="" style="width:0%"></span>
+            </div>
+            <div class="game-session-actions">
+                <button class="btn btn-primary" type="button" data-game-session-start="">Start session</button>
+                <button class="btn btn-secondary" type="button" data-game-session-stop="" disabled>Finish</button>
+            </div>
+        </div>
+        <div class="game-coach-tip"><span>Coach tip:</span> ${meta.tip}</div>`;
 
     content.insertBefore(panel, content.firstChild);
 
