@@ -7,6 +7,7 @@ import {
     bindTap,
     playToneNote,
     playToneSequence,
+    stopTonePlayer,
 } from './shared.js';
 import { clamp } from '../utils/math.js';
 
@@ -98,6 +99,10 @@ const { bind } = createGame({
         gameState._tappedDots = new Set();
         gameState._dots = dots;
         gameState._stage = stage;
+
+        gameState._onDeactivate = () => {
+            stopTonePlayer();
+        };
 
         dots.forEach((dot) => {
             bindTap(dot, () => {

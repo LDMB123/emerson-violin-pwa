@@ -5,6 +5,7 @@ import {
     markChecklistIf,
     bindTap,
     playToneNote,
+    stopTonePlayer,
 } from './shared.js';
 import { clamp, deviationAccuracy } from '../utils/math.js';
 
@@ -53,6 +54,10 @@ const { bind } = createGame({
         gameState.lastTap = 0;
         gameState.scaleIndex = 0;
         gameState.timingScores = [];
+
+        gameState._onDeactivate = () => {
+            stopTonePlayer();
+        };
 
         const updateTempo = () => {
             if (!slider || !tempoEl) return;

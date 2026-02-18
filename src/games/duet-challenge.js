@@ -5,6 +5,7 @@ import {
     bindTap,
     playToneNote,
     playToneSequence,
+    stopTonePlayer,
     buildNoteSequence,
     updateScoreCombo,
     createSoundsChangeBinding,
@@ -157,6 +158,7 @@ const { bind } = createGame({
         gameState._onDeactivate = () => {
             active = false;
             stopPartnerPlayback();
+            stopTonePlayer();
             setButtonsDisabled(true);
         };
 
