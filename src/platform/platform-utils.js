@@ -37,12 +37,34 @@ export const formatBytes = (bytes) => {
 };
 
 /**
+ * Checks if the device is running iPadOS
+ * @returns {boolean} True if running on iPadOS
+ */
+export const isIPadOS = () => /iPad/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+/**
  * Checks if app is running in standalone/installed mode
  * @returns {boolean} True if running as installed PWA
  */
 export const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches
     || window.matchMedia('(display-mode: fullscreen)').matches
     || window.navigator.standalone === true;
+
+/**
+ * Sets or removes a key on document.documentElement.dataset
+ * @param {string} key - Dataset key
+ * @param {string|number|null|undefined} value - Value to set; null/undefined removes the key
+ */
+export const setRootDataset = (key, value) => {
+    const root = document.documentElement;
+    if (!root) return;
+    if (value === null || value === undefined) {
+        delete root.dataset[key];
+    } else {
+        root.dataset[key] = String(value);
+    }
+};
 
 /**
  * Gets current view ID from URL hash
