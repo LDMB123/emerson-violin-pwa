@@ -1,6 +1,7 @@
 import '../styles/games.css';
 import { stopTonePlayer } from './shared.js';
 import { PERSIST_APPLIED, SOUNDS_CHANGE } from '../utils/event-names.js';
+import { getDifficulty } from './difficulty.js';
 
 const gameModules = {
     'view-game-pitch-quest': () => import('./pitch-quest.js'),
@@ -42,7 +43,8 @@ const loadGame = async (viewId) => {
     const mod = await loader();
     loaded.set(viewId, mod);
     updates.push(mod.update);
-    mod.bind();
+    const gameId = viewId.replace('view-game-', '');
+    mod.bind(getDifficulty(gameId));
     scheduleUpdateAll();
 };
 
