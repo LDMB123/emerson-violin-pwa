@@ -29,3 +29,6 @@ export const WEEKLY_GOAL_CHANGE = 'panda:weekly-goal-change';
 
 // Offline
 export const OFFLINE_MODE_CHANGE = 'panda:offline-mode-change';
+
+// Achievements
+export const ACHIEVEMENT_UNLOCKED = 'panda:achievement-unlocked';
