@@ -35,6 +35,10 @@ import {
 const rhythmScoreEl = cachedEl('[data-rhythm="score"]');
 const rhythmComboEl = cachedEl('[data-rhythm="combo"]');
 let resetRequestHandler = null;
+let hashChangeHandler = null;
+let visibilityHandler = null;
+let soundsChangeHandler = null;
+let pagehideHandler = null;
 let tuningReport = null;
 
 const updateRhythmDash = () => {
@@ -60,6 +64,18 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     if (!stage) return;
     if (resetRequestHandler) {
         document.removeEventListener(GAME_PLAY_AGAIN, resetRequestHandler);
+    }
+    if (hashChangeHandler) {
+        window.removeEventListener('hashchange', hashChangeHandler, { passive: true });
+    }
+    if (visibilityHandler) {
+        document.removeEventListener('visibilitychange', visibilityHandler);
+    }
+    if (soundsChangeHandler) {
+        document.removeEventListener(SOUNDS_CHANGE, soundsChangeHandler);
+    }
+    if (pagehideHandler) {
+        window.removeEventListener('pagehide', pagehideHandler, { passive: true });
     }
     if (tuningReport?.dispose) {
         tuningReport.dispose();
@@ -341,7 +357,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         markChecklistIf(shouldMarkEnduranceMilestone(tapCount, elapsed), 'rd-set-3');
     });
 
-    window.addEventListener('hashchange', () => {
+    hashChangeHandler = () => {
         if (window.location.hash === '#view-game-rhythm-dash') {
             resetRun();
             return;
@@ -352,7 +368,8 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         } else {
             reportSession();
         }
-    }, { passive: true });
+    };
+    window.addEventListener('hashchange', hashChangeHandler, { passive: true });
 
     resetRequestHandler = (event) => {
         const requestedViewId = event?.detail?.viewId;
@@ -362,7 +379,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     };
     document.addEventListener(GAME_PLAY_AGAIN, resetRequestHandler);
 
-    document.addEventListener('visibilitychange', () => {
+    visibilityHandler = () => {
         if (document.hidden) {
             if (runToggle?.checked) {
                 pausedByVisibility = true;
@@ -372,15 +389,30 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
             pausedByVisibility = false;
             setStatus('Run paused. Tap Start to resume.');
         }
-    });
+    };
+    document.addEventListener('visibilitychange', visibilityHandler);
 
-    document.addEventListener(SOUNDS_CHANGE, (event) => {
+    soundsChangeHandler = (event) => {
         if (event.detail?.enabled === false) {
             stopMetronome();
         } else if (runToggle?.checked) {
             startMetronome();
         }
-    });
+    };
+    document.addEventListener(SOUNDS_CHANGE, soundsChangeHandler);
+
+    pagehideHandler = (event) => {
+        if (window.location.hash !== '#view-game-rhythm-dash') return;
+        if (event?.persisted) return;
+        if (runToggle?.checked) {
+            runToggle.checked = false;
+            runToggle.dispatchEvent(new Event('change', { bubbles: true }));
+            return;
+        }
+        stopMetronome();
+        reportSession();
+    };
+    window.addEventListener('pagehide', pagehideHandler, { passive: true });
 };
 
 export { updateRhythmDash as update, bindRhythmDash as bind };
