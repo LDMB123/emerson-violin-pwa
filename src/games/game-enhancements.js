@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { GAME_META } from './game-config.js';
 import { formatMinutes, createSessionTimer } from './session-timer.js';
 import { renderDifficultyPickers } from './difficulty-picker.js';
@@ -262,8 +263,4 @@ const initGameEnhancements = () => {
     renderDifficultyPickers();
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initGameEnhancements);
-} else {
-    initGameEnhancements();
-}
+whenReady(initGameEnhancements);

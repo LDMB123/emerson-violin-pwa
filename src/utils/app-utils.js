@@ -9,17 +9,6 @@ export const isPrimaryView = (viewId) => {
     return PRIMARY_VIEWS.has(viewId);
 };
 
-export const normalizeViewHash = (viewId) => {
-    if (!viewId) return '#view-home';
-    if (viewId.startsWith('#')) return viewId;
-    return `#${viewId}`;
-};
-
-export const isViewHash = (href) => {
-    if (!href) return false;
-    return href.startsWith('#view-');
-};
-
 export const getModulesForView = (viewId) => {
     const modules = [];
 

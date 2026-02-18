@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { refreshRecommendationsCache } from './recommendations.js';
 import { ML_RECS, GAME_RECORDED, PRACTICE_RECORDED, SONG_RECORDED, ML_UPDATE } from '../utils/event-names.js';
 
@@ -48,8 +49,4 @@ const init = () => {
     scheduleRefresh('boot');
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+whenReady(init);

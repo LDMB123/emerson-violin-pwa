@@ -1,3 +1,5 @@
+import { whenReady } from '../utils/dom-ready.js';
+
 const statusEl = document.querySelector('[data-sw-status]');
 const syncStatusEl = document.querySelector('[data-sync-status]');
 const updateButton = document.querySelector('[data-sw-update]');
@@ -120,8 +122,4 @@ const init = async () => {
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange, { once: true });
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+whenReady(init);

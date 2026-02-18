@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON, getBlob, removeBlob } from '../persistence/storage.js';
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
@@ -216,8 +217,4 @@ const init = () => {
     });
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+whenReady(init);

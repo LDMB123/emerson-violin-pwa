@@ -111,11 +111,12 @@ describe('createTonePlayer', () => {
         delete globalThis.webkitAudioContext;
     });
 
-    it('returns object with playNote, playSequence, stopAll', () => {
+    it('returns object with playNote, playSequence, scheduleTone, stopAll', () => {
         const player = createTonePlayer();
         expect(player).toBeTruthy();
         expect(typeof player.playNote).toBe('function');
         expect(typeof player.playSequence).toBe('function');
+        expect(typeof player.scheduleTone).toBe('function');
         expect(typeof player.stopAll).toBe('function');
     });
 

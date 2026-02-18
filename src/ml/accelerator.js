@@ -1,3 +1,5 @@
+import { whenReady } from '../utils/dom-ready.js';
+
 const statusEl = document.querySelector('[data-ml-accel]');
 const detailEl = document.querySelector('[data-ml-accel-detail]');
 const root = document.documentElement;
@@ -44,8 +46,4 @@ const init = async () => {
     setDetail('Offline models run with optimized on-device compute.');
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+whenReady(init);

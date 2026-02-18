@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { clamp, todayDay } from '../utils/math.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
@@ -147,8 +148,4 @@ const initSongProgress = () => {
     loadEvents().then(updateBestAccuracyUI);
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSongProgress);
-} else {
-    initSongProgress();
-}
+whenReady(initSongProgress);

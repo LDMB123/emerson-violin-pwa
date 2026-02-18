@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { clamp } from '../utils/math.js';
 import { PARENT_GOAL_KEY as GOAL_KEY } from '../persistence/storage-keys.js';
@@ -72,8 +73,4 @@ const init = async () => {
     saveButton?.addEventListener('click', saveGoal);
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+whenReady(init);

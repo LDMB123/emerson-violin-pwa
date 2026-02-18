@@ -155,6 +155,7 @@ export const createTonePlayer = () => {
     return {
         playNote,
         playSequence,
+        scheduleTone,
         stopAll,
     };
 };

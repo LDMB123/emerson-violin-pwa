@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { setRootDataset } from './platform-utils.js';
 
 const statusEl = document.querySelector('[data-input-status]');
@@ -42,8 +43,4 @@ const init = () => {
     window.matchMedia('(hover: hover)').addEventListener('change', updateHoverCapability);
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+whenReady(init);

@@ -9,7 +9,7 @@ import { getJSON } from '../persistence/storage.js';
  * Safari 26.2 / iOS 26.2: SUPPORTED since Safari 17.0
  */
 
-export const supportsBadging = () => {
+const supportsBadging = () => {
     return 'setAppBadge' in navigator && 'clearAppBadge' in navigator;
 };
 
@@ -29,7 +29,7 @@ export const setBadge = async (count) => {
     }
 };
 
-export const updatePracticeBadge = async () => {
+const updatePracticeBadge = async () => {
     const today = new Date().toISOString().split('T')[0];
     try {
         const progress = await getJSON(PROGRESS_KEY);
@@ -62,3 +62,5 @@ export const initializeBadging = () => {
         setBadge(0);
     }
 };
+
+initializeBadging();

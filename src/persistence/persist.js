@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from './storage.js';
 import { UI_STATE_KEY as STORAGE_KEY } from './storage-keys.js';
 import { PERSIST_APPLIED } from '../utils/event-names.js';
@@ -78,8 +79,4 @@ const initPersistence = async () => {
     });
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPersistence);
-} else {
-    initPersistence();
-}
+whenReady(initPersistence);

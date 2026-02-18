@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON, removeJSON } from '../persistence/storage.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { minutesForInput, toTrackerTimestamp, formatRecentScore, coachMessageFor, buildRadarPoints } from './progress-utils.js';
@@ -533,8 +534,4 @@ if (resetButton) {
     resetButton.addEventListener('click', resetProgress);
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initProgress);
-} else {
-    initProgress();
-}
+whenReady(initProgress);

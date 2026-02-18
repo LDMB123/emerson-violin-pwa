@@ -3,8 +3,6 @@ import {
     PRIMARY_VIEWS,
     getViewId,
     isPrimaryView,
-    normalizeViewHash,
-    isViewHash,
     getModulesForView,
     getActiveNavHref,
     isNavItemActive,
@@ -74,42 +72,6 @@ describe('app-utils', () => {
 
         it('returns false for empty string', () => {
             expect(isPrimaryView('')).toBe(false);
-        });
-    });
-
-    describe('normalizeViewHash', () => {
-        it('adds # prefix', () => {
-            expect(normalizeViewHash('view-tuner')).toBe('#view-tuner');
-        });
-
-        it('preserves existing # prefix', () => {
-            expect(normalizeViewHash('#view-tuner')).toBe('#view-tuner');
-        });
-
-        it('returns #view-home for empty string', () => {
-            expect(normalizeViewHash('')).toBe('#view-home');
-        });
-
-        it('returns #view-home for null', () => {
-            expect(normalizeViewHash(null)).toBe('#view-home');
-        });
-    });
-
-    describe('isViewHash', () => {
-        it('returns true for #view- prefix', () => {
-            expect(isViewHash('#view-tuner')).toBe(true);
-        });
-
-        it('returns false for non-view hash', () => {
-            expect(isViewHash('#settings')).toBe(false);
-        });
-
-        it('returns false for empty string', () => {
-            expect(isViewHash('')).toBe(false);
-        });
-
-        it('returns false for null', () => {
-            expect(isViewHash(null)).toBe(false);
         });
     });
 

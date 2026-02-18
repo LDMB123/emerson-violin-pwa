@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import '../styles/games.css';
 import { stopTonePlayer } from './shared.js';
 import { PERSIST_APPLIED, SOUNDS_CHANGE } from '../utils/event-names.js';
@@ -77,11 +78,7 @@ const initMetrics = () => {
     document.addEventListener('change', handleChange);
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMetrics);
-} else {
-    initMetrics();
-}
+whenReady(initMetrics);
 
 document.addEventListener(PERSIST_APPLIED, () => {
     scheduleUpdateAll();

@@ -2,6 +2,7 @@ import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import { setDifficultyBadge } from '../games/shared.js';
+import { createTonePlayer } from '../audio/tone-player.js';
 import {
     isPracticeView as isPracticeViewUtil,
     calculateMetronomeBpm,
@@ -52,7 +53,7 @@ let metronomeBpm = Number.parseInt(metronomeSlider?.value || '100', 10);
 if (Number.isNaN(metronomeBpm)) metronomeBpm = 100;
 
 let metronomeTimer = null;
-let audioContext = null;
+let metronomePlayer = null;
 let tapTimes = [];
 let targetBpm = 90;
 let metronomeReported = false;
@@ -102,28 +103,14 @@ const applyMetronomeTuning = async () => {
     }
 };
 
-const ensureAudioContext = () => {
-    if (!audioContext) {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return null;
-        audioContext = new AudioCtx();
-    }
-    return audioContext;
+const getMetronomePlayer = () => {
+    if (!metronomePlayer) metronomePlayer = createTonePlayer();
+    return metronomePlayer;
 };
 
 const playClick = () => {
     if (!isSoundEnabled()) return;
-    const ctx = ensureAudioContext();
-    if (!ctx) return;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.18, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.09);
+    getMetronomePlayer().scheduleTone(880, { duration: 0.08, volume: 0.18 });
 };
 
 const stopMetronome = ({ silent = false } = {}) => {
@@ -134,9 +121,6 @@ const stopMetronome = ({ silent = false } = {}) => {
         clearInterval(metronomeTimer);
         metronomeTimer = null;
     }
-    if (audioContext) {
-        audioContext.suspend().catch(() => {});
-    }
     tapTimes = [];
     if (metronomeToggle) {
         metronomeToggle.textContent = 'Start';
@@ -146,18 +130,12 @@ const stopMetronome = ({ silent = false } = {}) => {
     if (!silent) setMetronomeStatus('Metronome paused.');
 };
 
-const startMetronome = async () => {
+const startMetronome = () => {
     if (metronomeTimer) return;
     if (!isSoundEnabled()) {
         setMetronomeStatus('Sounds are off. Turn on Sounds to hear the click.');
         return;
     }
-    const ctx = ensureAudioContext();
-    if (!ctx) {
-        setMetronomeStatus('Audio not supported on this device.');
-        return;
-    }
-    await ctx.resume();
     const interval = calculateMetronomeInterval(metronomeBpm);
     playClick();
     metronomeTimer = window.setInterval(playClick, interval);
@@ -418,8 +396,7 @@ window.addEventListener('pagehide', () => {
     clearPosturePreview();
 });
 
-const hasAudioContext = Boolean(window.AudioContext || window.webkitAudioContext);
-if (!hasAudioContext) {
+if (typeof AudioContext === 'undefined') {
     if (metronomeToggle) metronomeToggle.disabled = true;
     if (metronomeTap) metronomeTap.disabled = true;
     setMetronomeStatus('Audio tools are not supported on this device.');
