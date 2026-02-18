@@ -10,8 +10,6 @@ import {
     computeAverageFromHistory,
     computeAccuracyFromTimingScores,
     computeAccuracyFromBpmHistory,
-    shouldBreakCombo,
-    isMetronomeBeatStrong,
     getMetronomeNote,
     getMetronomeVolume,
     shouldMarkTapMilestone,
@@ -232,43 +230,7 @@ describe('rhythm-dash-utils', () => {
         });
     });
 
-    describe('shouldBreakCombo', () => {
-        it('returns true for bad timing after delta', () => {
-            expect(shouldBreakCombo(500, 0.5)).toBe(true);
-        });
-
-        it('returns false for good timing', () => {
-            expect(shouldBreakCombo(500, 0.8)).toBe(false);
-        });
-
-        it('returns false for zero delta', () => {
-            expect(shouldBreakCombo(0, 0.5)).toBe(false);
-        });
-
-        it('returns false for negative delta', () => {
-            expect(shouldBreakCombo(-100, 0.5)).toBe(false);
-        });
-    });
-
     describe('metronome functions', () => {
-        describe('isMetronomeBeatStrong', () => {
-            it('returns true for beat 0', () => {
-                expect(isMetronomeBeatStrong(0)).toBe(true);
-            });
-
-            it('returns true for beat 4', () => {
-                expect(isMetronomeBeatStrong(4)).toBe(true);
-            });
-
-            it('returns false for beat 1', () => {
-                expect(isMetronomeBeatStrong(1)).toBe(false);
-            });
-
-            it('returns false for beat 3', () => {
-                expect(isMetronomeBeatStrong(3)).toBe(false);
-            });
-        });
-
         describe('getMetronomeNote', () => {
             it('returns E for strong beat', () => {
                 expect(getMetronomeNote(0)).toBe('E');

@@ -6,9 +6,6 @@ import {
     computeOverallProgress,
     formatStepLabel,
     formatStepCue,
-    shouldResetLesson,
-    getNextStepIndex,
-    canAdvanceStep,
 } from '../src/utils/lesson-plan-utils.js';
 
 describe('lesson-plan-utils', () => {
@@ -171,57 +168,4 @@ describe('lesson-plan-utils', () => {
         });
     });
 
-    describe('shouldResetLesson', () => {
-        it('returns false when steps remain', () => {
-            expect(shouldResetLesson(2, 5)).toBe(false);
-        });
-
-        it('returns true when all steps complete', () => {
-            expect(shouldResetLesson(5, 5)).toBe(true);
-        });
-
-        it('returns true when completed exceeds total', () => {
-            expect(shouldResetLesson(10, 5)).toBe(true);
-        });
-
-        it('returns false at start', () => {
-            expect(shouldResetLesson(0, 5)).toBe(false);
-        });
-    });
-
-    describe('getNextStepIndex', () => {
-        it('returns 0 when lesson complete', () => {
-            expect(getNextStepIndex(4, 5, 5)).toBe(0);
-        });
-
-        it('returns completed count for next step', () => {
-            expect(getNextStepIndex(1, 2, 5)).toBe(2);
-        });
-
-        it('returns 0 at start', () => {
-            expect(getNextStepIndex(0, 0, 5)).toBe(0);
-        });
-
-        it('resets to 0 when completed exceeds total', () => {
-            expect(getNextStepIndex(3, 10, 5)).toBe(0);
-        });
-    });
-
-    describe('canAdvanceStep', () => {
-        it('returns true when steps remain', () => {
-            expect(canAdvanceStep(2, 5)).toBe(true);
-        });
-
-        it('returns false when all steps complete', () => {
-            expect(canAdvanceStep(5, 5)).toBe(false);
-        });
-
-        it('returns false when completed exceeds total', () => {
-            expect(canAdvanceStep(10, 5)).toBe(false);
-        });
-
-        it('returns true at start', () => {
-            expect(canAdvanceStep(0, 5)).toBe(true);
-        });
-    });
 });

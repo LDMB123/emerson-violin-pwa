@@ -12,12 +12,6 @@ export const UI_STATE_KEY = 'panda-violin:ui-state:v1';
 // Progress snapshot
 export const PROGRESS_KEY = 'panda-violin:progress:v1';
 
-// Lesson plan
-export const LESSON_PLAN_KEY = 'panda-violin:lesson-plan:v1';
-
-// Focus timer active state
-export const FOCUS_ACTIVE_KEY = 'panda-violin:focus-active:v1';
-
 // Adaptive ML model
 export const ML_MODEL_KEY = 'panda-violin:ml:adaptive-v1';
 

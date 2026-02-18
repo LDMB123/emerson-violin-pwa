@@ -58,11 +58,7 @@ export const computeAccuracyFromBpmHistory = (tapHistory, targetBpm) => {
     return deviationAccuracy(average, targetBpm);
 };
 
-export const shouldBreakCombo = (delta, timingScore) => {
-    return delta > 0 && timingScore < 0.6;
-};
-
-export const isMetronomeBeatStrong = (beatIndex) => {
+const isMetronomeBeatStrong = (beatIndex) => {
     return beatIndex % 4 === 0;
 };
 

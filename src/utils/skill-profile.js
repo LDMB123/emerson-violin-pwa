@@ -58,7 +58,5 @@ const createSkillProfileUtils = (SkillCategory) => {
 };
 
 export {
-    clamp,
-    scoreFromMinutes,
     createSkillProfileUtils,
 };
