@@ -146,6 +146,11 @@ If both pass, you are at a known-good baseline.
   - Wired partner playback stop behavior into the shell deactivation hook:
     - `src/games/duet-challenge.js`
   - Ensures hash-navigation away stops partner audio and deactivates round controls.
+- Completed sample-audio deactivation lifecycle pass (2026-02-18, phase 18):
+  - Wired sample audio cleanup into shell deactivation hook for:
+    - `src/games/ear-trainer.js`
+    - `src/games/tuning-time.js`
+  - Ensures hash-navigation away pauses active sample playback in these games.
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -170,6 +175,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-12.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-13.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-14.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-15.md`
 
 ## Verification Gates
 
