@@ -1,6 +1,5 @@
 const root = document.documentElement;
 const media = window.matchMedia ? window.matchMedia('(prefers-reduced-data: reduce)') : null;
-const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
 const setRootFlag = (enabled) => {
     if (!root) return;
@@ -22,7 +21,7 @@ const updateAudioPreload = (saveData) => {
 };
 
 const evaluate = () => {
-    const saveData = Boolean(connection?.saveData) || Boolean(media?.matches);
+    const saveData = Boolean(media?.matches);
     setRootFlag(saveData);
     updateAudioPreload(saveData);
 };
@@ -30,4 +29,3 @@ const evaluate = () => {
 evaluate();
 
 media?.addEventListener('change', evaluate);
-connection?.addEventListener('change', evaluate);

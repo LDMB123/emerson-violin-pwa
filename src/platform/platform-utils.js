@@ -41,7 +41,7 @@ export const formatBytes = (bytes) => {
  * @returns {boolean} True if running on iPadOS
  */
 export const isIPadOS = () => /iPad/.test(navigator.userAgent)
-    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
 
 /**
  * Checks if app is running in standalone/installed mode
