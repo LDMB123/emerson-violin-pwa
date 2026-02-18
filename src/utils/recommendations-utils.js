@@ -61,7 +61,7 @@ export const recencyWeight = (timestamp) => {
     return 1 / (1 + daysAgo * 0.35);
 };
 
-export const average = (values) => {
+const average = (values) => {
     if (!values.length) return 0;
     return values.reduce((sum, value) => sum + value, 0) / values.length;
 };
