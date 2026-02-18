@@ -165,6 +165,12 @@ If both pass, you are at a known-good baseline.
     - `src/games/note-memory.js`
     - `src/games/bow-hero.js`
   - Ensures hash-navigation away and session reset paths stop active synthesized tone output.
+- Completed shell pagehide lifecycle reporting pass (2026-02-18, phase 21):
+  - Added non-bfcache `pagehide` handling in:
+    - `src/games/game-shell.js`
+  - Deactivation hooks and reporting now trigger when the active game view is hidden via real page unload, not just hash navigation.
+  - Added regression coverage for persisted/non-persisted pagehide behavior:
+    - `tests/games/game-shell.test.js`
 - Added dead code and duplicate dependency audits:
   - `knip.json`
   - `scripts/audit-dependency-duplicates.mjs`
@@ -192,6 +198,7 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-15.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-16.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-17.md`
+  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-18.md`
 
 ## Verification Gates
 

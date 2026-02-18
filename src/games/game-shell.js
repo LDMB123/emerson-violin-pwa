@@ -52,6 +52,9 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         if (gameState._playAgainHandler) {
             document.removeEventListener(GAME_PLAY_AGAIN, gameState._playAgainHandler);
         }
+        if (gameState._pagehideHandler) {
+            window.removeEventListener('pagehide', gameState._pagehideHandler, { passive: true });
+        }
         if (reportResult?.dispose) {
             reportResult.dispose();
         }
@@ -100,9 +103,20 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             if (currentViewId !== `view-game-${id}`) return;
             resetSession();
         };
+        const pagehideHandler = (event) => {
+            const currentViewId = window.location.hash.replace(/^#/, '');
+            if (currentViewId !== `view-game-${id}`) return;
+            if (event?.persisted) return;
+            if (typeof gameState._onDeactivate === 'function') {
+                gameState._onDeactivate();
+            }
+            reportSession();
+        };
         gameState._hashHandler = hashHandler;
         gameState._playAgainHandler = playAgainHandler;
+        gameState._pagehideHandler = pagehideHandler;
         window.addEventListener('hashchange', hashHandler, { passive: true });
+        window.addEventListener('pagehide', pagehideHandler, { passive: true });
         document.addEventListener(GAME_PLAY_AGAIN, playAgainHandler);
     }
 
