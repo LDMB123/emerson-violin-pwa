@@ -3,9 +3,21 @@ import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { minutesForInput, toTrackerTimestamp, formatRecentScore, coachMessageFor, buildRadarPoints } from './progress-utils.js';
 import { clamp, todayDay } from '../utils/math.js';
 import { EVENTS_KEY as EVENT_KEY, UI_STATE_KEY as PERSIST_KEY } from '../persistence/storage-keys.js';
-import { PRACTICE_RECORDED, GAME_RECORDED, GOAL_TARGET_CHANGE } from '../utils/event-names.js';
+import { PRACTICE_RECORDED, GAME_RECORDED, GOAL_TARGET_CHANGE, ACHIEVEMENT_UNLOCKED } from '../utils/event-names.js';
 import { setBadge } from '../notifications/badging.js';
 import { GAME_LABELS } from '../utils/recommendations-utils.js';
+
+const BADGE_META = {
+    first_note:    { name: 'First Note',    artSrc: null },
+    streak_7:      { name: 'Week Warrior',   artSrc: './assets/badges/badge_practice_streak_1769390952199.webp' },
+    level_5:       { name: 'Rising Star',    artSrc: null },
+    practice_100:  { name: 'Dedicated',      artSrc: null },
+    pitch_perfect: { name: 'Pitch Perfect',  artSrc: './assets/badges/badge_pitch_master_1769390924763.webp' },
+    rhythm_master: { name: 'Rhythm Master',  artSrc: './assets/badges/badge_rhythm_star_1769390938421.webp' },
+    bow_hero:      { name: 'Bow Hero',       artSrc: './assets/badges/badge_bow_hero_1769390964607.webp' },
+    ear_training:  { name: 'Golden Ear',     artSrc: './assets/badges/badge_ear_training_1769391019017.webp' },
+    all_games:     { name: 'Game Master',    artSrc: null },
+};
 
 let wasmModule = null;
 const getCore = async () => {
@@ -98,6 +110,7 @@ const buildProgress = async (events) => {
     const seenDay = new Set();
     const currentDay = todayDay();
     let weekMinutes = 0;
+    let totalMinutes = 0;
     const dailyMinutes = Array.from({ length: 7 }, () => 0);
 
     const addToDaily = (day, minutes) => {
@@ -114,6 +127,7 @@ const buildProgress = async (events) => {
         }
         const streak = calculate_streak(new Uint32Array(uniqueDays));
         progress.log_practice(event.minutes, streak);
+        totalMinutes += event.minutes;
         updateSkillProfile(skillProfile, event.id, event.minutes);
         if (event.day >= currentDay - 6) {
             weekMinutes += event.minutes;
@@ -184,6 +198,11 @@ const buildProgress = async (events) => {
         }
     }
     if (playedGames.size >= practiceGameRules.length) tracker.unlock('all_games', now);
+
+    const finalStreak = calculate_streak(new Uint32Array(uniqueDays));
+    if (finalStreak >= 7) tracker.unlock('streak_7', now);
+    if (progress.level >= 5) tracker.unlock('level_5', now);
+    if (totalMinutes >= 100) tracker.unlock('practice_100', now);
 
     const recentGames = gameEvents
         .slice(-3)
@@ -357,6 +376,13 @@ const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills,
                 mascot.addEventListener('animationend', () => {
                     mascot.classList.remove('is-celebrating');
                 }, { once: true });
+            }
+            // Dispatch global achievement event for overlay
+            const meta = BADGE_META[id];
+            if (meta) {
+                document.dispatchEvent(new CustomEvent(ACHIEVEMENT_UNLOCKED, {
+                    detail: { id, name: meta.name, artSrc: meta.artSrc },
+                }));
             }
         }
     });
