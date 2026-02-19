@@ -21,7 +21,7 @@ test.describe('Lazy View Loading', () => {
         // Check that home view is loaded
         await expect(page.locator('#main-content')).toContainText('Today\'s Practice Mission');
         await expect(page.locator('.home-title')).toContainText('Ready to play');
-        await expect(page.locator('.home-subtitle')).toContainText('Start with one quick mission');
+        await expect(page.locator('.home-subtitle')).toContainText('Start your mission');
 
         // Verify home view elements are present
         await expect(page.locator('.home-mascot')).toBeVisible();

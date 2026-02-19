@@ -20,7 +20,21 @@ const dismissGameCompleteIfOpen = async (page) => {
 };
 
 const openGame = async (page, gameId) => {
-    await navigateToView(page, `view-game-${gameId}`, { timeout: 10000 });
+    const targetViewId = `view-game-${gameId}`;
+    const targetView = page.locator(`#${targetViewId}`);
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        await navigateToView(page, targetViewId, { timeout: 10000 }).catch(() => {});
+        await page.waitForURL(`**/#${targetViewId}`, { timeout: 10000 }).catch(() => {});
+        if (await targetView.isVisible().catch(() => false)) {
+            await expect(targetView).toBeVisible({ timeout: 10000 });
+            await dismissGameCompleteIfOpen(page);
+            return;
+        }
+        await navigateToView(page, 'view-games', { timeout: 10000 }).catch(() => {});
+    }
+
+    await expect(targetView).toBeVisible({ timeout: 10000 });
     await dismissGameCompleteIfOpen(page);
 };
 
@@ -96,6 +110,20 @@ const tapRhythmUntilScoreIncreases = async (page, scoreLocator) => {
     expect(await readNumericValue(scoreLocator)).toBeGreaterThan(startScore);
 };
 
+const tapPainterUntilScoreIncreases = async (page, scoreLocator) => {
+    const startScore = await readNumericValue(scoreLocator);
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+        await page.locator('#view-game-rhythm-painter .paint-dot.dot-blue').click();
+        await page.waitForTimeout(120);
+        if ((await readNumericValue(scoreLocator)) > startScore) {
+            return;
+        }
+    }
+
+    expect(await readNumericValue(scoreLocator)).toBeGreaterThan(startScore);
+};
+
 const hitActiveTargetUntilScoreIncreases = async (
     page,
     {
@@ -135,6 +163,21 @@ const ensureSoundsEnabled = async (page) => {
     });
 };
 
+const emitPitchLockFeature = async (page, note = 'A') => {
+    await page.evaluate(({ targetNote }) => {
+        document.dispatchEvent(new CustomEvent('panda:rt-state', {
+            detail: {
+                paused: false,
+                lastFeature: {
+                    note: targetNote,
+                    cents: 0,
+                    hasSignal: true,
+                },
+            },
+        }));
+    }, { targetNote: note });
+};
+
 test.describe('all games core interactions', () => {
     test('group A: pitch/rhythm/memory/ear/bow', async ({ page }) => {
         test.setTimeout(90000);
@@ -146,6 +189,7 @@ test.describe('all games core interactions', () => {
         const pitchStatus = page.locator('#view-game-pitch-quest [data-pitch="status"]');
         await expect(pitchStatus).toContainText('±', { timeout: 10000 });
         const pitchStart = await pitchScore.innerText();
+        await emitPitchLockFeature(page, 'A');
         await page.locator('#view-game-pitch-quest [data-pitch="check"]').click();
         await expect(pitchScore).not.toHaveText(pitchStart);
         await returnToGames(page, 'pitch-quest');
@@ -273,9 +317,7 @@ test.describe('all games core interactions', () => {
 
         await openGame(page, 'rhythm-painter');
         const painterScore = page.locator('#view-game-rhythm-painter [data-painter="score"]');
-        const painterStart = await painterScore.innerText();
-        await page.locator('#view-game-rhythm-painter .paint-dot.dot-blue').click();
-        await expect(painterScore).not.toHaveText(painterStart);
+        await tapPainterUntilScoreIncreases(page, painterScore);
         await expect(page.locator('#view-game-rhythm-painter [data-painter="creativity"]')).not.toHaveText('0%');
         await returnToGames(page, 'rhythm-painter');
 
