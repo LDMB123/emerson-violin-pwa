@@ -11,7 +11,7 @@ import {
 } from './shared.js';
 import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { GAME_PLAY_AGAIN, SOUNDS_CHANGE } from '../utils/event-names.js';
+import { GAME_PLAY_AGAIN, RT_STATE, SOUNDS_CHANGE } from '../utils/event-names.js';
 import {
     computeBeatInterval,
     computeBpm,
@@ -39,6 +39,7 @@ let hashChangeHandler = null;
 let visibilityHandler = null;
 let soundsChangeHandler = null;
 let pagehideHandler = null;
+let realtimeStateHandler = null;
 let tuningReport = null;
 
 const cleanupRhythmDashBindings = () => {
@@ -56,6 +57,9 @@ const cleanupRhythmDashBindings = () => {
     }
     if (pagehideHandler) {
         window.removeEventListener('pagehide', pagehideHandler, { passive: true });
+    }
+    if (realtimeStateHandler) {
+        document.removeEventListener(RT_STATE, realtimeStateHandler);
     }
     if (tuningReport?.dispose) {
         tuningReport.dispose();
@@ -84,6 +88,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-rhythm-dash');
     if (!stage) return;
     cleanupRhythmDashBindings();
+
     const tapButton = stage.querySelector('.rhythm-tap');
     const runToggle = stage.querySelector('#rhythm-run');
     const pauseButton = stage.querySelector('[data-rhythm="pause"]');
@@ -107,17 +112,17 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     let tapCount = 0;
     let runStartedAt = 0;
     const tapHistory = [];
-    // difficulty.speed: scales targetBpm; speed=1.0 keeps targetBpm=90 (current behavior)
-    // difficulty.complexity: visual feedback only for this game (tap timing game, no content pool)
+    const realtimeTempoHistory = [];
     let targetBpm = Math.round(90 * difficulty.speed);
     let coachTarget = targetBpm;
     let reported = false;
     let timingScores = [];
-    let beatInterval = 60000 / targetBpm;
+    let beatInterval = computeBeatInterval(targetBpm);
     let paused = false;
     let pausedByVisibility = false;
     let metronomeId = null;
     let metronomeBeat = 0;
+    let realtimeListening = false;
 
     if (!tapButton) return;
 
@@ -135,6 +140,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
             meterFill.style.width = `${percent}%`;
             if (meterTrack) {
                 meterTrack.setAttribute('aria-valuenow', String(Math.round(percent)));
+                meterTrack.setAttribute('aria-valuetext', `${Math.round(percent)}%`);
             }
         }
     };
@@ -153,7 +159,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         }
         if (targetValue) targetValue.textContent = `${next} BPM`;
         if (!wasRunning) {
-            setStatus(`Tap Start to begin the run. Target ${targetBpm} BPM.`);
+            setStatus(`Tap Start to begin. Target ${targetBpm} BPM.`);
         }
         if (runToggle?.checked) {
             startMetronome();
@@ -163,7 +169,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     tuningReport = attachTuning('rhythm-dash', (tuning) => {
         setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
         if (!wasRunning) {
-            setStatus(`Tap Start to begin the run. Target ${targetBpm} BPM.`);
+            setStatus(`Tap Start to begin. Target ${targetBpm} BPM.`);
         }
     });
 
@@ -213,9 +219,9 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         if (running) {
             if (paused) {
                 paused = false;
-                setStatus('Run resumed. Tap the beat in the hit zone.');
+                setStatus(realtimeListening ? 'Run resumed. Follow the live beat.' : 'Run resumed. Mic off, tap fallback is active.');
             } else {
-                setStatus('Run started. Tap the beat in the hit zone.');
+                setStatus(realtimeListening ? 'Run started. Bow on each beat.' : 'Run started. Tap fallback while listening starts.');
                 if (!runStartedAt) runStartedAt = Date.now();
                 reported = false;
                 timingScores = [];
@@ -230,9 +236,10 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
             if (paused) {
                 setStatus('Run paused. Tap Start to resume.');
             } else {
-                setStatus(wasActive ? 'Run paused. Tap Start to resume.' : `Tap Start to begin the run. Target ${targetBpm} BPM.`);
+                setStatus(wasActive ? 'Run paused. Tap Start to resume.' : `Tap Start to begin. Target ${targetBpm} BPM.`);
                 lastTap = 0;
                 tapHistory.length = 0;
+                realtimeTempoHistory.length = 0;
                 timingScores = [];
                 tapCount = 0;
                 runStartedAt = 0;
@@ -248,6 +255,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         tapCount = 0;
         runStartedAt = 0;
         tapHistory.length = 0;
+        realtimeTempoHistory.length = 0;
         timingScores = [];
         reported = false;
         paused = false;
@@ -264,6 +272,36 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
             meterTrack.setAttribute('aria-valuetext', '0%');
         }
         updateRunningState();
+    };
+
+    const processBeat = (timingScore, { ratingSource = 'Mic', bpmValue = 0 } = {}) => {
+        const boundedScore = clamp(timingScore, 0, 1);
+        combo = computeNextCombo(combo, boundedScore);
+        const increment = computeScoreIncrement(boundedScore, combo);
+        score += increment;
+        tapCount += 1;
+        setLiveNumber(scoreEl, 'liveScore', score);
+        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
+
+        timingScores.push(boundedScore);
+        if (timingScores.length > 16) timingScores.shift();
+
+        const { rating, level } = getRatingFromScore(boundedScore);
+        setRating(rating, level, boundedScore);
+
+        if (Number.isFinite(bpmValue) && bpmValue > 0 && bpmEl) {
+            bpmEl.textContent = String(Math.round(bpmValue));
+        }
+        if (shouldShowComboStatus(combo)) {
+            setStatus(`${ratingSource}: ${formatComboStatus(rating, combo)}`);
+        } else {
+            setStatus(`${ratingSource}: ${formatRegularStatus(rating)}`);
+        }
+
+        markChecklistIf(shouldMarkTapMilestone(tapCount), 'rd-set-1');
+        markChecklistIf(shouldMarkComboMilestone(combo), 'rd-set-2');
+        const elapsed = runStartedAt ? (Date.now() - runStartedAt) : 0;
+        markChecklistIf(shouldMarkEnduranceMilestone(tapCount, elapsed), 'rd-set-3');
     };
 
     runToggle?.addEventListener('change', updateRunningState);
@@ -297,7 +335,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     });
 
     settingsButton?.addEventListener('click', () => {
-        setStatus('Tip: watch the hit zone and tap evenly for combos.');
+        setStatus('Tip: keep bows even and steady for cleaner rhythm.');
     });
 
     targetSlider?.addEventListener('input', (event) => {
@@ -314,52 +352,66 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
 
     bindTap(tapButton, () => {
         if (runToggle && !runToggle.checked) {
-            setStatus('Tap Start to run the lanes.');
+            setStatus('Tap Start to run the lane.');
             return;
         }
         const now = performance.now();
         const delta = lastTap ? now - lastTap : 0;
-        let timingScore = 0;
-        let rating = 'Off';
-        let level = 'off';
-        if (delta > 0) {
-            timingScore = computeTimingScore(delta, beatInterval);
-            const result = getRatingFromScore(timingScore);
-            rating = result.rating;
-            level = result.level;
+        if (delta <= 0) {
+            lastTap = now;
+            setStatus('Tap once more to lock timing.');
+            return;
         }
-        combo = computeNextCombo(combo, timingScore);
-        const increment = computeScoreIncrement(timingScore, combo);
-        score += increment;
-        tapCount += 1;
-        setLiveNumber(scoreEl, 'liveScore', score);
-        setLiveNumber(comboEl, 'liveCombo', combo, (value) => `x${value}`);
-        if (delta > 0 && bpmEl) {
-            const bpm = computeBpm(delta);
-            bpmEl.textContent = String(bpm);
-            tapHistory.push(bpm);
-            if (tapHistory.length > 4) tapHistory.shift();
-            if (suggestedEl && tapHistory.length >= 2) {
-                const avg = computeAverageFromHistory(tapHistory);
-                suggestedEl.textContent = String(avg);
-            }
+
+        const timingScore = computeTimingScore(delta, beatInterval);
+        const bpm = computeBpm(delta);
+        tapHistory.push(bpm);
+        if (tapHistory.length > 6) tapHistory.shift();
+        if (suggestedEl && tapHistory.length >= 2) {
+            const avg = computeAverageFromHistory(tapHistory);
+            suggestedEl.textContent = String(avg);
         }
+
         lastTap = now;
-        if (delta > 0) {
-            timingScores.push(timingScore);
-            if (timingScores.length > 12) timingScores.shift();
-            setRating(rating, level, timingScore);
-        }
-        if (shouldShowComboStatus(combo)) {
-            setStatus(formatComboStatus(rating, combo));
-        } else {
-            setStatus(formatRegularStatus(rating));
-        }
-        markChecklistIf(shouldMarkTapMilestone(tapCount), 'rd-set-1');
-        markChecklistIf(shouldMarkComboMilestone(combo), 'rd-set-2');
-        const elapsed = runStartedAt ? (Date.now() - runStartedAt) : 0;
-        markChecklistIf(shouldMarkEnduranceMilestone(tapCount, elapsed), 'rd-set-3');
+        processBeat(timingScore, { ratingSource: 'Tap fallback', bpmValue: bpm });
     });
+
+    realtimeStateHandler = (event) => {
+        if (window.location.hash !== '#view-game-rhythm-dash') return;
+        const detail = event.detail || {};
+        const feature = detail.lastFeature || null;
+        realtimeListening = Boolean(detail.listening) && !detail.paused;
+
+        if (!runToggle?.checked) return;
+        if (!realtimeListening) {
+            setStatus('Listening is paused. Keep going with tap fallback.');
+            return;
+        }
+        if (!feature || !feature.hasSignal) {
+            setStatus('Listening… play a clear bow stroke.');
+            return;
+        }
+
+        const tempo = Number.isFinite(feature.tempoBpm) && feature.tempoBpm > 0
+            ? feature.tempoBpm
+            : 0;
+        if (tempo > 0) {
+            realtimeTempoHistory.push(Math.round(tempo));
+            if (realtimeTempoHistory.length > 8) realtimeTempoHistory.shift();
+            if (suggestedEl && realtimeTempoHistory.length >= 2) {
+                suggestedEl.textContent = String(computeAverageFromHistory(realtimeTempoHistory));
+            }
+            if (bpmEl) bpmEl.textContent = String(Math.round(tempo));
+        }
+
+        if (!feature.onset) return;
+
+        const rhythmOffset = Math.abs(Number.isFinite(feature.rhythmOffsetMs) ? feature.rhythmOffsetMs : beatInterval);
+        const deltaForScore = Math.max(1, beatInterval - Math.min(rhythmOffset, beatInterval));
+        const timingScore = computeTimingScore(deltaForScore, beatInterval);
+        processBeat(timingScore, { ratingSource: 'Mic onset', bpmValue: tempo || targetBpm });
+    };
+    document.addEventListener(RT_STATE, realtimeStateHandler);
 
     hashChangeHandler = () => {
         if (window.location.hash === '#view-game-rhythm-dash') {

@@ -14,7 +14,7 @@
   <div class="games-sort glass" role="group" aria-label="Sort games">
     <label class="filter-label">
       <input type="radio" name="game-sort" value="quick" class="filter-input" checked>
-      <span class="filter-chip">Quick</span>
+      <span class="filter-chip">Quick Picks</span>
     </label>
     <label class="filter-label">
       <input type="radio" name="game-sort" value="favorites" class="filter-input">
@@ -27,57 +27,39 @@
   </div>
 
   <div class="games-grid">
-    <a href="#view-game-pitch-quest" class="game-card glass" data-sort-tags="quick,favorites">
+    <a href="#view-game-pitch-quest" class="game-card glass game-card-curated" data-sort-tags="quick,favorites">
+      <span class="game-badge">Panda Pick</span>
       <div class="game-title">Pitch Quest</div>
-      <p class="game-subtitle">Hit the right note fast.</p>
+      <p class="game-subtitle">Match one note cleanly.</p>
+      <span class="game-play-cta">Play</span>
     </a>
-    <a href="#view-game-rhythm-dash" class="game-card glass" data-sort-tags="quick,favorites">
+    <a href="#view-game-rhythm-dash" class="game-card glass game-card-curated" data-sort-tags="quick,favorites">
+      <span class="game-badge">Panda Pick</span>
       <div class="game-title">Rhythm Dash</div>
-      <p class="game-subtitle">Tap to the beat.</p>
+      <p class="game-subtitle">Lock in a steady beat.</p>
+      <span class="game-play-cta">Play</span>
     </a>
-    <a href="#view-game-note-memory" class="game-card glass" data-sort-tags="quick,new">
+    <a href="#view-game-note-memory" class="game-card glass game-card-curated" data-sort-tags="quick,new">
+      <span class="game-badge">Panda Pick</span>
       <div class="game-title">Note Memory</div>
-      <p class="game-subtitle">Remember note patterns.</p>
+      <p class="game-subtitle">Remember the pattern.</p>
+      <span class="game-play-cta">Play</span>
     </a>
-    <a href="#view-game-ear-trainer" class="game-card glass" data-sort-tags="quick,favorites">
+
+    <a href="#view-game-ear-trainer" class="game-card glass" data-sort-tags="favorites">
       <div class="game-title">Ear Trainer</div>
       <p class="game-subtitle">Match sounds by ear.</p>
-    </a>
-    <a href="#view-game-bow-hero" class="game-card glass" data-sort-tags="favorites,new">
-      <div class="game-title">Bow Hero</div>
-      <p class="game-subtitle">Keep a smooth bow lane.</p>
+      <span class="game-play-cta">Play</span>
     </a>
     <a href="#view-game-tuning-time" class="game-card glass" data-sort-tags="quick,new">
       <div class="game-title">Tuning Time</div>
-      <p class="game-subtitle">Tune all strings.</p>
+      <p class="game-subtitle">Tune all strings once.</p>
+      <span class="game-play-cta">Play</span>
     </a>
-    <a href="#view-game-melody-maker" class="game-card glass" data-sort-tags="favorites,new">
-      <div class="game-title">Melody Maker</div>
-      <p class="game-subtitle">Build a short melody.</p>
-    </a>
-    <a href="#view-game-scale-practice" class="game-card glass" data-sort-tags="quick,new">
+    <a href="#view-game-scale-practice" class="game-card glass" data-sort-tags="new">
       <div class="game-title">Scale Practice</div>
       <p class="game-subtitle">Play clean scale steps.</p>
-    </a>
-    <a href="#view-game-duet-challenge" class="game-card glass" data-sort-tags="favorites,new">
-      <div class="game-title">Duet Challenge</div>
-      <p class="game-subtitle">Listen and play together.</p>
-    </a>
-    <a href="#view-game-string-quest" class="game-card glass" data-sort-tags="new">
-      <div class="game-title">String Quest</div>
-      <p class="game-subtitle">Find the right string.</p>
-    </a>
-    <a href="#view-game-rhythm-painter" class="game-card glass" data-sort-tags="new">
-      <div class="game-title">Rhythm Painter</div>
-      <p class="game-subtitle">Draw beats with taps.</p>
-    </a>
-    <a href="#view-game-story-song" class="game-card glass" data-sort-tags="new">
-      <div class="game-title">Story Song Lab</div>
-      <p class="game-subtitle">Make music with stories.</p>
-    </a>
-    <a href="#view-game-pizzicato" class="game-card glass" data-sort-tags="new">
-      <div class="game-title">Panda Pizzicato</div>
-      <p class="game-subtitle">Pluck with steady rhythm.</p>
+      <span class="game-play-cta">Play</span>
     </a>
   </div>
 
@@ -86,3 +68,4 @@
     <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="corner-mascot" loading="lazy" decoding="async">
   </picture>
 </section>
+

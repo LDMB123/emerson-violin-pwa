@@ -4,6 +4,7 @@ import {
     getModulesForView,
     getActiveNavHref,
     isNavItemActive,
+    toMissionCheckpointHref,
 } from './utils/app-utils.js';
 import { getAudioPath } from './audio/format-detection.js';
 import { ViewLoader } from './views/view-loader.js';
@@ -160,12 +161,33 @@ const toHashRoute = (target) => {
     return `#view-game-${target}`;
 };
 
+const getResumeLabel = (href) => {
+    const viewId = getViewId(href);
+    if (viewId.startsWith('view-game-')) return 'Resume Game';
+    if (viewId.startsWith('view-song-')) return 'Resume Song';
+    if (viewId === 'view-tuner') return 'Resume Tuner';
+    if (viewId === 'view-progress') return 'See Wins';
+
+    const meta = getRouteMeta(viewId);
+    if (meta?.navGroup === 'games') return 'Resume Games';
+    if (meta?.navGroup === 'songs') return 'Resume Songs';
+    if (meta?.navGroup === 'practice') return 'Resume Mission';
+    return 'Resume';
+};
+
 const setContinueHref = (continueBtn, target) => {
     const href = toHashRoute(target || document.documentElement.dataset.practiceContinueHref || 'view-coach');
     document.documentElement.dataset.practiceContinueHref = href;
     if (continueBtn) {
         continueBtn.setAttribute('href', href);
+        continueBtn.textContent = getResumeLabel(href);
     }
+};
+
+const updatePracticeContinueCheckpoint = (viewId) => {
+    const checkpointHref = toMissionCheckpointHref(viewId);
+    if (!checkpointHref) return;
+    document.documentElement.dataset.practiceContinueHref = checkpointHref;
 };
 
 const bindChildHomeActions = (container) => {
@@ -300,6 +322,7 @@ const showView = async (viewId, ctx = null) => {
         // Load modules for this view
         await loadForView(viewId);
         applyViewPersona(viewId);
+        updatePracticeContinueCheckpoint(viewId);
         bindChildHomeActions(container);
         bindGameSort(container);
         bindCoachStepper(container);

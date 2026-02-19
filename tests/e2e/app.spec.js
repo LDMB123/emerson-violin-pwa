@@ -6,10 +6,10 @@ test.describe('Kid-first flows', () => {
     await openHome(page);
   });
 
-  test('shows mission-first home and 4-item child nav', async ({ page }) => {
+  test('shows mission-first home and 3-item child nav', async ({ page }) => {
     await expect(page).toHaveTitle(/Panda Violin/);
     await expect(page.locator('[data-start-practice]')).toBeVisible();
-    await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(4);
+    await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(3);
     await expect(page.locator('[data-parent-lock]')).toBeVisible();
   });
 
@@ -19,7 +19,7 @@ test.describe('Kid-first flows', () => {
 
     await expect(page.locator('#view-coach')).toBeVisible();
     await expect(page.locator('[data-coach-step-card="tune"]')).toBeVisible();
-    await expect(page.locator('.coach-step-tab.is-active')).toContainText('1 Tune');
+    await expect(page.locator('.coach-step-tab.is-active')).toContainText('Now');
   });
 
   test('child can reach games and launch a game in two taps', async ({ page }) => {

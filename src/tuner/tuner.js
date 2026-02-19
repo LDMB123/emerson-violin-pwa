@@ -1,9 +1,17 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
-import { createAudioContext } from '../audio/audio-context.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { processTunerMessage } from './tuner-utils.js';
-import { ML_UPDATE, ML_RESET } from '../utils/event-names.js';
+import {
+    RT_STATE,
+    ML_UPDATE,
+    ML_RESET,
+} from '../utils/event-names.js';
 import { setDifficultyBadge } from '../games/shared.js';
+import {
+    startSession,
+    stopSession,
+    getSessionState,
+    init as initSessionController,
+} from '../realtime/session-controller.js';
 
 let livePanel = null;
 let startButton = null;
@@ -16,15 +24,9 @@ let toneButtons = [];
 let toneSamples = new Map();
 let refToneButtons = [];
 
-let audioContext = null;
-let workletNode = null;
-let micStream = null;
-let silenceGain = null;
 let tolerance = 8;
 let inTuneCount = 0;
 let detectCount = 0;
-let startToken = 0;
-let starting = false;
 let globalListenersBound = false;
 
 const isTunerView = () => window.location.hash === '#view-tuner';
@@ -40,24 +42,15 @@ const resolveElements = () => {
 
     toneButtons = Array.from(document.querySelectorAll('[data-tone]'));
     toneSamples = new Map(
-        Array.from(document.querySelectorAll('[data-tone-audio]')).map((audio) => [audio.dataset.toneAudio, audio])
+        Array.from(document.querySelectorAll('[data-tone-audio]')).map((audio) => [audio.dataset.toneAudio, audio]),
     );
     refToneButtons = Array.from(document.querySelectorAll('[data-ref-tone]'));
 
     return Boolean(livePanel && startButton && stopButton);
 };
 
-const applyTuning = async () => {
-    const tuning = await getGameTuning('tuner');
-    tolerance = tuning.tolerance ?? tolerance;
-
-    setDifficultyBadge(document.querySelector('#tuner-live .tuner-card-header'), tuning.difficulty);
-    if (statusEl && !workletNode) {
-        statusEl.textContent = `Tap the mic to start listening (±${tolerance}¢).`;
-    }
-    if (workletNode) {
-        workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
-    }
+const setStatus = (text) => {
+    if (statusEl) statusEl.textContent = text;
 };
 
 const resetDisplay = () => {
@@ -68,48 +61,58 @@ const resetDisplay = () => {
     if (livePanel) livePanel.style.setProperty('--tuner-offset', '0');
 };
 
-const setStatus = (text) => {
-    if (statusEl) statusEl.textContent = text;
+const applyFrame = (frame) => {
+    if (!frame || !frame.hasSignal) {
+        resetDisplay();
+        setStatus(`Listening… play a note (±${tolerance}¢).`);
+        return;
+    }
+
+    const cents = Number.isFinite(frame.cents) ? Math.round(frame.cents) : 0;
+    const frequency = Number.isFinite(frame.frequency) ? Math.round(frame.frequency * 10) / 10 : 0;
+    const inTune = Math.abs(cents) <= tolerance;
+
+    if (noteEl) noteEl.textContent = frame.note || '--';
+    if (centsEl) centsEl.textContent = `${cents > 0 ? '+' : ''}${cents} cents`;
+    if (freqEl) freqEl.textContent = `${frequency} Hz`;
+    if (livePanel) {
+        livePanel.style.setProperty('--tuner-offset', String(Math.max(-50, Math.min(50, cents))));
+        livePanel.classList.toggle('in-tune', inTune);
+    }
+
+    detectCount += 1;
+    if (inTune) inTuneCount += 1;
+
+    setStatus(inTune ? `In tune (±${tolerance}¢) ✨` : 'Adjust to center.');
+};
+
+const updateControlState = (active) => {
+    if (startButton) {
+        startButton.disabled = Boolean(active);
+        startButton.setAttribute('aria-pressed', active ? 'true' : 'false');
+        startButton.textContent = active ? 'Listening' : 'Start Listening';
+    }
+    if (stopButton) stopButton.disabled = !active;
+    if (livePanel) livePanel.classList.toggle('is-active', Boolean(active));
+};
+
+const startTuner = async () => {
+    if (!resolveElements()) return;
+    inTuneCount = 0;
+    detectCount = 0;
+    setStatus('Starting microphone…');
+    const session = await startSession();
+    updateControlState(session.active && !session.paused);
+    if (!session.active) {
+        setStatus('Microphone unavailable. Try helper tones below.');
+    }
 };
 
 const stopTuner = async () => {
-    startToken += 1;
-    starting = false;
-
-    if (workletNode) {
-        workletNode.port.onmessage = null;
-        workletNode.disconnect();
-        workletNode = null;
-    }
-
-    if (silenceGain) {
-        silenceGain.disconnect();
-        silenceGain = null;
-    }
-
-    if (audioContext) {
-        await audioContext.close();
-        audioContext = null;
-    }
-
-    if (micStream) {
-        micStream.getTracks().forEach((track) => track.stop());
-        micStream = null;
-    }
-
-    if (startButton) {
-        startButton.disabled = false;
-        startButton.setAttribute('aria-pressed', 'false');
-    }
-    if (stopButton) {
-        stopButton.disabled = true;
-    }
-    if (livePanel) {
-        livePanel.classList.remove('is-active');
-    }
-
+    await stopSession('tuner-stop');
+    updateControlState(false);
     resetDisplay();
-    setStatus(`Tap Start to use the mic (±${tolerance}¢).`);
+    setStatus(`Tap Start Listening (±${tolerance}¢).`);
 
     if (detectCount > 0) {
         const accuracy = (inTuneCount / detectCount) * 100;
@@ -117,116 +120,6 @@ const stopTuner = async () => {
     }
     inTuneCount = 0;
     detectCount = 0;
-};
-
-const startTuner = async () => {
-    if (!resolveElements()) return;
-    if (starting || workletNode) return;
-
-    const token = startToken + 1;
-    startToken = token;
-    starting = true;
-
-    if (!navigator.mediaDevices?.getUserMedia) {
-        setStatus('Microphone access is not available on this device.');
-        starting = false;
-        return;
-    }
-
-    startButton.disabled = true;
-    startButton.setAttribute('aria-pressed', 'true');
-    stopButton.disabled = false;
-    livePanel.classList.add('is-active');
-    setStatus('Requesting microphone access…');
-
-    inTuneCount = 0;
-    detectCount = 0;
-
-    try {
-        micStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                echoCancellation: false,
-                noiseSuppression: false,
-                autoGainControl: false,
-            },
-        });
-
-        if (token !== startToken) {
-            micStream.getTracks().forEach((track) => track.stop());
-            return;
-        }
-
-        audioContext = createAudioContext({ latencyHint: 'interactive' });
-        if (!audioContext) {
-            throw new Error('AudioContext not supported');
-        }
-        if (!audioContext.audioWorklet) {
-            throw new Error('AudioWorklet not supported');
-        }
-
-        await audioContext.audioWorklet.addModule(new URL('../worklets/tuner-processor.js', import.meta.url));
-        if (token !== startToken) {
-            await audioContext.close();
-            audioContext = null;
-            return;
-        }
-
-        const source = audioContext.createMediaStreamSource(micStream);
-        workletNode = new AudioWorkletNode(audioContext, 'tuner-processor');
-        silenceGain = audioContext.createGain();
-        silenceGain.gain.value = 0;
-
-        source.connect(workletNode).connect(silenceGain).connect(audioContext.destination);
-        await audioContext.resume();
-
-        if (token !== startToken) {
-            await stopTuner();
-            return;
-        }
-
-        workletNode.port.postMessage({ type: 'tolerance', value: tolerance });
-
-        workletNode.port.onmessage = (event) => {
-            const result = processTunerMessage(event.data, tolerance);
-            if (!result) return;
-
-            if (result.reset) {
-                resetDisplay();
-                setStatus(result.status);
-                return;
-            }
-
-            if (!result.note) {
-                setStatus(result.status);
-                return;
-            }
-
-            if (noteEl) noteEl.textContent = result.note;
-            if (centsEl) centsEl.textContent = result.centsLabel;
-            if (freqEl) freqEl.textContent = result.freqLabel;
-
-            if (livePanel) {
-                livePanel.style.setProperty('--tuner-offset', result.offset.toString());
-                livePanel.classList.toggle('in-tune', result.inTune);
-            }
-
-            detectCount += 1;
-            if (result.inTune) {
-                inTuneCount += 1;
-            }
-            setStatus(result.status);
-        };
-
-        setStatus(`Listening… play a note (±${tolerance}¢).`);
-    } catch (error) {
-        console.error('[Tuner] Unable to start microphone', error);
-        await stopTuner();
-        setStatus('Microphone permission denied or unavailable.');
-    } finally {
-        if (token === startToken) {
-            starting = false;
-        }
-    }
 };
 
 const playToneSample = (tone) => {
@@ -284,39 +177,46 @@ const bindToneButtons = () => {
 
 const bindLocalListeners = () => {
     if (!startButton || !stopButton) return;
-
     if (startButton.dataset.tunerBound !== 'true') {
         startButton.dataset.tunerBound = 'true';
         startButton.addEventListener('click', startTuner);
     }
-
     if (stopButton.dataset.tunerBound !== 'true') {
         stopButton.dataset.tunerBound = 'true';
         stopButton.addEventListener('click', stopTuner);
     }
-
     bindToneButtons();
+};
+
+const applyTuning = async () => {
+    const tuning = await getGameTuning('tuner');
+    tolerance = tuning.tolerance ?? tolerance;
+    setDifficultyBadge(document.querySelector('#tuner-live .tuner-card-header'), tuning.difficulty);
+    setStatus(`Tap Start Listening (±${tolerance}¢).`);
 };
 
 const bindGlobalListeners = () => {
     if (globalListenersBound) return;
     globalListenersBound = true;
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            stopTuner();
-        }
-    });
-
-    window.addEventListener('pagehide', () => {
-        stopTuner();
-    });
-
     window.addEventListener('hashchange', () => {
-        if (!isTunerView()) {
-            stopTuner();
+        if (!isTunerView()) return;
+        const session = getSessionState();
+        const active = Boolean(session.active) && !session.paused;
+        updateControlState(active);
+        applyFrame(session.lastFeature);
+        if (!active) {
+            setStatus(`Tap Start Listening (±${tolerance}¢).`);
         }
     }, { passive: true });
+
+    document.addEventListener(RT_STATE, (event) => {
+        if (!isTunerView()) return;
+        const detail = event.detail || {};
+        const listening = Boolean(detail.listening) && !detail.paused;
+        updateControlState(listening);
+        applyFrame(detail.lastFeature);
+    });
 
     document.addEventListener(ML_UPDATE, (event) => {
         if (event.detail?.id === 'tuner') {
@@ -332,14 +232,20 @@ const bindGlobalListeners = () => {
 };
 
 const initTuner = () => {
+    initSessionController();
     resolveElements();
     bindGlobalListeners();
-
     if (!startButton || !stopButton) return;
-
     bindLocalListeners();
-    resetDisplay();
-    setStatus(`Tap Start to use the mic (±${tolerance}¢).`);
+    const session = getSessionState();
+    const active = Boolean(session.active) && !session.paused;
+    updateControlState(active);
+    if (session.lastFeature && active) {
+        applyFrame(session.lastFeature);
+    } else {
+        resetDisplay();
+        setStatus(`Tap Start Listening (±${tolerance}¢).`);
+    }
     applyTuning();
 };
 
