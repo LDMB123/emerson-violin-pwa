@@ -16,6 +16,25 @@ const emitPitchLockFeature = async (page, note = 'A') => {
     }, { targetNote: note });
 };
 
+const waitForPitchQuestReady = async (page) => {
+    const status = page.locator('#view-game-pitch-quest [data-pitch="status"]');
+    await expect(status).toContainText('±', { timeout: 10000 });
+};
+
+const ensureLivePitchFeature = async (page, note = 'A') => {
+    const liveNote = page.locator('#view-game-pitch-quest [data-pitch="live-note"]');
+    await expect.poll(async () => {
+        await emitPitchLockFeature(page, note);
+        return (await liveNote.innerText()).trim();
+    }, { timeout: 5000 }).toBe(note);
+};
+
+const lockPitchNote = async (page, note = 'A') => {
+    await waitForPitchQuestReady(page);
+    await ensureLivePitchFeature(page, note);
+    await page.locator('#view-game-pitch-quest [data-pitch="check"]').click();
+};
+
 test('games remain interactive after leaving and re-entering the same game', async ({ page }) => {
     await openHome(page);
 
@@ -29,8 +48,7 @@ test('games remain interactive after leaving and re-entering the same game', asy
 
     const firstScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
     await expect(firstScore).toHaveText('0');
-    await emitPitchLockFeature(page, 'A');
-    await page.locator('#view-game-pitch-quest [data-pitch="check"]').click();
+    await lockPitchNote(page, 'A');
     await expect(firstScore).not.toHaveText('0');
 
     await page.locator('#view-game-pitch-quest .back-btn').click();
@@ -45,7 +63,6 @@ test('games remain interactive after leaving and re-entering the same game', asy
 
     const secondScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
     await expect(secondScore).toHaveText('0');
-    await emitPitchLockFeature(page, 'A');
-    await page.locator('#view-game-pitch-quest [data-pitch="check"]').click();
+    await lockPitchNote(page, 'A');
     await expect(secondScore).not.toHaveText('0');
 });
