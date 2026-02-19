@@ -26,6 +26,7 @@ describe('module-registry', () => {
 
     it('resolves coach modules', () => {
         expect(resolveModulesForView('view-coach')).toEqual([
+            'realtimeSession',
             'coachActions',
             'focusTimer',
             'lessonPlan',
@@ -38,6 +39,13 @@ describe('module-registry', () => {
         const second = resolveModulesForView('view-games');
         expect(Object.isFrozen(first)).toBe(true);
         expect(first).toBe(second);
+    });
+
+    it('resolves parent view with realtime transparency modules', () => {
+        const modules = resolveModulesForView('view-parent');
+        expect(modules).toContain('parentPin');
+        expect(modules).toContain('realtimeReview');
+        expect(modules).toContain('swUpdates');
     });
 
     it('returns empty array for invalid view', () => {

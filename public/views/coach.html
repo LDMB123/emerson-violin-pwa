@@ -1,7 +1,7 @@
 <section class="view" id="view-coach" aria-label="Practice Coach">
   <div class="view-header">
     <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
-    <h2>Practice Mission</h2>
+    <h2>Practice</h2>
   </div>
 
   <div class="coach-layout">
@@ -15,7 +15,15 @@
           <img src="./assets/illustrations/mascot-focus.png" alt="Coach panda" class="coach-mascot" loading="lazy" decoding="async" width="1024" height="1024">
         </picture>
         <div class="coach-bubble" data-progress="coach-speech" aria-live="polite">
-          <span class="coach-bubble-text">Let&apos;s tune first, then warm up, then play.</span>
+          <span class="coach-bubble-text">Start your mission, then follow Now, Next, and Wins.</span>
+        </div>
+      </div>
+      <div class="coach-listening-card glass">
+        <p class="coach-listening-title">Realtime Coach</p>
+        <p class="coach-listening-status" data-rt-status>Mic off</p>
+        <div class="coach-listening-actions">
+          <button class="btn btn-primary" type="button" data-rt-toggle>Start Listening</button>
+          <button class="btn btn-secondary" type="button" data-rt-stop>Stop</button>
         </div>
       </div>
       <div class="coach-actions">
@@ -25,14 +33,14 @@
     </div>
 
     <div class="coach-stepper" data-coach-stepper>
-      <button class="coach-step-tab is-active" type="button" data-coach-step-target="tune">1 Tune</button>
-      <button class="coach-step-tab" type="button" data-coach-step-target="warmup">2 Warm-up</button>
-      <button class="coach-step-tab" type="button" data-coach-step-target="play">3 Play</button>
+      <button class="coach-step-tab is-active" type="button" data-coach-step-target="tune">Now</button>
+      <button class="coach-step-tab" type="button" data-coach-step-target="warmup">Next</button>
+      <button class="coach-step-tab" type="button" data-coach-step-target="play">Wins</button>
     </div>
 
     <section class="coach-step-card glass is-active" data-coach-step-card="tune">
-      <h3>Tune</h3>
-      <p>Make the strings match the reference tones.</p>
+      <h3>Now</h3>
+      <p>Make your strings match before you play.</p>
       <a class="btn btn-primary" href="#view-tuner">Open Tuner</a>
       <details class="coach-tips">
         <summary>Show tips</summary>
@@ -41,8 +49,8 @@
     </section>
 
     <section class="coach-step-card glass" data-coach-step-card="warmup" hidden>
-      <h3>Warm-up</h3>
-      <p>Pick a timer and play long, slow bows.</p>
+      <h3>Next</h3>
+      <p>Pick your warm-up and move into one game.</p>
       <div class="practice-focus glass">
         <input type="checkbox" id="focus-timer" class="state-checkbox focus-toggle" aria-label="Toggle focus timer">
         <input type="checkbox" id="goal-step-focus-5" class="state-checkbox focus-log" data-minutes="5" data-persist="false" aria-hidden="true" tabindex="-1" hidden>
@@ -83,8 +91,8 @@
     </section>
 
     <section class="coach-step-card glass" data-coach-step-card="play" hidden>
-      <h3>Play</h3>
-      <p>Follow today&apos;s steps. Finish one step at a time.</p>
+      <h3>Wins</h3>
+      <p>Celebrate progress first, then hand off to a grown-up review.</p>
       <div class="lesson-plan" data-lesson-plan="coach">
         <h3>Today&apos;s Steps</h3>
         <div class="lesson-grid">
@@ -134,7 +142,10 @@
           </li>
         </ol>
       </div>
-      <a class="btn btn-secondary" href="#view-songs">Open Songs</a>
+      <div class="coach-handoff">
+        <a class="btn btn-secondary" href="#view-progress">See Wins</a>
+        <a class="btn btn-primary" href="#view-parent">For Grown-Ups Review</a>
+      </div>
     </section>
   </div>
 </section>

@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "style": "storybook-clean-red-panda",
+  "states": {
+    "listening": {
+      "tier1": "./assets/illustrations/mascot-focus.webp",
+      "tier2": "./assets/illustrations/mascot-focus.webp"
+    },
+    "steady": {
+      "tier1": "./assets/illustrations/mascot-happy.webp",
+      "tier2": "./assets/illustrations/mascot-happy.webp"
+    },
+    "adjust-up": {
+      "tier1": "./assets/illustrations/mascot-encourage.webp",
+      "tier2": "./assets/illustrations/mascot-encourage.webp"
+    },
+    "adjust-down": {
+      "tier1": "./assets/illustrations/mascot-encourage.webp",
+      "tier2": "./assets/illustrations/mascot-encourage.webp"
+    },
+    "retry-calm": {
+      "tier1": "./assets/illustrations/mascot-focus.webp",
+      "tier2": "./assets/illustrations/mascot-focus.webp"
+    },
+    "celebrate-lock": {
+      "tier1": "./assets/illustrations/mascot-celebrate.webp",
+      "tier2": "./assets/illustrations/mascot-celebrate.webp"
+    },
+    "intro-wave": {
+      "tier1": "./assets/illustrations/mascot-happy.webp"
+    },
+    "mission-start": {
+      "tier1": "./assets/illustrations/mascot-encourage.webp"
+    },
+    "warmup-ready": {
+      "tier1": "./assets/illustrations/mascot-focus.webp"
+    },
+    "bowing-coach": {
+      "tier1": "./assets/illustrations/mascot-focus.webp"
+    },
+    "intonation-focus": {
+      "tier1": "./assets/illustrations/mascot-focus.webp"
+    },
+    "rhythm-count": {
+      "tier1": "./assets/illustrations/mascot-encourage.webp"
+    },
+    "sing-tone": {
+      "tier1": "./assets/illustrations/mascot-happy.webp"
+    },
+    "high-five": {
+      "tier1": "./assets/illustrations/mascot-celebrate.webp"
+    },
+    "confused": {
+      "tier1": "./assets/illustrations/mascot-focus.webp"
+    },
+    "gentle-reminder": {
+      "tier1": "./assets/illustrations/mascot-encourage.webp"
+    },
+    "parent-handoff": {
+      "tier1": "./assets/illustrations/mascot-happy.webp"
+    },
+    "fallback-manual": {
+      "tier1": "./assets/illustrations/mascot-focus.webp"
+    },
+    "goal-unlocked": {
+      "tier1": "./assets/illustrations/mascot-celebrate.webp"
+    },
+    "patience": {
+      "tier1": "./assets/illustrations/mascot-happy.webp"
+    },
+    "breathing": {
+      "tier1": "./assets/illustrations/mascot-focus.webp"
+    },
+    "focused": {
+      "tier1": "./assets/illustrations/mascot-focus.webp"
+    },
+    "victory-dance": {
+      "tier1": "./assets/illustrations/mascot-celebrate.webp"
+    },
+    "clap": {
+      "tier1": "./assets/illustrations/mascot-celebrate.webp"
+    }
+  }
+}

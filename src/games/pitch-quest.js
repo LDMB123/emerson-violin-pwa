@@ -10,36 +10,21 @@ import {
     stopTonePlayer,
 } from './shared.js';
 import { clamp } from '../utils/math.js';
+import { RT_STATE } from '../utils/event-names.js';
 
 const pitchScoreEl = cachedEl('[data-pitch="score"]');
 const pitchStarsEl = cachedEl('[data-pitch="stars"]');
 
-const updatePitchQuest = () => {
-    const inputs = Array.from(document.querySelectorAll('#view-game-pitch-quest input[id^="pq-step-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
-    const total = inputs.length;
-    const scoreEl = pitchScoreEl();
-    const starsEl = pitchStarsEl();
-    const liveScore = readLiveNumber(scoreEl, 'liveScore');
-    const liveStars = readLiveNumber(starsEl, 'liveStars');
-
-    if (scoreEl) {
-        const score = Number.isFinite(liveScore) ? liveScore : (checked * 15 + (checked === total ? 10 : 0));
-        scoreEl.textContent = String(score);
-    }
-
-    if (starsEl) {
-        const stars = Number.isFinite(liveStars) ? Math.round(liveStars) : Math.min(3, Math.ceil(checked / 2));
-        starsEl.textContent = formatStars(stars, 3);
-    }
+const noteStepMap = {
+    G: 'pq-step-1',
+    D: 'pq-step-2',
+    A: 'pq-step-3',
+    E: 'pq-step-4',
 };
 
 const { bind } = createGame({
     id: 'pitch-quest',
-    computeAccuracy: (state) => state.attempts
-        ? (state.hits / state.attempts) * 100
-        : 0,
+    computeAccuracy: (state) => (state.attempts ? (state.hits / state.attempts) * 100 : 0),
     onReset: (gameState) => {
         gameState.score = 0;
         gameState.stars = 0;
@@ -47,143 +32,123 @@ const { bind } = createGame({
         gameState.stabilityStreak = 0;
         gameState.attempts = 0;
         gameState.hits = 0;
-        const scoreEl = gameState._scoreEl;
-        const starsEl = gameState._starsEl;
-        const stabilityEl = gameState._stabilityEl;
-        if (scoreEl) setLiveNumber(scoreEl, 'liveScore', 0);
-        if (starsEl) {
-            starsEl.dataset.liveStars = '0';
-            starsEl.textContent = formatStars(0, 3);
+        gameState.liveFeature = null;
+
+        if (gameState._scoreEl) setLiveNumber(gameState._scoreEl, 'liveScore', 0);
+        if (gameState._starsEl) {
+            gameState._starsEl.dataset.liveStars = '0';
+            gameState._starsEl.textContent = formatStars(0, 3);
         }
-        if (stabilityEl) stabilityEl.textContent = '0x';
-        if (gameState._updateTargetStatus) gameState._updateTargetStatus();
-        if (gameState._slider && gameState._setOffset) {
-            gameState._setOffset(gameState._slider.value);
-        }
+        if (gameState._stabilityEl) gameState._stabilityEl.textContent = '0x';
+        if (gameState._feedbackEl) gameState._feedbackEl.textContent = 'Listening is off. Tap Start Listening.';
+        if (gameState._offsetEl) gameState._offsetEl.textContent = '0 cents';
+        if (gameState._noteEl) gameState._noteEl.textContent = '--';
+        if (gameState._gauge) gameState._gauge.style.setProperty('--pitch-offset', '0deg');
     },
     onBind: (stage, difficulty, { reportSession, gameState }) => {
-        const slider = stage.querySelector('[data-pitch="slider"]');
-        const toleranceSlider = stage.querySelector('[data-pitch="tolerance"]');
-        const toleranceValue = stage.querySelector('[data-pitch="tolerance-value"]');
-        const offsetEl = stage.querySelector('[data-pitch="offset"]');
-        const feedbackEl = stage.querySelector('[data-pitch="feedback"]');
         const statusEl = stage.querySelector('[data-pitch="status"]');
         const checkButton = stage.querySelector('[data-pitch="check"]');
-        const gauge = stage.querySelector('.pitch-gauge');
         const scoreEl = stage.querySelector('[data-pitch="score"]');
         const starsEl = stage.querySelector('[data-pitch="stars"]');
         const stabilityEl = stage.querySelector('[data-pitch="stability"]');
+        const feedbackEl = stage.querySelector('[data-pitch="feedback"]');
+        const noteEl = stage.querySelector('[data-pitch="live-note"]');
+        const offsetEl = stage.querySelector('[data-pitch="offset"]');
+        const gauge = stage.querySelector('.pitch-gauge');
         const targets = Array.from(stage.querySelectorAll('.pitch-target-toggle'));
         const checklist = Array.from(stage.querySelectorAll('input[id^="pq-step-"]'));
+
+        const tolerance = Math.max(4, Math.round(7 * difficulty.speed));
 
         let score = readLiveNumber(scoreEl, 'liveScore') ?? 0;
         let stars = readLiveNumber(starsEl, 'liveStars') ?? 0;
         let streak = 0;
         let stabilityStreak = 0;
-        let lastMatchAt = 0;
-        // difficulty.speed: scales initial tolerance window; speed=1.0 keeps tolerance=6
-        // difficulty.complexity: visual feedback only for this game (no content pool to select)
-        let tolerance = Math.round(6 * difficulty.speed);
+        let lastStableAt = 0;
 
-        // Initialize state
         gameState.score = score;
         gameState.stars = stars;
         gameState.streak = streak;
         gameState.stabilityStreak = stabilityStreak;
         gameState.attempts = 0;
         gameState.hits = 0;
+        gameState.liveFeature = null;
         gameState._scoreEl = scoreEl;
         gameState._starsEl = starsEl;
         gameState._stabilityEl = stabilityEl;
-        gameState._slider = slider;
+        gameState._feedbackEl = feedbackEl;
+        gameState._offsetEl = offsetEl;
+        gameState._noteEl = noteEl;
+        gameState._gauge = gauge;
 
         gameState._onDeactivate = () => {
             stopTonePlayer();
+            if (gameState._rtHandler) {
+                document.removeEventListener(RT_STATE, gameState._rtHandler);
+                gameState._rtHandler = null;
+            }
         };
 
-        const targetNoteFromInput = (input) => {
-            const raw = input?.id?.split('-').pop();
-            return raw ? raw.toUpperCase() : null;
+        const getTargetNote = () => {
+            const active = targets.find((radio) => radio.checked);
+            if (!active) return null;
+            return active.id.split('-').pop()?.toUpperCase() || null;
         };
 
         const updateTargetStatus = () => {
             if (!statusEl) return;
-            const active = targets.find((radio) => radio.checked);
-            if (!active) {
-                statusEl.textContent = 'Pick a target note.';
-                return;
-            }
-            const note = active.id.split('-').pop()?.toUpperCase() || '';
+            const note = getTargetNote();
             statusEl.textContent = note ? `Target: ${note} · ±${tolerance}¢` : 'Pick a target note.';
         };
 
-        const setOffset = (raw) => {
-            const cents = clamp(Number(raw) || 0, -50, 50);
-            const angle = cents * 0.5;
-            if (slider) {
-                const sign = cents > 0 ? '+' : '';
-                slider.setAttribute('aria-valuenow', String(cents));
-                slider.setAttribute('aria-valuetext', `${sign}${cents} cents`);
+        const updateLiveFeature = (feature) => {
+            if (!feature) return;
+            gameState.liveFeature = feature;
+            const cents = clamp(Math.round(feature.cents || 0), -50, 50);
+            if (offsetEl) offsetEl.textContent = `${cents > 0 ? '+' : ''}${cents} cents`;
+            if (noteEl) noteEl.textContent = feature.note || '--';
+            if (gauge) gauge.style.setProperty('--pitch-offset', `${cents * 0.5}deg`);
+
+            const targetNote = getTargetNote();
+            const inTune = Math.abs(cents) <= tolerance;
+            const matchingNote = targetNote && (feature.note || '').startsWith(targetNote);
+
+            if (inTune && matchingNote) {
+                const now = Date.now();
+                stabilityStreak = now - lastStableAt <= 1800 ? stabilityStreak + 1 : 1;
+                lastStableAt = now;
+                if (stabilityStreak >= 3) {
+                    markChecklist('pq-step-5');
+                }
+            } else {
+                stabilityStreak = 0;
             }
-            if (gauge) gauge.style.setProperty('--pitch-offset', `${angle}deg`);
-            if (offsetEl) {
-                const sign = cents > 0 ? '+' : '';
-                offsetEl.textContent = `${sign}${cents} cents`;
-            }
+            if (stabilityEl) stabilityEl.textContent = `${stabilityStreak}x`;
+
             if (feedbackEl) {
-                if (Math.abs(cents) <= tolerance) {
-                    feedbackEl.textContent = `In tune (±${tolerance}¢) ✨`;
+                if (!feature.hasSignal) {
+                    feedbackEl.textContent = 'Listening for your note...';
+                } else if (inTune && matchingNote) {
+                    feedbackEl.textContent = `Great lock on ${targetNote}.`;
+                } else if (!matchingNote) {
+                    feedbackEl.textContent = `Aim for ${targetNote || 'the target note'}.`;
                 } else if (cents > 0) {
-                    feedbackEl.textContent = 'A little sharp — ease it down.';
+                    feedbackEl.textContent = 'A little lower.';
                 } else {
-                    feedbackEl.textContent = 'A little flat — lift it up.';
+                    feedbackEl.textContent = 'A little higher.';
                 }
             }
-            return cents;
         };
 
-        const updateTolerance = (value, { user = false } = {}) => {
-            const next = clamp(Number(value) || tolerance, 3, 12);
-            tolerance = next;
-            if (toleranceValue) toleranceValue.textContent = `±${next}¢`;
-            if (toleranceSlider) {
-                toleranceSlider.value = String(next);
-                toleranceSlider.setAttribute('aria-valuenow', String(next));
-                toleranceSlider.setAttribute('aria-valuetext', `±${next} cents`);
-                if (user) toleranceSlider.dataset.userSet = 'true';
-            }
-            updateTargetStatus();
-            if (slider) setOffset(slider.value);
+        const onRealtimeState = (event) => {
+            if (window.location.hash !== '#view-game-pitch-quest') return;
+            const feature = event.detail?.lastFeature;
+            if (!feature || event.detail?.paused) return;
+            updateLiveFeature(feature);
         };
 
-        const updateStability = (value) => {
-            if (!stabilityEl) return;
-            stabilityEl.textContent = `${value}x`;
-        };
-
-        const randomizeOffset = () => {
-            if (!slider) return;
-            const value = Math.round((Math.random() * 40) - 20);
-            slider.value = String(value);
-            setOffset(value);
-        };
-
-        const markNoteChecklist = () => {
-            const next = checklist.find((input) => !input.checked && /pq-step-[1-4]/.test(input.id));
-            if (!next) return;
-            next.checked = true;
-            next.dispatchEvent(new Event('change', { bubbles: true }));
-        };
-
-        // Store helpers for onReset
-        gameState._updateTargetStatus = updateTargetStatus;
-        gameState._setOffset = setOffset;
-
-        slider?.addEventListener('input', (event) => {
-            const target = event.target;
-            if (!(target instanceof HTMLInputElement)) return;
-            setOffset(target.value);
-        });
+        gameState._rtHandler = onRealtimeState;
+        document.addEventListener(RT_STATE, onRealtimeState);
 
         targets.forEach((radio) => {
             radio.addEventListener('change', () => {
@@ -191,82 +156,79 @@ const { bind } = createGame({
                 stabilityStreak = 0;
                 gameState.streak = 0;
                 gameState.stabilityStreak = 0;
-                randomizeOffset();
+                if (stabilityEl) stabilityEl.textContent = '0x';
                 updateTargetStatus();
-                updateStability(stabilityStreak);
-                const note = targetNoteFromInput(radio);
-                if (note) {
-                    playToneNote(note, { duration: 0.3, volume: 0.18, type: 'triangle' });
+                const targetNote = getTargetNote();
+                if (targetNote) {
+                    playToneNote(targetNote, { duration: 0.26, volume: 0.18, type: 'triangle' });
                 }
             });
         });
 
         bindTap(checkButton, () => {
-            const activeTarget = targets.find((radio) => radio.checked);
-            if (!activeTarget) {
-                if (statusEl) statusEl.textContent = 'Pick a target note before checking.';
+            const feature = gameState.liveFeature;
+            const targetNote = getTargetNote();
+            if (!targetNote) {
+                if (feedbackEl) feedbackEl.textContent = 'Pick a target note first.';
                 return;
             }
-            const cents = slider ? setOffset(slider.value) : 0;
-            const targetNote = targetNoteFromInput(activeTarget);
-            const matched = Math.abs(cents) <= tolerance;
+            if (!feature || !feature.hasSignal) {
+                if (feedbackEl) feedbackEl.textContent = 'Tap Start Listening first.';
+                return;
+            }
+
+            const cents = Number.isFinite(feature.cents) ? feature.cents : 0;
+            const inTune = Math.abs(cents) <= tolerance;
+            const matchedNote = (feature.note || '').startsWith(targetNote);
+            const matched = inTune && matchedNote;
+
             gameState.attempts += 1;
             if (matched) {
                 gameState.hits += 1;
                 streak += 1;
                 gameState.streak = streak;
-                score += 18 + streak * 3;
-                gameState.score = score;
+                score += 20 + streak * 4;
                 stars = Math.max(stars, Math.min(3, Math.ceil(streak / 2)));
-                gameState.stars = stars;
-                markNoteChecklist();
-                if (targetNote) {
-                    playToneNote(targetNote, { duration: 0.32, volume: 0.2, type: 'triangle' });
-                }
-                const now = Date.now();
-                if (now - lastMatchAt <= 4000) {
-                    stabilityStreak += 1;
-                    gameState.stabilityStreak = stabilityStreak;
-                } else {
-                    stabilityStreak = 1;
-                    gameState.stabilityStreak = 1;
-                }
-                lastMatchAt = now;
-                if (stabilityStreak >= 3) markChecklist('pq-step-5');
+                markChecklist(noteStepMap[targetNote]);
                 if (streak >= 2) markChecklist('pq-step-6');
+                playToneNote(targetNote, { duration: 0.3, volume: 0.2, type: 'triangle' });
             } else {
                 streak = 0;
-                stabilityStreak = 0;
                 gameState.streak = 0;
-                gameState.stabilityStreak = 0;
-                score = Math.max(0, score - 6);
-                gameState.score = score;
-                const detuneNote = cents > 0 ? 'F#' : 'F';
-                playToneNote(detuneNote, { duration: 0.2, volume: 0.14, type: 'sawtooth' });
+                score = Math.max(0, score - 8);
+                playToneNote(cents > 0 ? 'F#' : 'F', { duration: 0.2, volume: 0.14, type: 'sawtooth' });
             }
+
+            gameState.score = score;
+            gameState.stars = stars;
             setLiveNumber(scoreEl, 'liveScore', score);
             if (starsEl) {
                 starsEl.dataset.liveStars = String(stars);
                 starsEl.textContent = formatStars(stars, 3);
             }
-            updateStability(stabilityStreak);
+
             if (checklist.length && checklist.every((input) => input.checked)) {
                 reportSession();
             }
         });
 
-        if (slider) setOffset(slider.value);
-        if (toleranceSlider) {
-            updateTolerance(toleranceSlider.value);
-            toleranceSlider.addEventListener('input', (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLInputElement)) return;
-                updateTolerance(target.value, { user: true });
-            });
-        }
         updateTargetStatus();
-        updateStability(stabilityStreak);
     },
 });
 
+const updatePitchQuest = () => {
+    const inputs = Array.from(document.querySelectorAll('#view-game-pitch-quest input[id^="pq-step-"]'));
+    if (!inputs.length) return;
+    const checked = inputs.filter((input) => input.checked).length;
+    const scoreEl = pitchScoreEl();
+    const starsEl = pitchStarsEl();
+    if (scoreEl && !Number.isFinite(readLiveNumber(scoreEl, 'liveScore'))) {
+        scoreEl.textContent = String(checked * 15 + (checked === inputs.length ? 10 : 0));
+    }
+    if (starsEl && !Number.isFinite(readLiveNumber(starsEl, 'liveStars'))) {
+        starsEl.textContent = formatStars(Math.min(3, Math.ceil(checked / 2)), 3);
+    }
+};
+
 export { updatePitchQuest as update, bind };
+

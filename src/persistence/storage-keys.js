@@ -21,6 +21,13 @@ export const ML_LOG_KEY = 'panda-violin:ml:events:v1';
 // Recommendations cache
 export const ML_RECS_KEY = 'panda-violin:ml:recs-v1';
 
+// Realtime coaching
+export const RT_PROFILE_KEY = 'panda-violin:rt:profile-v1';
+export const RT_EVENT_LOG_KEY = 'panda-violin:rt:events-v1';
+export const RT_POLICY_KEY = 'panda-violin:rt:policy-v1';
+export const RT_QUALITY_KEY = 'panda-violin:rt:quality-v1';
+export const RT_UI_PREFS_KEY = 'panda-violin:rt:ui-prefs-v1';
+
 // Parent zone
 export const PARENT_GOAL_KEY = 'panda-violin:parent-goal-v1';
 export const PARENT_PIN_KEY = 'panda-violin:parent-pin-v2';

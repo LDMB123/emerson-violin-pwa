@@ -38,6 +38,9 @@ export const MODULE_LOADERS = {
     swUpdates: () => import('../platform/sw-updates.js'),
     adaptiveUi: () => import('../ml/adaptive-ui.js'),
     recommendationsUi: () => import('../ml/recommendations-ui.js'),
+    realtimeSession: () => import('../realtime/session-ui.js'),
+    realtimeOverlay: () => import('../realtime/coach-overlay.js'),
+    realtimeReview: () => import('../parent/realtime-review.js'),
     audioPlayer: () => import('../audio/audio-player.js'),
     onboarding: () => import('../onboarding/onboarding.js'),
 };
@@ -47,6 +50,7 @@ export const EAGER_MODULES = [
     'offlineRecovery',
     'progress',
     'persist',
+    'realtimeOverlay',
 ];
 
 export const IDLE_MODULE_PLAN = [
@@ -60,13 +64,20 @@ export const PREFETCH_VIEW_IDS = [
     'view-home',
     'view-coach',
     'view-games',
-    'view-progress',
     'view-songs',
     'view-trainer',
 ];
 
 const MODULE_RULES = [
     { when: equals('view-tuner'), modules: ['tuner'] },
+    {
+        when: oneOf(
+            equals('view-home', 'view-coach', 'view-games', 'view-songs', 'view-tuner', 'view-progress', 'view-analysis'),
+            startsWith('view-game-'),
+            startsWith('view-song-'),
+        ),
+        modules: ['realtimeSession'],
+    },
     { when: equals('view-session-review', 'view-analysis'), modules: ['sessionReview', 'recordings'] },
     { when: oneOf(equals('view-songs'), startsWith('view-song-')), modules: ['songProgress', 'songSearch', 'recordings'] },
     { when: equals('view-onboarding'), modules: ['onboarding'] },
@@ -80,6 +91,7 @@ const MODULE_RULES = [
             'parentPin',
             'parentGoals',
             'parentRecordings',
+            'realtimeReview',
             'reminders',
             'platform',
             'offlineIntegrity',

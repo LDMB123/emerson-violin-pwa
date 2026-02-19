@@ -15,7 +15,7 @@
                 <div class="tuner-note" id="tuner-note">--</div>
                 <div class="tuner-frequency" id="tuner-frequency">0 Hz</div>
               </div>
-              <button class="tuner-mic" id="tuner-start" type="button" aria-label="Start tuner"><svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></button>
+              <span class="rt-listening-chip" data-rt-indicator>Mic off</span>
             </div>
             <div class="tuner-meter" aria-hidden="true">
               <svg class="tuner-arc" viewBox="0 0 200 120" width="200" height="120">
@@ -34,7 +34,7 @@
               </svg>
             </div>
             <div class="tuner-cents" id="tuner-cents">±0 cents</div>
-            <div class="tuner-live-status" id="tuner-status" aria-live="polite">Tap the mic to start listening.</div>
+            <div class="tuner-live-status" id="tuner-status" aria-live="polite">Tap Start Listening.</div>
             <div class="tuner-note-buttons">
               <button class="tuner-note-btn" type="button" data-tone="G">G</button>
               <button class="tuner-note-btn" type="button" data-tone="D">D</button>
@@ -42,7 +42,8 @@
               <button class="tuner-note-btn" type="button" data-tone="E">E</button>
             </div>
             <div class="tuner-controls">
-              <button class="btn btn-secondary" id="tuner-stop" type="button" disabled="">Stop</button>
+              <button class="btn btn-primary tuner-start-big" id="tuner-start" data-rt-toggle type="button">Start Listening</button>
+              <button class="btn btn-secondary" id="tuner-stop" data-rt-stop type="button" disabled="">Stop</button>
             </div>
           </div>
 

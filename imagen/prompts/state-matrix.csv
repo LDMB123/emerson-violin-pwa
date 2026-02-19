@@ -1,0 +1,14 @@
+state,tier,description,seed_reference
+listening,tier1,Red panda leaning in with one ear raised and soft smile,seed-a
+steady,tier1,Red panda relaxed stance with calm thumbs-up,seed-a
+adjust-up,tier1,Red panda pointing gently upward cueing tiny pitch increase,seed-a
+adjust-down,tier1,Red panda flattening paw cueing tiny pitch decrease,seed-a
+retry-calm,tier1,Red panda breathing pose with reassuring expression,seed-a
+celebrate-lock,tier1,Red panda cheerful jump with star sparkles,seed-a
+mission-start,tier1,Red panda inviting gesture toward practice path,seed-b
+rhythm-count,tier1,Red panda counting beats with paw taps,seed-b
+fallback-manual,tier1,Red panda holding simple helper card and nodding,seed-c
+parent-handoff,tier1,Red panda politely waving toward parent lock icon,seed-c
+focused,tier2,Red panda in concentrated violin posture,seed-d
+high-five,tier2,Red panda offering a high-five,seed-d
+goal-unlocked,tier2,Red panda hugging a gold badge,seed-e

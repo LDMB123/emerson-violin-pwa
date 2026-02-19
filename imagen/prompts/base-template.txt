@@ -1,0 +1,10 @@
+Style lock: storybook-clean red panda mascot, kid-safe, warm expression, consistent line weight, bright candy palette with high-contrast shape edges, no text, no watermark, isolated transparent background.
+
+Camera: centered character, full body, 3/4 pose.
+
+State prompt: {{STATE_DESCRIPTION}}
+
+Negative prompt: photorealistic fur texture, horror, dark palette, cluttered scene, extra limbs, blurred face, realistic human hands.
+
+Seed reference: {{SEED_REFERENCE}}
+

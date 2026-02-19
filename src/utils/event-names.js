@@ -31,3 +31,12 @@ export const OFFLINE_MODE_CHANGE = 'panda:offline-mode-change';
 
 // Achievements
 export const ACHIEVEMENT_UNLOCKED = 'panda:achievement-unlocked';
+
+// Realtime coaching / session
+export const RT_SESSION_STARTED = 'panda:rt-session-started';
+export const RT_SESSION_STOPPED = 'panda:rt-session-stopped';
+export const RT_CUE = 'panda:rt-cue';
+export const RT_STATE = 'panda:rt-state';
+export const RT_FALLBACK = 'panda:rt-fallback';
+export const RT_PARENT_OVERRIDE = 'panda:rt-parent-override';
+export const RT_QUALITY = 'panda:rt-quality';
