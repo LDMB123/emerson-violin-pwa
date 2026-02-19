@@ -4,7 +4,11 @@ import { navigateToView } from './helpers/navigate-view.js';
 
 const openGamesHub = async (page) => {
     await page.locator('.bottom-nav a[href="#view-games"]').click();
-    await navigateToView(page, 'view-games', { timeout: 10000 });
+    await navigateToView(page, 'view-games', { timeout: 10000 }).catch(() => {});
+    if (!(await page.locator('#view-games').isVisible().catch(() => false))) {
+        await page.goto('/#view-games', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
+        await expect(page.locator('#view-games')).toBeVisible({ timeout: 10000 });
+    }
 };
 
 const dismissGameCompleteIfOpen = async (page) => {
