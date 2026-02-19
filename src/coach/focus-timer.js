@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { PERSIST_APPLIED, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import { setDifficultyBadge } from '../games/shared.js';
@@ -211,4 +210,3 @@ const initFocusTimer = () => {
 export const init = initFocusTimer;
 
 bindGlobalListeners();
-whenReady(initFocusTimer);

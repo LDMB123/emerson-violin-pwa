@@ -23,6 +23,8 @@ const viewLoader = new ViewLoader();
 const viewRenderGate = createAsyncGate();
 const SW_CACHE_PREFIXES = ['panda-violin-', 'workbox-'];
 const DEV_SW_RESET_FLAG = 'panda-violin-dev-sw-reset';
+const INTERACTIVE_LABEL_SELECTOR = '.toggle-ui label[for], .song-controls label[for], .focus-controls label[for]';
+let interactiveLabelKeysBound = false;
 
 const loaded = new Map();
 const loadModule = (key) => {
@@ -39,6 +41,11 @@ const loadModule = (key) => {
 };
 
 const queueIdleTask = (task, delay = 0) => {
+    if ('scheduler' in window && typeof window.scheduler?.postTask === 'function') {
+        window.scheduler.postTask(task, { priority: 'background', delay });
+        return;
+    }
+
     const run = () => {
         if ('requestIdleCallback' in window) {
             window.requestIdleCallback(() => task(), { timeout: 1500 });
@@ -60,6 +67,48 @@ const loadIdle = (key, delay = 0) => {
 };
 
 const getCurrentViewId = () => getViewId(window.location.hash);
+
+const getInlineInitialView = () => {
+    const container = document.getElementById('main-content');
+    if (!container) return null;
+    const initialViewId = container.dataset.initialViewId;
+    const inlineView = container.querySelector(':scope > .view');
+    if (!initialViewId || !inlineView || inlineView.id !== initialViewId) return null;
+    return {
+        viewId: initialViewId,
+        html: container.innerHTML,
+    };
+};
+
+const seedInlineInitialViewCache = () => {
+    const inlineInitialView = getInlineInitialView();
+    if (!inlineInitialView) return;
+    try {
+        viewLoader.seed(getViewPath(inlineInitialView.viewId), inlineInitialView.html);
+    } catch {
+        // Ignore invalid route metadata.
+    }
+};
+
+const warmInitialViews = () => {
+    const candidateIds = new Set(['view-onboarding']);
+    const currentViewId = getCurrentViewId();
+    if (currentViewId?.startsWith('view-')) {
+        candidateIds.add(currentViewId);
+    }
+    const inlineInitialView = getInlineInitialView();
+    candidateIds.forEach((viewId) => {
+        if (viewId === inlineInitialView?.viewId) return;
+        try {
+            const viewPath = getViewPath(viewId);
+            if (!viewLoader.has(viewPath)) {
+                viewLoader.prefetch(viewPath);
+            }
+        } catch {
+            // Ignore invalid/unknown routes during warmup.
+        }
+    });
+};
 
 const runModuleInit = (module) => {
     if (!module || typeof module.init !== 'function') return;
@@ -101,23 +150,24 @@ const applyViewPersona = (viewId) => {
     document.documentElement.dataset.navGroup = meta?.navGroup || 'utility';
 };
 
-const bindChildHomeActions = () => {
-    const startBtn = document.querySelector('[data-start-practice]');
-    const continueBtn = document.querySelector('[data-continue-practice]');
-    const toHashRoute = (target) => {
-        if (!target) return '#view-coach';
-        if (target.startsWith('#')) return target;
-        if (target.startsWith('view-')) return `#${target}`;
-        return `#view-game-${target}`;
-    };
-    const setContinueHref = (target) => {
-        const href = toHashRoute(target || document.documentElement.dataset.practiceContinueHref || 'view-coach');
-        document.documentElement.dataset.practiceContinueHref = href;
-        if (continueBtn) {
-            continueBtn.setAttribute('href', href);
-        }
-    };
+const toHashRoute = (target) => {
+    if (!target) return '#view-coach';
+    if (target.startsWith('#')) return target;
+    if (target.startsWith('view-')) return `#${target}`;
+    return `#view-game-${target}`;
+};
 
+const setContinueHref = (continueBtn, target) => {
+    const href = toHashRoute(target || document.documentElement.dataset.practiceContinueHref || 'view-coach');
+    document.documentElement.dataset.practiceContinueHref = href;
+    if (continueBtn) {
+        continueBtn.setAttribute('href', href);
+    }
+};
+
+const bindChildHomeActions = (container) => {
+    const startBtn = container.querySelector('[data-start-practice]');
+    const continueBtn = container.querySelector('[data-continue-practice]');
     if (startBtn && startBtn.dataset.bound !== 'true') {
         startBtn.dataset.bound = 'true';
         startBtn.addEventListener('click', (event) => {
@@ -127,11 +177,11 @@ const bindChildHomeActions = () => {
     }
 
     if (continueBtn) {
-        setContinueHref(document.documentElement.dataset.practiceContinueHref || 'view-coach');
+        setContinueHref(continueBtn, document.documentElement.dataset.practiceContinueHref || 'view-coach');
         if (continueBtn.dataset.bound !== 'true') {
             continueBtn.dataset.bound = 'true';
             continueBtn.addEventListener('click', () => {
-                setContinueHref(document.documentElement.dataset.practiceContinueHref || 'view-coach');
+                setContinueHref(continueBtn, document.documentElement.dataset.practiceContinueHref || 'view-coach');
             });
         }
         if (continueBtn.dataset.recommendationBound !== 'true') {
@@ -141,18 +191,18 @@ const bindChildHomeActions = () => {
                 .then((recs) => {
                     const stepCta = recs?.lessonSteps?.find((step) => step?.cta)?.cta;
                     const recommended = stepCta || recs?.recommendedGameId || 'view-coach';
-                    setContinueHref(recommended);
+                    setContinueHref(continueBtn, recommended);
                 })
                 .catch(() => {
-                    setContinueHref(document.documentElement.dataset.practiceContinueHref || 'view-coach');
+                    setContinueHref(continueBtn, document.documentElement.dataset.practiceContinueHref || 'view-coach');
                 });
         }
     }
 };
 
-const bindGameSort = () => {
-    const sortControls = Array.from(document.querySelectorAll('input[name="game-sort"]'));
-    const cards = Array.from(document.querySelectorAll('.game-card[data-sort-tags]'));
+const bindGameSort = (container) => {
+    const sortControls = Array.from(container.querySelectorAll('input[name="game-sort"]'));
+    const cards = Array.from(container.querySelectorAll('.game-card[data-sort-tags]'));
     if (!sortControls.length || !cards.length) return;
 
     const applySort = () => {
@@ -176,9 +226,9 @@ const bindGameSort = () => {
     applySort();
 };
 
-const bindCoachStepper = () => {
-    const tabs = Array.from(document.querySelectorAll('[data-coach-step-target]'));
-    const cards = Array.from(document.querySelectorAll('[data-coach-step-card]'));
+const bindCoachStepper = (container) => {
+    const tabs = Array.from(container.querySelectorAll('[data-coach-step-target]'));
+    const cards = Array.from(container.querySelectorAll('[data-coach-step-card]'));
     if (!tabs.length || !cards.length) return;
 
     const activate = (target) => {
@@ -206,7 +256,7 @@ const bindCoachStepper = () => {
     });
 };
 
-const showView = async (viewId, enhanceCallback) => {
+const showView = async (viewId, ctx = null) => {
     if (!viewId) return;
     const renderToken = viewRenderGate.begin();
 
@@ -219,19 +269,27 @@ const showView = async (viewId, enhanceCallback) => {
 
         // Show skeleton while loading (only if view isn't cached)
         const viewPath = getViewPath(viewId);
-        if (!viewLoader.has(viewPath)) {
+        const inlineView = container.querySelector(':scope > .view');
+        const canHydrateInline = container.dataset.initialViewId === viewId
+            && inlineView?.id === viewId
+            && container.dataset.inlineHydrated !== 'true';
+        if (!viewLoader.has(viewPath) && !canHydrateInline) {
             container.innerHTML = skeletonHTML;
         }
 
-        const html = await viewLoader.load(viewPath);
-        if (!viewRenderGate.isActive(renderToken)) return;
-        container.innerHTML = html;
+        if (canHydrateInline) {
+            viewLoader.seed(viewPath, container.innerHTML);
+            container.dataset.inlineHydrated = 'true';
+        } else {
+            const viewFragment = await viewLoader.clone(viewPath);
+            if (!viewRenderGate.isActive(renderToken)) return;
+            container.replaceChildren(viewFragment);
+        }
         activateLoadedView(container);
-        rewriteAudioSources();
-
-        // Re-enhance any toggle labels in the new view
-        if (enhanceCallback) {
-            enhanceCallback();
+        rewriteAudioSources(container);
+        prepareInteractiveLabels(container);
+        if (ctx?.bindPopovers) {
+            ctx.bindPopovers(container);
         }
 
         document.dispatchEvent(new CustomEvent('panda:view-rendered', { detail: { viewId } }));
@@ -239,9 +297,9 @@ const showView = async (viewId, enhanceCallback) => {
         // Load modules for this view
         await loadForView(viewId);
         applyViewPersona(viewId);
-        bindChildHomeActions();
-        bindGameSort();
-        bindCoachStepper();
+        bindChildHomeActions(container);
+        bindGameSort(container);
+        bindCoachStepper(container);
     } catch (err) {
         if (!viewRenderGate.isActive(renderToken)) return;
         console.error('[App] View load failed:', err);
@@ -293,8 +351,8 @@ const registerServiceWorker = () => {
     });
 };
 
-const rewriteAudioSources = () => {
-    const audioElements = document.querySelectorAll('audio[src*="/assets/audio/"]');
+const rewriteAudioSources = (root = document) => {
+    const audioElements = root.querySelectorAll('audio[src*="/assets/audio/"]');
     audioElements.forEach((audio) => {
         const currentSrc = audio.getAttribute('src');
         if (currentSrc) {
@@ -322,27 +380,29 @@ const prefetchLikelyViews = (currentViewId) => {
     });
 };
 
-const enhanceToggleLabels = () => {
-    const labels = document.querySelectorAll(
-        '.toggle-ui label[for], .song-controls label[for], .focus-controls label[for]'
-    );
-    labels.forEach((label) => {
-        if (label.dataset.keybound === 'true') return;
-        label.dataset.keybound = 'true';
+const prepareInteractiveLabels = (root = document) => {
+    root.querySelectorAll(INTERACTIVE_LABEL_SELECTOR).forEach((label) => {
         label.setAttribute('role', 'button');
         label.setAttribute('tabindex', '0');
-        label.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                label.click();
-            }
-        });
+    });
+};
+
+const bindInteractiveLabelKeys = () => {
+    if (interactiveLabelKeysBound) return;
+    interactiveLabelKeysBound = true;
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        if (!(event.target instanceof HTMLLabelElement)) return;
+        if (!event.target.matches(INTERACTIVE_LABEL_SELECTOR)) return;
+        event.preventDefault();
+        event.target.click();
     });
 };
 
 const resolveInitialView = async () => {
+    const hasExplicitHash = window.location.hash.startsWith('#view-');
     let initialViewId = getCurrentViewId() || 'view-home';
-    if (initialViewId === 'view-home') {
+    if (!hasExplicitHash && initialViewId === 'view-home') {
         try {
             const { shouldShowOnboarding } = await import('./onboarding/onboarding-check.js');
             if (await shouldShowOnboarding()) {
@@ -371,23 +431,33 @@ const setupPopoverSystem = (ctx) => {
         }
     };
 
-    document.querySelectorAll('[popover]').forEach((popover) => {
-        popover.addEventListener('toggle', () => {
-            const open = popover.matches(':popover-open');
-            setPopoverExpanded(popover, open);
-            if (open) {
-                focusFirstPopoverItem(popover);
-            } else if (ctx.lastPopoverTrigger instanceof HTMLElement) {
-                ctx.lastPopoverTrigger.focus();
-            }
+    const bindPopovers = (root = document) => {
+        root.querySelectorAll('[popover]').forEach((popover) => {
+            if (popover.dataset.popoverBound === 'true') return;
+            popover.dataset.popoverBound = 'true';
+            setPopoverExpanded(popover, popover.matches(':popover-open'));
+            popover.addEventListener('toggle', () => {
+                const open = popover.matches(':popover-open');
+                setPopoverExpanded(popover, open);
+                if (open) {
+                    focusFirstPopoverItem(popover);
+                } else if (ctx.lastPopoverTrigger instanceof HTMLElement && ctx.lastPopoverTrigger.isConnected) {
+                    ctx.lastPopoverTrigger.focus();
+                }
+            });
         });
-    });
 
-    document.querySelectorAll('[popovertarget]').forEach((button) => {
-        button.addEventListener('click', () => {
-            ctx.lastPopoverTrigger = button;
+        root.querySelectorAll('[popovertarget]').forEach((button) => {
+            if (button.dataset.popoverTriggerBound === 'true') return;
+            button.dataset.popoverTriggerBound = 'true';
+            button.addEventListener('click', () => {
+                ctx.lastPopoverTrigger = button;
+            });
         });
-    });
+    };
+
+    ctx.bindPopovers = bindPopovers;
+    bindPopovers(document);
 };
 
 const setupNavigation = (ctx) => {
@@ -451,6 +521,7 @@ const setupNavigation = (ctx) => {
     ctx.updateNavState();
 
     document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return;
         const link = event.target.closest('a[href^="#view-"]');
         if (!link) return;
         const href = link.getAttribute('href');
@@ -470,30 +541,33 @@ const setupNavigation = (ctx) => {
 
 const boot = async () => {
     const initialViewId = await resolveInitialView();
-    await showView(initialViewId, enhanceToggleLabels);
-    if (initialViewId === 'view-onboarding') {
-        loadModule('onboarding');
-    }
+    await showView(initialViewId);
 
     const ctx = {
         navItems: Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]')),
         prefersReducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         lastPopoverTrigger: null,
+        bindPopovers: null,
         updateNavState: null,
     };
 
     registerServiceWorker();
     setupNavigation(ctx);
     setupPopoverSystem(ctx);
+    bindInteractiveLabelKeys();
     loadEagerModules();
     loadIdleModules();
     prefetchLikelyViews(initialViewId);
 
     window.addEventListener('hashchange', async () => {
         const viewId = getCurrentViewId() || 'view-home';
-        await showView(viewId, enhanceToggleLabels);
+        await showView(viewId, ctx);
         ctx.updateNavState();
     }, { passive: true });
 };
 
-whenReady(boot);
+whenReady(() => {
+    seedInlineInitialViewCache();
+    warmInitialViews();
+    boot();
+});

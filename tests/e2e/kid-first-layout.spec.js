@@ -1,14 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-const ensureHome = async (page) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#main-content .view', { timeout: 10000 });
-
-  if (await page.locator('#view-onboarding').isVisible().catch(() => false)) {
-    await page.locator('#onboarding-skip').click();
-    await page.waitForURL('**/#view-home');
-  }
-};
+import { openHome } from './helpers/open-home.js';
 
 const assertNoHorizontalOverflow = async (page) => {
   const hasOverflow = await page.evaluate(() => {
@@ -20,7 +11,7 @@ const assertNoHorizontalOverflow = async (page) => {
 };
 
 test('captures iPad and phone layouts for core child views', async ({ page }, testInfo) => {
-  await ensureHome(page);
+  await openHome(page);
 
   const viewports = [
     { name: 'ipad', width: 834, height: 1194 },

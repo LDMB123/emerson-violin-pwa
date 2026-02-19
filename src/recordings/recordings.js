@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { setJSON, setBlob, removeBlob } from '../persistence/storage.js';
 import { loadRecordings } from '../persistence/loaders.js';
 import { dataUrlToBlob, blobToDataUrl } from '../utils/recording-export.js';
@@ -310,5 +309,3 @@ const updatePermissionState = async (announce = false) => {
 
 export { initRecordings };
 export const init = initRecordings;
-
-whenReady(initRecordings);

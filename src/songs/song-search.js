@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { loadEvents } from '../persistence/loaders.js';
 
@@ -130,5 +129,3 @@ const initSongSearch = () => {
 };
 
 export const init = initSongSearch;
-
-whenReady(initSongSearch);
