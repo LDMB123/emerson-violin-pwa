@@ -24,6 +24,7 @@ const viewRenderGate = createAsyncGate();
 const SW_CACHE_PREFIXES = ['panda-violin-', 'workbox-'];
 const DEV_SW_RESET_FLAG = 'panda-violin-dev-sw-reset';
 const INTERACTIVE_LABEL_SELECTOR = '.toggle-ui label[for], .song-controls label[for], .focus-controls label[for]';
+const PREFETCH_LIMIT = 3;
 let interactiveLabelKeysBound = false;
 
 const loaded = new Map();
@@ -91,7 +92,9 @@ const seedInlineInitialViewCache = () => {
 };
 
 const warmInitialViews = () => {
-    const candidateIds = new Set(['view-onboarding']);
+    if (navigator.connection?.saveData) return;
+
+    const candidateIds = new Set();
     const currentViewId = getCurrentViewId();
     if (currentViewId?.startsWith('view-')) {
         candidateIds.add(currentViewId);
@@ -370,13 +373,18 @@ const loadIdleModules = () => {
 };
 
 const prefetchLikelyViews = (currentViewId) => {
-    PREFETCH_VIEW_IDS.filter((viewId) => viewId !== currentViewId).forEach((viewId, index) => {
+    if (navigator.connection?.saveData) return;
+
+    PREFETCH_VIEW_IDS
+        .filter((viewId) => viewId !== currentViewId)
+        .slice(0, PREFETCH_LIMIT)
+        .forEach((viewId, index) => {
         queueIdleTask(() => {
             const viewPath = getViewPath(viewId);
             if (!viewLoader.has(viewPath)) {
                 viewLoader.prefetch(viewPath);
             }
-        }, 150 + index * 120);
+        }, 400 + index * 250);
     });
 };
 
@@ -559,11 +567,20 @@ const boot = async () => {
     loadIdleModules();
     prefetchLikelyViews(initialViewId);
 
-    window.addEventListener('hashchange', async () => {
+    const onHashChange = async () => {
         const viewId = getCurrentViewId() || 'view-home';
         await showView(viewId, ctx);
         ctx.updateNavState();
-    }, { passive: true });
+    };
+
+    window.addEventListener('hashchange', onHashChange, { passive: true });
+
+    const resolvedViewId = getCurrentViewId() || 'view-home';
+    if (resolvedViewId !== initialViewId) {
+        await showView(resolvedViewId, ctx);
+    }
+    ctx.updateNavState();
+    window.__PANDA_APP_READY__ = true;
 };
 
 whenReady(() => {

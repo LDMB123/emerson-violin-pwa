@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { navigateToView } from './helpers/navigate-view.js';
 
 const assertNoHorizontalOverflow = async (page) => {
   const hasOverflow = await page.evaluate(() => {
@@ -30,9 +31,7 @@ test('captures iPad and phone layouts for core child views', async ({ page }, te
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
 
     for (const route of routes) {
-      await page.evaluate((hash) => {
-        window.location.hash = hash;
-      }, route.hash);
+      await navigateToView(page, route.hash);
       await expect(page.locator(route.selector)).toBeVisible({ timeout: 10000 });
       await assertNoHorizontalOverflow(page);
 
