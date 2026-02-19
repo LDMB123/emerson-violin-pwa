@@ -26,7 +26,11 @@ const SW_CACHE_PREFIXES = ['panda-violin-', 'workbox-'];
 const DEV_SW_RESET_FLAG = 'panda-violin-dev-sw-reset';
 const INTERACTIVE_LABEL_SELECTOR = '.toggle-ui label[for], .song-controls label[for], .focus-controls label[for]';
 const PREFETCH_LIMIT = 3;
+const GAME_FAVORITES_KEY = 'panda-violin:game-favorites:v1';
+const GAME_QUICK_TARGET = 6;
 let interactiveLabelKeysBound = false;
+let coachStepperAutoBound = false;
+let activateCoachStep = null;
 
 const loaded = new Map();
 const loadModule = (key) => {
@@ -214,8 +218,14 @@ const bindChildHomeActions = (container) => {
             import('./ml/recommendations.js')
                 .then(({ getLearningRecommendations }) => getLearningRecommendations())
                 .then((recs) => {
-                    const stepCta = recs?.lessonSteps?.find((step) => step?.cta)?.cta;
-                    const recommended = stepCta || recs?.recommendedGameId || 'view-coach';
+                    const missionStep = Array.isArray(recs?.mission?.steps)
+                        ? recs.mission.steps.find((step) => step.id === recs?.mission?.currentStepId)
+                        : null;
+                    const missionTarget = missionStep?.target || missionStep?.cta;
+                    const actionTarget = Array.isArray(recs?.nextActions)
+                        ? recs.nextActions.find((action) => action?.href)?.href
+                        : null;
+                    const recommended = missionTarget || actionTarget || recs?.recommendedGameId || 'view-coach';
                     setContinueHref(continueBtn, recommended);
                 })
                 .catch(() => {
@@ -229,19 +239,217 @@ const bindGameSort = (container) => {
     const sortControls = Array.from(container.querySelectorAll('input[name="game-sort"]'));
     const cards = Array.from(container.querySelectorAll('.game-card[data-sort-tags]'));
     if (!sortControls.length || !cards.length) return;
+    const emptyState = container.querySelector('[data-games-empty]');
+
+    const toGameId = (value) => {
+        if (typeof value !== 'string') return '';
+        const trimmed = value.trim();
+        if (!trimmed) return '';
+        if (trimmed.startsWith('#view-game-')) return trimmed.slice('#view-game-'.length);
+        if (trimmed.startsWith('view-game-')) return trimmed.slice('view-game-'.length);
+        return trimmed;
+    };
+
+    const readFavoriteIds = () => {
+        try {
+            const stored = JSON.parse(window.localStorage.getItem(GAME_FAVORITES_KEY) || '[]');
+            if (!Array.isArray(stored)) return [];
+            return stored.filter((value, index, list) => (
+                typeof value === 'string'
+                && value.trim()
+                && list.indexOf(value) === index
+            ));
+        } catch {
+            return [];
+        }
+    };
+
+    const writeFavoriteIds = (ids) => {
+        try {
+            window.localStorage.setItem(GAME_FAVORITES_KEY, JSON.stringify(ids));
+        } catch {
+            // Ignore local storage write failures.
+        }
+    };
+
+    const tagsForCard = (card) => (
+        (card.dataset.sortTags || '')
+            .split(',')
+            .map((token) => token.trim())
+            .filter(Boolean)
+    );
+
+    const cardById = new Map(
+        cards
+            .map((card) => [card.dataset.gameId, card])
+            .filter(([id]) => Boolean(id)),
+    );
+    if (!cardById.size) return;
+
+    const sortTagsById = new Map(
+        Array.from(cardById.entries()).map(([id, card]) => [id, tagsForCard(card)]),
+    );
+
+    const fallbackQuickIds = Array.from(cardById.entries())
+        .filter(([, card]) => tagsForCard(card).includes('quick'))
+        .map(([id]) => id);
+    const fallbackNewIds = Array.from(cardById.entries())
+        .filter(([, card]) => tagsForCard(card).includes('new'))
+        .map(([id]) => id);
+
+    let quickIds = new Set(fallbackQuickIds);
+    let newIds = new Set(fallbackNewIds);
+    let favoriteIds = new Set(readFavoriteIds().filter((id) => cardById.has(id)));
+
+    const syncFavoriteStorage = () => {
+        const nextIds = Array.from(favoriteIds).filter((id) => cardById.has(id));
+        favoriteIds = new Set(nextIds);
+        writeFavoriteIds(nextIds);
+    };
+
+    const ensureFavoriteButton = (card) => {
+        let button = card.querySelector('[data-game-favorite]');
+        if (button) return button;
+        button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'game-favorite-btn';
+        button.dataset.gameFavorite = 'true';
+        card.appendChild(button);
+        return button;
+    };
+
+    const syncFavoriteButton = (card) => {
+        const id = card.dataset.gameId;
+        if (!id) return;
+        const button = ensureFavoriteButton(card);
+        const active = favoriteIds.has(id);
+        const title = card.querySelector('.game-title')?.textContent?.trim() || 'game';
+        button.textContent = active ? '★' : '☆';
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        button.setAttribute('aria-label', `${active ? 'Remove' : 'Add'} ${title} ${active ? 'from' : 'to'} favorites`);
+        card.classList.toggle('is-favorite', active);
+    };
+
+    const updateEmptyState = (selected, visibleCount) => {
+        if (!emptyState) return;
+        if (visibleCount > 0) {
+            emptyState.hidden = true;
+            return;
+        }
+        const messageByFilter = {
+            quick: 'No quick picks available yet.',
+            favorites: favoriteIds.size
+                ? 'No favorite games match this view yet.'
+                : 'No favorites yet. Tap ☆ on any game to save it.',
+            new: 'No new games left right now. Great progress!',
+        };
+        emptyState.textContent = messageByFilter[selected] || 'No games available yet.';
+        emptyState.hidden = false;
+    };
+
+    const shouldShowCard = (card, selected) => {
+        const id = card.dataset.gameId || '';
+        const tags = sortTagsById.get(id) || [];
+        if (selected === 'favorites') {
+            if (favoriteIds.size > 0) return favoriteIds.has(id);
+            return tags.includes('favorites');
+        }
+        if (selected === 'new') {
+            if (newIds.size > 0) return newIds.has(id);
+            return tags.includes('new');
+        }
+        if (selected === 'quick') {
+            if (quickIds.size > 0) return quickIds.has(id);
+            return tags.includes('quick');
+        }
+        return true;
+    };
 
     const applySort = () => {
         const selected = sortControls.find((control) => control.checked)?.value || 'quick';
+        let visibleCount = 0;
         cards.forEach((card) => {
-            const tags = (card.dataset.sortTags || '')
-                .split(',')
-                .map((token) => token.trim())
-                .filter(Boolean);
-            const visible = selected === 'all' || tags.includes(selected);
+            const visible = shouldShowCard(card, selected);
             card.classList.toggle('is-hidden', !visible);
             card.setAttribute('aria-hidden', visible ? 'false' : 'true');
+            if (visible) {
+                card.removeAttribute('tabindex');
+                visibleCount += 1;
+            } else {
+                card.setAttribute('tabindex', '-1');
+            }
         });
+        updateEmptyState(selected, visibleCount);
     };
+
+    const hydrateDynamicSets = async () => {
+        const [eventsResult, recsResult] = await Promise.allSettled([
+            import('./persistence/loaders.js').then((module) => module.loadEvents()),
+            import('./ml/recommendations.js').then((module) => module.getLearningRecommendations()),
+        ]);
+
+        const events = (eventsResult.status === 'fulfilled' && Array.isArray(eventsResult.value))
+            ? eventsResult.value
+            : [];
+        const playedRecent = [];
+        events
+            .filter((event) => event?.type === 'game' && typeof event?.id === 'string')
+            .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+            .forEach((event) => {
+                const id = toGameId(event.id);
+                if (!id || playedRecent.includes(id)) return;
+                playedRecent.push(id);
+            });
+        const playedSet = new Set(playedRecent);
+
+        const recs = recsResult.status === 'fulfilled' ? recsResult.value : null;
+        const recommendedId = toGameId(
+            recs?.recommendedGameId
+                || recs?.recommendedGame
+                || recs?.lessonSteps?.find((step) => step?.cta)?.cta,
+        );
+
+        const quickOrdered = [];
+        const pushQuick = (id) => {
+            if (!id || !cardById.has(id) || quickOrdered.includes(id)) return;
+            quickOrdered.push(id);
+        };
+        pushQuick(recommendedId);
+        playedRecent.forEach(pushQuick);
+        fallbackQuickIds.forEach(pushQuick);
+
+        if (quickOrdered.length) {
+            quickIds = new Set(quickOrdered.slice(0, Math.max(GAME_QUICK_TARGET, fallbackQuickIds.length)));
+        }
+
+        const unplayedIds = Array.from(cardById.keys()).filter((id) => !playedSet.has(id));
+        newIds = new Set(unplayedIds.length ? unplayedIds : fallbackNewIds);
+
+        applySort();
+    };
+
+    syncFavoriteStorage();
+    cards.forEach((card) => {
+        const button = ensureFavoriteButton(card);
+        syncFavoriteButton(card);
+        if (button.dataset.gameFavoriteBound === 'true') return;
+        button.dataset.gameFavoriteBound = 'true';
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const id = card.dataset.gameId;
+            if (!id) return;
+            if (favoriteIds.has(id)) {
+                favoriteIds.delete(id);
+            } else {
+                favoriteIds.add(id);
+            }
+            syncFavoriteStorage();
+            syncFavoriteButton(card);
+            applySort();
+        });
+    });
 
     sortControls.forEach((control) => {
         if (control.dataset.bound === 'true') return;
@@ -249,6 +457,7 @@ const bindGameSort = (container) => {
         control.addEventListener('change', applySort);
     });
     applySort();
+    hydrateDynamicSets().catch(() => {});
 };
 
 const bindCoachStepper = (container) => {
@@ -271,6 +480,8 @@ const bindCoachStepper = (container) => {
         });
     };
 
+    activateCoachStep = activate;
+
     tabs.forEach((tab, index) => {
         if (tab.dataset.bound === 'true') return;
         tab.dataset.bound = 'true';
@@ -279,6 +490,39 @@ const bindCoachStepper = (container) => {
             activate(tab.dataset.coachStepTarget);
         }
     });
+
+    if (!coachStepperAutoBound) {
+        coachStepperAutoBound = true;
+        const canAutoSwitch = () => window.location.hash === '#view-coach' && typeof activateCoachStep === 'function';
+
+        document.addEventListener('panda:rt-session-started', () => {
+            if (!canAutoSwitch()) return;
+            activateCoachStep('warmup');
+        });
+
+        document.addEventListener('panda:lesson-step', (event) => {
+            if (!canAutoSwitch()) return;
+            const state = event.detail?.state;
+            if (state === 'start' || state === 'complete') {
+                activateCoachStep('play');
+            }
+        });
+
+        document.addEventListener('panda:lesson-complete', () => {
+            if (!canAutoSwitch()) return;
+            activateCoachStep('play');
+        });
+
+        document.addEventListener('panda:game-recorded', () => {
+            if (!canAutoSwitch()) return;
+            activateCoachStep('play');
+        });
+
+        document.addEventListener('panda:coach-mission-complete', () => {
+            if (!canAutoSwitch()) return;
+            activateCoachStep('play');
+        });
+    }
 };
 
 const showView = async (viewId, ctx = null) => {

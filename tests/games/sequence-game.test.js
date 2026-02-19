@@ -91,7 +91,10 @@ describe('sequence-game lifecycle guards', () => {
         window.dispatchEvent(new Event('pagehide'));
 
         expect(sharedMocks.stopTonePlayer).toHaveBeenCalledTimes(1);
-        expect(sharedMocks.recordGameEvent).toHaveBeenCalledWith('unit-seq-a', { accuracy: 100, score: 11 });
+        expect(sharedMocks.recordGameEvent).toHaveBeenCalledWith(
+            'unit-seq-a',
+            expect.objectContaining({ accuracy: 100, score: 11, tier: 'core' })
+        );
     });
 
     it('ignores bfcache persisted pagehide events', () => {

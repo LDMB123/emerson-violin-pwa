@@ -3,6 +3,7 @@ import {
     attachTuning,
     setDifficultyBadge,
 } from './shared.js';
+import { GAME_META } from './game-config.js';
 import { GAME_PLAY_AGAIN } from '../utils/event-names.js';
 
 /**
@@ -30,6 +31,7 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
     const viewId = `#view-game-${id}`;
     let reportResult = null;
     let reported = false;
+    let sessionStartedAt = 0;
     // gameState is a shared mutable object. onBind receives a reference to it and may attach
     // arbitrary fields (score, hits, etc.) that computeAccuracy and onReset can then read.
     const gameState = {};
@@ -45,6 +47,7 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         if (!stage) return;
 
         reported = false;
+        sessionStartedAt = Date.now();
         let hasReceivedInitialTuning = false;
         // Remove previous hashchange listener before clearing gameState.
         if (gameState._hashHandler) {
@@ -73,17 +76,74 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             if (typeof onReset === 'function') onReset(gameState);
         });
 
+        const objectiveTierFromComplexity = (complexity) => {
+            if (complexity >= 2) return 'mastery';
+            if (complexity >= 1) return 'core';
+            return 'foundation';
+        };
+
+        const objectiveTier = () => (
+            stage.dataset.gameObjectiveTier
+            || objectiveTierFromComplexity(Number(difficulty?.complexity || 0))
+        );
+
+        const objectiveTotalForTier = (tier) => {
+            const pack = GAME_META?.[id]?.objectivePacks?.[tier];
+            if (Array.isArray(pack) && pack.length) return pack.length;
+            return 0;
+        };
+
+        const checklistProgress = (objectiveTotal) => {
+            const candidates = Array.from(stage.querySelectorAll('input[type="checkbox"][id]'))
+                .filter((input) => !input.id.startsWith('setting-'))
+                .filter((input) => !input.id.includes('parent-'))
+                .filter((input) => /(-step-|set-)/.test(input.id));
+            const completed = candidates.filter((input) => input.checked).length;
+            if (objectiveTotal > 0) {
+                return {
+                    objectiveTotal,
+                    objectivesCompleted: Math.min(objectiveTotal, completed),
+                };
+            }
+            return {
+                objectiveTotal: candidates.length,
+                objectivesCompleted: completed,
+            };
+        };
+
         const reportSession = () => {
             if (reported) return;
             const accuracy = typeof computeAccuracy === 'function' ? computeAccuracy(gameState) : 0;
             if (accuracy <= 0 && !gameState.score) return;
             reported = true;
             reportResult({ accuracy, score: gameState.score || 0 });
-            recordGameEvent(id, { accuracy, score: gameState.score || 0 });
+
+            const tier = objectiveTier();
+            const objectiveTotal = objectiveTotalForTier(tier);
+            const objectiveProgress = checklistProgress(objectiveTotal);
+            const mistakes = Number.isFinite(gameState.mistakes)
+                ? Math.max(0, Math.round(gameState.mistakes))
+                : Math.max(0, objectiveProgress.objectiveTotal - objectiveProgress.objectivesCompleted);
+            const sessionMs = Math.max(0, Date.now() - (sessionStartedAt || Date.now()));
+            const difficultyLevel = stage.querySelector('.difficulty-badge')?.dataset?.level
+                || stage.dataset.gameDifficulty
+                || 'medium';
+
+            recordGameEvent(id, {
+                accuracy,
+                score: gameState.score || 0,
+                difficulty: difficultyLevel,
+                tier,
+                sessionMs,
+                objectiveTotal: objectiveProgress.objectiveTotal,
+                objectivesCompleted: objectiveProgress.objectivesCompleted,
+                mistakes,
+            });
         };
 
         const resetSession = () => {
             reported = false;
+            sessionStartedAt = Date.now();
             if (typeof onReset === 'function') onReset(gameState);
         };
 

@@ -1,5 +1,14 @@
 import { getLearningRecommendations } from '../ml/recommendations.js';
-import { ML_UPDATE, LESSON_STEP, LESSON_COMPLETE, GAME_RECORDED } from '../utils/event-names.js';
+import {
+    COACH_MISSION_COMPLETE,
+    GAME_RECORDED,
+    LESSON_COMPLETE,
+    LESSON_STEP,
+    MISSION_UPDATED,
+    ML_UPDATE,
+    PRACTICE_STEP_COMPLETED,
+    PRACTICE_STEP_STARTED,
+} from '../utils/event-names.js';
 import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
 
 const GAME_MESSAGES = {
@@ -75,6 +84,18 @@ const setMessage = (message) => {
 const buildMessages = (recs) => {
     const next = [...baseMessages];
     if (recs?.coachMessage) next.unshift(recs.coachMessage);
+    if (Array.isArray(recs?.nextActions) && recs.nextActions.length) {
+        next.push(`${recs.nextActions[0].label}. ${recs.nextActions[0].rationale || ''}`.trim());
+    }
+    if (recs?.mission?.currentStepId && Array.isArray(recs?.mission?.steps)) {
+        const currentStep = recs.mission.steps.find((step) => step.id === recs.mission.currentStepId);
+        if (currentStep?.label) {
+            next.unshift(`Mission step: ${currentStep.label}.`);
+            if (currentStep.source === 'remediation') {
+                next.unshift('Quick recovery mode: let us tighten this skill before moving on.');
+            }
+        }
+    }
     if (pendingGameMessage) {
         next.unshift(pendingGameMessage);
         pendingGameMessage = null;
@@ -160,6 +181,32 @@ const handleLessonComplete = () => {
     speakMessage(message);
 };
 
+const handleMissionComplete = (event) => {
+    if (!resolveCoachElements()) return;
+    const completed = Number.isFinite(event.detail?.completed) ? event.detail.completed : null;
+    const total = Number.isFinite(event.detail?.total) ? event.detail.total : null;
+    const summary = (completed !== null && total !== null)
+        ? `Mission complete! ${completed}/${total} goals done.`
+        : 'Mission complete! All goals done.';
+    const message = `${summary} Open Wins or share with a grown-up review.`;
+    bubble.dataset.coachAuto = 'false';
+    setMessage(message);
+    speakMessage(message);
+};
+
+const handleMissionUpdated = (event) => {
+    if (!resolveCoachElements()) return;
+    const mission = event.detail?.mission;
+    if (!mission?.currentStepId || !Array.isArray(mission.steps)) return;
+    const step = mission.steps.find((item) => item.id === mission.currentStepId);
+    if (!step?.label) return;
+
+    const prefix = step.source === 'remediation' ? 'Remediation step' : 'Current mission step';
+    const message = `${prefix}: ${step.label}.`;
+    bubble.dataset.coachAuto = 'false';
+    setMessage(message);
+};
+
 const initCoachActions = () => {
     resolveCoachElements();
     bindCoachActions();
@@ -171,6 +218,24 @@ export const init = initCoachActions;
 document.addEventListener(ML_UPDATE, applyRecommendations);
 document.addEventListener(LESSON_STEP, handleLessonStep);
 document.addEventListener(LESSON_COMPLETE, handleLessonComplete);
+document.addEventListener(COACH_MISSION_COMPLETE, handleMissionComplete);
+document.addEventListener(MISSION_UPDATED, handleMissionUpdated);
+document.addEventListener(PRACTICE_STEP_STARTED, (event) => {
+    if (!resolveCoachElements()) return;
+    const stepLabel = event.detail?.step?.label;
+    if (!stepLabel) return;
+    const message = `Started: ${stepLabel}.`;
+    bubble.dataset.coachAuto = 'false';
+    setMessage(message);
+});
+document.addEventListener(PRACTICE_STEP_COMPLETED, (event) => {
+    if (!resolveCoachElements()) return;
+    const stepLabel = event.detail?.step?.label;
+    if (!stepLabel) return;
+    const message = `Completed: ${stepLabel}.`;
+    bubble.dataset.coachAuto = 'false';
+    setMessage(message);
+});
 document.addEventListener(GAME_RECORDED, (e) => {
     const id = e.detail?.id;
     if (id && GAME_MESSAGES[id]) {

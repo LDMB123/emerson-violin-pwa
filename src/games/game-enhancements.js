@@ -1,9 +1,30 @@
-import { GAME_META } from './game-config.js';
+import { GAME_META, GAME_OBJECTIVE_TIERS } from './game-config.js';
+import { loadGameMasteryState } from './game-mastery.js';
 import { formatMinutes, createSessionTimer } from './session-timer.js';
 import { renderDifficultyPickers } from './difficulty-picker.js';
+import { GAME_MASTERY_UPDATED } from '../utils/event-names.js';
 
 const activeSessions = new Map();
 let lifecycleBound = false;
+let masteryBound = false;
+let masteryStateCache = { games: {} };
+
+const OBJECTIVE_LABELS = Object.freeze({
+    foundation: 'Foundation',
+    core: 'Core',
+    mastery: 'Mastery',
+});
+
+const objectiveTierFromMastery = (tier) => {
+    if (tier === 'gold') return 'mastery';
+    if (tier === 'silver') return 'core';
+    return 'foundation';
+};
+
+const tierIndex = (tier) => {
+    const index = GAME_OBJECTIVE_TIERS.indexOf(tier);
+    return index >= 0 ? index : 0;
+};
 
 const resetGameView = (view, { forceEvents = false } = {}) => {
     if (!view) return;
@@ -165,13 +186,26 @@ const buildCoachPanel = (view, meta) => {
     const content = view.querySelector('.game-content');
     if (!content || content.querySelector('[data-game-coach]')) return null;
 
-    const stepsHtml = meta.steps.map((step, index) => `
-        <div class="game-coach-step">
-            <span class="game-coach-step-index">${index + 1}</span>
-            <span class="game-coach-step-time">${formatMinutes(step.minutes)}</span>
-            <span class="game-coach-step-text">${step.label}</span>
-            <span class="game-coach-step-cue">${step.cue || ''}</span>
-        </div>`).join('');
+    const objectivePacks = meta.objectivePacks || {
+        foundation: meta.steps || [],
+        core: meta.steps || [],
+        mastery: meta.steps || [],
+    };
+    const tierHtml = GAME_OBJECTIVE_TIERS.map((tierKey) => {
+        const objectives = objectivePacks[tierKey] || [];
+        const items = objectives.map((step) => (
+            `<li>${step.label}${step.cue ? ` — ${step.cue}` : ''}</li>`
+        )).join('');
+        return `
+            <div class="game-objective-tier" data-objective-tier="${tierKey}" data-tier-active="false">
+                <div class="game-objective-tier-head">
+                    <span>${OBJECTIVE_LABELS[tierKey]}</span>
+                    <span>${objectives.length} objectives</span>
+                </div>
+                <ul>${items || '<li>No objectives configured.</li>'}</ul>
+            </div>
+        `;
+    }).join('');
 
     const panel = document.createElement('div');
     panel.className = 'game-coach glass';
@@ -182,10 +216,11 @@ const buildCoachPanel = (view, meta) => {
                 <span class="game-coach-kicker">Coach Focus</span>
                 <h3>${meta.skill} · ${meta.goal}</h3>
                 <p class="game-coach-goal">Target session: ${formatMinutes(meta.targetMinutes)}</p>
+                <p class="game-coach-goal" data-game-mastery-status>Mastery tier: Foundation</p>
             </div>
             <div class="game-coach-badge">${meta.skill}</div>
         </div>
-        <div class="game-coach-steps">${stepsHtml}</div>
+        <div class="game-objective-tiers">${tierHtml}</div>
         <div class="game-session">
             <div class="game-session-row">
                 <span class="game-session-label">Session Timer</span>
@@ -208,7 +243,44 @@ const buildCoachPanel = (view, meta) => {
     return panel;
 };
 
-const bindGameEnhancements = () => {
+const applyMasteryPanelState = (view, gameId) => {
+    if (!view) return;
+    const panel = view.querySelector('[data-game-coach]');
+    if (!panel) return;
+    const entry = masteryStateCache?.games?.[gameId] || null;
+    const masteryTier = entry?.tier || 'foundation';
+    const objectiveTier = objectiveTierFromMastery(masteryTier);
+    const activeIndex = tierIndex(objectiveTier);
+    view.dataset.gameObjectiveTier = objectiveTier;
+
+    const status = panel.querySelector('[data-game-mastery-status]');
+    if (status) {
+        const days = masteryTier === 'gold'
+            ? entry?.goldDays || 0
+            : masteryTier === 'silver'
+                ? entry?.silverDays || 0
+                : entry?.bronzeDays || 0;
+        status.textContent = `Mastery tier: ${OBJECTIVE_LABELS[objectiveTier]} (${Math.min(3, days)}/3 days validated)`;
+    }
+
+    panel.querySelectorAll('[data-objective-tier]').forEach((tierEl) => {
+        const tier = tierEl.getAttribute('data-objective-tier');
+        const currentIndex = tierIndex(tier);
+        tierEl.dataset.tierActive = currentIndex === activeIndex ? 'true' : 'false';
+        tierEl.dataset.tierUnlocked = currentIndex <= activeIndex ? 'true' : 'false';
+    });
+};
+
+const refreshMasteryState = async () => {
+    try {
+        masteryStateCache = await loadGameMasteryState();
+    } catch {
+        masteryStateCache = { games: {} };
+    }
+};
+
+const bindGameEnhancements = async () => {
+    await refreshMasteryState();
     document.querySelectorAll('.game-view').forEach((view) => {
         if (view.dataset.gameEnhanced === 'true') return;
         const id = view.id.replace('view-game-', '');
@@ -255,14 +327,45 @@ const bindGameEnhancements = () => {
 
         activeSessions.set(view.id, { session, startButton, stopButton });
         bindLifecycle();
+        applyMasteryPanelState(view, id);
 
         view.dataset.gameEnhanced = 'true';
     });
 };
 
+const refreshMasteryPanels = () => {
+    document.querySelectorAll('.game-view[data-game-enhanced="true"]').forEach((view) => {
+        const id = view.id.replace('view-game-', '');
+        applyMasteryPanelState(view, id);
+    });
+};
+
+const bindMasteryListener = () => {
+    if (masteryBound) return;
+    masteryBound = true;
+    document.addEventListener(GAME_MASTERY_UPDATED, async (event) => {
+        const id = event?.detail?.id;
+        const mastery = event?.detail?.mastery;
+        if (id && mastery) {
+            masteryStateCache = {
+                ...(masteryStateCache || { games: {} }),
+                games: {
+                    ...(masteryStateCache?.games || {}),
+                    [id]: mastery,
+                },
+            };
+        } else {
+            await refreshMasteryState();
+        }
+        refreshMasteryPanels();
+    });
+};
+
 const initGameEnhancements = () => {
-    bindGameEnhancements();
+    const enhancePromise = bindGameEnhancements().catch(() => {});
     renderDifficultyPickers();
+    bindMasteryListener();
+    return enhancePromise;
 };
 
 export const init = initGameEnhancements;

@@ -27,6 +27,8 @@ let coachMessageEl = null;
 let coachAltEl = null;
 let recordingEls = [];
 let skillEls = [];
+let missionStatusEl = null;
+let nextActionsEl = null;
 
 const { audio: playbackAudio, stop: stopPlayback, setUrl: setPlaybackUrl } = createAudioController();
 let soundListenerBound = false;
@@ -43,6 +45,8 @@ const resolveElements = () => {
     coachAltEl = document.querySelector('[data-analysis="coach-message-alt"]');
     recordingEls = Array.from(document.querySelectorAll('[data-analysis="recording"]'));
     skillEls = Array.from(document.querySelectorAll('[data-analysis="skill"]'));
+    missionStatusEl = document.querySelector('[data-analysis="mission-status"]');
+    nextActionsEl = document.querySelector('[data-analysis="next-actions"]');
 };
 
 const updatePlaybackButtons = (enabled) => {
@@ -199,6 +203,34 @@ const buildSongMap = () => {
     return map;
 };
 
+const renderNextActions = (recommendations) => {
+    if (!nextActionsEl) return;
+    nextActionsEl.replaceChildren();
+    const actions = Array.isArray(recommendations?.nextActions) ? recommendations.nextActions.slice(0, 3) : [];
+    if (!actions.length) {
+        const item = document.createElement('li');
+        item.textContent = 'Complete one mission step to unlock tailored next actions.';
+        nextActionsEl.appendChild(item);
+        return;
+    }
+
+    actions.forEach((action) => {
+        const item = document.createElement('li');
+        if (action?.href) {
+            const link = document.createElement('a');
+            link.href = action.href;
+            link.textContent = action.label || 'Next action';
+            item.appendChild(link);
+        } else {
+            item.textContent = action?.label || 'Next action';
+        }
+        if (action?.rationale) {
+            item.append(` — ${action.rationale}`);
+        }
+        nextActionsEl.appendChild(item);
+    });
+};
+
 const initSessionReview = async () => {
     teardown();
     resolveElements();
@@ -278,6 +310,22 @@ const initSessionReview = async () => {
     const weakest = profile.weakest_skill();
     const message = coachMessageFor(weakest);
     if (coachMessageEl) coachMessageEl.textContent = message;
+
+    const recommendations = await getLearningRecommendations().catch(() => null);
+    const mission = recommendations?.mission || null;
+    if (missionStatusEl) {
+        if (mission?.id) {
+            const step = Array.isArray(mission.steps)
+                ? mission.steps.find((item) => item.id === mission.currentStepId)
+                : null;
+            missionStatusEl.textContent = step
+                ? `Mission: ${step.label} (${mission.completionPercent || 0}% complete)`
+                : `Mission progress: ${mission.completionPercent || 0}%`;
+        } else {
+            missionStatusEl.textContent = 'Mission guidance will appear after your next activity.';
+        }
+    }
+    renderNextActions(recommendations);
     if (coachAltEl) coachAltEl.textContent = 'Keep your tempo steady and enjoy the melody.';
 
     const recs = await getLearningRecommendations();

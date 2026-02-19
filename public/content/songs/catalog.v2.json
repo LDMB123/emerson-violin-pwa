@@ -1,0 +1,371 @@
+{
+  "id": "songs-catalog-v2",
+  "version": 2,
+  "tiers": {
+    "beginner": 12,
+    "intermediate": 12,
+    "challenge": 6
+  },
+  "songs": [
+    {
+      "id": "open_strings",
+      "title": "Open String Song",
+      "tier": "beginner",
+      "bpm": 60,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "twinkle",
+      "title": "Twinkle Twinkle Little Star",
+      "tier": "beginner",
+      "bpm": 80,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "mary",
+      "title": "Mary Had a Little Lamb",
+      "tier": "beginner",
+      "bpm": 74,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 5 },
+        { "id": "section-b", "label": "B", "start": 5, "end": 10 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "lightly_row",
+      "title": "Lightly Row",
+      "tier": "beginner",
+      "bpm": 78,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-main", "label": "Main", "start": 0, "end": 12 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "go_tell_aunt_rhody",
+      "title": "Go Tell Aunt Rhody",
+      "tier": "beginner",
+      "bpm": 76,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "string_waltz",
+      "title": "String Waltz",
+      "tier": "beginner",
+      "bpm": 72,
+      "time": "3/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "bridge_bells",
+      "title": "Bridge Bells",
+      "tier": "beginner",
+      "bpm": 82,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 7 },
+        { "id": "section-b", "label": "B", "start": 7, "end": 14 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "panda_parade",
+      "title": "Panda Parade",
+      "tier": "beginner",
+      "bpm": 84,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "stepwise_song",
+      "title": "Stepwise Song",
+      "tier": "beginner",
+      "bpm": 70,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "echo_strings",
+      "title": "Echo Strings",
+      "tier": "beginner",
+      "bpm": 68,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 5 },
+        { "id": "section-b", "label": "B", "start": 5, "end": 10 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "gentle_bow",
+      "title": "Gentle Bow",
+      "tier": "beginner",
+      "bpm": 66,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "a_string_march",
+      "title": "A String March",
+      "tier": "beginner",
+      "bpm": 88,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "ode_to_joy",
+      "title": "Ode to Joy",
+      "tier": "intermediate",
+      "bpm": 92,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": ["u-beg-03"]
+    },
+    {
+      "id": "minuet_1",
+      "title": "Minuet 1",
+      "tier": "intermediate",
+      "bpm": 96,
+      "time": "3/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": ["u-beg-04"]
+    },
+    {
+      "id": "gavotte",
+      "title": "Gavotte",
+      "tier": "intermediate",
+      "bpm": 112,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": ["u-int-01"]
+    },
+    {
+      "id": "allegretto_lane",
+      "title": "Allegretto Lane",
+      "tier": "intermediate",
+      "bpm": 104,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": ["u-int-01"]
+    },
+    {
+      "id": "string_crossing_etude",
+      "title": "String Crossing Etude",
+      "tier": "intermediate",
+      "bpm": 102,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": ["u-int-01"]
+    },
+    {
+      "id": "rhythm_bridge",
+      "title": "Rhythm Bridge",
+      "tier": "intermediate",
+      "bpm": 110,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 7 },
+        { "id": "section-b", "label": "B", "start": 7, "end": 14 }
+      ],
+      "prerequisites": ["u-int-01"]
+    },
+    {
+      "id": "lyric_bowing",
+      "title": "Lyric Bowing",
+      "tier": "intermediate",
+      "bpm": 90,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": ["u-int-02"]
+    },
+    {
+      "id": "syncopation_study",
+      "title": "Syncopation Study",
+      "tier": "intermediate",
+      "bpm": 116,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": ["u-int-02"]
+    },
+    {
+      "id": "scale_rondo",
+      "title": "Scale Rondo",
+      "tier": "intermediate",
+      "bpm": 108,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": ["u-int-02"]
+    },
+    {
+      "id": "duet_line",
+      "title": "Duet Line",
+      "tier": "intermediate",
+      "bpm": 114,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": ["u-int-02"]
+    },
+    {
+      "id": "clarity_etude",
+      "title": "Clarity Etude",
+      "tier": "intermediate",
+      "bpm": 106,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": ["u-int-03"]
+    },
+    {
+      "id": "balanced_bows",
+      "title": "Balanced Bows",
+      "tier": "intermediate",
+      "bpm": 98,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
+        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+      ],
+      "prerequisites": ["u-int-03"]
+    },
+    {
+      "id": "perpetual_motion",
+      "title": "Perpetual Motion",
+      "tier": "challenge",
+      "bpm": 120,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 4 },
+        { "id": "section-b", "label": "B", "start": 4, "end": 8 },
+        { "id": "full", "label": "Full", "start": 0, "end": 8 }
+      ],
+      "prerequisites": ["u-int-03", "u-int-04"]
+    },
+    {
+      "id": "spiccato_run",
+      "title": "Spiccato Run",
+      "tier": "challenge",
+      "bpm": 126,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": ["u-int-04"]
+    },
+    {
+      "id": "double_stop_sprint",
+      "title": "Double Stop Sprint",
+      "tier": "challenge",
+      "bpm": 122,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": ["u-int-04"]
+    },
+    {
+      "id": "flying_shift",
+      "title": "Flying Shift",
+      "tier": "challenge",
+      "bpm": 128,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": ["u-int-04"]
+    },
+    {
+      "id": "festival_reel",
+      "title": "Festival Reel",
+      "tier": "challenge",
+      "bpm": 132,
+      "time": "2/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": ["u-int-04"]
+    },
+    {
+      "id": "virtuoso_loop",
+      "title": "Virtuoso Loop",
+      "tier": "challenge",
+      "bpm": 136,
+      "time": "4/4",
+      "sections": [
+        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
+        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+      ],
+      "prerequisites": ["u-int-04"]
+    }
+  ]
+}

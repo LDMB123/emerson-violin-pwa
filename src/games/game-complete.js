@@ -7,6 +7,7 @@ const starsEl = document.getElementById('game-complete-stars');
 const playAgainBtn = document.getElementById('game-complete-play-again');
 const backBtn = document.getElementById('game-complete-back');
 let bound = false;
+const gameEntryTimes = new Map();
 
 const STAR_COUNT = 3;
 const isGameViewActive = () => window.location.hash.startsWith('#view-game-');
@@ -14,6 +15,12 @@ const currentGameId = () => {
     const viewId = window.location.hash?.replace(/^#/, '') || '';
     if (!viewId.startsWith('view-game-')) return null;
     return viewId.replace('view-game-', '');
+};
+
+const markCurrentGameEntry = () => {
+    const gameId = currentGameId();
+    if (!gameId) return;
+    gameEntryTimes.set(gameId, Date.now());
 };
 
 const renderStars = (stars) => {
@@ -85,7 +92,10 @@ const bindGameComplete = () => {
     });
 
     // Any route change should dismiss stale overlays.
-    window.addEventListener('hashchange', () => close(), { passive: true });
+    window.addEventListener('hashchange', () => {
+        close();
+        markCurrentGameEntry();
+    }, { passive: true });
 
     // Listen for game recorded
     document.addEventListener(GAME_RECORDED, (e) => {
@@ -101,12 +111,17 @@ const bindGameComplete = () => {
         const activeGameId = currentGameId();
         if (!activeGameId) return;
         if (typeof detail.id === 'string' && detail.id !== activeGameId) return;
+        const enteredAt = gameEntryTimes.get(activeGameId) || 0;
+        if (Number.isFinite(detail.timestamp) && enteredAt > 0 && detail.timestamp < enteredAt) {
+            return;
+        }
         open(detail);
     });
 };
 
 export const init = () => {
     bindGameComplete();
+    markCurrentGameEntry();
     if (!isGameViewActive()) {
         close();
     }

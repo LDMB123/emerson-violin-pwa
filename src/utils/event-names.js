@@ -13,6 +13,11 @@ export const PRACTICE_RECORDED = 'panda:practice-recorded';
 export const GAME_RECORDED = 'panda:game-recorded';
 export const GAME_PLAY_AGAIN = 'panda:game-play-again';
 export const SONG_RECORDED = 'panda:song-recorded';
+export const PRACTICE_STEP_STARTED = 'panda:practice-step-started';
+export const PRACTICE_STEP_COMPLETED = 'panda:practice-step-completed';
+export const MISSION_UPDATED = 'panda:mission-updated';
+export const SONG_SECTION_COMPLETED = 'panda:song-section-completed';
+export const GAME_MASTERY_UPDATED = 'panda:game-mastery-updated';
 
 // Recordings (audio)
 export const RECORDINGS_UPDATED = 'panda:recordings-updated';
@@ -23,6 +28,7 @@ export const PERSIST_APPLIED = 'panda:persist-applied';
 // Lesson plan / coaching
 export const LESSON_STEP = 'panda:lesson-step';
 export const LESSON_COMPLETE = 'panda:lesson-complete';
+export const COACH_MISSION_COMPLETE = 'panda:coach-mission-complete';
 
 // Goals
 export const GOAL_TARGET_CHANGE = 'panda:goal-target-change';

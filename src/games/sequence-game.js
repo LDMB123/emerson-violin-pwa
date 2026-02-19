@@ -65,6 +65,7 @@ import {
     buildNoteSequence,
     updateScoreCombo,
 } from './shared.js';
+import { GAME_META } from './game-config.js';
 import { GAME_PLAY_AGAIN } from '../utils/event-names.js';
 
 const NOTE_POOL = ['G', 'D', 'A', 'E'];
@@ -169,6 +170,8 @@ export function createSequenceGame(config) {
         let seqIndex = 0;
         let combo = 0;
         let score = 0;
+        let misses = 0;
+        let sessionStartedAt = Date.now();
 
         // Extra state exposed to callbacks.
         // hitNotes is used by pizzicato for unique-note tracking.
@@ -210,7 +213,27 @@ export function createSequenceGame(config) {
             if (score <= 0) return;
             const accuracy = comboTarget ? Math.min(1, combo / comboTarget) * 100 : 0;
             reportResult({ accuracy, score });
-            recordGameEvent(id, { accuracy, score });
+            const objectiveTier = stage.dataset.gameObjectiveTier
+                || (difficulty.complexity >= 2 ? 'mastery' : difficulty.complexity >= 1 ? 'core' : 'foundation');
+            const objectivePack = GAME_META?.[id]?.objectivePacks?.[objectiveTier] || [];
+            const checklistInputs = Array.from(stage.querySelectorAll('input[type="checkbox"][id]'))
+                .filter((input) => /(-step-|set-)/.test(input.id));
+            const objectiveTotal = objectivePack.length || checklistInputs.length || 1;
+            const objectivesCompleted = Math.min(
+                objectiveTotal,
+                checklistInputs.filter((input) => input.checked).length,
+            );
+            const sessionMs = Math.max(0, Date.now() - sessionStartedAt);
+            recordGameEvent(id, {
+                accuracy,
+                score,
+                difficulty: difficulty.complexity >= 2 ? 'hard' : difficulty.complexity >= 1 ? 'medium' : 'easy',
+                tier: objectiveTier,
+                sessionMs,
+                objectiveTotal,
+                objectivesCompleted,
+                mistakes: misses,
+            });
         };
 
         // Proxy object passed to callbacks so they can read/write game state
@@ -231,9 +254,11 @@ export function createSequenceGame(config) {
             stopTonePlayer();
             combo = 0;
             score = 0;
+            misses = 0;
             seqIndex = 0;
             hitNotes.clear();
             lastCorrectNote = null;
+            sessionStartedAt = Date.now();
             if (onReset) onReset(callbackState);
             buildSequence();
             updateTargets();
@@ -268,6 +293,7 @@ export function createSequenceGame(config) {
                     updateTargets();
                 } else {
                     combo = 0;
+                    misses += 1;
                     score = Math.max(0, score - missPenalty);
                     updateTargets(`Missed. Aim for ${sequence[seqIndex]} next.`);
                 }

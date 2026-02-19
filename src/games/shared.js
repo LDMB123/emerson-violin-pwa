@@ -5,7 +5,8 @@ import { isSoundEnabled } from '../utils/sound-state.js';
 import { todayDay } from '../utils/math.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
-import { GAME_RECORDED, ML_RESET, SOUNDS_CHANGE } from '../utils/event-names.js';
+import { GAME_RECORDED, GAME_MASTERY_UPDATED, ML_RESET, SOUNDS_CHANGE } from '../utils/event-names.js';
+import { updateGameMastery } from './game-mastery.js';
 
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 export const cachedEl = (selector) => {
@@ -142,12 +143,35 @@ export const recordGameEvent = async (id, payload = {}) => {
     if (Number.isFinite(payload.score)) entry.score = Math.round(payload.score);
     if (Number.isFinite(payload.accuracy)) entry.accuracy = Math.round(payload.accuracy);
     if (Number.isFinite(payload.stars)) entry.stars = Math.round(payload.stars);
+    if (typeof payload.difficulty === 'string' && payload.difficulty.trim()) {
+        entry.difficulty = payload.difficulty.trim();
+    }
+    if (typeof payload.tier === 'string' && payload.tier.trim()) {
+        entry.tier = payload.tier.trim();
+    }
+    if (Number.isFinite(payload.sessionMs)) entry.sessionMs = Math.max(0, Math.round(payload.sessionMs));
+    if (Number.isFinite(payload.objectiveTotal)) entry.objectiveTotal = Math.max(0, Math.round(payload.objectiveTotal));
+    if (Number.isFinite(payload.objectivesCompleted)) entry.objectivesCompleted = Math.max(0, Math.round(payload.objectivesCompleted));
+    if (Number.isFinite(payload.mistakes)) entry.mistakes = Math.max(0, Math.round(payload.mistakes));
     list.push(entry);
     if (list.length > MAX_EVENTS) {
         list.splice(0, list.length - MAX_EVENTS);
     }
     await setJSON(EVENT_KEY, list);
+    const mastery = await updateGameMastery({
+        gameId: id,
+        score: Number.isFinite(entry.accuracy) ? entry.accuracy : entry.score || 0,
+        day: entry.day,
+    }).catch(() => null);
     document.dispatchEvent(new CustomEvent(GAME_RECORDED, { detail: entry }));
+    if (mastery?.game) {
+        document.dispatchEvent(new CustomEvent(GAME_MASTERY_UPDATED, {
+            detail: {
+                id,
+                mastery: mastery.game,
+            },
+        }));
+    }
 };
 
 export const createSoundsChangeBinding = () => {
