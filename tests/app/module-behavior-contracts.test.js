@@ -379,19 +379,33 @@ describe('module behavior contracts', () => {
         expect(failures).toEqual([]);
     });
 
-    it('covers string-quest branch callbacks', async () => {
+    it('covers sequence-wrapper callback branches', async () => {
         vi.resetModules();
         const marks = [];
 
         vi.doMock('../../src/games/sequence-game.js', () => ({
             createSequenceGame: (config) => {
-                const state = {
-                    lastCorrectNote: null,
-                    markChecklist: (id) => marks.push(id),
-                };
-                config.onCorrectHit('G', state);
-                state.lastCorrectNote = 'D';
-                config.onCorrectHit('A', state);
+                if (config.id === 'string-quest') {
+                    const stringState = {
+                        lastCorrectNote: null,
+                        markChecklist: (id) => marks.push(id),
+                    };
+                    config.onCorrectHit('G', stringState);
+                    stringState.lastCorrectNote = 'D';
+                    config.onCorrectHit('A', stringState);
+                }
+                if (config.id === 'pizzicato') {
+                    const pizzicatoState = {
+                        hitNotes: new Set(),
+                        markChecklistIf: (condition, id) => {
+                            if (condition) marks.push(id);
+                        },
+                    };
+                    config.onCorrectHit('G', pizzicatoState);
+                    config.onCorrectHit('D', pizzicatoState);
+                    config.onCorrectHit('A', pizzicatoState);
+                    config.onCorrectHit('E', pizzicatoState);
+                }
                 return {
                     bind: () => undefined,
                     update: () => undefined,
@@ -399,11 +413,15 @@ describe('module behavior contracts', () => {
             },
         }));
 
-        const module = await import('../../src/games/string-quest.js');
-        expect(typeof module.bind).toBe('function');
-        expect(typeof module.update).toBe('function');
+        const stringQuest = await import('../../src/games/string-quest.js');
+        const pizzicato = await import('../../src/games/pizzicato.js');
+        expect(typeof stringQuest.bind).toBe('function');
+        expect(typeof stringQuest.update).toBe('function');
+        expect(typeof pizzicato.bind).toBe('function');
+        expect(typeof pizzicato.update).toBe('function');
         expect(marks).toContain('sq-step-1');
         expect(marks).toContain('sq-step-2');
+        expect(marks).toContain('pz-step-1');
         vi.doUnmock('../../src/games/sequence-game.js');
     });
 });

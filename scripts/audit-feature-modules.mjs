@@ -87,16 +87,22 @@ const getCoverageInfo = (relativePath) => {
         return {
             coveredLines: null,
             linePct: null,
+            coveredFunctions: null,
+            totalFunctions: null,
+            functionPct: null,
             coveredBranches: null,
             totalBranches: null,
             branchPct: null,
         };
     }
     const coverage = coverageSummary[toAbsPath(relativePath)];
-    if (!coverage?.lines && !coverage?.branches) {
+    if (!coverage?.lines && !coverage?.functions && !coverage?.branches) {
         return {
             coveredLines: null,
             linePct: null,
+            coveredFunctions: null,
+            totalFunctions: null,
+            functionPct: null,
             coveredBranches: null,
             totalBranches: null,
             branchPct: null,
@@ -105,6 +111,9 @@ const getCoverageInfo = (relativePath) => {
     return {
         coveredLines: coverage.lines?.covered ?? null,
         linePct: coverage.lines?.pct ?? null,
+        coveredFunctions: coverage.functions?.covered ?? null,
+        totalFunctions: coverage.functions?.total ?? null,
+        functionPct: coverage.functions?.pct ?? null,
         coveredBranches: coverage.branches?.covered ?? null,
         totalBranches: coverage.branches?.total ?? null,
         branchPct: coverage.branches?.pct ?? null,
@@ -126,16 +135,31 @@ const runtimeRows = Object.keys(MODULE_LOADERS)
         const absoluteSourcePath = sourcePath ? toAbsPath(sourcePath) : null;
         const exists = absoluteSourcePath ? fs.existsSync(absoluteSourcePath) : false;
         const source = exists && sourcePath ? readFile(sourcePath) : '';
-        const { coveredLines, linePct, coveredBranches, totalBranches, branchPct } = sourcePath
+        const {
+            coveredLines,
+            linePct,
+            coveredFunctions,
+            totalFunctions,
+            functionPct,
+            coveredBranches,
+            totalBranches,
+            branchPct,
+        } = sourcePath
             ? getCoverageInfo(sourcePath)
             : {
                 coveredLines: null,
                 linePct: null,
+                coveredFunctions: null,
+                totalFunctions: null,
+                functionPct: null,
                 coveredBranches: null,
                 totalBranches: null,
                 branchPct: null,
             };
         const unitCovered = typeof coveredLines === 'number' ? coveredLines > 0 : null;
+        const functionCovered = typeof totalFunctions === 'number' && totalFunctions > 0
+            ? (typeof coveredFunctions === 'number' ? coveredFunctions > 0 : null)
+            : true;
         const branchCovered = typeof totalBranches === 'number' && totalBranches > 0
             ? (typeof coveredBranches === 'number' ? coveredBranches > 0 : null)
             : true;
@@ -155,6 +179,10 @@ const runtimeRows = Object.keys(MODULE_LOADERS)
             exists,
             unitCovered,
             linePct,
+            coveredFunctions,
+            totalFunctions,
+            functionPct,
+            functionCovered,
             coveredBranches,
             totalBranches,
             branchPct,
@@ -169,7 +197,7 @@ const runtimeRows = Object.keys(MODULE_LOADERS)
             hasSelfStartSignal,
             noInitAllowlisted,
             contractGap,
-            complete: exists && reachable && e2eCovered && !contractGap && branchCovered !== false,
+            complete: exists && reachable && e2eCovered && !contractGap && functionCovered !== false && branchCovered !== false,
         };
     });
 
@@ -179,8 +207,20 @@ const gameRows = [...gameModulePaths.entries()]
         const sourcePath = path.normalize(path.join('src/games', loaderImportPath));
         const absoluteSourcePath = toAbsPath(sourcePath);
         const exists = fs.existsSync(absoluteSourcePath);
-        const { coveredLines, linePct, coveredBranches, totalBranches, branchPct } = getCoverageInfo(sourcePath);
+        const {
+            coveredLines,
+            linePct,
+            coveredFunctions,
+            totalFunctions,
+            functionPct,
+            coveredBranches,
+            totalBranches,
+            branchPct,
+        } = getCoverageInfo(sourcePath);
         const unitCovered = typeof coveredLines === 'number' ? coveredLines > 0 : null;
+        const functionCovered = typeof totalFunctions === 'number' && totalFunctions > 0
+            ? (typeof coveredFunctions === 'number' ? coveredFunctions > 0 : null)
+            : true;
         const branchCovered = typeof totalBranches === 'number' && totalBranches > 0
             ? (typeof coveredBranches === 'number' ? coveredBranches > 0 : null)
             : true;
@@ -193,12 +233,16 @@ const gameRows = [...gameModulePaths.entries()]
             viewExists,
             unitCovered,
             linePct,
+            coveredFunctions,
+            totalFunctions,
+            functionPct,
+            functionCovered,
             coveredBranches,
             totalBranches,
             branchPct,
             branchCovered,
             e2eCovered,
-            complete: exists && viewExists && e2eCovered && branchCovered !== false,
+            complete: exists && viewExists && e2eCovered && functionCovered !== false && branchCovered !== false,
         };
     });
 
@@ -207,6 +251,8 @@ const gameGaps = gameRows.filter((row) => !row.complete);
 
 const runtimeNoUnitCoverage = runtimeRows.filter((row) => row.unitCovered === false).map((row) => row.moduleKey);
 const gameNoUnitCoverage = gameRows.filter((row) => row.unitCovered === false).map((row) => row.viewId);
+const runtimeNoFunctionCoverage = runtimeRows.filter((row) => row.functionCovered === false).map((row) => row.moduleKey);
+const gameNoFunctionCoverage = gameRows.filter((row) => row.functionCovered === false).map((row) => row.viewId);
 const runtimeNoBranchCoverage = runtimeRows.filter((row) => row.branchCovered === false).map((row) => row.moduleKey);
 const gameNoBranchCoverage = gameRows.filter((row) => row.branchCovered === false).map((row) => row.viewId);
 const runtimeContractGaps = runtimeRows.filter((row) => row.contractGap).map((row) => row.moduleKey);
@@ -214,6 +260,8 @@ const runtimeUnreachable = runtimeRows.filter((row) => !row.reachable).map((row)
 const unitCoverageEnforceable = Boolean(coverageSummary);
 const runtimeCoverageGaps = unitCoverageEnforceable ? runtimeNoUnitCoverage : [];
 const gameCoverageGaps = unitCoverageEnforceable ? gameNoUnitCoverage : [];
+const runtimeFunctionCoverageGaps = unitCoverageEnforceable ? runtimeNoFunctionCoverage : [];
+const gameFunctionCoverageGaps = unitCoverageEnforceable ? gameNoFunctionCoverage : [];
 const runtimeBranchCoverageGaps = unitCoverageEnforceable ? runtimeNoBranchCoverage : [];
 const gameBranchCoverageGaps = unitCoverageEnforceable ? gameNoBranchCoverage : [];
 const allGaps = [
@@ -222,6 +270,8 @@ const allGaps = [
     ...unknownE2eViews,
     ...runtimeCoverageGaps,
     ...gameCoverageGaps,
+    ...runtimeFunctionCoverageGaps,
+    ...gameFunctionCoverageGaps,
     ...runtimeBranchCoverageGaps,
     ...gameBranchCoverageGaps,
 ];
@@ -241,6 +291,8 @@ const result = {
         gaps: runtimeGaps.map((row) => row.moduleKey),
         noUnitCoverage: runtimeNoUnitCoverage,
         coverageGaps: runtimeCoverageGaps,
+        noFunctionCoverage: runtimeNoFunctionCoverage,
+        functionCoverageGaps: runtimeFunctionCoverageGaps,
         noBranchCoverage: runtimeNoBranchCoverage,
         branchCoverageGaps: runtimeBranchCoverageGaps,
         contractGaps: runtimeContractGaps,
@@ -253,6 +305,8 @@ const result = {
         gaps: gameGaps.map((row) => row.viewId),
         noUnitCoverage: gameNoUnitCoverage,
         coverageGaps: gameCoverageGaps,
+        noFunctionCoverage: gameNoFunctionCoverage,
+        functionCoverageGaps: gameFunctionCoverageGaps,
         noBranchCoverage: gameNoBranchCoverage,
         branchCoverageGaps: gameBranchCoverageGaps,
         rows: gameRows,
@@ -303,6 +357,16 @@ if (asJson) {
         console.log('');
     }
 
+    if (runtimeNoFunctionCoverage.length > 0) {
+        console.log(
+            unitCoverageEnforceable
+                ? 'Runtime modules with zero function coverage signal (blocking):'
+                : 'Runtime modules with zero function coverage signal (informational; coverage summary missing):'
+        );
+        runtimeNoFunctionCoverage.forEach((moduleKey) => console.log(`- ${moduleKey}`));
+        console.log('');
+    }
+
     if (runtimeNoBranchCoverage.length > 0) {
         console.log(
             unitCoverageEnforceable
@@ -320,6 +384,16 @@ if (asJson) {
                 : 'Game modules with no unit coverage signal (informational; coverage summary missing):'
         );
         gameNoUnitCoverage.forEach((viewId) => console.log(`- ${viewId}`));
+        console.log('');
+    }
+
+    if (gameNoFunctionCoverage.length > 0) {
+        console.log(
+            unitCoverageEnforceable
+                ? 'Game modules with zero function coverage signal (blocking):'
+                : 'Game modules with zero function coverage signal (informational; coverage summary missing):'
+        );
+        gameNoFunctionCoverage.forEach((viewId) => console.log(`- ${viewId}`));
         console.log('');
     }
 
@@ -343,11 +417,17 @@ if (asJson) {
         runtimeCoverageGaps.forEach((moduleKey) => {
             console.log(`- runtime module ${moduleKey}: missing unit coverage signal`);
         });
+        runtimeFunctionCoverageGaps.forEach((moduleKey) => {
+            console.log(`- runtime module ${moduleKey}: zero covered functions`);
+        });
         runtimeBranchCoverageGaps.forEach((moduleKey) => {
             console.log(`- runtime module ${moduleKey}: zero covered branches`);
         });
         gameCoverageGaps.forEach((viewId) => {
             console.log(`- game module ${viewId}: missing unit coverage signal`);
+        });
+        gameFunctionCoverageGaps.forEach((viewId) => {
+            console.log(`- game module ${viewId}: zero covered functions`);
         });
         gameBranchCoverageGaps.forEach((viewId) => {
             console.log(`- game module ${viewId}: zero covered branches`);
