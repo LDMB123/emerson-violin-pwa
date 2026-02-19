@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { loadEvents, saveEvents } from '../persistence/loaders.js';
 import { clamp, todayDay } from '../utils/math.js';
 import { SONG_RECORDED } from '../utils/event-names.js';
@@ -143,5 +142,3 @@ const initSongProgress = () => {
 };
 
 export const init = initSongProgress;
-
-whenReady(initSongProgress);

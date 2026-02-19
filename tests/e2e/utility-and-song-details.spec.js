@@ -1,20 +1,5 @@
 import { expect, test } from '@playwright/test';
-
-const openHome = async (page) => {
-    await page.goto('/');
-    await page.waitForSelector('#main-content .view', { timeout: 10000 });
-
-    if (await page.locator('#view-onboarding').isVisible().catch(() => false)) {
-        await page.locator('#onboarding-skip').click();
-        await page.waitForURL('**/#view-home');
-    }
-
-    if (!page.url().includes('#view-home')) {
-        await page.goto('/#view-home');
-    }
-
-    await expect(page.locator('#view-home')).toBeVisible();
-};
+import { openHome } from './helpers/open-home.js';
 
 test('utility routes are reachable from home links', async ({ page }) => {
     await openHome(page);

@@ -1,20 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-const openHomeView = async (page) => {
-    await page.goto('/');
-    await page.waitForSelector('#main-content .view', { timeout: 10000 });
-
-    if (await page.locator('#view-onboarding').isVisible().catch(() => false)) {
-        await page.locator('#onboarding-skip').click();
-        await page.waitForURL('**/#view-home');
-    }
-
-    if (!page.url().includes('#view-home')) {
-        await page.goto('/#view-home');
-    }
-
-    await expect(page.locator('#view-home')).toBeVisible({ timeout: 10000 });
-};
+import { openHome } from './helpers/open-home.js';
 
 const goToView = async (page, viewId) => {
     await page.evaluate((targetViewId) => {
@@ -39,7 +24,7 @@ test('critical views should not emit runtime page/console errors', async ({ page
         consoleErrors.push(text);
     });
 
-    await openHomeView(page);
+    await openHome(page);
 
     const criticalViews = [
         'view-home',

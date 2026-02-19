@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { ML_UPDATE, LESSON_STEP, LESSON_COMPLETE, GAME_RECORDED } from '../utils/event-names.js';
 import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
@@ -187,5 +186,3 @@ document.addEventListener('change', (event) => {
         window.speechSynthesis.cancel();
     }
 });
-
-whenReady(initCoachActions);

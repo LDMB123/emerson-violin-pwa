@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { formatTime } from '../games/session-timer.js';
 import { LESSON_STEP, LESSON_COMPLETE, ML_UPDATE, ML_RESET, ML_RECS } from '../utils/event-names.js';
@@ -324,5 +323,3 @@ const initLessonPlan = () => {
 };
 
 export const init = initLessonPlan;
-
-whenReady(initLessonPlan);

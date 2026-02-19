@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import '../styles/games.css';
 import { stopTonePlayer } from './shared.js';
 import { PERSIST_APPLIED, SOUNDS_CHANGE } from '../utils/event-names.js';
@@ -102,8 +101,6 @@ const initMetrics = () => {
 };
 
 export const init = initMetrics;
-
-whenReady(initMetrics);
 
 document.addEventListener(PERSIST_APPLIED, () => {
     scheduleUpdateAll();

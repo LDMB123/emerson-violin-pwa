@@ -1,24 +1,9 @@
 import { test, expect } from '@playwright/test';
-
-const openHomeView = async (page) => {
-  await page.goto('/');
-  await page.waitForSelector('#main-content .view', { timeout: 10000 });
-
-  if (await page.locator('#view-onboarding').isVisible().catch(() => false)) {
-    await page.locator('#onboarding-skip').click();
-    await page.waitForURL('**/#view-home');
-  }
-
-  if (!page.url().includes('#view-home')) {
-    await page.goto('/#view-home');
-  }
-
-  await expect(page.locator('#view-home')).toBeVisible({ timeout: 10000 });
-};
+import { openHome } from './helpers/open-home.js';
 
 test.describe('Kid-first flows', () => {
   test.beforeEach(async ({ page }) => {
-    await openHomeView(page);
+    await openHome(page);
   });
 
   test('shows mission-first home and 4-item child nav', async ({ page }) => {

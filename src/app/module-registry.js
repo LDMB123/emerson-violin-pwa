@@ -69,6 +69,7 @@ const MODULE_RULES = [
     { when: equals('view-tuner'), modules: ['tuner'] },
     { when: equals('view-session-review', 'view-analysis'), modules: ['sessionReview', 'recordings'] },
     { when: oneOf(equals('view-songs'), startsWith('view-song-')), modules: ['songProgress', 'songSearch', 'recordings'] },
+    { when: equals('view-onboarding'), modules: ['onboarding'] },
     { when: equals('view-coach'), modules: ['coachActions', 'focusTimer', 'lessonPlan', 'recommendationsUi'] },
     { when: equals('view-home', 'view-progress', 'view-parent'), modules: ['progress'] },
     { when: equals('view-trainer', 'view-bowing', 'view-posture'), modules: ['trainerTools'] },

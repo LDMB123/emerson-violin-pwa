@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { GAME_META } from './game-config.js';
 import { formatMinutes, createSessionTimer } from './session-timer.js';
 import { renderDifficultyPickers } from './difficulty-picker.js';
@@ -267,5 +266,3 @@ const initGameEnhancements = () => {
 };
 
 export const init = initGameEnhancements;
-
-whenReady(initGameEnhancements);
