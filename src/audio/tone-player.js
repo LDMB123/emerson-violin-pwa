@@ -15,8 +15,11 @@ export const NOTE_FREQUENCIES = {
     A4: 440.00,
     B4: 493.88,
     C5: 523.25,
+    'C#5': 554.37,
     D5: 587.33,
     E5: 659.25,
+    'F#5': 739.99,
+    'G#5': 830.61,
 };
 
 export const DEFAULT_MAP = {

@@ -281,9 +281,9 @@ test.describe('all games core interactions', () => {
 
         await openGame(page, 'story-song');
         const storyStatus = page.locator('#view-game-story-song [data-story="status"]');
-        await expect(storyStatus).toContainText('Press Play-Along to start.');
+        await expect(storyStatus).toContainText('Play-Along to start.');
         await page.locator('#view-game-story-song label[for="story-play"]').click();
-        await expect(storyStatus).not.toHaveText('Press Play-Along to start.');
+        await expect(storyStatus).not.toContainText('Play-Along to start.');
         await returnToGames(page, 'story-song');
 
         await openGame(page, 'pizzicato');

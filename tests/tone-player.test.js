@@ -6,13 +6,16 @@ describe('NOTE_FREQUENCIES', () => {
         expect(NOTE_FREQUENCIES.A4).toBe(440.00);
     });
 
-    it('contains all 14 violin-range notes', () => {
-        expect(Object.keys(NOTE_FREQUENCIES)).toHaveLength(14);
+    it('contains the extended song-play-along range', () => {
+        expect(Object.keys(NOTE_FREQUENCIES)).toHaveLength(17);
     });
 
-    it('has G3 as lowest and E5 as highest', () => {
+    it('includes high sharp notes used by song sheets', () => {
         expect(NOTE_FREQUENCIES.G3).toBe(196.00);
         expect(NOTE_FREQUENCIES.E5).toBe(659.25);
+        expect(NOTE_FREQUENCIES['C#5']).toBe(554.37);
+        expect(NOTE_FREQUENCIES['F#5']).toBe(739.99);
+        expect(NOTE_FREQUENCIES['G#5']).toBe(830.61);
     });
 });
 
@@ -33,6 +36,7 @@ describe('DEFAULT_MAP', () => {
 describe('normalizeNote', () => {
     it('returns exact match for known note', () => {
         expect(normalizeNote('A4')).toBe('A4');
+        expect(normalizeNote('C#5')).toBe('C#5');
     });
 
     it('normalizes lowercase to uppercase', () => {

@@ -18,6 +18,39 @@ If both pass, you are at a known-good baseline.
 - Stabilized lazy-view routing and onboarding-aware E2E behavior.
 - Added IndexedDB fallback to localStorage for JSON persistence paths.
 - Consolidated duplicated file share/download logic via `tryShareFile()` in `src/utils/recording-export.js`.
+- Completed feature module completeness + song play-along pass (2026-02-19, phase 27):
+  - Added sharp-note support for song playback tones in:
+    - `src/audio/tone-player.js`
+  - Upgraded song play mode to play real note sequences with lifecycle-safe cleanup and auto-stop behavior in:
+    - `src/songs/song-progress.js`
+  - Expanded regression coverage for:
+    - `tests/tone-player.test.js`
+    - `tests/e2e/utility-and-song-details.spec.js`
+    - `tests/views/view-loader.test.js`
+    - `tests/e2e/runtime-health.spec.js`
+  - Added explicit feature module completeness gate:
+    - `scripts/audit-feature-modules.mjs`
+    - `package.json` (`audit:modules`)
+    - `audit:full` now includes `audit:modules`
+- Completed feature module completeness deeper pass (2026-02-19, phase 28):
+  - Added runtime smoke import coverage across all runtime + game modules:
+    - `tests/app/module-smoke-imports.test.js`
+  - Deepened feature module audit assertions in:
+    - `scripts/audit-feature-modules.mjs`
+    - validates real view-template inventory (`public/views/**`)
+    - validates runtime module reachability (view rules or eager/idle plan)
+    - validates no-`init` module activation contract via explicit allowlist + self-start signal
+    - validates game view/module/template consistency
+  - Removed prior smoke-test warning noise by providing required modal fixture for game-complete import path:
+    - `tests/app/module-smoke-imports.test.js`
+- Completed feature module completeness strict pass (2026-02-19, phase 29):
+  - Added per-module behavior contract coverage across runtime + game modules:
+    - `tests/app/module-behavior-contracts.test.js`
+  - Tightened module completeness audit with blocking zero-branch-signal checks:
+    - `scripts/audit-feature-modules.mjs`
+    - runtime/game modules with branch logic now fail audit if covered branches are `0`
+  - Stabilized story-song E2E status assertion against valid status variants:
+    - `tests/e2e/games-all-functional.spec.js`
 - Completed 10x simplification/optimization pass (2026-02-18, phase 2):
   - Refactored app bootstrap module scheduling to declarative plans (`EAGER_MODULES`, `IDLE_MODULE_PLAN`) in `src/app.js`.
   - Added retry-safe dynamic import handling (`loadModule` now clears failed cache entries so later attempts can recover).
@@ -233,6 +266,9 @@ If both pass, you are at a known-good baseline.
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-21.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-22.md`
   - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-23.md`
+  - `docs/plans/2026-02-19-feature-module-completeness-audit.md`
+  - `docs/plans/2026-02-19-feature-module-completeness-deeper-pass.md`
+  - `docs/plans/2026-02-19-feature-module-completeness-strict-pass.md`
 
 ## Verification Gates
 
@@ -240,6 +276,7 @@ If both pass, you are at a known-good baseline.
 - `npm run audit:deadcode`
 - `npm run audit:deps`
 - `npm run qa:effectiveness`
+- `npm run audit:modules`
 - `npm run build`
 - `npm run test:e2e`
 
@@ -247,7 +284,7 @@ If both pass, you are at a known-good baseline.
 
 ## Intentional/Expected Caveats
 
-- `scripts/extract-views.js` currently extracts `0` views because canonical view HTML is maintained in `public/views/`.
+- `scripts/extract-views.js` currently extracts the generated shell view(s) while canonical route HTML continues to live in `public/views/`.
 - Duplicate dependency audit allowlists known transitive duplicates:
   - `entities`
   - `fsevents`
@@ -257,12 +294,15 @@ If both pass, you are at a known-good baseline.
 ## Files to Read Before Editing
 
 1. `docs/HANDOFF.md` (this file)
-2. `docs/plans/2026-02-18-qa-effectiveness-deep-pass.md`
-3. `docs/plans/2026-02-18-10x-deeper-pass.md`
-4. `docs/plans/2026-02-18-10x-simplification-optimization.md`
-5. `docs/plans/2026-02-18-debug-optimization-report.md`
-6. `CLAUDE.md`
-7. `README.md`
+2. `docs/plans/2026-02-19-feature-module-completeness-strict-pass.md`
+3. `docs/plans/2026-02-19-feature-module-completeness-deeper-pass.md`
+4. `docs/plans/2026-02-19-feature-module-completeness-audit.md`
+5. `docs/plans/2026-02-18-qa-effectiveness-deep-pass.md`
+6. `docs/plans/2026-02-18-10x-deeper-pass.md`
+7. `docs/plans/2026-02-18-10x-simplification-optimization.md`
+8. `docs/plans/2026-02-18-debug-optimization-report.md`
+9. `CLAUDE.md`
+10. `README.md`
 
 ## Recommended Next Work (Ordered)
 

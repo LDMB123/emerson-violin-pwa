@@ -1,7 +1,9 @@
+import { createTonePlayer } from '../audio/tone-player.js';
 import { loadEvents, saveEvents } from '../persistence/loaders.js';
 import { clamp, todayDay } from '../utils/math.js';
-import { SONG_RECORDED } from '../utils/event-names.js';
+import { SOUNDS_CHANGE, SONG_RECORDED } from '../utils/event-names.js';
 import { getSongIdFromViewId, parseDuration } from '../utils/recording-export.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
 
 const tierFromAccuracy = (accuracy) => {
     if (accuracy >= 95) return 100;
@@ -9,6 +11,30 @@ const tierFromAccuracy = (accuracy) => {
     if (accuracy >= 50) return 50;
     if (accuracy >= 25) return 25;
     return 0;
+};
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const NOTE_DURATION_SCALE = 0.74;
+const NOTE_MIN_SECONDS = 0.12;
+const NOTE_MAX_SECONDS = 2.6;
+const NOTE_RELEASE_MS = 40;
+
+let tonePlayer = null;
+let playbackToken = 0;
+let globalListenersBound = false;
+
+const getTonePlayer = () => {
+    if (!tonePlayer) {
+        tonePlayer = createTonePlayer();
+    }
+    return tonePlayer;
+};
+
+const stopPlayAlongAudio = () => {
+    playbackToken += 1;
+    if (tonePlayer) {
+        tonePlayer.stopAll();
+    }
 };
 
 const recordSongEvent = async (songId, accuracy, duration, elapsed) => {
@@ -32,15 +58,123 @@ const recordSongEvent = async (songId, accuracy, duration, elapsed) => {
 
 const runs = new Map();
 
-const startRun = (songId, duration) => {
+const stopToggle = (toggle) => {
+    if (!(toggle instanceof HTMLInputElement)) return;
+    if (!toggle.checked) return;
+    toggle.checked = false;
+    toggle.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+const stopActiveSongToggles = (activeViewId = null) => {
+    document.querySelectorAll('.song-view .song-play-toggle:checked').forEach((toggle) => {
+        const view = toggle.closest('.song-view');
+        if (activeViewId && view?.id === activeViewId) return;
+        stopToggle(toggle);
+    });
+};
+
+const parseSeconds = (raw, fallback = 0) => {
+    if (typeof raw !== 'string') return fallback;
+    const trimmed = raw.trim();
+    if (!trimmed) return fallback;
+    const normalized = trimmed.endsWith('s') ? trimmed.slice(0, -1) : trimmed;
+    const seconds = Number.parseFloat(normalized);
+    return Number.isFinite(seconds) && seconds > 0 ? seconds : fallback;
+};
+
+const getSongSequence = (view) => {
+    return Array.from(view.querySelectorAll('.song-note'))
+        .map((noteEl) => {
+            const pitch = noteEl.querySelector('.song-note-pitch')?.textContent?.trim();
+            const duration = parseSeconds(noteEl.style.getPropertyValue('--note-duration'), 0.5);
+            return { pitch, duration };
+        })
+        .filter((note) => Boolean(note.pitch));
+};
+
+const playAlong = async (toggle, sequence) => {
+    if (!(toggle instanceof HTMLInputElement) || !toggle.checked) return;
+    if (!Array.isArray(sequence) || !sequence.length) return;
+    if (!isSoundEnabled()) return;
+    const player = getTonePlayer();
+    if (!player) return;
+
+    const token = ++playbackToken;
+    for (const note of sequence) {
+        if (token !== playbackToken || !toggle.checked) return;
+        const duration = Number.isFinite(note.duration) ? note.duration : 0.5;
+        const playableSeconds = clamp(duration * NOTE_DURATION_SCALE, NOTE_MIN_SECONDS, NOTE_MAX_SECONDS);
+        const played = await player.playNote(note.pitch, {
+            duration: playableSeconds,
+            volume: 0.16,
+            type: 'triangle',
+        });
+        if (token !== playbackToken || !toggle.checked) return;
+
+        if (!played) {
+            await wait(Math.max(120, duration * 1000));
+            continue;
+        }
+
+        const remainderMs = Math.max(0, (duration * 1000) - (playableSeconds * 1000 + NOTE_RELEASE_MS));
+        if (remainderMs > 4) {
+            await wait(remainderMs);
+        }
+    }
+};
+
+const startPlayAlong = (toggle, sequence) => {
+    stopPlayAlongAudio();
+    playAlong(toggle, sequence).catch(() => {});
+};
+
+const bindGlobalPlaybackListeners = () => {
+    if (globalListenersBound) return;
+    globalListenersBound = true;
+
+    window.addEventListener('hashchange', (event) => {
+        let nextSongViewId = null;
+        try {
+            const nextHash = new URL(event.newURL).hash || '';
+            if (nextHash.startsWith('#view-song-')) {
+                nextSongViewId = nextHash.slice(1);
+            }
+        } catch {
+            // Ignore invalid URL parse errors.
+        }
+        stopActiveSongToggles(nextSongViewId);
+    }, { passive: true });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopActiveSongToggles();
+        }
+    });
+
+    window.addEventListener('pagehide', () => {
+        stopActiveSongToggles();
+    });
+
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
+        if (event.detail?.enabled === false) {
+            stopPlayAlongAudio();
+        }
+    });
+};
+
+const startRun = (songId, duration, toggle) => {
     if (!songId || !duration) return;
     const existing = runs.get(songId);
     if (existing?.timeoutId) clearTimeout(existing.timeoutId);
     const start = performance.now();
     const timeoutId = window.setTimeout(() => {
+        if (toggle?.checked) {
+            stopToggle(toggle);
+            return;
+        }
         finishRun(songId, 100, duration, duration);
     }, duration * 1000);
-    runs.set(songId, { start, duration, timeoutId, logged: false });
+    runs.set(songId, { start, duration, timeoutId, logged: false, toggle });
 };
 
 const finishRun = (songId, accuracy, duration, elapsed) => {
@@ -52,12 +186,14 @@ const finishRun = (songId, accuracy, duration, elapsed) => {
     recordSongEvent(songId, accuracy, duration, elapsed);
 };
 
-const handleToggle = (toggle, songId, duration) => {
+const handleToggle = (toggle, songId, duration, sequence) => {
     if (toggle.checked) {
-        startRun(songId, duration);
+        startRun(songId, duration, toggle);
+        startPlayAlong(toggle, sequence);
         return;
     }
 
+    stopPlayAlongAudio();
     const run = runs.get(songId);
     if (!run) return;
     const elapsed = (performance.now() - run.start) / 1000;
@@ -116,6 +252,7 @@ const updateBestAccuracyUI = (events) => {
 };
 
 const initSongProgress = () => {
+    bindGlobalPlaybackListeners();
     const views = document.querySelectorAll('.song-view');
     views.forEach((view) => {
         if (view.dataset.songProgressBound === 'true') return;
@@ -126,19 +263,20 @@ const initSongProgress = () => {
         const playhead = view.querySelector('.song-playhead');
         const songId = getSongIdFromViewId(view?.id);
         const duration = parseDuration(sheet);
+        const sequence = getSongSequence(view);
 
         if (!toggle || !songId || !duration) return;
 
-        toggle.addEventListener('change', () => handleToggle(toggle, songId, duration));
+        toggle.addEventListener('change', () => handleToggle(toggle, songId, duration, sequence));
 
         if (playhead) {
             playhead.addEventListener('animationend', () => {
-                finishRun(songId, 100, duration, duration);
+                stopToggle(toggle);
             });
         }
     });
 
-    loadEvents().then(updateBestAccuracyUI);
+    loadEvents().then(updateBestAccuracyUI).catch(() => {});
 };
 
 export const init = initSongProgress;
