@@ -469,6 +469,8 @@ const setupPopoverSystem = (ctx) => {
 };
 
 const setupNavigation = (ctx) => {
+    const supportsViewTransitions = typeof document.startViewTransition === 'function';
+
     const shouldAnimateNav = () => {
         if (ctx.prefersReducedMotion()) return false;
         if (document.querySelector('#setting-reduce-motion')?.checked) return false;
@@ -497,7 +499,7 @@ const setupNavigation = (ctx) => {
             const handle = () => afterNav();
             window.addEventListener('hashchange', handle, { once: true });
         }
-        if (shouldAnimateNav()) {
+        if (supportsViewTransitions && shouldAnimateNav()) {
             document.documentElement.dataset.navDirection = navDirection;
             const transition = document.startViewTransition(() => {
                 window.location.hash = href;
