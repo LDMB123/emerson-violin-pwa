@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { navigateToView } from './helpers/navigate-view.js';
 
 const openGamesHub = async (page) => {
     await page.locator('.bottom-nav a[href="#view-games"]').click();
-    await page.waitForURL('**/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
+    await navigateToView(page, 'view-games', { timeout: 10000 });
 };
 
 const dismissGameCompleteIfOpen = async (page) => {
@@ -20,16 +20,7 @@ const dismissGameCompleteIfOpen = async (page) => {
 };
 
 const openGame = async (page, gameId) => {
-    await page.evaluate((id) => {
-        window.location.hash = `#view-game-${id}`;
-    }, gameId);
-    await page.waitForURL(`**/#view-game-${gameId}`, { timeout: 10000 });
-    const gameView = page.locator(`#view-game-${gameId}`);
-    if (!(await gameView.isVisible().catch(() => false))) {
-        await page.goto(`/#view-game-${gameId}`);
-        await page.waitForURL(`**/#view-game-${gameId}`, { timeout: 10000 });
-    }
-    await expect(gameView).toBeVisible({ timeout: 10000 });
+    await navigateToView(page, `view-game-${gameId}`, { timeout: 10000 });
     await dismissGameCompleteIfOpen(page);
 };
 
@@ -47,11 +38,7 @@ const returnToGames = async (page, gameId) => {
         }
     }
 
-    if (!page.url().includes('#view-games')) {
-        await page.goto('/#view-games');
-    }
-    await page.waitForURL('**/#view-games', { timeout: 10000 });
-    await expect(page.locator('#view-games')).toBeVisible({ timeout: 10000 });
+    await navigateToView(page, 'view-games', { timeout: 10000 });
 };
 
 const findMemoryPairs = async (page) => {

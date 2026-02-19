@@ -7,6 +7,8 @@ let toggle = null;
 let statusEl = null;
 let currentEnabled = false;
 let globalsBound = false;
+let initialized = false;
+let pendingUserOverride = null;
 
 const resolveElements = () => {
     toggle = document.querySelector('#setting-offline-mode');
@@ -63,12 +65,14 @@ const bindGlobalListeners = () => {
 
     if (hasServiceWorkerSupport()) {
         navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!initialized) return;
             const next = toggle ? toggle.checked : currentEnabled;
             applyState(next, false);
         });
     }
 
     document.addEventListener('visibilitychange', () => {
+        if (!initialized) return;
         if (document.visibilityState === 'visible') {
             const next = toggle ? toggle.checked : currentEnabled;
             applyState(next, false);
@@ -80,7 +84,9 @@ const bindLocalListeners = () => {
     if (toggle && toggle.dataset.offlineModeBound !== 'true') {
         toggle.dataset.offlineModeBound = 'true';
         toggle.addEventListener('change', () => {
-            applyState(toggle.checked, true);
+            const next = toggle.checked;
+            pendingUserOverride = next;
+            applyState(next, true);
         });
     }
 };
@@ -90,9 +96,11 @@ const initOfflineMode = async () => {
     bindLocalListeners();
     bindGlobalListeners();
     if (toggle) toggle.disabled = true;
-    const enabled = await loadState();
-    currentEnabled = enabled;
-    await applyState(enabled, false);
+    const persistedEnabled = await loadState();
+    const initialEnabled = pendingUserOverride ?? persistedEnabled;
+    currentEnabled = initialEnabled;
+    await applyState(initialEnabled, false);
+    initialized = true;
     if (toggle) toggle.disabled = false;
 };
 
