@@ -44,5 +44,8 @@ export const navigateToView = async (page, view, { timeout = 10000 } = {}) => {
         }
     }
 
+    // Last-resort retry: force a fresh hash route load after all in-page attempts.
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout }).catch(() => {});
+    await page.waitForURL(`**/${hash}`, { timeout }).catch(() => {});
     await expect(selector).toBeVisible({ timeout });
 };

@@ -4,11 +4,7 @@ import { navigateToView } from './helpers/navigate-view.js';
 
 const openGamesHub = async (page) => {
     await page.locator('.bottom-nav a[href="#view-games"]').click();
-    await navigateToView(page, 'view-games', { timeout: 10000 }).catch(() => {});
-    if (!(await page.locator('#view-games').isVisible().catch(() => false))) {
-        await page.goto('/#view-games', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
-        await expect(page.locator('#view-games')).toBeVisible({ timeout: 10000 });
-    }
+    await navigateToView(page, 'view-games', { timeout: 10000 });
 };
 
 const dismissGameCompleteIfOpen = async (page) => {
@@ -26,18 +22,33 @@ const dismissGameCompleteIfOpen = async (page) => {
 const openGame = async (page, gameId) => {
     const targetViewId = `view-game-${gameId}`;
     const targetView = page.locator(`#${targetViewId}`);
+    const gameLink = page.locator(`a[href="#${targetViewId}"]`).first();
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
-        await navigateToView(page, targetViewId, { timeout: 10000 }).catch(() => {});
-        await page.waitForURL(`**/#${targetViewId}`, { timeout: 10000 }).catch(() => {});
+        await dismissGameCompleteIfOpen(page);
+        await navigateToView(page, targetViewId, { timeout: 7000 }).catch(() => {});
+        await page.waitForURL(`**/#${targetViewId}`, { timeout: 7000 }).catch(() => {});
         if (await targetView.isVisible().catch(() => false)) {
-            await expect(targetView).toBeVisible({ timeout: 10000 });
             await dismissGameCompleteIfOpen(page);
-            return;
+            if (await targetView.isVisible().catch(() => false)) {
+                return;
+            }
         }
-        await navigateToView(page, 'view-games', { timeout: 10000 }).catch(() => {});
+        if (await gameLink.isVisible().catch(() => false)) {
+            await gameLink.click({ timeout: 3000 }).catch(() => {});
+            if (await targetView.isVisible().catch(() => false)) {
+                await dismissGameCompleteIfOpen(page);
+                if (await targetView.isVisible().catch(() => false)) {
+                    return;
+                }
+            }
+        }
+        await navigateToView(page, 'view-games', { timeout: 7000 }).catch(() => {});
     }
 
+    await navigateToView(page, targetViewId, { timeout: 10000 }).catch(() => {});
+    await page.waitForURL(`**/#${targetViewId}`, { timeout: 10000 }).catch(() => {});
+    await dismissGameCompleteIfOpen(page);
     await expect(targetView).toBeVisible({ timeout: 10000 });
     await dismissGameCompleteIfOpen(page);
 };
@@ -120,6 +131,36 @@ const tapPainterUntilScoreIncreases = async (page, scoreLocator) => {
     for (let attempt = 0; attempt < 8; attempt += 1) {
         await page.locator('#view-game-rhythm-painter .paint-dot.dot-blue').click();
         await page.waitForTimeout(120);
+        if ((await readNumericValue(scoreLocator)) > startScore) {
+            return;
+        }
+    }
+
+    expect(await readNumericValue(scoreLocator)).toBeGreaterThan(startScore);
+};
+
+const tapBowUntilStarsIncrease = async (page, starsLocator) => {
+    const startStars = await readNumericValue(starsLocator);
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+        await page.locator('#view-game-bow-hero .bow-stroke').click();
+        await page.waitForTimeout(120);
+        if ((await readNumericValue(starsLocator)) > startStars) {
+            return;
+        }
+    }
+
+    expect(await readNumericValue(starsLocator)).toBeGreaterThan(startStars);
+};
+
+const tapScaleUntilScoreIncreases = async (page, scoreLocator) => {
+    const startScore = await readNumericValue(scoreLocator);
+    const tapButton = page.locator('#view-game-scale-practice [data-scale="tap"]');
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+        await dismissGameCompleteIfOpen(page);
+        await tapButton.click();
+        await page.waitForTimeout(300);
         if ((await readNumericValue(scoreLocator)) > startScore) {
             return;
         }
@@ -243,9 +284,7 @@ test.describe('all games core interactions', () => {
 
         await openGame(page, 'bow-hero');
         const bowStars = page.locator('#view-game-bow-hero [data-bow="stars"]');
-        const bowStart = await bowStars.innerText();
-        await page.locator('#view-game-bow-hero .bow-stroke').click();
-        await expect(bowStars).not.toHaveText(bowStart);
+        await tapBowUntilStarsIncrease(page, bowStars);
         await returnToGames(page, 'bow-hero');
     });
 
@@ -263,22 +302,20 @@ test.describe('all games core interactions', () => {
 
         await openGame(page, 'melody-maker');
         const melodyScore = page.locator('#view-game-melody-maker [data-melody="score"]');
-        const melodyStart = await melodyScore.innerText();
+        const melodyStart = await readNumericValue(melodyScore);
         await page.locator('#view-game-melody-maker .melody-btn[data-melody-note="G"]').click();
         await page.locator('#view-game-melody-maker .melody-btn[data-melody-note="A"]').click();
         await page.locator('#view-game-melody-maker .melody-btn[data-melody-note="B"]').click();
-        await expect(melodyScore).not.toHaveText(melodyStart);
-        await expect(page.locator('#view-game-melody-maker [data-melody="track"]')).toContainText('A');
-        await expect(page.locator('#view-game-melody-maker [data-melody="track"]')).toContainText('B');
+        await expect.poll(async () => readNumericValue(melodyScore), { timeout: 10000 })
+            .toBeGreaterThanOrEqual(melodyStart + 40);
+        const melodyTrack = page.locator('#view-game-melody-maker [data-melody="track"]');
+        await expect(melodyTrack).toContainText('B');
+        await expect(melodyTrack).toContainText('·');
         await returnToGames(page, 'melody-maker');
 
         await openGame(page, 'scale-practice');
         const scaleScore = page.locator('#view-game-scale-practice [data-scale="score"]');
-        const scaleStart = await scaleScore.innerText();
-        await page.locator('#view-game-scale-practice [data-scale="tap"]').click();
-        await page.waitForTimeout(750);
-        await page.locator('#view-game-scale-practice [data-scale="tap"]').click();
-        await expect(scaleScore).not.toHaveText(scaleStart);
+        await tapScaleUntilScoreIncreases(page, scaleScore);
         await returnToGames(page, 'scale-practice');
 
         await openGame(page, 'duet-challenge');

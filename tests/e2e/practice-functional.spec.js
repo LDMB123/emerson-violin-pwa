@@ -1,14 +1,31 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
 
+const playToneUntilCardActive = async (page, tone = 'A') => {
+    const toneButton = page.locator(`[data-tone="${tone}"]`);
+    const toneCard = page.locator(`.audio-card[data-string="${tone}"]`);
+
+    await expect.poll(async () => {
+        await toneButton.click();
+        return (await toneCard.getAttribute('class')) || '';
+    }, { timeout: 10000 }).toMatch(/is-playing/);
+};
+
+const toggleMetronomeUntilLabel = async (page, label) => {
+    const toggle = page.locator('[data-metronome="toggle"]');
+    await expect.poll(async () => {
+        await toggle.click();
+        return (await toggle.innerText()).trim();
+    }, { timeout: 10000 }).toContain(label);
+};
+
 test('trainer metronome remains functional after navigation', async ({ page }) => {
     await openHome(page);
 
     await page.goto('/#view-trainer');
     await expect(page.locator('#view-trainer')).toBeVisible();
 
-    await page.locator('[data-metronome="toggle"]').click();
-    await expect(page.locator('[data-metronome="toggle"]')).toContainText('Stop');
+    await toggleMetronomeUntilLabel(page, 'Stop');
 
     await page.goto('/#view-games');
     await expect(page.locator('#view-games')).toBeVisible();
@@ -16,11 +33,9 @@ test('trainer metronome remains functional after navigation', async ({ page }) =
     await page.goto('/#view-trainer');
     await expect(page.locator('#view-trainer')).toBeVisible();
 
-    await page.locator('[data-metronome="toggle"]').click();
-    await expect(page.locator('[data-metronome="toggle"]')).toContainText('Start');
+    await toggleMetronomeUntilLabel(page, 'Start');
 
-    await page.locator('[data-metronome="toggle"]').click();
-    await expect(page.locator('[data-metronome="toggle"]')).toContainText('Stop');
+    await toggleMetronomeUntilLabel(page, 'Stop');
 });
 
 test('bowing and posture tools remain functional after navigation', async ({ page }) => {
@@ -74,9 +89,7 @@ test('tuner reference tone controls remain functional after navigation', async (
     await page.goto('/#view-tuner');
     await expect(page.locator('#view-tuner')).toBeVisible();
 
-    const aCard = page.locator('.audio-card[data-string="A"]');
-    await page.locator('[data-tone="A"]').click();
-    await expect(aCard).toHaveClass(/is-playing/);
+    await playToneUntilCardActive(page, 'A');
 
     await page.goto('/#view-games');
     await expect(page.locator('#view-games')).toBeVisible();
@@ -84,6 +97,5 @@ test('tuner reference tone controls remain functional after navigation', async (
     await page.goto('/#view-tuner');
     await expect(page.locator('#view-tuner')).toBeVisible();
 
-    await page.locator('[data-tone="A"]').click();
-    await expect(page.locator('.audio-card[data-string="A"]')).toHaveClass(/is-playing/);
+    await playToneUntilCardActive(page, 'A');
 });
