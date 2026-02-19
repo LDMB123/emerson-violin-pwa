@@ -189,13 +189,12 @@ const applyChallengeLocks = async ({ cards, events, unlockMap }) => {
     if (!challengeCards.length) return;
 
     const cleanPracticeCount = fallbackUnlockCount(cards, events);
-    const lockedHint = `Goal hint: ${cleanPracticeCount}/${CHALLENGE_UNLOCK_REQUIRED} clean Practice songs complete.`;
+    const readinessHint = `${Math.min(cleanPracticeCount, CHALLENGE_UNLOCK_REQUIRED)}/${CHALLENGE_UNLOCK_REQUIRED} clean Practice songs complete.`;
+    const lockedHint = `Locked: complete curriculum prerequisites. Readiness ${readinessHint}.`;
 
     challengeCards.forEach((card) => {
         const songId = card.dataset.song;
-        const unlockedByCurriculum = unlockMap?.[songId] === true;
-        const unlockedByFallback = cleanPracticeCount >= CHALLENGE_UNLOCK_REQUIRED;
-        const unlocked = unlockedByCurriculum || unlockedByFallback;
+        const unlocked = unlockMap?.[songId] === true;
 
         if (unlocked) {
             setCardLocked(card, {
