@@ -9,6 +9,8 @@ import {
 import { loadRealtimeEvents, loadRealtimeQuality } from '../realtime/event-log.js';
 import { setParentPreset } from '../realtime/session-controller.js';
 import { getPolicyState } from '../realtime/policy-engine.js';
+import { getLearningRecommendations } from '../ml/recommendations.js';
+import { loadCurriculumState } from '../curriculum/state.js';
 
 let initialized = false;
 
@@ -34,6 +36,7 @@ const resolveElements = () => ({
     list: document.querySelector('[data-rt-review-list]'),
     empty: document.querySelector('[data-rt-review-empty]'),
     quality: document.querySelector('[data-rt-quality]'),
+    curriculumSummary: document.querySelector('[data-rt-curriculum-summary]'),
     presetStatus: document.querySelector('[data-rt-preset-status]'),
     presetPreview: document.querySelector('[data-rt-preset-preview]'),
     presetButtons: Array.from(document.querySelectorAll('[data-rt-preset]')),
@@ -58,6 +61,27 @@ const renderQuality = async () => {
     const falseRate = Math.round((snapshot.falseCorrectionRate || 0) * 100);
     const fallbackRate = Math.round((snapshot.fallbackRate || 0) * 100);
     quality.textContent = `p95 latency ${latency}ms • false corrections ${falseRate}% • fallback ${fallbackRate}%`;
+};
+
+const renderCurriculumSummary = async () => {
+    const { curriculumSummary } = resolveElements();
+    if (!curriculumSummary) return;
+    const [recs, curriculumState] = await Promise.all([
+        getLearningRecommendations().catch(() => null),
+        loadCurriculumState().catch(() => null),
+    ]);
+
+    const completedUnits = Array.isArray(curriculumState?.completedUnitIds)
+        ? curriculumState.completedUnitIds.length
+        : 0;
+    const mission = recs?.mission || null;
+    if (!mission?.unitId) {
+        curriculumSummary.textContent = `Completed units: ${completedUnits}. Start a mission to see next teaching actions.`;
+        return;
+    }
+
+    const nextAction = Array.isArray(recs?.nextActions) ? recs.nextActions[0] : null;
+    curriculumSummary.textContent = `Current unit: ${mission.unitId} • Mission ${mission.completionPercent || 0}% • Completed units: ${completedUnits}${nextAction?.label ? ` • Next: ${nextAction.label}` : ''}`;
 };
 
 const createTimelineCard = (event) => {
@@ -148,6 +172,7 @@ const refresh = () => {
     renderPreset();
     renderTimeline();
     renderQuality();
+    renderCurriculumSummary();
 };
 
 const bindGlobal = () => {

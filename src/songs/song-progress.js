@@ -4,6 +4,8 @@ import { clamp, todayDay } from '../utils/math.js';
 import { SOUNDS_CHANGE, SONG_RECORDED } from '../utils/event-names.js';
 import { getSongIdFromViewId, parseDuration } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { assessSongAttempt } from './song-assessment.js';
+import { saveSongCheckpoint, updateSongProgress } from './song-progression.js';
 
 const tierFromAccuracy = (accuracy) => {
     if (accuracy >= 95) return 100;
@@ -37,21 +39,35 @@ const stopPlayAlongAudio = () => {
     }
 };
 
-const recordSongEvent = async (songId, accuracy, duration, elapsed) => {
+const recordSongEvent = async (songId, accuracyOrPayload, duration, elapsed) => {
     const events = await loadEvents();
-    const rounded = clamp(Math.round(accuracy), 0, 100);
+    const payload = (accuracyOrPayload && typeof accuracyOrPayload === 'object')
+        ? accuracyOrPayload
+        : { accuracy: accuracyOrPayload, duration, elapsed };
+    const rounded = clamp(Math.round(payload.accuracy || 0), 0, 100);
     const entry = {
         type: 'song',
         id: songId,
         accuracy: rounded,
         tier: tierFromAccuracy(rounded),
-        duration,
-        elapsed,
+        duration: Number.isFinite(payload.duration) ? payload.duration : duration,
+        elapsed: Number.isFinite(payload.elapsed) ? payload.elapsed : elapsed,
         day: todayDay(),
         timestamp: Date.now(),
     };
+    if (typeof payload.sectionId === 'string' && payload.sectionId.trim()) {
+        entry.sectionId = payload.sectionId.trim();
+    }
+    if (Number.isFinite(payload.tempo)) entry.tempo = Math.max(30, Math.round(payload.tempo));
+    if (Number.isFinite(payload.timingAccuracy)) entry.timingAccuracy = clamp(Math.round(payload.timingAccuracy), 0, 100);
+    if (Number.isFinite(payload.intonationAccuracy)) entry.intonationAccuracy = clamp(Math.round(payload.intonationAccuracy), 0, 100);
+    if (Number.isFinite(payload.stars)) entry.stars = clamp(Math.round(payload.stars), 0, 5);
+    if (typeof payload.attemptType === 'string' && payload.attemptType.trim()) {
+        entry.attemptType = payload.attemptType.trim();
+    }
     events.push(entry);
     await saveEvents(events);
+    await updateSongProgress(songId, entry);
     document.dispatchEvent(new CustomEvent(SONG_RECORDED, { detail: entry }));
     updateBestAccuracyUI(events);
 };
@@ -166,6 +182,10 @@ const startRun = (songId, duration, toggle) => {
     if (!songId || !duration) return;
     const existing = runs.get(songId);
     if (existing?.timeoutId) clearTimeout(existing.timeoutId);
+    const view = toggle?.closest('.song-view');
+    const tempo = Number(view?.dataset?.songTempo);
+    const sectionId = view?.dataset?.songSectionId || null;
+    const attemptType = sectionId && sectionId !== 'full' ? 'section' : 'full';
     const start = performance.now();
     const timeoutId = window.setTimeout(() => {
         if (toggle?.checked) {
@@ -174,7 +194,16 @@ const startRun = (songId, duration, toggle) => {
         }
         finishRun(songId, 100, duration, duration);
     }, duration * 1000);
-    runs.set(songId, { start, duration, timeoutId, logged: false, toggle });
+    runs.set(songId, {
+        start,
+        duration,
+        timeoutId,
+        logged: false,
+        toggle,
+        tempo: Number.isFinite(tempo) ? tempo : null,
+        sectionId,
+        attemptType,
+    });
 };
 
 const finishRun = (songId, accuracy, duration, elapsed) => {
@@ -183,7 +212,21 @@ const finishRun = (songId, accuracy, duration, elapsed) => {
     if (run.timeoutId) clearTimeout(run.timeoutId);
     run.logged = true;
     runs.delete(songId);
-    recordSongEvent(songId, accuracy, duration, elapsed);
+    const timingAccuracy = clamp(Math.round(accuracy + (run.sectionId ? 4 : 0)), 0, 100);
+    const intonationAccuracy = clamp(Math.round(accuracy - (run.tempo && run.tempo > 112 ? 4 : 0)), 0, 100);
+    const assessment = assessSongAttempt({
+        accuracy,
+        timingAccuracy,
+        intonationAccuracy,
+        tempo: run.tempo,
+        attemptType: run.attemptType,
+    });
+    recordSongEvent(songId, {
+        ...assessment,
+        sectionId: run.sectionId,
+        duration,
+        elapsed,
+    });
 };
 
 const handleToggle = (toggle, songId, duration, sequence) => {
@@ -198,13 +241,24 @@ const handleToggle = (toggle, songId, duration, sequence) => {
     if (!run) return;
     const elapsed = (performance.now() - run.start) / 1000;
     const accuracy = run.duration ? (elapsed / run.duration) * 100 : 0;
+    saveSongCheckpoint(songId, {
+        sectionId: run.sectionId || null,
+        elapsed,
+        tempo: run.tempo || null,
+    }).catch(() => {});
     finishRun(songId, accuracy, run.duration, elapsed);
 };
 
 const computeBestBySong = (events) => {
     return events.reduce((acc, event) => {
         if (event?.type !== 'song' || !event?.id) return acc;
-        const score = Number.isFinite(event.accuracy) ? event.accuracy : 0;
+        const score = Number.isFinite(event.accuracy)
+            ? event.accuracy
+            : Number.isFinite(event.timingAccuracy)
+                ? event.timingAccuracy
+                : Number.isFinite(event.score)
+                    ? event.score
+                    : 0;
         if (!acc[event.id] || score > acc[event.id]) {
             acc[event.id] = score;
         }

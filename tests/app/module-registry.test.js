@@ -27,6 +27,8 @@ describe('module-registry', () => {
     it('resolves coach modules', () => {
         expect(resolveModulesForView('view-coach')).toEqual([
             'realtimeSession',
+            'missionProgress',
+            'curriculumRuntime',
             'coachActions',
             'focusTimer',
             'lessonPlan',

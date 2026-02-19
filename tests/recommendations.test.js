@@ -30,9 +30,45 @@ const adaptiveMocks = vi.hoisted(() => ({
     }),
 }));
 
+const curriculumMocks = vi.hoisted(() => ({
+    ensureCurrentMission: vi.fn(async () => ({
+        mission: {
+            id: 'mission-test',
+            phase: 'core',
+            unitId: 'u-beg-01',
+            currentStepId: 'step-1',
+            completionPercent: 25,
+            status: 'active',
+            steps: [
+                {
+                    id: 'step-1',
+                    type: 'game',
+                    label: 'Warmup game',
+                    target: 'view-game-pitch-quest',
+                    status: 'in_progress',
+                    source: 'plan',
+                },
+                {
+                    id: 'step-2',
+                    type: 'song',
+                    label: 'Song step',
+                    target: 'view-songs',
+                    status: 'not_started',
+                    source: 'plan',
+                },
+            ],
+            remediationStepIds: [],
+        },
+        content: {
+            masteryThresholds: { bronze: 60, silver: 80, gold: 92, distinctDays: 3 },
+        },
+    })),
+}));
+
 vi.mock('../src/persistence/storage.js', () => storageMocks);
 vi.mock('../src/persistence/loaders.js', () => loaderMocks);
 vi.mock('../src/ml/adaptive-engine.js', () => adaptiveMocks);
+vi.mock('../src/curriculum/engine.js', () => curriculumMocks);
 
 import {
     getLearningRecommendations,
@@ -70,6 +106,14 @@ describe('learning recommendations', () => {
         expect(recs.metronomeTarget).toBe(88);
         expect(recs.coachMessage.length).toBeGreaterThan(0);
         expect(recs.coachActionMessage).toMatch(/^Start with /);
+        expect(recs.mission).toMatchObject({
+            id: 'mission-test',
+            completionPercent: 25,
+            phase: 'core',
+        });
+        expect(Array.isArray(recs.nextActions)).toBe(true);
+        expect(recs.mastery).toHaveProperty('games');
+        expect(recs.mastery).toHaveProperty('songs');
     });
 
     it('returns fresh cache directly when available', async () => {

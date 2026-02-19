@@ -13,6 +13,10 @@ const thresholds = {
     'src/persistence/loaders.js': { lines: 90, functions: 85 },
     'src/persistence/storage.js': { lines: 50, functions: 40 },
     'src/app/module-registry.js': { lines: 35, functions: 20 },
+    'src/curriculum/engine.js': { lines: 60, functions: 55 },
+    'src/songs/song-assessment.js': { lines: 90, functions: 90 },
+    'src/coach/lesson-plan.js': { lines: 55, functions: 45 },
+    'src/games/shared.js': { lines: 65, functions: 55 },
 };
 
 const metricKeyMap = {

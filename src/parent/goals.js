@@ -1,6 +1,8 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { clamp } from '../utils/math.js';
 import { PARENT_GOAL_KEY as GOAL_KEY } from '../persistence/storage-keys.js';
+import { GOAL_TARGET_CHANGE } from '../utils/event-names.js';
+import { getLearningRecommendations } from '../ml/recommendations.js';
 
 const DEFAULT_GOAL = {
     title: 'Next Recital Piece',
@@ -12,6 +14,7 @@ let titleInput = null;
 let minutesInput = null;
 let saveButton = null;
 let statusEl = null;
+let rationaleEl = null;
 
 const resolveElements = () => {
     titleEl = document.querySelector('[data-parent-goal-title]');
@@ -19,6 +22,7 @@ const resolveElements = () => {
     minutesInput = document.querySelector('[data-parent-goal-minutes-input]');
     saveButton = document.querySelector('[data-parent-goal-save]');
     statusEl = document.querySelector('[data-parent-goal-status]');
+    rationaleEl = document.querySelector('[data-parent-goal-rationale]');
 };
 
 const setStatus = (message) => {
@@ -60,6 +64,22 @@ const renderGoal = (goal) => {
     applyWeeklyTarget(goal.weeklyMinutes);
 };
 
+const renderGoalRationale = async () => {
+    if (!rationaleEl) return;
+    const recs = await getLearningRecommendations().catch(() => null);
+    const action = Array.isArray(recs?.nextActions) ? recs.nextActions[0] : null;
+    if (action?.rationale) {
+        rationaleEl.textContent = `Coach rationale: ${action.rationale}`;
+        return;
+    }
+    const skill = recs?.skillLabel || recs?.weakestSkill;
+    if (skill) {
+        rationaleEl.textContent = `Current focus: ${skill}. Set a weekly minutes goal that supports this focus.`;
+        return;
+    }
+    rationaleEl.textContent = 'Goal suggestions load from current mission focus.';
+};
+
 const saveGoal = async () => {
     const title = titleInput?.value?.trim() || DEFAULT_GOAL.title;
     const minutesRaw = minutesInput?.value || DEFAULT_GOAL.weeklyMinutes;
@@ -78,6 +98,9 @@ const saveGoal = async () => {
     await setJSON(GOAL_KEY, goal);
     renderGoal(goal);
     setStatus('Goal saved.');
+    document.dispatchEvent(new CustomEvent(GOAL_TARGET_CHANGE, {
+        detail: { weeklyMinutes: goal.weeklyMinutes, title: goal.title },
+    }));
 };
 
 const bindLocalListeners = () => {
@@ -108,6 +131,7 @@ const initParentGoals = async () => {
     try {
         const goal = await loadGoal();
         renderGoal(goal);
+        await renderGoalRationale();
         setStatus('Goal saved.');
     } catch {
         setStatus('Unable to load goal. Try again.');

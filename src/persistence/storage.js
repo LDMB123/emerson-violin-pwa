@@ -170,6 +170,42 @@ export const removeJSON = async (key) => {
     }
 };
 
+/**
+ * Read JSON value from the primary key, or migrate from legacy keys when present.
+ * Legacy values are copied into the primary key non-destructively.
+ */
+export const getJSONFromAnyKey = async (primaryKey, legacyKeys = []) => {
+    if (!primaryKey) return null;
+    const primary = await getJSON(primaryKey);
+    if (primary !== null && primary !== undefined) {
+        return primary;
+    }
+
+    for (const key of legacyKeys) {
+        if (!key) continue;
+        const candidate = await getJSON(key);
+        if (candidate === null || candidate === undefined) continue;
+        await setJSON(primaryKey, candidate);
+        return candidate;
+    }
+
+    return null;
+};
+
+/**
+ * Apply a migration function to a JSON record and persist only when changed.
+ */
+export const migrateJSON = async (key, migrationFn) => {
+    if (!key || typeof migrationFn !== 'function') return null;
+    const current = await getJSON(key);
+    const migrated = migrationFn(current);
+    const changed = JSON.stringify(migrated) !== JSON.stringify(current);
+    if (changed) {
+        await setJSON(key, migrated);
+    }
+    return migrated;
+};
+
 /* ── Public API: Blobs ──────────────────────────────────── */
 
 export const getBlob = async (key) => {

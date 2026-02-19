@@ -1,6 +1,15 @@
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { formatTime } from '../games/session-timer.js';
-import { LESSON_STEP, LESSON_COMPLETE, ML_UPDATE, ML_RESET, ML_RECS } from '../utils/event-names.js';
+import {
+    LESSON_STEP,
+    LESSON_COMPLETE,
+    ML_UPDATE,
+    ML_RESET,
+    ML_RECS,
+    MISSION_UPDATED,
+    PRACTICE_STEP_STARTED,
+    PRACTICE_STEP_COMPLETED,
+} from '../utils/event-names.js';
 import {
     toLessonLink,
     computeStepDuration,
@@ -37,6 +46,17 @@ const createRunnerMarkup = () => {
     `;
     return runner;
 };
+
+const toRunnerStep = (step, index) => ({
+    id: step?.id || `runner-step-${index + 1}`,
+    label: step?.label || `Practice step ${index + 1}`,
+    cue: step?.cue || '',
+    cta: step?.cta || step?.target || 'view-games',
+    ctaLabel: step?.ctaLabel || 'Open activity',
+    minutes: Math.max(1, Math.round(step?.minutes || 3)),
+    status: step?.status || 'not_started',
+    source: step?.source || 'plan',
+});
 
 const setupLessonPlan = () => {
     const planPanel = document.querySelector('[data-lesson-plan="coach"]');
@@ -79,9 +99,21 @@ const setupLessonPlan = () => {
         }
     };
 
+    const setStatus = (message) => {
+        if (statusEl) statusEl.textContent = message;
+    };
+
+    const setRunnerCta = (href, label = 'Open activity') => {
+        if (!ctaButton) return;
+        ctaButton.setAttribute('href', href);
+        ctaButton.textContent = label;
+    };
+
+    const getCurrentStep = () => steps[currentIndex] || null;
+
     const updateProgress = () => {
         if (!steps.length) return;
-        const step = steps[currentIndex];
+        const step = getCurrentStep();
         const duration = computeStepDuration(step?.minutes);
         const stepProgress = computeStepProgress(duration, remainingSeconds, !!timerId);
         const overall = computeOverallProgress(completedSteps, stepProgress, steps.length);
@@ -94,14 +126,28 @@ const setupLessonPlan = () => {
         if (!stepsList) return;
         const items = Array.from(stepsList.querySelectorAll('.lesson-step'));
         items.forEach((item, index) => {
-            item.classList.toggle('is-complete', index < completedSteps);
-            item.classList.toggle('is-active', index === currentIndex && completedSteps < steps.length);
-            if (index === currentIndex && completedSteps < steps.length) {
+            const step = steps[index];
+            const complete = step?.status === 'complete' || index < completedSteps;
+            const active = step?.id === getCurrentStep()?.id;
+            item.classList.toggle('is-complete', complete);
+            item.classList.toggle('is-active', active);
+            item.classList.toggle('is-remediation', step?.source === 'remediation');
+            if (active) {
                 item.setAttribute('aria-current', 'step');
             } else {
                 item.removeAttribute('aria-current');
             }
         });
+    };
+
+    const markGoalComplete = (step) => {
+        if (!step?.id) return;
+        const input = document.getElementById(step.id)
+            || document.querySelector(`#view-coach [data-goal-list] input[data-step-id="${step.id}"]`);
+        if (!(input instanceof HTMLInputElement)) return;
+        if (input.checked) return;
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
     };
 
     const dispatchLessonEvent = (state, step) => {
@@ -115,14 +161,16 @@ const setupLessonPlan = () => {
         }));
     };
 
-    const setStatus = (message) => {
-        if (statusEl) statusEl.textContent = message;
-    };
-
-    const setRunnerCta = (href, label = 'Open activity') => {
-        if (!ctaButton) return;
-        ctaButton.setAttribute('href', href);
-        ctaButton.textContent = label;
+    const dispatchPracticeEvent = (eventName, step) => {
+        document.dispatchEvent(new CustomEvent(eventName, {
+            detail: {
+                step,
+                index: currentIndex,
+                total: steps.length,
+                missionStepId: step?.id || null,
+                timestamp: Date.now(),
+            },
+        }));
     };
 
     const renderEmptyStep = () => {
@@ -132,9 +180,14 @@ const setupLessonPlan = () => {
         setRunnerCta('#view-games');
         if (startButton) startButton.disabled = true;
         if (nextButton) nextButton.disabled = true;
+        updateProgress();
     };
 
     const renderCurrentStep = (step) => {
+        if (!step) {
+            renderEmptyStep();
+            return;
+        }
         if (stepEl) stepEl.textContent = formatStepLabel(currentIndex, steps.length);
         if (cueEl) cueEl.textContent = formatStepCue(step);
         const ctaTarget = step?.cta || recommendedGameId;
@@ -152,27 +205,37 @@ const setupLessonPlan = () => {
             renderEmptyStep();
             return;
         }
-        renderCurrentStep(steps[currentIndex]);
+        renderCurrentStep(getCurrentStep());
         syncStepList();
         updateProgress();
     };
 
-    const markGoalComplete = (step) => {
-        if (!step?.id) return;
-        const input = document.getElementById(step.id);
-        if (!input || input.checked) return;
-        input.checked = true;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+    const recalculateCompletion = () => {
+        completedSteps = steps.filter((step) => step.status === 'complete').length;
+        const current = steps.find((step) => step.status === 'in_progress')
+            || steps.find((step) => step.status === 'not_started')
+            || steps[Math.max(0, steps.length - 1)]
+            || null;
+        currentIndex = current ? Math.max(0, steps.findIndex((step) => step.id === current.id)) : 0;
     };
 
     const completeStep = ({ auto = false } = {}) => {
-        if (!steps.length) return;
-        const step = steps[currentIndex];
+        const step = getCurrentStep();
+        if (!step) return;
+
         stopTimer();
         remainingSeconds = 0;
         markGoalComplete(step);
+
+        steps = steps.map((entry) => entry.id === step.id
+            ? { ...entry, status: 'complete', completedAt: Date.now() }
+            : entry);
+
         dispatchLessonEvent('complete', step);
-        completedSteps = Math.min(steps.length, completedSteps + 1);
+        dispatchPracticeEvent(PRACTICE_STEP_COMPLETED, step);
+
+        recalculateCompletion();
+
         if (completedSteps >= steps.length) {
             setStatus('Lesson complete! Awesome work.');
             if (startButton) startButton.textContent = 'Restart';
@@ -180,7 +243,6 @@ const setupLessonPlan = () => {
             if (ctaButton) ctaButton.setAttribute('href', '#view-games');
             document.dispatchEvent(new CustomEvent(LESSON_COMPLETE));
         } else {
-            currentIndex = completedSteps;
             setStatus(auto ? 'Step complete. Ready for the next one.' : 'Step marked complete. Tap Next to continue.');
             if (startButton) startButton.textContent = 'Start';
             if (nextButton) nextButton.disabled = false;
@@ -201,22 +263,50 @@ const setupLessonPlan = () => {
     const startStep = () => {
         if (!steps.length) return;
         if (completedSteps >= steps.length) {
-            completedSteps = 0;
-            currentIndex = 0;
+            steps = steps.map((step) => ({
+                ...step,
+                status: 'not_started',
+                startedAt: null,
+                completedAt: null,
+            }));
+            recalculateCompletion();
         }
-        const step = steps[currentIndex];
+
+        const step = getCurrentStep();
+        if (!step) return;
+
         const duration = computeStepDuration(step?.minutes);
         if (!remainingSeconds || remainingSeconds > duration) {
             remainingSeconds = duration;
         }
+
+        steps = steps.map((entry) => {
+            if (entry.id === step.id) {
+                return {
+                    ...entry,
+                    status: 'in_progress',
+                    startedAt: Date.now(),
+                };
+            }
+            if (entry.status === 'in_progress') {
+                return {
+                    ...entry,
+                    status: 'not_started',
+                };
+            }
+            return entry;
+        });
+
         stopTimer();
         setStatus('Step in progress.');
         if (startButton) startButton.textContent = 'Pause';
         if (nextButton) nextButton.disabled = false;
         dispatchLessonEvent('start', step);
+        dispatchPracticeEvent(PRACTICE_STEP_STARTED, step);
         timerId = window.setInterval(tick, 1000);
         if (timerEl) timerEl.textContent = formatTime(remainingSeconds * 1000);
         updateProgress();
+        syncStepList();
     };
 
     const pauseStep = () => {
@@ -225,7 +315,7 @@ const setupLessonPlan = () => {
         setStatus('Paused. Tap Resume when ready.');
         if (startButton) startButton.textContent = 'Resume';
         if (nextButton) nextButton.disabled = false;
-        dispatchLessonEvent('pause', steps[currentIndex]);
+        dispatchLessonEvent('pause', getCurrentStep());
     };
 
     const handleStartClick = () => {
@@ -256,16 +346,31 @@ const setupLessonPlan = () => {
         startStep();
     };
 
-    const refreshPlan = async () => {
+    const fromMissionSteps = (missionSteps = []) => missionSteps.map(toRunnerStep);
+
+    const fromLessonSteps = (lessonSteps = []) => lessonSteps.map((step, index) => ({
+        id: step?.id || `lesson-step-${index + 1}`,
+        label: step?.label || `Practice step ${index + 1}`,
+        cue: step?.cue || '',
+        cta: step?.cta || recommendedGameId,
+        ctaLabel: step?.ctaLabel || 'Open activity',
+        minutes: Math.max(1, Math.round(step?.minutes || 3)),
+        status: 'not_started',
+        source: 'plan',
+    }));
+
+    const refreshPlan = async ({ externalMission = null } = {}) => {
         const recs = await getLearningRecommendations();
-        steps = Array.isArray(recs?.lessonSteps) ? recs.lessonSteps : [];
         recommendedGameId = recs?.recommendedGameId || recs?.recommendedGame || 'view-games';
-        if (!steps.length) {
-            completedSteps = 0;
-            currentIndex = 0;
-        } else if (currentIndex >= steps.length) {
-            currentIndex = 0;
+
+        const missionSteps = externalMission?.steps || recs?.mission?.steps;
+        if (Array.isArray(missionSteps) && missionSteps.length) {
+            steps = fromMissionSteps(missionSteps);
+        } else {
+            steps = fromLessonSteps(recs?.lessonSteps || []);
         }
+
+        recalculateCompletion();
         updateStepDetails();
     };
 
@@ -277,9 +382,14 @@ const setupLessonPlan = () => {
     const onMlUpdate = () => refreshPlan();
     const onMlReset = () => refreshPlan();
     const onMlRecs = () => refreshPlan();
+    const onMissionUpdated = (event) => {
+        refreshPlan({ externalMission: event?.detail?.mission }).catch(() => {});
+    };
+
     document.addEventListener(ML_UPDATE, onMlUpdate);
     document.addEventListener(ML_RESET, onMlReset);
     document.addEventListener(ML_RECS, onMlRecs);
+    document.addEventListener(MISSION_UPDATED, onMissionUpdated);
 
     let observer = null;
     if (stepsList) {
@@ -312,6 +422,7 @@ const setupLessonPlan = () => {
         document.removeEventListener(ML_UPDATE, onMlUpdate);
         document.removeEventListener(ML_RESET, onMlReset);
         document.removeEventListener(ML_RECS, onMlRecs);
+        document.removeEventListener(MISSION_UPDATED, onMissionUpdated);
         window.removeEventListener('hashchange', onHashChange);
         document.removeEventListener('visibilitychange', onVisibility);
     };

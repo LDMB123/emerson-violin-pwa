@@ -12,6 +12,7 @@ import {
 import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { GAME_PLAY_AGAIN, RT_STATE, SOUNDS_CHANGE } from '../utils/event-names.js';
+import { GAME_META } from './game-config.js';
 import {
     computeBeatInterval,
     computeBpm,
@@ -111,6 +112,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     let wasRunning = false;
     let tapCount = 0;
     let runStartedAt = 0;
+    let mistakes = 0;
     const tapHistory = [];
     const realtimeTempoHistory = [];
     let targetBpm = Math.round(90 * difficulty.speed);
@@ -185,7 +187,27 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         reported = true;
         const accuracy = computeAccuracy();
         tuningReport?.({ score, accuracy });
-        recordGameEvent('rhythm-dash', { accuracy, score });
+        const objectiveTier = stage.dataset.gameObjectiveTier
+            || (difficulty.complexity >= 2 ? 'mastery' : difficulty.complexity >= 1 ? 'core' : 'foundation');
+        const objectiveTotal = GAME_META?.['rhythm-dash']?.objectivePacks?.[objectiveTier]?.length || 3;
+        const objectivesCompleted = Math.min(
+            objectiveTotal,
+            ['rd-set-1', 'rd-set-2', 'rd-set-3']
+                .map((id) => document.getElementById(id))
+                .filter((input) => input instanceof HTMLInputElement && input.checked).length,
+        );
+        const difficultyLevel = difficulty.complexity >= 2 ? 'hard' : difficulty.complexity >= 1 ? 'medium' : 'easy';
+        const sessionMs = runStartedAt ? Math.max(0, Date.now() - runStartedAt) : 0;
+        recordGameEvent('rhythm-dash', {
+            accuracy,
+            score,
+            difficulty: difficultyLevel,
+            tier: objectiveTier,
+            sessionMs,
+            objectiveTotal,
+            objectivesCompleted,
+            mistakes,
+        });
     };
 
     const stopMetronome = () => {
@@ -253,6 +275,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         score = 0;
         lastTap = 0;
         tapCount = 0;
+        mistakes = 0;
         runStartedAt = 0;
         tapHistory.length = 0;
         realtimeTempoHistory.length = 0;
@@ -276,6 +299,9 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
 
     const processBeat = (timingScore, { ratingSource = 'Mic', bpmValue = 0 } = {}) => {
         const boundedScore = clamp(timingScore, 0, 1);
+        if (boundedScore < 0.45) {
+            mistakes += 1;
+        }
         combo = computeNextCombo(combo, boundedScore);
         const increment = computeScoreIncrement(boundedScore, combo);
         score += increment;

@@ -124,7 +124,10 @@ describe('createGame play-again integration', () => {
         window.dispatchEvent(new Event('pagehide'));
 
         expect(onDeactivate).toHaveBeenCalledTimes(1);
-        expect(sharedMocks.recordGameEvent).toHaveBeenCalledWith('unit-e', { accuracy: 88, score: 15 });
+        expect(sharedMocks.recordGameEvent).toHaveBeenCalledWith(
+            'unit-e',
+            expect.objectContaining({ accuracy: 88, score: 15, tier: 'core' })
+        );
     });
 
     it('ignores bfcache-persisted pagehide events', () => {

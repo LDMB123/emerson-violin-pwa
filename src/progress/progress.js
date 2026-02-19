@@ -9,6 +9,13 @@ import { EVENTS_KEY as EVENT_KEY, UI_STATE_KEY as PERSIST_KEY } from '../persist
 import { PRACTICE_RECORDED, GAME_RECORDED, GOAL_TARGET_CHANGE, ACHIEVEMENT_UNLOCKED } from '../utils/event-names.js';
 import { setBadge } from '../notifications/badging.js';
 import { GAME_LABELS } from '../utils/recommendations-utils.js';
+import { getLearningRecommendations } from '../ml/recommendations.js';
+import { loadCurriculumState } from '../curriculum/state.js';
+import { getCurriculumContent } from '../curriculum/content-loader.js';
+import { loadSongProgressState } from '../songs/song-progression.js';
+import { loadGameMasteryState } from '../games/game-mastery.js';
+import { getSongCatalog } from '../songs/song-library.js';
+import { GAME_META } from '../games/game-config.js';
 
 const BADGE_META = {
     first_note:    { name: 'First Note',    artSrc: null },
@@ -68,6 +75,14 @@ let parentSkillStars = [];
 let coachStarsEl = null;
 let recentGameEls = [];
 let recentGamesEmptyEl = null;
+let progressCurriculumMapEl = null;
+let progressSongHeatmapEl = null;
+let progressGameMasteryEl = null;
+let progressNextActionsEl = null;
+let parentCurriculumMapEl = null;
+let parentSongHeatmapEl = null;
+let parentGameMasteryEl = null;
+let parentNextActionsEl = null;
 
 let achievementEls = [];
 let radarShapeEl = null;
@@ -101,6 +116,14 @@ const resolveElements = () => {
     coachStarsEl = document.querySelector('[data-coach="stars"]');
     recentGameEls = Array.from(document.querySelectorAll('[data-recent-game]'));
     recentGamesEmptyEl = document.querySelector('[data-recent-games-empty]');
+    progressCurriculumMapEl = document.querySelector('[data-progress-curriculum-map]');
+    progressSongHeatmapEl = document.querySelector('[data-progress-song-heatmap]');
+    progressGameMasteryEl = document.querySelector('[data-progress-game-mastery]');
+    progressNextActionsEl = document.querySelector('[data-progress-next-actions]');
+    parentCurriculumMapEl = document.querySelector('[data-parent-curriculum-map]');
+    parentSongHeatmapEl = document.querySelector('[data-parent-song-heatmap]');
+    parentGameMasteryEl = document.querySelector('[data-parent-game-mastery]');
+    parentNextActionsEl = document.querySelector('[data-parent-next-actions]');
     achievementEls = Array.from(document.querySelectorAll('[data-achievement]'));
     radarShapeEl = document.querySelector('[data-radar="shape"]');
     radarPointEls = Array.from(document.querySelectorAll('.radar-point[data-skill]'));
@@ -290,68 +313,224 @@ const snapshotSkills = (skillProfile) => ({
     reading: skillProfile.reading,
 });
 
-const buildProgress = async (events) => {
-    const { PlayerProgress, AchievementTracker, SkillProfile, SkillCategory, calculate_streak: calculateStreak } = await getCore();
-    const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
-    const progress = new PlayerProgress();
-    const tracker = new AchievementTracker();
-    const skillProfile = new SkillProfile();
-    const currentDay = todayDay();
-    const dailyMinutes = createDailyMinutes();
+const loadSupplementaryProgressData = async () => {
+    const [
+        curriculumState,
+        curriculumContent,
+        songProgressState,
+        gameMasteryState,
+        recommendations,
+        songCatalog,
+    ] = await Promise.all([
+        loadCurriculumState().catch(() => ({ completedUnitIds: [], currentUnitId: null })),
+        getCurriculumContent().catch(() => ({ units: [] })),
+        loadSongProgressState().catch(() => ({ songs: {} })),
+        loadGameMasteryState().catch(() => ({ games: {} })),
+        getLearningRecommendations().catch(() => ({ nextActions: [], mission: null })),
+        getSongCatalog().catch(() => ({ byId: {}, songs: [] })),
+    ]);
+
+    return {
+        curriculumState,
+        curriculumContent,
+        songProgressState,
+        gameMasteryState,
+        recommendations,
+        songCatalog,
+    };
+};
+
+const createFallbackTracker = (events) => {
+    const unlockedIds = new Set(
+        (Array.isArray(events) ? events : [])
+            .filter((event) => event?.type === 'achievement' && typeof event?.id === 'string')
+            .map((event) => event.id),
+    );
+    return {
+        unlock: (id) => {
+            if (id) unlockedIds.add(id);
+        },
+        is_unlocked: (id) => unlockedIds.has(id),
+        check_progress: () => undefined,
+    };
+};
+
+const createFallbackProgressModel = ({ totalMinutes, gameCount, songCount }) => {
+    const xp = Math.max(0, Math.round((totalMinutes * 5) + (gameCount * 9) + (songCount * 7)));
+    const levelSize = 120;
+    const level = Math.max(1, Math.floor(xp / levelSize) + 1);
+    const previousLevelXp = (level - 1) * levelSize;
+    const nextLevelXp = level * levelSize;
+    return {
+        level,
+        xp,
+        xp_to_next_level: () => Math.max(0, nextLevelXp - xp),
+        level_progress: () => clamp(
+            Math.round(((xp - previousLevelXp) / Math.max(1, nextLevelXp - previousLevelXp)) * 100),
+            0,
+            100,
+        ),
+    };
+};
+
+const average = (values, fallback = 60) => {
+    const usable = values.filter((value) => Number.isFinite(value));
+    if (!usable.length) return fallback;
+    return usable.reduce((sum, value) => sum + value, 0) / usable.length;
+};
+
+const weakestSkillFromValues = (skills) => (
+    Object.entries(skills).sort((left, right) => left[1] - right[1])[0]?.[0] || 'pitch'
+);
+
+const estimateFallbackSkills = ({ practiceMinutes, gameEvents, songEvents }) => {
+    const gameScores = gameEvents.map((event) => (
+        Number.isFinite(event.accuracy) ? Number(event.accuracy) : Number(event.score)
+    ));
+    const songScores = songEvents.map((event) => (
+        Number.isFinite(event.accuracy) ? Number(event.accuracy) : Number(event.score)
+    ));
+    const avgGame = average(gameScores, 62);
+    const avgSong = average(songScores, 64);
+    const practiceBoost = clamp(Math.round(practiceMinutes / 6), 0, 20);
+    return {
+        pitch: clamp(Math.round((avgGame * 0.7) + (avgSong * 0.3)), 25, 100),
+        rhythm: clamp(Math.round(avgGame + (practiceBoost * 0.6)), 25, 100),
+        bow_control: clamp(Math.round((avgGame * 0.65) + 15 + practiceBoost), 25, 100),
+        posture: clamp(Math.round(50 + practiceBoost), 25, 100),
+        reading: clamp(Math.round((avgSong * 0.85) + (practiceBoost * 0.4)), 25, 100),
+    };
+};
+
+const buildFallbackProgress = async (events, error) => {
+    if (error) {
+        console.warn('[progress] Falling back to local summary model', error);
+    }
 
     const practiceEvents = collectPracticeEvents(events);
     const gameEvents = collectGameEvents(events);
     const songEvents = collectSongEvents(events);
+    const currentDay = todayDay();
+    const dailyMinutes = createDailyMinutes();
+    const uniqueDays = new Set();
 
-    const practiceSummary = trackPracticeEvents({
-        practiceEvents,
-        progress,
-        skillProfile,
-        calculateStreak,
-        updateSkillProfile,
-        currentDay,
-        dailyMinutes,
-    });
-    logGameEvents(gameEvents, progress, skillProfile, SkillCategory);
+    let totalMinutes = 0;
+    let weekMinutes = 0;
 
-    const now = toTrackerTimestamp(Date.now());
-    const gameStats = buildGameStats(gameEvents);
-    unlockGameAchievements(tracker, gameStats, now);
+    for (const event of practiceEvents) {
+        const minutes = Math.max(0, Math.round(Number(event.minutes) || 0));
+        const eventDay = Number(event.day);
+        totalMinutes += minutes;
+        if (Number.isFinite(eventDay)) uniqueDays.add(eventDay);
+        if (Number.isFinite(eventDay) && addMinutesToDailyWindow(dailyMinutes, currentDay, eventDay, minutes)) {
+            weekMinutes += minutes;
+        }
+    }
 
-    const playedGames = collectPlayedGames(gameEvents, practiceEvents);
-    const streak = calculateStreakFromDays(calculateStreak, practiceSummary.uniqueDays);
-    unlockProgressMilestones({
-        tracker,
-        progress,
-        totalMinutes: practiceSummary.totalMinutes,
-        streak,
-        playedGamesCount: playedGames.size,
-        practiceCount: practiceEvents.length,
-        timestamp: now,
-    });
+    for (const event of songEvents) {
+        if (!Number.isFinite(event.duration)) continue;
+        const minutes = Math.max(0, Math.round(Number(event.duration) / 60));
+        const eventDay = Number(event.day);
+        totalMinutes += minutes;
+        if (Number.isFinite(eventDay) && addMinutesToDailyWindow(dailyMinutes, currentDay, eventDay, minutes)) {
+            weekMinutes += minutes;
+        }
+    }
 
-    const weekMinutes = practiceSummary.weekMinutes + applySongEvents({
+    const skills = estimateFallbackSkills({
+        practiceMinutes: totalMinutes,
+        gameEvents,
         songEvents,
-        progress,
-        skillProfile,
-        SkillCategory,
-        currentDay,
-        dailyMinutes,
     });
 
-    applyRecordedAchievements(events, tracker);
-    tracker.check_progress(progress, now);
+    const progress = createFallbackProgressModel({
+        totalMinutes,
+        gameCount: gameEvents.length,
+        songCount: songEvents.length,
+    });
 
+    const supplemental = await loadSupplementaryProgressData();
     return {
         progress,
-        tracker,
-        streak,
+        tracker: createFallbackTracker(events),
+        streak: Math.max(0, uniqueDays.size),
         weekMinutes,
         dailyMinutes,
-        skills: snapshotSkills(skillProfile),
-        weakestSkill: skillProfile.weakest_skill(),
+        skills,
+        weakestSkill: weakestSkillFromValues(skills),
         recentGames: buildRecentGames(gameEvents),
+        ...supplemental,
     };
+};
+
+const buildProgress = async (events) => {
+    try {
+        const { PlayerProgress, AchievementTracker, SkillProfile, SkillCategory, calculate_streak: calculateStreak } = await getCore();
+        const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
+        const progress = new PlayerProgress();
+        const tracker = new AchievementTracker();
+        const skillProfile = new SkillProfile();
+        const currentDay = todayDay();
+        const dailyMinutes = createDailyMinutes();
+
+        const practiceEvents = collectPracticeEvents(events);
+        const gameEvents = collectGameEvents(events);
+        const songEvents = collectSongEvents(events);
+
+        const practiceSummary = trackPracticeEvents({
+            practiceEvents,
+            progress,
+            skillProfile,
+            calculateStreak,
+            updateSkillProfile,
+            currentDay,
+            dailyMinutes,
+        });
+        logGameEvents(gameEvents, progress, skillProfile, SkillCategory);
+
+        const now = toTrackerTimestamp(Date.now());
+        const gameStats = buildGameStats(gameEvents);
+        unlockGameAchievements(tracker, gameStats, now);
+
+        const playedGames = collectPlayedGames(gameEvents, practiceEvents);
+        const streak = calculateStreakFromDays(calculateStreak, practiceSummary.uniqueDays);
+        unlockProgressMilestones({
+            tracker,
+            progress,
+            totalMinutes: practiceSummary.totalMinutes,
+            streak,
+            playedGamesCount: playedGames.size,
+            practiceCount: practiceEvents.length,
+            timestamp: now,
+        });
+
+        const weekMinutes = practiceSummary.weekMinutes + applySongEvents({
+            songEvents,
+            progress,
+            skillProfile,
+            SkillCategory,
+            currentDay,
+            dailyMinutes,
+        });
+
+        applyRecordedAchievements(events, tracker);
+        tracker.check_progress(progress, now);
+        const supplemental = await loadSupplementaryProgressData();
+
+        return {
+            progress,
+            tracker,
+            streak,
+            weekMinutes,
+            dailyMinutes,
+            skills: snapshotSkills(skillProfile),
+            weakestSkill: skillProfile.weakest_skill(),
+            recentGames: buildRecentGames(gameEvents),
+            ...supplemental,
+        };
+    } catch (error) {
+        return buildFallbackProgress(events, error);
+    }
 };
 
 let pendingUIData = null;
@@ -537,7 +716,141 @@ const renderPathLocks = (level) => {
     });
 };
 
-const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills, weakestSkill, recentGames }) => {
+const renderChipGrid = (container, chips, emptyText) => {
+    if (!container) return;
+    container.replaceChildren();
+    if (!Array.isArray(chips) || !chips.length) {
+        const empty = document.createElement('p');
+        empty.textContent = emptyText;
+        container.appendChild(empty);
+        return;
+    }
+
+    chips.forEach((chip) => {
+        const row = document.createElement('div');
+        row.className = 'learning-chip';
+        if (chip.state) row.dataset.state = chip.state;
+        if (chip.tier) row.dataset.tier = chip.tier;
+
+        const label = document.createElement('span');
+        label.textContent = chip.label;
+        const value = document.createElement('span');
+        value.textContent = chip.value;
+
+        row.append(label, value);
+        container.appendChild(row);
+    });
+};
+
+const renderCurriculumMap = (curriculumContent, curriculumState, recommendations) => {
+    const units = Array.isArray(curriculumContent?.units) ? curriculumContent.units : [];
+    const completed = new Set(Array.isArray(curriculumState?.completedUnitIds) ? curriculumState.completedUnitIds : []);
+    const currentId = curriculumState?.currentUnitId || recommendations?.mission?.unitId || null;
+
+    const chips = units.map((unit, index) => {
+        const isComplete = completed.has(unit.id);
+        const isCurrent = !isComplete && unit.id === currentId;
+        return {
+            label: `${index + 1}. ${unit.title}`,
+            value: isComplete ? 'Complete' : isCurrent ? 'Current' : 'Queued',
+            state: isComplete ? 'complete' : isCurrent ? 'current' : 'queued',
+        };
+    });
+
+    renderChipGrid(progressCurriculumMapEl, chips, 'Curriculum map will appear after your first mission.');
+    renderChipGrid(parentCurriculumMapEl, chips, 'Curriculum map will appear after your first mission.');
+};
+
+const songTier = (score) => {
+    const safe = Math.max(0, Math.min(100, Math.round(score || 0)));
+    if (safe >= 92) return 'gold';
+    if (safe >= 80) return 'silver';
+    if (safe >= 60) return 'bronze';
+    return 'foundation';
+};
+
+const renderSongHeatmap = (songProgressState, songCatalog) => {
+    const entries = Object.entries(songProgressState?.songs || {})
+        .map(([id, entry]) => ({ id, ...(entry || {}) }))
+        .sort((left, right) => (right.bestAccuracy || 0) - (left.bestAccuracy || 0))
+        .slice(0, 12);
+
+    const byId = songCatalog?.byId || {};
+    const chips = entries.map((entry) => ({
+        label: byId?.[entry.id]?.title || entry.id,
+        value: `${Math.round(entry.bestAccuracy || 0)}% · ${Math.round(entry.attempts || 0)} runs`,
+        tier: songTier(entry.bestAccuracy || 0),
+    }));
+
+    renderChipGrid(progressSongHeatmapEl, chips, 'No song mastery data yet.');
+    renderChipGrid(parentSongHeatmapEl, chips, 'No song mastery data yet.');
+};
+
+const renderGameMasteryMatrix = (gameMasteryState) => {
+    const chips = Object.keys(GAME_META || {})
+        .map((id) => {
+            const entry = gameMasteryState?.games?.[id] || null;
+            const tier = entry?.tier || 'foundation';
+            const attempts = Math.max(0, Math.round(entry?.attempts || 0));
+            return {
+                label: GAME_LABELS[id] || id,
+                value: `${tier} · ${attempts} runs`,
+                tier,
+            };
+        });
+
+    renderChipGrid(progressGameMasteryEl, chips, 'No game mastery data yet.');
+    renderChipGrid(parentGameMasteryEl, chips, 'No game mastery data yet.');
+};
+
+const renderNextActions = (recommendations) => {
+    const actions = Array.isArray(recommendations?.nextActions) ? recommendations.nextActions : [];
+    const render = (target) => {
+        if (!target) return;
+        target.replaceChildren();
+        if (!actions.length) {
+            const fallback = document.createElement('li');
+            fallback.textContent = 'Complete one mission step to get next teaching actions.';
+            target.appendChild(fallback);
+            return;
+        }
+        actions.slice(0, 3).forEach((action) => {
+            const item = document.createElement('li');
+            if (action?.href) {
+                const link = document.createElement('a');
+                link.href = action.href;
+                link.textContent = action.label || 'Next step';
+                item.appendChild(link);
+            } else {
+                item.textContent = action?.label || 'Next step';
+            }
+            if (action?.rationale) {
+                item.append(` — ${action.rationale}`);
+            }
+            target.appendChild(item);
+        });
+    };
+
+    render(progressNextActionsEl);
+    render(parentNextActionsEl);
+};
+
+const applyUI = ({
+    progress,
+    tracker,
+    streak,
+    weekMinutes,
+    dailyMinutes,
+    skills,
+    weakestSkill,
+    recentGames,
+    curriculumState,
+    curriculumContent,
+    songProgressState,
+    gameMasteryState,
+    recommendations,
+    songCatalog,
+}) => {
     renderXpState(progress);
     renderSummary(streak, weekMinutes, weakestSkill);
     renderDailyGoal(dailyMinutes);
@@ -548,6 +861,10 @@ const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills,
     renderRecentGames(recentGames);
     renderRadar(skills);
     renderPathLocks(progress.level);
+    renderCurriculumMap(curriculumContent, curriculumState, recommendations);
+    renderSongHeatmap(songProgressState, songCatalog);
+    renderGameMasteryMatrix(gameMasteryState);
+    renderNextActions(recommendations);
     setBadge(Math.max(0, Math.min(99, Number(streak) || 0)));
 };
 

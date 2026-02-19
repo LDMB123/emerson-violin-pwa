@@ -21,6 +21,12 @@ export const ML_LOG_KEY = 'panda-violin:ml:events:v1';
 // Recommendations cache
 export const ML_RECS_KEY = 'panda-violin:ml:recs-v1';
 
+// Curriculum + mission + mastery
+export const CURRICULUM_STATE_KEY = 'panda-violin:curriculum-state-v1';
+export const MISSION_HISTORY_KEY = 'panda-violin:mission-history-v1';
+export const SONG_PROGRESS_KEY = 'panda-violin:song-progress-v2';
+export const GAME_MASTERY_KEY = 'panda-violin:game-mastery-v1';
+
 // Realtime coaching
 export const RT_PROFILE_KEY = 'panda-violin:rt:profile-v1';
 export const RT_EVENT_LOG_KEY = 'panda-violin:rt:events-v1';

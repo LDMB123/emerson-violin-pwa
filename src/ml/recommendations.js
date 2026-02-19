@@ -11,6 +11,8 @@ import {
     pickDailyCue,
 } from '../utils/recommendations-utils.js';
 import { ML_RECS_KEY as CACHE_KEY } from '../persistence/storage-keys.js';
+import { ensureCurrentMission } from '../curriculum/engine.js';
+
 const CACHE_TTL = 5 * 60 * 1000;
 let refreshPromise = null;
 
@@ -106,6 +108,13 @@ const MINUTE_ADJUSTMENTS = {
     posture: { warmup: 1, focus: 1, ear: -1, song: -1 },
 };
 
+const DEFAULT_MASTERY_THRESHOLDS = {
+    bronze: 60,
+    silver: 80,
+    gold: 92,
+    distinctDays: 3,
+};
+
 const toViewId = (id) => {
     if (!id) return 'view-games';
     if (id.startsWith('view-')) return id;
@@ -174,6 +183,187 @@ const buildLessonSteps = ({ weakestSkill, recommendedGameId, metronomeTarget, so
     };
 };
 
+const bucketLevel = (score, { bronze, silver, gold }) => {
+    if (score >= gold) return 'gold';
+    if (score >= silver) return 'silver';
+    if (score >= bronze) return 'bronze';
+    return 'none';
+};
+
+const masteryFromEvents = (events, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
+    const gamesById = new Map();
+    const songsById = new Map();
+
+    events.forEach((event) => {
+        if (!event || typeof event !== 'object') return;
+        if (event.type !== 'game' && event.type !== 'song') return;
+        const id = event.id;
+        if (!id) return;
+        const score = Number.isFinite(event.accuracy) ? event.accuracy : event.score;
+        if (!Number.isFinite(score)) return;
+
+        const targetMap = event.type === 'game' ? gamesById : songsById;
+        const entry = targetMap.get(id) || {
+            id,
+            best: 0,
+            attempts: 0,
+            byDay: new Map(),
+        };
+
+        entry.attempts += 1;
+        entry.best = Math.max(entry.best, Math.round(score));
+
+        if (Number.isFinite(event.day)) {
+            const dayScore = entry.byDay.get(event.day) || 0;
+            entry.byDay.set(event.day, Math.max(dayScore, Math.round(score)));
+        }
+
+        targetMap.set(id, entry);
+    });
+
+    const withTier = (entry) => {
+        const days = Array.from(entry.byDay.values());
+        const bronzeDays = days.filter((score) => score >= thresholds.bronze).length;
+        const silverDays = days.filter((score) => score >= thresholds.silver).length;
+        const goldDays = days.filter((score) => score >= thresholds.gold).length;
+
+        let tier = bucketLevel(entry.best, thresholds);
+        if (tier !== 'none') {
+            const eligibleDays = tier === 'gold' ? goldDays : tier === 'silver' ? silverDays : bronzeDays;
+            if (eligibleDays < thresholds.distinctDays) {
+                tier = 'foundation';
+            }
+        }
+
+        return {
+            id: entry.id,
+            best: entry.best,
+            attempts: entry.attempts,
+            bronzeDays,
+            silverDays,
+            goldDays,
+            tier,
+        };
+    };
+
+    return {
+        games: Object.fromEntries(Array.from(gamesById.values()).map((entry) => [entry.id, withTier(entry)])),
+        songs: Object.fromEntries(Array.from(songsById.values()).map((entry) => [entry.id, withTier(entry)])),
+    };
+};
+
+const skillMastery = (skillScores) => {
+    const entries = Object.entries(skillScores || {});
+    const byTier = {
+        gold: [],
+        silver: [],
+        bronze: [],
+        developing: [],
+    };
+
+    entries.forEach(([id, rawScore]) => {
+        const score = Math.max(0, Math.min(100, Math.round(rawScore || 0)));
+        const item = {
+            id,
+            label: SKILL_LABELS[id] || id,
+            score,
+        };
+        if (score >= 92) byTier.gold.push(item);
+        else if (score >= 80) byTier.silver.push(item);
+        else if (score >= 60) byTier.bronze.push(item);
+        else byTier.developing.push(item);
+    });
+
+    return byTier;
+};
+
+const buildMissionContract = (mission) => {
+    if (!mission) {
+        return {
+            id: null,
+            phase: 'core',
+            steps: [],
+            currentStepId: null,
+            remediationStepIds: [],
+            completionPercent: 0,
+            unitId: null,
+            status: 'idle',
+        };
+    }
+
+    return {
+        id: mission.id,
+        phase: mission.phase || 'core',
+        steps: Array.isArray(mission.steps)
+            ? mission.steps.map((step) => ({
+                id: step.id,
+                type: step.type,
+                label: step.label,
+                target: step.target,
+                status: step.status,
+                source: step.source || 'plan',
+            }))
+            : [],
+        currentStepId: mission.currentStepId || null,
+        remediationStepIds: Array.isArray(mission.remediationStepIds) ? mission.remediationStepIds : [],
+        completionPercent: Number.isFinite(mission.completionPercent) ? mission.completionPercent : 0,
+        unitId: mission.unitId || null,
+        tier: mission.tier || null,
+        status: mission.status || 'active',
+    };
+};
+
+const getCurrentMissionStep = (mission) => {
+    if (!mission?.steps?.length) return null;
+    return mission.steps.find((step) => step.id === mission.currentStepId)
+        || mission.steps.find((step) => step.status === 'in_progress')
+        || mission.steps.find((step) => step.status === 'not_started')
+        || mission.steps[mission.steps.length - 1]
+        || null;
+};
+
+const buildNextActions = ({ mission, recommendedGameId, recommendedGameLabel, weakestSkill, songLevel }) => {
+    const actions = [];
+
+    const missionStep = getCurrentMissionStep(mission);
+    if (missionStep) {
+        const cta = missionStep.type === 'song'
+            ? '#view-songs'
+            : missionStep.type === 'tuner'
+                ? '#view-tuner'
+                : missionStep.target?.startsWith('view-')
+                    ? `#${missionStep.target}`
+                    : missionStep.target?.includes(':')
+                        ? `#view-game-${missionStep.target.split(':')[0]}`
+                        : '#view-coach';
+
+        actions.push({
+            id: 'resume-mission-step',
+            label: `Resume: ${missionStep.label || 'Mission step'}`,
+            href: cta,
+            rationale: `Current mission step (${mission.phase || 'core'} phase).`,
+        });
+    }
+
+    if (recommendedGameId) {
+        actions.push({
+            id: 'recommended-game',
+            label: `Play ${recommendedGameLabel || 'recommended game'}`,
+            href: `#${toViewId(recommendedGameId)}`,
+            rationale: `${SKILL_LABELS[weakestSkill] || 'Core'} is your weakest skill right now.`,
+        });
+    }
+
+    actions.push({
+        id: 'recommended-song',
+        label: `Practice a ${songLevel || 'beginner'} song`,
+        href: '#view-songs',
+        rationale: 'Song work closes the loop on tone, rhythm, and reading.',
+    });
+
+    return actions.slice(0, 3);
+};
+
 const computeRecommendations = async () => {
     const [events, adaptiveLog, metronomeTuning] = await Promise.all([
         loadEvents(),
@@ -206,7 +396,7 @@ const computeRecommendations = async () => {
         ? `Start with ${firstStep.label.toLowerCase()}.`
         : `Try ${recommendedGameLabel} next to build ${weakestSkill.replace('_', ' ')}.`;
 
-    return {
+    const baseRecommendations = {
         weakestSkill,
         skillScores,
         recommendedGameId,
@@ -219,6 +409,35 @@ const computeRecommendations = async () => {
         lessonTotal,
         coachCue,
         skillLabel: SKILL_LABELS[weakestSkill] || 'Pitch',
+    };
+
+    const missionSnapshot = await ensureCurrentMission({
+        recommendations: baseRecommendations,
+        events,
+    });
+
+    const mission = buildMissionContract(missionSnapshot?.mission);
+
+    const masteryEvents = masteryFromEvents(events, missionSnapshot?.content?.masteryThresholds || DEFAULT_MASTERY_THRESHOLDS);
+    const mastery = {
+        games: masteryEvents.games,
+        songs: masteryEvents.songs,
+        skills: skillMastery(skillScores),
+    };
+
+    const nextActions = buildNextActions({
+        mission,
+        recommendedGameId,
+        recommendedGameLabel,
+        weakestSkill,
+        songLevel,
+    });
+
+    return {
+        ...baseRecommendations,
+        mission,
+        mastery,
+        nextActions,
     };
 };
 

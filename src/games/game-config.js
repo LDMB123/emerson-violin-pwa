@@ -208,3 +208,44 @@ export const GAME_META = {
         },
     },
 };
+
+export const GAME_OBJECTIVE_TIERS = Object.freeze(['foundation', 'core', 'mastery']);
+
+export const DEFAULT_MASTERY_THRESHOLDS = Object.freeze({
+    bronze: 60,
+    silver: 80,
+    gold: 92,
+    distinctDays: 3,
+});
+
+const toObjective = (step, index) => ({
+    id: `${step?.id || `objective-${index + 1}`}`,
+    label: step?.label || `Objective ${index + 1}`,
+    cue: step?.cue || '',
+    minutes: Math.max(1, Math.round(step?.minutes || 2)),
+});
+
+const defaultObjectivePacks = (steps = []) => {
+    const objectives = steps.map(toObjective);
+    const foundation = objectives.slice(0, Math.min(2, objectives.length));
+    const core = objectives.slice(0, Math.min(3, objectives.length));
+    return {
+        foundation: foundation.length ? foundation : objectives.slice(0, 1),
+        core: core.length ? core : objectives.slice(0, 1),
+        mastery: objectives.length ? objectives : [{
+            id: 'objective-mastery',
+            label: 'Complete mastery drill',
+            cue: 'Play with clean accuracy and consistency.',
+            minutes: 3,
+        }],
+    };
+};
+
+Object.values(GAME_META).forEach((meta) => {
+    if (!meta.objectivePacks) {
+        meta.objectivePacks = defaultObjectivePacks(meta.steps || []);
+    }
+    if (!meta.masteryThresholds) {
+        meta.masteryThresholds = DEFAULT_MASTERY_THRESHOLDS;
+    }
+});
