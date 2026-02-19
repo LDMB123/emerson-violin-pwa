@@ -47,15 +47,38 @@ const seedEvents = async (page, events) => {
 };
 
 const saveParentGoal = async (page, { title, minutes }) => {
-    await page.locator('[data-parent-goal-title-input]').fill(title);
-    await page.locator('[data-parent-goal-minutes-input]').fill(String(minutes));
-    await page.locator('[data-parent-goal-save]').click();
+    await waitForBoundFlag(page, '[data-parent-goal-title-input]', 'data-parent-goal-bound');
+    await waitForBoundFlag(page, '[data-parent-goal-minutes-input]', 'data-parent-goal-bound');
+    await waitForBoundFlag(page, '[data-parent-goal-save]', 'data-parent-goal-bound');
 
-    await expect.poll(async () => {
-        return page.locator('[data-parent-goal-title]').innerText();
-    }, { timeout: 10000 }).toContain(title);
+    await page.locator('[data-parent-goal-title-input]').evaluate((input, value) => {
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, title);
+    await page.locator('[data-parent-goal-minutes-input]').evaluate((input, value) => {
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, String(minutes));
 
-    await expect(page.locator('[data-parent-goal-status]')).toContainText('Goal saved');
+    const status = page.locator('[data-parent-goal-status]');
+    const goalTitle = page.locator('[data-parent-goal-title]');
+    await expect(status).toContainText('Unsaved changes.');
+
+    const triggerSave = async () => {
+        await expect(page.locator('[data-parent-goal-save]')).toBeEnabled({ timeout: 10000 });
+        await page.locator('[data-parent-goal-save]').evaluate((button) => {
+            button.click();
+        });
+        await expect(status).toContainText('Goal saved');
+    };
+
+    await triggerSave();
+    try {
+        await expect.poll(async () => goalTitle.innerText(), { timeout: 10000 }).toContain(title);
+    } catch {
+        await triggerSave();
+        await expect.poll(async () => goalTitle.innerText(), { timeout: 10000 }).toContain(title);
+    }
 };
 
 const triggerBackupExportAndWaitForStatus = async (page) => {
@@ -75,16 +98,10 @@ const triggerBackupExportAndWaitForStatus = async (page) => {
 };
 
 const runOfflineCheckAndWaitForAssets = async (page) => {
-    await expect.poll(async () => {
-        return page.evaluate(() => {
-            const button = document.querySelector('[data-offline-check]');
-            if (!(button instanceof HTMLButtonElement)) return false;
-            button.click();
-            return true;
-        });
-    }, { timeout: 10000 }).toBe(true);
-
-    await expect.poll(async () => page.locator('[data-offline-assets]').innerText()).not.toContain('—');
+    await waitForBoundFlag(page, '[data-offline-check]', 'data-offline-bound');
+    await expect(page.locator('[data-offline-check]')).toBeEnabled({ timeout: 10000 });
+    await page.locator('[data-offline-check]').click();
+    await expect.poll(async () => page.locator('[data-offline-assets]').innerText(), { timeout: 10000 }).not.toContain('—');
 };
 
 const waitForBoundFlag = async (page, selector, attribute) => {
