@@ -1,13 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
 
-const seedSongEvents = async (page, events) => {
-    await page.evaluate(async ({ seededEvents }) => {
-        const key = 'panda-violin:events:v1';
-        const fallbackKey = `panda-violin:kv:${key}`;
-
-        localStorage.setItem(key, JSON.stringify(seededEvents));
-        localStorage.setItem(fallbackKey, JSON.stringify(seededEvents));
+const seedKVValue = async (page, key, value) => {
+    await page.evaluate(async ({ targetKey, targetValue }) => {
+        const fallbackKey = `panda-violin:kv:${targetKey}`;
+        localStorage.setItem(targetKey, JSON.stringify(targetValue));
+        localStorage.setItem(fallbackKey, JSON.stringify(targetValue));
 
         await new Promise((resolve, reject) => {
             const request = indexedDB.open('panda-violin-db', 2);
@@ -26,7 +24,7 @@ const seedSongEvents = async (page, events) => {
             request.onsuccess = () => {
                 const db = request.result;
                 const tx = db.transaction('kv', 'readwrite');
-                tx.objectStore('kv').put(seededEvents, key);
+                tx.objectStore('kv').put(targetValue, targetKey);
                 tx.oncomplete = () => {
                     db.close();
                     resolve();
@@ -43,7 +41,12 @@ const seedSongEvents = async (page, events) => {
                 };
             };
         });
+    }, { targetKey: key, targetValue: value });
+};
 
+const seedSongEvents = async (page, events) => {
+    await seedKVValue(page, 'panda-violin:events:v1', events);
+    await page.evaluate(() => {
         document.dispatchEvent(new CustomEvent('panda:song-recorded', {
             detail: {
                 id: 'gavotte',
@@ -51,7 +54,7 @@ const seedSongEvents = async (page, events) => {
                 timestamp: Date.now(),
             },
         }));
-    }, { seededEvents: events });
+    });
 };
 
 test('coach tools stay functional after leaving and returning to coach', async ({ page }) => {
@@ -169,7 +172,7 @@ test('games favorites filter uses persisted player favorites', async ({ page }) 
         .toHaveAttribute('aria-pressed', 'true');
 });
 
-test('challenge songs unlock after 3 clean practice songs', async ({ page }) => {
+test('challenge songs stay locked until curriculum prerequisites are met', async ({ page }) => {
     await openHome(page);
 
     await page.goto('/#view-songs');
@@ -194,6 +197,61 @@ test('challenge songs unlock after 3 clean practice songs', async ({ page }) => 
         { type: 'song', id: 'minuet_1', accuracy: 88, day, timestamp: now - 2000 },
         { type: 'song', id: 'gavotte', accuracy: 91, day, timestamp: now - 1000 },
     ]);
+
+    await expect(challengeCard).toHaveClass(/is-locked/);
+    await expect(challengeHint).toContainText('Locked: complete curriculum prerequisites');
+
+    await seedKVValue(page, 'panda-violin:curriculum-state-v1', {
+        version: 1,
+        currentUnitId: 'u-int-04',
+        activeMissionId: null,
+        currentMission: null,
+        completedUnitIds: ['u-int-03', 'u-int-04'],
+        unitProgress: {},
+        lastUpdatedAt: now,
+    });
+
+    await seedKVValue(page, 'panda-violin:song-progress-v2', {
+        version: 2,
+        songs: {
+            ode_to_joy: {
+                attempts: 1,
+                bestAccuracy: 82,
+                bestTiming: 82,
+                bestIntonation: 80,
+                bestStars: 3,
+                sectionProgress: {},
+                checkpoint: null,
+                updatedAt: now - 3000,
+            },
+            minuet_1: {
+                attempts: 1,
+                bestAccuracy: 88,
+                bestTiming: 88,
+                bestIntonation: 87,
+                bestStars: 4,
+                sectionProgress: {},
+                checkpoint: null,
+                updatedAt: now - 2000,
+            },
+            gavotte: {
+                attempts: 1,
+                bestAccuracy: 91,
+                bestTiming: 91,
+                bestIntonation: 90,
+                bestStars: 4,
+                sectionProgress: {},
+                checkpoint: null,
+                updatedAt: now - 1000,
+            },
+        },
+    });
+
+    await page.evaluate(() => {
+        document.dispatchEvent(new CustomEvent('panda:song-recorded', {
+            detail: { id: 'gavotte', accuracy: 91, timestamp: Date.now() },
+        }));
+    });
 
     await expect(challengeCard).not.toHaveClass(/is-locked/);
     await expect(challengeHint).toContainText('Unlocked');
