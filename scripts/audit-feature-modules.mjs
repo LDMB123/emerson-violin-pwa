@@ -81,6 +81,65 @@ const coverageSummaryPath = toAbsPath('coverage/coverage-summary.json');
 const coverageSummary = fs.existsSync(coverageSummaryPath)
     ? JSON.parse(fs.readFileSync(coverageSummaryPath, 'utf8'))
     : null;
+const normalizeSeparators = (value) => value.replace(/\\/g, '/');
+const normalizeCoverageKey = (value) => normalizeSeparators(path.normalize(value));
+const coverageSummaryEntries = coverageSummary
+    ? Object.entries(coverageSummary).filter(([key]) => key !== 'total')
+    : [];
+const coverageEntryByPath = new Map();
+
+if (coverageSummary) {
+    const registerCoverageKey = (key, value) => {
+        if (!key) return;
+        coverageEntryByPath.set(key, value);
+        coverageEntryByPath.set(path.normalize(key), value);
+        coverageEntryByPath.set(normalizeSeparators(key), value);
+        coverageEntryByPath.set(normalizeCoverageKey(key), value);
+    };
+
+    coverageSummaryEntries.forEach(([rawKey, value]) => {
+        registerCoverageKey(rawKey, value);
+        const absoluteKey = path.isAbsolute(rawKey)
+            ? path.normalize(rawKey)
+            : path.normalize(toAbsPath(rawKey));
+        registerCoverageKey(absoluteKey, value);
+        const relativeKey = toRelativePath(absoluteKey);
+        registerCoverageKey(relativeKey, value);
+        registerCoverageKey(`./${relativeKey}`, value);
+    });
+}
+
+const findCoverageEntry = (relativePath) => {
+    if (!coverageSummary) return null;
+    const absolutePath = path.normalize(toAbsPath(relativePath));
+    const normalizedRelativePath = path.normalize(relativePath);
+    const relativeFromRoot = toRelativePath(absolutePath);
+    const candidates = [
+        absolutePath,
+        normalizeSeparators(absolutePath),
+        normalizedRelativePath,
+        normalizeSeparators(normalizedRelativePath),
+        relativeFromRoot,
+        normalizeSeparators(relativeFromRoot),
+        `./${relativeFromRoot}`,
+        `./${normalizeSeparators(relativeFromRoot)}`,
+    ];
+
+    for (const candidate of candidates) {
+        const coverage = coverageEntryByPath.get(candidate);
+        if (coverage) return coverage;
+    }
+
+    const targetSuffix = normalizeSeparators(relativeFromRoot);
+    for (const [rawKey, value] of coverageSummaryEntries) {
+        const normalizedKey = normalizeCoverageKey(rawKey);
+        if (normalizedKey === targetSuffix || normalizedKey.endsWith(`/${targetSuffix}`)) {
+            return value;
+        }
+    }
+
+    return null;
+};
 
 const getCoverageInfo = (relativePath) => {
     if (!coverageSummary) {
@@ -95,7 +154,7 @@ const getCoverageInfo = (relativePath) => {
             branchPct: null,
         };
     }
-    const coverage = coverageSummary[toAbsPath(relativePath)];
+    const coverage = findCoverageEntry(relativePath);
     if (!coverage?.lines && !coverage?.functions && !coverage?.branches) {
         return {
             coveredLines: null,
