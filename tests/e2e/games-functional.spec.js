@@ -1,6 +1,21 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
 
+const emitPitchLockFeature = async (page, note = 'A') => {
+    await page.evaluate(({ targetNote }) => {
+        document.dispatchEvent(new CustomEvent('panda:rt-state', {
+            detail: {
+                paused: false,
+                lastFeature: {
+                    note: targetNote,
+                    cents: 0,
+                    hasSignal: true,
+                },
+            },
+        }));
+    }, { targetNote: note });
+};
+
 test('games remain interactive after leaving and re-entering the same game', async ({ page }) => {
     await openHome(page);
 
@@ -14,6 +29,7 @@ test('games remain interactive after leaving and re-entering the same game', asy
 
     const firstScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
     await expect(firstScore).toHaveText('0');
+    await emitPitchLockFeature(page, 'A');
     await page.locator('#view-game-pitch-quest [data-pitch="check"]').click();
     await expect(firstScore).not.toHaveText('0');
 
@@ -29,6 +45,7 @@ test('games remain interactive after leaving and re-entering the same game', asy
 
     const secondScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
     await expect(secondScore).toHaveText('0');
+    await emitPitchLockFeature(page, 'A');
     await page.locator('#view-game-pitch-quest [data-pitch="check"]').click();
     await expect(secondScore).not.toHaveText('0');
 });
