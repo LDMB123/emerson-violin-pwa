@@ -28,14 +28,24 @@ test('critical views should not emit runtime page/console errors', async ({ page
 
     const criticalViews = [
         'view-home',
+        'view-onboarding',
         'view-coach',
         'view-games',
         'view-tuner',
         'view-trainer',
+        'view-bowing',
+        'view-posture',
         'view-songs',
         'view-progress',
+        'view-analysis',
+        'view-backup',
+        'view-help',
+        'view-about',
         'view-settings',
         'view-parent',
+        'view-game-pitch-quest',
+        'view-game-ear-trainer',
+        'view-song-twinkle',
     ];
 
     for (const viewId of criticalViews) {

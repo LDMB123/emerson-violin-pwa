@@ -48,3 +48,18 @@ test('all song detail routes load and playhead controls toggle', async ({ page }
         await expect(toggle).not.toBeChecked();
     }
 });
+
+test('song play mode auto-stops when the run duration completes', async ({ page }) => {
+    test.setTimeout(40000);
+    await openHome(page);
+
+    const viewId = 'view-song-twinkle';
+    await page.goto('/#view-song-twinkle');
+    await expect(page.locator(`#${viewId}`)).toBeVisible();
+
+    const toggle = page.locator(`#${viewId} .song-play-toggle`);
+    await page.locator(`#${viewId} label.btn-start`).click();
+    await expect(toggle).toBeChecked();
+
+    await expect(toggle).not.toBeChecked({ timeout: 18000 });
+});
