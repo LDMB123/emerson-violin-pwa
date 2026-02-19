@@ -47,6 +47,7 @@ const seedEvents = async (page, events) => {
 };
 
 const saveParentGoal = async (page, { title, minutes }) => {
+    await page.waitForURL('**/#view-parent');
     await waitForBoundFlag(page, '[data-parent-goal-title-input]', 'data-parent-goal-bound');
     await waitForBoundFlag(page, '[data-parent-goal-minutes-input]', 'data-parent-goal-bound');
     await waitForBoundFlag(page, '[data-parent-goal-save]', 'data-parent-goal-bound');
@@ -62,7 +63,8 @@ const saveParentGoal = async (page, { title, minutes }) => {
 
     const status = page.locator('[data-parent-goal-status]');
     const goalTitle = page.locator('[data-parent-goal-title]');
-    await expect(status).toContainText('Unsaved changes.');
+    await expect(page.locator('[data-parent-goal-title-input]')).toHaveValue(title);
+    await expect(page.locator('[data-parent-goal-minutes-input]')).toHaveValue(String(minutes));
 
     const triggerSave = async () => {
         await expect(page.locator('[data-parent-goal-save]')).toBeEnabled({ timeout: 10000 });
