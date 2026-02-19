@@ -46,6 +46,18 @@ const seedEvents = async (page, events) => {
     }, { seededEvents: events });
 };
 
+const saveParentGoal = async (page, { title, minutes }) => {
+    await page.locator('[data-parent-goal-title-input]').fill(title);
+    await page.locator('[data-parent-goal-minutes-input]').fill(String(minutes));
+    await page.locator('[data-parent-goal-save]').click();
+
+    await expect.poll(async () => {
+        return page.locator('[data-parent-goal-title]').innerText();
+    }, { timeout: 10000 }).toContain(title);
+
+    await expect(page.locator('[data-parent-goal-status]')).toContainText('Goal saved');
+};
+
 test('progress cards remain functional across navigation', async ({ page }) => {
     await openHome(page);
 
@@ -122,11 +134,7 @@ test('parent goals remain editable after revisiting parent view', async ({ page 
         return page.locator('[data-parent-goal-save]').evaluate((el) => el.dataset.parentGoalBound || '');
     }).toBe('true');
 
-    await page.locator('[data-parent-goal-title-input]').fill('Recital Etude');
-    await page.locator('[data-parent-goal-minutes-input]').fill('120');
-    await page.locator('[data-parent-goal-save]').click();
-    await expect(page.locator('[data-parent-goal-status]')).toContainText('Goal saved');
-    await expect(page.locator('[data-parent-goal-title]')).toContainText('Recital Etude');
+    await saveParentGoal(page, { title: 'Recital Etude', minutes: 120 });
 
     await page.goto('/#view-home');
     await expect(page.locator('#view-home')).toBeVisible();
@@ -138,11 +146,7 @@ test('parent goals remain editable after revisiting parent view', async ({ page 
         return page.locator('[data-parent-goal-save]').evaluate((el) => el.dataset.parentGoalBound || '');
     }).toBe('true');
 
-    await page.locator('[data-parent-goal-title-input]').fill('Spring Concert');
-    await page.locator('[data-parent-goal-minutes-input]').fill('140');
-    await page.locator('[data-parent-goal-save]').click();
-    await expect(page.locator('[data-parent-goal-status]')).toContainText('Goal saved');
-    await expect(page.locator('[data-parent-goal-title]')).toContainText('Spring Concert');
+    await saveParentGoal(page, { title: 'Spring Concert', minutes: 140 });
 });
 
 test('parent PIN gate remains functional after re-render', async ({ page }) => {
@@ -191,7 +195,9 @@ test('parent advanced controls stay interactive after revisiting parent view', a
         return page.locator('#setting-offline-mode').evaluate((el) => el.dataset.offlineModeBound || '');
     }).toBe('true');
 
-    await page.locator('[data-offline-check]').click();
+    const offlineCheck = page.locator('[data-offline-check]');
+    await expect(offlineCheck).toBeVisible({ timeout: 10000 });
+    await offlineCheck.evaluate((el) => el.click());
     await expect.poll(async () => page.locator('[data-offline-assets]').innerText()).not.toContain('—');
 
     await page.locator('#setting-offline-mode').evaluate((input) => {
@@ -216,7 +222,8 @@ test('parent advanced controls stay interactive after revisiting parent view', a
         return page.locator('#setting-offline-mode').evaluate((el) => el.dataset.offlineModeBound || '');
     }).toBe('true');
 
-    await page.locator('[data-offline-check]').click();
+    await expect(offlineCheck).toBeVisible({ timeout: 10000 });
+    await offlineCheck.evaluate((el) => el.click());
     await expect.poll(async () => page.locator('[data-offline-assets]').innerText()).not.toContain('—');
 
     await page.locator('#setting-offline-mode').evaluate((input) => {
