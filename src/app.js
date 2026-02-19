@@ -7,7 +7,7 @@ import {
 } from './utils/app-utils.js';
 import { getAudioPath } from './audio/format-detection.js';
 import { ViewLoader } from './views/view-loader.js';
-import { getViewPath } from './views/view-paths.js';
+import { getRouteMeta, getViewPath } from './views/view-paths.js';
 import { showViewError } from './views/view-error.js';
 import { canRegisterServiceWorker } from './platform/sw-support.js';
 import {
@@ -21,6 +21,8 @@ import './progress/achievement-celebrate.js';
 
 const viewLoader = new ViewLoader();
 const viewRenderGate = createAsyncGate();
+const SW_CACHE_PREFIXES = ['panda-violin-', 'workbox-'];
+const DEV_SW_RESET_FLAG = 'panda-violin-dev-sw-reset';
 
 const loaded = new Map();
 const loadModule = (key) => {
@@ -30,6 +32,7 @@ const loadModule = (key) => {
     const promise = loader().catch((error) => {
         loaded.delete(key);
         console.warn(`[App] Failed to load ${key}`, error);
+        return null;
     });
     loaded.set(key, promise);
     return promise;
@@ -58,10 +61,20 @@ const loadIdle = (key, delay = 0) => {
 
 const getCurrentViewId = () => getViewId(window.location.hash);
 
-const loadForView = (viewId) => {
+const runModuleInit = (module) => {
+    if (!module || typeof module.init !== 'function') return;
+    try {
+        module.init();
+    } catch (error) {
+        console.warn('[App] Module init failed', error);
+    }
+};
+
+const loadForView = async (viewId) => {
     if (!viewId) return;
     const modules = getModulesForView(viewId);
-    modules.forEach((module) => loadModule(module));
+    const loadedModules = await Promise.all(modules.map((module) => loadModule(module)));
+    loadedModules.forEach((module) => runModuleInit(module));
 };
 
 const skeletonHTML = `<div class="skeleton-view" aria-hidden="true">
@@ -78,6 +91,118 @@ const activateLoadedView = (container) => {
     container.querySelectorAll('.view').forEach((view) => {
         view.classList.add('is-active');
         view.removeAttribute('hidden');
+    });
+};
+
+const applyViewPersona = (viewId) => {
+    const meta = getRouteMeta(viewId);
+    const persona = meta?.persona || 'child';
+    document.documentElement.dataset.uiMode = persona;
+    document.documentElement.dataset.navGroup = meta?.navGroup || 'utility';
+};
+
+const bindChildHomeActions = () => {
+    const startBtn = document.querySelector('[data-start-practice]');
+    const continueBtn = document.querySelector('[data-continue-practice]');
+    const toHashRoute = (target) => {
+        if (!target) return '#view-coach';
+        if (target.startsWith('#')) return target;
+        if (target.startsWith('view-')) return `#${target}`;
+        return `#view-game-${target}`;
+    };
+    const setContinueHref = (target) => {
+        const href = toHashRoute(target || document.documentElement.dataset.practiceContinueHref || 'view-coach');
+        document.documentElement.dataset.practiceContinueHref = href;
+        if (continueBtn) {
+            continueBtn.setAttribute('href', href);
+        }
+    };
+
+    if (startBtn && startBtn.dataset.bound !== 'true') {
+        startBtn.dataset.bound = 'true';
+        startBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            window.location.hash = '#view-coach';
+        });
+    }
+
+    if (continueBtn) {
+        setContinueHref(document.documentElement.dataset.practiceContinueHref || 'view-coach');
+        if (continueBtn.dataset.bound !== 'true') {
+            continueBtn.dataset.bound = 'true';
+            continueBtn.addEventListener('click', () => {
+                setContinueHref(document.documentElement.dataset.practiceContinueHref || 'view-coach');
+            });
+        }
+        if (continueBtn.dataset.recommendationBound !== 'true') {
+            continueBtn.dataset.recommendationBound = 'true';
+            import('./ml/recommendations.js')
+                .then(({ getLearningRecommendations }) => getLearningRecommendations())
+                .then((recs) => {
+                    const stepCta = recs?.lessonSteps?.find((step) => step?.cta)?.cta;
+                    const recommended = stepCta || recs?.recommendedGameId || 'view-coach';
+                    setContinueHref(recommended);
+                })
+                .catch(() => {
+                    setContinueHref(document.documentElement.dataset.practiceContinueHref || 'view-coach');
+                });
+        }
+    }
+};
+
+const bindGameSort = () => {
+    const sortControls = Array.from(document.querySelectorAll('input[name="game-sort"]'));
+    const cards = Array.from(document.querySelectorAll('.game-card[data-sort-tags]'));
+    if (!sortControls.length || !cards.length) return;
+
+    const applySort = () => {
+        const selected = sortControls.find((control) => control.checked)?.value || 'quick';
+        cards.forEach((card) => {
+            const tags = (card.dataset.sortTags || '')
+                .split(',')
+                .map((token) => token.trim())
+                .filter(Boolean);
+            const visible = selected === 'all' || tags.includes(selected);
+            card.classList.toggle('is-hidden', !visible);
+            card.setAttribute('aria-hidden', visible ? 'false' : 'true');
+        });
+    };
+
+    sortControls.forEach((control) => {
+        if (control.dataset.bound === 'true') return;
+        control.dataset.bound = 'true';
+        control.addEventListener('change', applySort);
+    });
+    applySort();
+};
+
+const bindCoachStepper = () => {
+    const tabs = Array.from(document.querySelectorAll('[data-coach-step-target]'));
+    const cards = Array.from(document.querySelectorAll('[data-coach-step-card]'));
+    if (!tabs.length || !cards.length) return;
+
+    const activate = (target) => {
+        tabs.forEach((tab) => {
+            const active = tab.dataset.coachStepTarget === target;
+            tab.classList.toggle('is-active', active);
+            tab.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+
+        cards.forEach((card) => {
+            const active = card.dataset.coachStepCard === target;
+            card.classList.toggle('is-active', active);
+            card.hidden = !active;
+            card.setAttribute('aria-hidden', active ? 'false' : 'true');
+        });
+    };
+
+    tabs.forEach((tab, index) => {
+        if (tab.dataset.bound === 'true') return;
+        tab.dataset.bound = 'true';
+        tab.addEventListener('click', () => activate(tab.dataset.coachStepTarget));
+        if (index === 0 && tab.classList.contains('is-active')) {
+            activate(tab.dataset.coachStepTarget);
+        }
     });
 };
 
@@ -109,8 +234,14 @@ const showView = async (viewId, enhanceCallback) => {
             enhanceCallback();
         }
 
+        document.dispatchEvent(new CustomEvent('panda:view-rendered', { detail: { viewId } }));
+
         // Load modules for this view
-        loadForView(viewId);
+        await loadForView(viewId);
+        applyViewPersona(viewId);
+        bindChildHomeActions();
+        bindGameSort();
+        bindCoachStepper();
     } catch (err) {
         if (!viewRenderGate.isActive(renderToken)) return;
         console.error('[App] View load failed:', err);
@@ -118,9 +249,46 @@ const showView = async (viewId, enhanceCallback) => {
     }
 };
 
+const onWindowLoad = (callback) => {
+    if (document.readyState === 'complete') {
+        callback();
+        return;
+    }
+    window.addEventListener('load', callback, { once: true });
+};
+
+const cleanupDevServiceWorkers = async () => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const wasControlled = Boolean(navigator.serviceWorker.controller);
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+
+    if ('caches' in window) {
+        const keys = await caches.keys();
+        const appKeys = keys.filter((key) => SW_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix)));
+        await Promise.all(appKeys.map((key) => caches.delete(key)));
+    }
+
+    if (wasControlled) {
+        const alreadyReloaded = window.sessionStorage.getItem(DEV_SW_RESET_FLAG) === '1';
+        if (!alreadyReloaded) {
+            window.sessionStorage.setItem(DEV_SW_RESET_FLAG, '1');
+            window.location.reload();
+        }
+        return;
+    }
+
+    window.sessionStorage.removeItem(DEV_SW_RESET_FLAG);
+};
+
 const registerServiceWorker = () => {
-    if (!canRegisterServiceWorker()) return;
-    window.addEventListener('load', () => {
+    onWindowLoad(() => {
+        if (!import.meta.env.PROD) {
+            cleanupDevServiceWorkers().catch((err) => console.warn('[SW] dev cleanup failed', err));
+            return;
+        }
+        if (!canRegisterServiceWorker()) return;
         navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch((err) => console.warn('[SW] registration failed', err));
     });
 };
@@ -225,7 +393,7 @@ const setupPopoverSystem = (ctx) => {
 const setupNavigation = (ctx) => {
     const shouldAnimateNav = () => {
         if (ctx.prefersReducedMotion()) return false;
-        if (ctx.reduceMotionToggle?.checked) return false;
+        if (document.querySelector('#setting-reduce-motion')?.checked) return false;
         return true;
     };
 
@@ -310,7 +478,6 @@ const boot = async () => {
     const ctx = {
         navItems: Array.from(document.querySelectorAll('.bottom-nav .nav-item[href^="#view-"]')),
         prefersReducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-        reduceMotionToggle: document.querySelector('#setting-reduce-motion'),
         lastPopoverTrigger: null,
         updateNavState: null,
     };

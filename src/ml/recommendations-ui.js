@@ -3,9 +3,16 @@ import { SKILL_LABELS } from '../utils/recommendations-utils.js';
 import { toLessonLink } from '../utils/lesson-plan-utils.js';
 import { GOAL_TARGET_CHANGE, ML_UPDATE, ML_RESET, ML_RECS } from '../utils/event-names.js';
 
-const panels = Array.from(document.querySelectorAll('[data-lesson-plan]'));
-const stepLists = Array.from(document.querySelectorAll('[data-lesson-steps]'));
-const goalList = document.querySelector('[data-goal-list]');
+let panels = [];
+let stepLists = [];
+let goalList = null;
+let globalsBound = false;
+
+const resolveElements = () => {
+    panels = Array.from(document.querySelectorAll('[data-lesson-plan]'));
+    stepLists = Array.from(document.querySelectorAll('[data-lesson-steps]'));
+    goalList = document.querySelector('[data-goal-list]');
+};
 
 const formatBpm = (value) => `${Math.round(value)} BPM`;
 const formatMinutes = (value) => `${Math.max(0, Math.round(value || 0))} min`;
@@ -104,8 +111,18 @@ const refreshPanels = async () => {
     }
 };
 
-refreshPanels();
+const bindGlobalListeners = () => {
+    if (globalsBound) return;
+    globalsBound = true;
+    document.addEventListener(ML_UPDATE, refreshPanels);
+    document.addEventListener(ML_RESET, refreshPanels);
+    document.addEventListener(ML_RECS, refreshPanels);
+};
 
-document.addEventListener(ML_UPDATE, refreshPanels);
-document.addEventListener(ML_RESET, refreshPanels);
-document.addEventListener(ML_RECS, refreshPanels);
+const initRecommendationsUi = () => {
+    resolveElements();
+    bindGlobalListeners();
+    refreshPanels();
+};
+
+export const init = initRecommendationsUi;

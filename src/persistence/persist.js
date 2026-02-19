@@ -1,7 +1,7 @@
 import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from './storage.js';
 import { UI_STATE_KEY as STORAGE_KEY } from './storage-keys.js';
-import { PERSIST_APPLIED } from '../utils/event-names.js';
+import { PERSIST_APPLIED, SOUNDS_CHANGE } from '../utils/event-names.js';
 
 const IGNORE_IDS = new Set(['focus-timer']);
 const IGNORE_PREFIXES = ['song-play-'];
@@ -54,9 +54,20 @@ const applyState = (state) => {
     document.dispatchEvent(new CustomEvent(PERSIST_APPLIED, { detail: state }));
 };
 
+const applyDerivedState = (state) => {
+    const soundsEnabled = state?.checks?.['setting-sounds'] !== false;
+    const voiceEnabled = state?.checks?.['setting-voice'] === true;
+    const recordingsEnabled = state?.checks?.['setting-recordings'] === true;
+    document.documentElement.dataset.sounds = soundsEnabled ? 'on' : 'off';
+    document.documentElement.dataset.voiceCoach = voiceEnabled ? 'on' : 'off';
+    document.documentElement.dataset.recordings = recordingsEnabled ? 'on' : 'off';
+    document.dispatchEvent(new CustomEvent(SOUNDS_CHANGE, { detail: { enabled: soundsEnabled } }));
+};
+
 const initPersistence = async () => {
     const state = await loadState();
     applyState(state);
+    applyDerivedState(state);
 
     document.addEventListener('change', (event) => {
         const input = event.target;
@@ -66,6 +77,9 @@ const initPersistence = async () => {
         if (input.type === 'checkbox' && input.id) {
             state.checks[input.id] = input.checked;
             saveState(state);
+            if (input.id === 'setting-sounds' || input.id === 'setting-voice' || input.id === 'setting-recordings') {
+                applyDerivedState(state);
+            }
             return;
         }
 

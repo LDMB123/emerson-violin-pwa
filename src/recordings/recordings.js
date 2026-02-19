@@ -2,6 +2,7 @@ import { whenReady } from '../utils/dom-ready.js';
 import { setJSON, setBlob, removeBlob } from '../persistence/storage.js';
 import { loadRecordings } from '../persistence/loaders.js';
 import { dataUrlToBlob, blobToDataUrl } from '../utils/recording-export.js';
+import { isRecordingEnabled } from '../utils/feature-flags.js';
 import {
     getSongIdFromViewId,
     getSongIdFromHash,
@@ -11,8 +12,8 @@ import {
 import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 import { RECORDINGS_UPDATED } from '../utils/event-names.js';
 const MAX_RECORDINGS = 4;
-const recordToggle = document.querySelector('#setting-recordings');
-const statusEl = document.querySelector('[data-recording-status]');
+let recordToggle = null;
+let statusEl = null;
 
 let recorder = null;
 let recordingStream = null;
@@ -21,6 +22,7 @@ let chunks = [];
 let permissionListenerBound = false;
 let stopPromise = null;
 let stopResolve = null;
+let globalListenersBound = false;
 
 const getSongId = (section) => getSongIdFromViewId(section?.id);
 const getCurrentSongId = () => getSongIdFromHash(window.location.hash);
@@ -34,6 +36,24 @@ const getSongTitle = (songId) => {
 const scheduleIdle = (task) => window.setTimeout(task, 400);
 
 const createBlobKey = (songId) => createRecordingBlobKey(songId);
+
+const resolveSettingsElements = () => {
+    recordToggle = document.querySelector('#setting-recordings');
+    statusEl = document.querySelector('[data-recording-status]');
+};
+
+const setRecordingStatus = (message) => {
+    resolveSettingsElements();
+    if (statusEl) statusEl.textContent = message;
+};
+
+const recordingToggleOn = () => {
+    resolveSettingsElements();
+    if (recordToggle && typeof recordToggle.checked === 'boolean') {
+        return recordToggle.checked;
+    }
+    return isRecordingEnabled();
+};
 
 const pruneBlobs = async (previous, next) => {
     const keep = new Set(next.map((entry) => entry.blobKey).filter(Boolean));
@@ -103,6 +123,8 @@ const saveRecording = async (songId, duration, blob) => {
 };
 
 const pickMimeType = () => {
+    if (typeof MediaRecorder === 'undefined') return '';
+    if (typeof MediaRecorder.isTypeSupported !== 'function') return '';
     const candidates = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
     return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || '';
 };
@@ -126,20 +148,34 @@ const stopRecording = async () => {
     recordingStream = null;
     recordingSongId = null;
     chunks = [];
-    if (statusEl && recordToggle?.checked) {
-        statusEl.textContent = 'Recording status: ready.';
+    if (recordingToggleOn()) {
+        setRecordingStatus('Recording status: ready.');
     }
 };
 
 const startRecording = async (songId) => {
-    if (!recordToggle?.checked) return;
+    if (!recordingToggleOn()) return;
     if (recorder) await stopRecording();
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+        setRecordingStatus('Recording status: microphone capture unavailable on this device.');
+        return;
+    }
+
+    if (typeof MediaRecorder === 'undefined') {
+        setRecordingStatus('Recording status: recording unsupported on this browser.');
+        return;
+    }
 
     try {
         recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-        if (recordToggle) recordToggle.checked = false;
-        if (statusEl) statusEl.textContent = 'Recording status: microphone permission denied.';
+        resolveSettingsElements();
+        if (recordToggle) {
+            recordToggle.checked = false;
+            recordToggle.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        setRecordingStatus('Recording status: microphone permission denied.');
         return;
     }
 
@@ -170,12 +206,14 @@ const startRecording = async (songId) => {
     });
 
     recorder.start();
-    if (statusEl) statusEl.textContent = 'Recording status: recording in progress.';
+    setRecordingStatus('Recording status: recording in progress.');
 };
 
 const bindSongViews = () => {
     const songViews = Array.from(document.querySelectorAll('.song-view'));
     songViews.forEach((view) => {
+        if (view.dataset.recordingsBound === 'true') return;
+        view.dataset.recordingsBound = 'true';
         const toggle = view.querySelector('.song-play-toggle');
         const sheet = view.querySelector('.song-sheet');
         const playhead = view.querySelector('.song-playhead');
@@ -184,7 +222,7 @@ const bindSongViews = () => {
         const duration = parseDuration(sheet);
 
         toggle.addEventListener('change', () => {
-            if (!recordToggle?.checked) return;
+            if (!recordingToggleOn()) return;
             if (toggle.checked) {
                 startRecording(songId);
             } else {
@@ -200,30 +238,32 @@ const bindSongViews = () => {
             });
         }
 
-        if (duration && recordToggle) {
+        if (duration) {
             view.dataset.songDuration = String(duration);
         }
     });
 };
 
 const initRecordings = () => {
+    resolveSettingsElements();
     bindSongViews();
-    if (statusEl) {
-        statusEl.textContent = 'Recording status: ready.';
-    }
+    setRecordingStatus('Recording status: ready.');
     updatePermissionState();
     scheduleIdle(() => migrateRecordingsToBlobs());
 
-    if (recordToggle) {
-        recordToggle.addEventListener('change', () => {
-            if (!recordToggle.checked) {
-                stopRecording();
-                if (statusEl) statusEl.textContent = 'Recording status: off.';
-                return;
-            }
-            updatePermissionState(true);
-        });
-    }
+    if (globalListenersBound) return;
+    globalListenersBound = true;
+
+    document.addEventListener('change', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement) || target.id !== 'setting-recordings') return;
+        if (!target.checked) {
+            stopRecording();
+            setRecordingStatus('Recording status: off.');
+            return;
+        }
+        updatePermissionState(true);
+    });
 
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
@@ -243,30 +283,32 @@ const initRecordings = () => {
 };
 
 const updatePermissionState = async (announce = false) => {
+    resolveSettingsElements();
     if (!statusEl) return;
     if (!navigator.permissions?.query) {
-        if (announce && statusEl) {
-            statusEl.textContent = 'Recording status: ready.';
-        }
+        if (announce) setRecordingStatus('Recording status: ready.');
         return;
     }
     try {
         const result = await navigator.permissions.query({ name: 'microphone' });
         const state = result.state;
         if (state === 'granted') {
-            statusEl.textContent = 'Recording status: ready.';
+            setRecordingStatus('Recording status: ready.');
         } else if (state === 'denied') {
-            statusEl.textContent = 'Recording status: microphone blocked in settings.';
+            setRecordingStatus('Recording status: microphone blocked in settings.');
         } else if (announce) {
-            statusEl.textContent = 'Recording status: allow microphone access to record.';
+            setRecordingStatus('Recording status: allow microphone access to record.');
         }
         if (!permissionListenerBound) {
             permissionListenerBound = true;
             result.addEventListener('change', () => updatePermissionState());
         }
     } catch {
-        if (announce) statusEl.textContent = 'Recording status: ready.';
+        if (announce) setRecordingStatus('Recording status: ready.');
     }
 };
+
+export { initRecordings };
+export const init = initRecordings;
 
 whenReady(initRecordings);

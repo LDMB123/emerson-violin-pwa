@@ -22,37 +22,89 @@ const BADGE_META = {
     all_games:     { name: 'Game Master',    artSrc: null },
 };
 
-const xpFillEl = document.querySelector('[data-progress="xp-fill"]');
-const xpInfoEl = document.querySelector('[data-progress="xp-info"]');
-const levelEl = document.querySelector('[data-progress="level"]');
-const streakEl = document.querySelector('[data-progress="streak-days"]');
-const homeStreakEl = document.querySelector('[data-progress="home-streak"]');
-const weekMinutesEl = document.querySelector('[data-progress="week-minutes"]');
-const levelLabelEl = document.querySelector('[data-progress="level-label"]');
-const levelFillEl = document.querySelector('[data-progress="level-fill"]');
-const dailyGoalValueEl = document.querySelector('[data-progress="daily-goal-value"]');
-const dailyGoalFillEl = document.querySelector('[data-progress="daily-goal-fill"]');
-const dailyGoalTrackEl = document.querySelector('[data-progress="daily-goal-track"]');
-const gamesLevelLabelEl = document.querySelector('[data-progress="games-level-label"]');
-const gamesLevelFillEl = document.querySelector('[data-progress="games-level-fill"]');
-const gamesLevelTrackEl = document.querySelector('[data-progress="games-level-track"]');
-const xpTrackEl = document.querySelector('[data-progress="xp-track"]');
-const coachSpeechEl = document.querySelector('[data-progress="coach-speech"]');
-const resetButton = document.querySelector('#reset-progress');
-const parentChartLineEl = document.querySelector('[data-parent="week-line"]');
-const parentChartPointsEl = document.querySelector('[data-parent="week-points"]');
-const parentSummaryEl = document.querySelector('[data-parent="week-summary"]');
-const parentGoalFillEl = document.querySelector('[data-parent="goal-fill"]');
-const parentGoalValueEl = document.querySelector('[data-parent="goal-value"]');
-const parentGoalTrackEl = document.querySelector('[data-parent="goal-track"]');
-const parentSkillStars = Array.from(document.querySelectorAll('[data-parent-skill]'));
-const coachStarsEl = document.querySelector('[data-coach="stars"]');
-const recentGameEls = Array.from(document.querySelectorAll('[data-recent-game]'));
-const recentGamesEmptyEl = document.querySelector('[data-recent-games-empty]');
+const PRACTICE_GAME_RULES = [
+    { test: /^pq-step-/, id: 'pitch-quest' },
+    { test: /^rd-set-/, id: 'rhythm-dash' },
+    { test: /^nm-card-/, id: 'note-memory' },
+    { test: /^et-step-/, id: 'ear-trainer' },
+    { test: /^bh-step-/, id: 'bow-hero' },
+    { test: /^sq-step-/, id: 'string-quest' },
+    { test: /^rp-pattern-/, id: 'rhythm-painter' },
+    { test: /^ss-step-/, id: 'story-song' },
+    { test: /^pz-step-/, id: 'pizzicato' },
+    { test: /^tt-step-/, id: 'tuning-time' },
+    { test: /^mm-step-/, id: 'melody-maker' },
+    { test: /^sp-step-/, id: 'scale-practice' },
+    { test: /^dc-step-/, id: 'duet-challenge' },
+];
 
-const achievementEls = Array.from(document.querySelectorAll('[data-achievement]'));
-const radarShapeEl = document.querySelector('[data-radar="shape"]');
-const radarPointEls = Array.from(document.querySelectorAll('.radar-point[data-skill]'));
+const FILLED_STAR = String.fromCharCode(9733);
+const EMPTY_STAR = String.fromCharCode(9734);
+
+let xpFillEl = null;
+let xpInfoEl = null;
+let levelEl = null;
+let streakEl = null;
+let homeStreakEl = null;
+let weekMinutesEl = null;
+let levelLabelEl = null;
+let levelFillEl = null;
+let dailyGoalValueEl = null;
+let dailyGoalFillEl = null;
+let dailyGoalTrackEl = null;
+let gamesLevelLabelEl = null;
+let gamesLevelFillEl = null;
+let gamesLevelTrackEl = null;
+let xpTrackEl = null;
+let coachSpeechEl = null;
+let resetButton = null;
+let parentChartLineEl = null;
+let parentChartPointsEl = null;
+let parentSummaryEl = null;
+let parentGoalFillEl = null;
+let parentGoalValueEl = null;
+let parentGoalTrackEl = null;
+let parentSkillStars = [];
+let coachStarsEl = null;
+let recentGameEls = [];
+let recentGamesEmptyEl = null;
+
+let achievementEls = [];
+let radarShapeEl = null;
+let radarPointEls = [];
+
+const resolveElements = () => {
+    xpFillEl = document.querySelector('[data-progress="xp-fill"]');
+    xpInfoEl = document.querySelector('[data-progress="xp-info"]');
+    levelEl = document.querySelector('[data-progress="level"]');
+    streakEl = document.querySelector('[data-progress="streak-days"]');
+    homeStreakEl = document.querySelector('[data-progress="home-streak"]');
+    weekMinutesEl = document.querySelector('[data-progress="week-minutes"]');
+    levelLabelEl = document.querySelector('[data-progress="level-label"]');
+    levelFillEl = document.querySelector('[data-progress="level-fill"]');
+    dailyGoalValueEl = document.querySelector('[data-progress="daily-goal-value"]');
+    dailyGoalFillEl = document.querySelector('[data-progress="daily-goal-fill"]');
+    dailyGoalTrackEl = document.querySelector('[data-progress="daily-goal-track"]');
+    gamesLevelLabelEl = document.querySelector('[data-progress="games-level-label"]');
+    gamesLevelFillEl = document.querySelector('[data-progress="games-level-fill"]');
+    gamesLevelTrackEl = document.querySelector('[data-progress="games-level-track"]');
+    xpTrackEl = document.querySelector('[data-progress="xp-track"]');
+    coachSpeechEl = document.querySelector('[data-progress="coach-speech"]');
+    resetButton = document.querySelector('#reset-progress');
+    parentChartLineEl = document.querySelector('[data-parent="week-line"]');
+    parentChartPointsEl = document.querySelector('[data-parent="week-points"]');
+    parentSummaryEl = document.querySelector('[data-parent="week-summary"]');
+    parentGoalFillEl = document.querySelector('[data-parent="goal-fill"]');
+    parentGoalValueEl = document.querySelector('[data-parent="goal-value"]');
+    parentGoalTrackEl = document.querySelector('[data-parent="goal-track"]');
+    parentSkillStars = Array.from(document.querySelectorAll('[data-parent-skill]'));
+    coachStarsEl = document.querySelector('[data-coach="stars"]');
+    recentGameEls = Array.from(document.querySelectorAll('[data-recent-game]'));
+    recentGamesEmptyEl = document.querySelector('[data-recent-games-empty]');
+    achievementEls = Array.from(document.querySelectorAll('[data-achievement]'));
+    radarShapeEl = document.querySelector('[data-radar="shape"]');
+    radarPointEls = Array.from(document.querySelectorAll('.radar-point[data-skill]'));
+};
 
 const getDailyGoalTarget = () => {
     const raw = document.documentElement.dataset.dailyGoalTarget
@@ -78,264 +130,360 @@ const updateProgressTrack = (el, percent, text) => {
     }
 };
 
-const buildProgress = async (events) => {
-    const { PlayerProgress, AchievementTracker, SkillProfile, SkillCategory, calculate_streak } = await getCore();
-    const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
-    const progress = new PlayerProgress();
-    const tracker = new AchievementTracker();
-    const skillProfile = new SkillProfile();
+const byDayAscending = (left, right) => left.day - right.day;
+const byTimestampAscending = (left, right) => (left.timestamp || 0) - (right.timestamp || 0);
 
-    const practiceEvents = events
-        .filter((event) => event.type === 'practice')
-        .slice()
-        .sort((a, b) => a.day - b.day);
+const collectPracticeEvents = (events) => events
+    .filter((event) => event.type === 'practice')
+    .slice()
+    .sort(byDayAscending);
 
+const collectGameEvents = (events) => events
+    .filter((event) => event.type === 'game')
+    .slice()
+    .sort(byTimestampAscending);
+
+const collectSongEvents = (events) => events
+    .filter((event) => event.type === 'song')
+    .slice()
+    .sort(byTimestampAscending);
+
+const createDailyMinutes = () => Array.from({ length: 7 }, () => 0);
+
+const addMinutesToDailyWindow = (dailyMinutes, currentDay, day, minutes) => {
+    const offset = currentDay - day;
+    if (offset < 0 || offset > 6) return false;
+    const index = 6 - offset;
+    dailyMinutes[index] += minutes;
+    return true;
+};
+
+const calculateStreakFromDays = (calculateStreak, uniqueDays) => calculateStreak(new Uint32Array(uniqueDays));
+
+const trackPracticeEvents = ({ practiceEvents, progress, skillProfile, calculateStreak, updateSkillProfile, currentDay, dailyMinutes }) => {
     const uniqueDays = [];
-    const seenDay = new Set();
-    const currentDay = todayDay();
-    let weekMinutes = 0;
+    const seenDays = new Set();
     let totalMinutes = 0;
-    const dailyMinutes = Array.from({ length: 7 }, () => 0);
-
-    const addToDaily = (day, minutes) => {
-        const offset = currentDay - day;
-        if (offset < 0 || offset > 6) return;
-        const index = 6 - offset;
-        dailyMinutes[index] += minutes;
-    };
+    let weekMinutes = 0;
 
     for (const event of practiceEvents) {
-        if (!seenDay.has(event.day)) {
-            seenDay.add(event.day);
+        if (!seenDays.has(event.day)) {
+            seenDays.add(event.day);
             uniqueDays.push(event.day);
         }
-        const streak = calculate_streak(new Uint32Array(uniqueDays));
+        const streak = calculateStreakFromDays(calculateStreak, uniqueDays);
         progress.log_practice(event.minutes, streak);
         totalMinutes += event.minutes;
         updateSkillProfile(skillProfile, event.id, event.minutes);
-        if (event.day >= currentDay - 6) {
+        if (addMinutesToDailyWindow(dailyMinutes, currentDay, event.day, event.minutes)) {
             weekMinutes += event.minutes;
-            addToDaily(event.day, event.minutes);
         }
     }
 
-    const gameEvents = events
-        .filter((event) => event.type === 'game')
-        .slice()
-        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    return { uniqueDays, totalMinutes, weekMinutes };
+};
 
-    const bestGameScore = (id) => {
-        const scores = gameEvents
-            .filter((event) => event.id === id)
-            .map((event) => Number.isFinite(event.accuracy) ? event.accuracy : event.score)
-            .filter((value) => Number.isFinite(value));
-        return scores.length ? Math.max(...scores) : 0;
-    };
-
-    const bestGameStars = (id) => {
-        const stars = gameEvents
-            .filter((event) => event.id === id)
-            .map((event) => Number.isFinite(event.stars) ? event.stars : 0)
-            .filter((value) => Number.isFinite(value));
-        return stars.length ? Math.max(...stars) : 0;
-    };
-
+const logGameEvents = (gameEvents, progress, skillProfile, SkillCategory) => {
     for (const event of gameEvents) {
         const score = Number.isFinite(event.score) ? Math.round(event.score) : 0;
         progress.log_game_score(event.id || 'game', Math.max(0, score));
-        if (event.id === 'rhythm-dash') {
-            const accuracyScore = Number.isFinite(event.accuracy) ? event.accuracy : score;
-            skillProfile.update_skill(SkillCategory.Rhythm, clamp(accuracyScore, 20, 100));
+        if (event.id !== 'rhythm-dash') continue;
+        const accuracyScore = Number.isFinite(event.accuracy) ? event.accuracy : score;
+        skillProfile.update_skill(SkillCategory.Rhythm, clamp(accuracyScore, 20, 100));
+    }
+};
+
+const buildGameStats = (gameEvents) => {
+    const stats = new Map();
+    for (const event of gameEvents) {
+        if (!event.id) continue;
+        const entry = stats.get(event.id) || { bestScore: 0, bestStars: 0 };
+        const scoreValue = Number.isFinite(event.accuracy) ? event.accuracy : event.score;
+        if (Number.isFinite(scoreValue)) {
+            entry.bestScore = Math.max(entry.bestScore, scoreValue);
+        }
+        if (Number.isFinite(event.stars)) {
+            entry.bestStars = Math.max(entry.bestStars, event.stars);
+        }
+        stats.set(event.id, entry);
+    }
+    return stats;
+};
+
+const getGameStat = (gameStats, id, key) => gameStats.get(id)?.[key] || 0;
+
+const unlockGameAchievements = (tracker, gameStats, timestamp) => {
+    if (getGameStat(gameStats, 'pitch-quest', 'bestScore') >= 85) tracker.unlock('pitch_perfect', timestamp);
+    if (getGameStat(gameStats, 'rhythm-dash', 'bestScore') >= 85) tracker.unlock('rhythm_master', timestamp);
+    if (getGameStat(gameStats, 'ear-trainer', 'bestScore') >= 90) tracker.unlock('ear_training', timestamp);
+    if (getGameStat(gameStats, 'bow-hero', 'bestScore') >= 85 || getGameStat(gameStats, 'bow-hero', 'bestStars') >= 5) {
+        tracker.unlock('bow_hero', timestamp);
+    }
+};
+
+const inferPracticeGameId = (practiceId) => {
+    for (const rule of PRACTICE_GAME_RULES) {
+        if (rule.test.test(practiceId)) {
+            return rule.id;
         }
     }
+    return null;
+};
 
-    const now = toTrackerTimestamp(Date.now());
-    if (bestGameScore('pitch-quest') >= 85) tracker.unlock('pitch_perfect', now);
-    if (bestGameScore('rhythm-dash') >= 85) tracker.unlock('rhythm_master', now);
-    if (bestGameScore('ear-trainer') >= 90) tracker.unlock('ear_training', now);
-    if (bestGameScore('bow-hero') >= 85 || bestGameStars('bow-hero') >= 5) tracker.unlock('bow_hero', now);
-
+const collectPlayedGames = (gameEvents, practiceEvents) => {
     const playedGames = new Set(gameEvents.map((event) => event.id).filter(Boolean));
-    const practiceGameRules = [
-        { test: /^pq-step-/, id: 'pitch-quest' },
-        { test: /^rd-set-/, id: 'rhythm-dash' },
-        { test: /^nm-card-/, id: 'note-memory' },
-        { test: /^et-step-/, id: 'ear-trainer' },
-        { test: /^bh-step-/, id: 'bow-hero' },
-        { test: /^sq-step-/, id: 'string-quest' },
-        { test: /^rp-pattern-/, id: 'rhythm-painter' },
-        { test: /^ss-step-/, id: 'story-song' },
-        { test: /^pz-step-/, id: 'pizzicato' },
-        { test: /^tt-step-/, id: 'tuning-time' },
-        { test: /^mm-step-/, id: 'melody-maker' },
-        { test: /^sp-step-/, id: 'scale-practice' },
-        { test: /^dc-step-/, id: 'duet-challenge' },
-    ];
-
     for (const event of practiceEvents) {
         if (!event.id) continue;
-        for (const rule of practiceGameRules) {
-            if (rule.test.test(event.id)) {
-                playedGames.add(rule.id);
-                break;
-            }
-        }
+        const inferredId = inferPracticeGameId(event.id);
+        if (inferredId) playedGames.add(inferredId);
     }
-    if (playedGames.size >= practiceGameRules.length) tracker.unlock('all_games', now);
+    return playedGames;
+};
 
-    const finalStreak = calculate_streak(new Uint32Array(uniqueDays));
-    if (finalStreak >= 7) tracker.unlock('streak_7', now);
-    if (progress.level >= 5) tracker.unlock('level_5', now);
-    if (totalMinutes >= 100) tracker.unlock('practice_100', now);
+const unlockProgressMilestones = ({ tracker, progress, totalMinutes, streak, playedGamesCount, practiceCount, timestamp }) => {
+    if (playedGamesCount >= PRACTICE_GAME_RULES.length) tracker.unlock('all_games', timestamp);
+    if (streak >= 7) tracker.unlock('streak_7', timestamp);
+    if (progress.level >= 5) tracker.unlock('level_5', timestamp);
+    if (totalMinutes >= 100) tracker.unlock('practice_100', timestamp);
+    if (practiceCount > 0) tracker.unlock('first_note', timestamp);
+};
 
-    const recentGames = gameEvents
-        .slice(-3)
-        .reverse()
-        .map((event) => ({
-            id: event.id,
-            label: GAME_LABELS[event.id] || event.id || 'Game',
-            scoreLabel: formatRecentScore(event),
-        }));
+const buildRecentGames = (gameEvents) => gameEvents
+    .slice(-3)
+    .reverse()
+    .map((event) => ({
+        id: event.id,
+        label: GAME_LABELS[event.id] || event.id || 'Game',
+        scoreLabel: formatRecentScore(event),
+    }));
 
-    const songEvents = events
-        .filter((event) => event.type === 'song')
-        .slice()
-        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-
+const applySongEvents = ({ songEvents, progress, skillProfile, SkillCategory, currentDay, dailyMinutes }) => {
+    let weekMinutes = 0;
     for (const event of songEvents) {
         const accuracy = Number.isFinite(event.accuracy) ? Math.round(event.accuracy) : 0;
         const tier = Number.isFinite(event.tier) ? Math.round(event.tier) : accuracy;
         progress.log_song_complete(clamp(tier, 0, 100));
         skillProfile.update_skill(SkillCategory.Reading, clamp(accuracy, 30, 100));
         skillProfile.update_skill(SkillCategory.Pitch, clamp(accuracy * 0.85, 25, 100));
-        if (Number.isFinite(event.duration) && event.day >= currentDay - 6) {
-            const minutes = Math.round(Number(event.duration) / 60);
+        if (!Number.isFinite(event.duration)) continue;
+        const minutes = Math.round(Number(event.duration) / 60);
+        if (addMinutesToDailyWindow(dailyMinutes, currentDay, event.day, minutes)) {
             weekMinutes += minutes;
-            addToDaily(event.day, minutes);
         }
     }
+    return weekMinutes;
+};
 
-    if (practiceEvents.length > 0) {
-        tracker.unlock('first_note', toTrackerTimestamp(Date.now()));
-    }
-
+const applyRecordedAchievements = (events, tracker) => {
     events
         .filter((event) => event.type === 'achievement')
         .forEach((event) => {
-        tracker.unlock(event.id, toTrackerTimestamp(event.timestamp));
+            tracker.unlock(event.id, toTrackerTimestamp(event.timestamp));
+        });
+};
+
+const snapshotSkills = (skillProfile) => ({
+    pitch: skillProfile.pitch,
+    rhythm: skillProfile.rhythm,
+    bow_control: skillProfile.bow_control,
+    posture: skillProfile.posture,
+    reading: skillProfile.reading,
+});
+
+const buildProgress = async (events) => {
+    const { PlayerProgress, AchievementTracker, SkillProfile, SkillCategory, calculate_streak: calculateStreak } = await getCore();
+    const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
+    const progress = new PlayerProgress();
+    const tracker = new AchievementTracker();
+    const skillProfile = new SkillProfile();
+    const currentDay = todayDay();
+    const dailyMinutes = createDailyMinutes();
+
+    const practiceEvents = collectPracticeEvents(events);
+    const gameEvents = collectGameEvents(events);
+    const songEvents = collectSongEvents(events);
+
+    const practiceSummary = trackPracticeEvents({
+        practiceEvents,
+        progress,
+        skillProfile,
+        calculateStreak,
+        updateSkillProfile,
+        currentDay,
+        dailyMinutes,
+    });
+    logGameEvents(gameEvents, progress, skillProfile, SkillCategory);
+
+    const now = toTrackerTimestamp(Date.now());
+    const gameStats = buildGameStats(gameEvents);
+    unlockGameAchievements(tracker, gameStats, now);
+
+    const playedGames = collectPlayedGames(gameEvents, practiceEvents);
+    const streak = calculateStreakFromDays(calculateStreak, practiceSummary.uniqueDays);
+    unlockProgressMilestones({
+        tracker,
+        progress,
+        totalMinutes: practiceSummary.totalMinutes,
+        streak,
+        playedGamesCount: playedGames.size,
+        practiceCount: practiceEvents.length,
+        timestamp: now,
     });
 
-    tracker.check_progress(progress, toTrackerTimestamp(Date.now()));
+    const weekMinutes = practiceSummary.weekMinutes + applySongEvents({
+        songEvents,
+        progress,
+        skillProfile,
+        SkillCategory,
+        currentDay,
+        dailyMinutes,
+    });
 
-    const skills = {
-        pitch: skillProfile.pitch,
-        rhythm: skillProfile.rhythm,
-        bow_control: skillProfile.bow_control,
-        posture: skillProfile.posture,
-        reading: skillProfile.reading,
-    };
+    applyRecordedAchievements(events, tracker);
+    tracker.check_progress(progress, now);
 
     return {
         progress,
         tracker,
-        streak: calculate_streak(new Uint32Array(uniqueDays)),
+        streak,
         weekMinutes,
         dailyMinutes,
-        skills,
+        skills: snapshotSkills(skillProfile),
         weakestSkill: skillProfile.weakest_skill(),
-        recentGames,
+        recentGames: buildRecentGames(gameEvents),
     };
 };
 
 let pendingUIData = null;
 let rafId = 0;
 
-const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills, weakestSkill, recentGames }) => {
-    if (levelEl) levelEl.textContent = String(progress.level);
+const setFillWidth = (el, percent) => {
+    if (el) el.style.width = `${percent}%`;
+};
 
+const formatStars = (value) => {
+    const stars = clamp(Math.round(value / 20), 1, 5);
+    return `${FILLED_STAR.repeat(stars)}${EMPTY_STAR.repeat(5 - stars)}`;
+};
+
+const getXpState = (progress) => {
     const xpCurrent = progress.xp;
     const xpRemaining = progress.xp_to_next_level();
     const xpTarget = xpRemaining === 0 ? xpCurrent : xpCurrent + xpRemaining;
     const xpPercent = clamp(progress.level_progress(), 0, 100);
+    return { xpCurrent, xpTarget, xpPercent };
+};
 
-    if (xpFillEl) xpFillEl.style.width = `${xpPercent}%`;
+const renderXpState = (progress) => {
+    const { xpCurrent, xpTarget, xpPercent } = getXpState(progress);
+    if (levelEl) levelEl.textContent = String(progress.level);
+    setFillWidth(xpFillEl, xpPercent);
     if (xpInfoEl) xpInfoEl.textContent = `${xpCurrent} / ${xpTarget} XP`;
     updateProgressTrack(xpTrackEl, xpPercent, `${xpCurrent} of ${xpTarget} XP`);
-    if (levelFillEl) levelFillEl.style.width = `${xpPercent}%`;
+    setFillWidth(levelFillEl, xpPercent);
     if (levelLabelEl) levelLabelEl.textContent = `Level ${progress.level}`;
-    if (gamesLevelFillEl) gamesLevelFillEl.style.width = `${xpPercent}%`;
+    setFillWidth(gamesLevelFillEl, xpPercent);
     if (gamesLevelLabelEl) gamesLevelLabelEl.textContent = `Level ${progress.level}`;
     updateProgressTrack(gamesLevelTrackEl, xpPercent, `Level ${progress.level} progress`);
+};
 
+const renderSummary = (streak, weekMinutes, weakestSkill) => {
     if (streakEl) streakEl.textContent = String(streak);
     if (homeStreakEl) homeStreakEl.textContent = String(streak);
     if (weekMinutesEl) weekMinutesEl.textContent = String(weekMinutes);
-    if (coachSpeechEl) {
-        const textEl = coachSpeechEl.querySelector('.coach-bubble-text') || coachSpeechEl;
-        textEl.textContent = coachMessageFor(weakestSkill);
-    }
+    if (!coachSpeechEl) return;
+    const textEl = coachSpeechEl.querySelector('.coach-bubble-text') || coachSpeechEl;
+    textEl.textContent = coachMessageFor(weakestSkill);
+};
 
+const renderDailyGoal = (dailyMinutes) => {
     const goalTarget = getDailyGoalTarget();
     if (dailyGoalValueEl) dailyGoalValueEl.textContent = String(goalTarget);
-    if (dailyGoalFillEl && Array.isArray(dailyMinutes)) {
-        const todayMinutes = dailyMinutes[dailyMinutes.length - 1] || 0;
-        const percent = clamp(Math.round((todayMinutes / goalTarget) * 100), 0, 100);
-        dailyGoalFillEl.style.width = `${percent}%`;
-        updateProgressTrack(dailyGoalTrackEl, percent, `${todayMinutes} of ${goalTarget} minutes`);
+    if (!dailyGoalFillEl || !Array.isArray(dailyMinutes)) return;
+    const todayMinutes = dailyMinutes[dailyMinutes.length - 1] || 0;
+    const percent = clamp(Math.round((todayMinutes / goalTarget) * 100), 0, 100);
+    setFillWidth(dailyGoalFillEl, percent);
+    updateProgressTrack(dailyGoalTrackEl, percent, `${todayMinutes} of ${goalTarget} minutes`);
+};
+
+const buildDailyChartPoints = (dailyMinutes) => {
+    const maxMinutes = Math.max(30, ...dailyMinutes);
+    const step = 280 / 6;
+    return dailyMinutes.map((minutes, index) => {
+        const x = 20 + (index * step);
+        const ratio = minutes / maxMinutes;
+        const y = 140 - Math.round(ratio * 120);
+        return { x, y };
+    });
+};
+
+const renderParentGoals = (weekMinutes) => {
+    const weeklyTarget = getWeeklyGoalTarget();
+    const percent = clamp(Math.round((weekMinutes / weeklyTarget) * 100), 0, 100);
+    setFillWidth(parentGoalFillEl, percent);
+    updateProgressTrack(parentGoalTrackEl, percent, `${weekMinutes} of ${weeklyTarget} minutes`);
+    if (parentGoalValueEl) parentGoalValueEl.textContent = `${weekMinutes} / ${weeklyTarget}`;
+};
+
+const renderParentChart = (dailyMinutes, weekMinutes) => {
+    if (!Array.isArray(dailyMinutes)) return;
+    const points = buildDailyChartPoints(dailyMinutes);
+    if (parentChartLineEl) {
+        const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x} ${point.y}`).join(' ');
+        parentChartLineEl.setAttribute('d', path);
     }
-
-    if (Array.isArray(dailyMinutes)) {
-        const maxMinutes = Math.max(30, ...dailyMinutes);
-        const plotWidth = 280;
-        const step = plotWidth / 6;
-        const points = dailyMinutes.map((minutes, index) => {
-            const x = 20 + (index * step);
-            const ratio = minutes / maxMinutes;
-            const y = 140 - Math.round(ratio * 120);
-            return { x, y };
-        });
-
-        if (parentChartLineEl) {
-            const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x} ${point.y}`).join(' ');
-            parentChartLineEl.setAttribute('d', path);
-        }
-
-        if (parentChartPointsEl) {
-            parentChartPointsEl.innerHTML = points.map((point) => `<circle cx=\"${point.x}\" cy=\"${point.y}\" r=\"4\"></circle>`).join('');
-        }
-
-        if (parentSummaryEl) parentSummaryEl.textContent = `Total: ${weekMinutes} minutes`;
-        if (parentGoalFillEl) {
-            const weeklyTarget = getWeeklyGoalTarget();
-            const percent = clamp(Math.round((weekMinutes / weeklyTarget) * 100), 0, 100);
-            parentGoalFillEl.style.width = `${percent}%`;
-            updateProgressTrack(parentGoalTrackEl, percent, `${weekMinutes} of ${weeklyTarget} minutes`);
-        }
-        if (parentGoalValueEl) {
-            const weeklyTarget = getWeeklyGoalTarget();
-            parentGoalValueEl.textContent = `${weekMinutes} / ${weeklyTarget}`;
-        }
+    if (parentChartPointsEl) {
+        parentChartPointsEl.innerHTML = points.map((point) => `<circle cx=\"${point.x}\" cy=\"${point.y}\" r=\"4\"></circle>`).join('');
     }
+    if (parentSummaryEl) parentSummaryEl.textContent = `Total: ${weekMinutes} minutes`;
+    renderParentGoals(weekMinutes);
+};
 
-    if (coachStarsEl && skills) {
-        const overall = Math.round((skills.pitch + skills.rhythm + skills.bow_control + skills.posture + skills.reading) / 5);
-        const stars = clamp(Math.round(overall / 20), 1, 5);
-        const filled = String.fromCharCode(9733);
-        const empty = String.fromCharCode(9734);
-        coachStarsEl.textContent = `${filled.repeat(stars)}${empty.repeat(5 - stars)}`;
+const renderCoachStars = (skills) => {
+    if (!coachStarsEl || !skills) return;
+    const overall = Math.round((skills.pitch + skills.rhythm + skills.bow_control + skills.posture + skills.reading) / 5);
+    coachStarsEl.textContent = formatStars(overall);
+};
+
+const renderParentSkillStars = (skills) => {
+    if (!skills || !parentSkillStars.length) return;
+    parentSkillStars.forEach((el) => {
+        const key = el.dataset.parentSkill;
+        const value = skills[key] ?? 0;
+        el.textContent = formatStars(value);
+    });
+};
+
+const triggerMascotCelebration = () => {
+    const mascot = document.querySelector('.progress-mascot');
+    if (!mascot || mascot.classList.contains('is-celebrating')) return;
+    mascot.classList.add('is-celebrating');
+    mascot.addEventListener('animationend', () => {
+        mascot.classList.remove('is-celebrating');
+    }, { once: true });
+};
+
+const dispatchAchievementUnlocked = (id) => {
+    const meta = BADGE_META[id];
+    if (!meta) return;
+    document.dispatchEvent(new CustomEvent(ACHIEVEMENT_UNLOCKED, {
+        detail: { id, name: meta.name, artSrc: meta.artSrc },
+    }));
+};
+
+const celebrateAchievementUnlock = (el, id) => {
+    el.classList.add('just-unlocked');
+    const art = el.querySelector('.badge-art');
+    if (art) {
+        art.addEventListener('animationend', () => {
+            el.classList.remove('just-unlocked');
+        }, { once: true });
     }
+    triggerMascotCelebration();
+    dispatchAchievementUnlocked(id);
+};
 
-    if (parentSkillStars.length && skills) {
-        parentSkillStars.forEach((el) => {
-            const key = el.dataset.parentSkill;
-            const value = skills[key] ?? 0;
-            const stars = clamp(Math.round(value / 20), 1, 5);
-            const filled = String.fromCharCode(9733);
-            const empty = String.fromCharCode(9734);
-            el.textContent = `${filled.repeat(stars)}${empty.repeat(5 - stars)}`;
-        });
-    }
-
+const renderAchievements = (tracker) => {
     achievementEls.forEach((el) => {
         const id = el.dataset.achievement;
         if (!id) return;
@@ -343,70 +491,63 @@ const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills,
         const unlocked = tracker.is_unlocked(id);
         el.classList.toggle('unlocked', unlocked);
         el.classList.toggle('locked', !unlocked);
-
-        // Celebrate newly unlocked badges
         if (unlocked && wasLocked) {
-            el.classList.add('just-unlocked');
-            const art = el.querySelector('.badge-art');
-            if (art) {
-                art.addEventListener('animationend', () => {
-                    el.classList.remove('just-unlocked');
-                }, { once: true });
-            }
-            // Trigger mascot celebrate animation
-            const mascot = document.querySelector('.progress-mascot');
-            if (mascot && !mascot.classList.contains('is-celebrating')) {
-                mascot.classList.add('is-celebrating');
-                mascot.addEventListener('animationend', () => {
-                    mascot.classList.remove('is-celebrating');
-                }, { once: true });
-            }
-            // Dispatch global achievement event for overlay
-            const meta = BADGE_META[id];
-            if (meta) {
-                document.dispatchEvent(new CustomEvent(ACHIEVEMENT_UNLOCKED, {
-                    detail: { id, name: meta.name, artSrc: meta.artSrc },
-                }));
-            }
+            celebrateAchievementUnlock(el, id);
         }
     });
+};
 
-    if (recentGameEls.length) {
-        const hasGames = Array.isArray(recentGames) && recentGames.length > 0;
-        recentGameEls.forEach((el, index) => {
-            const game = hasGames ? recentGames[index] : null;
-            const titleEl = el.querySelector('[data-recent-game-title]');
-            const scoreEl = el.querySelector('[data-recent-game-score]');
-            if (!game) {
-                el.hidden = true;
-                return;
-            }
-            el.hidden = false;
-            if (titleEl) titleEl.textContent = game.label;
-            if (scoreEl) scoreEl.textContent = game.scoreLabel;
-        });
-        if (recentGamesEmptyEl) recentGamesEmptyEl.hidden = hasGames;
-    }
+const renderRecentGames = (recentGames) => {
+    if (!recentGameEls.length) return;
+    const hasGames = Array.isArray(recentGames) && recentGames.length > 0;
+    recentGameEls.forEach((el, index) => {
+        const game = hasGames ? recentGames[index] : null;
+        const titleEl = el.querySelector('[data-recent-game-title]');
+        const scoreEl = el.querySelector('[data-recent-game-score]');
+        if (!game) {
+            el.hidden = true;
+            return;
+        }
+        el.hidden = false;
+        if (titleEl) titleEl.textContent = game.label;
+        if (scoreEl) scoreEl.textContent = game.scoreLabel;
+    });
+    if (recentGamesEmptyEl) recentGamesEmptyEl.hidden = hasGames;
+};
 
-    if (radarShapeEl && skills) {
-        const points = buildRadarPoints(skills);
-        radarShapeEl.setAttribute('points', points.map((p) => `${p.x},${p.y}`).join(' '));
-        radarPointEls.forEach((el) => {
-            const key = el.dataset.skill;
-            const point = points.find((p) => p.key === key);
-            if (!point) return;
-            el.setAttribute('cx', point.x);
-            el.setAttribute('cy', point.y);
-        });
-    }
+const renderRadar = (skills) => {
+    if (!radarShapeEl || !skills) return;
+    const points = buildRadarPoints(skills);
+    radarShapeEl.setAttribute('points', points.map((point) => `${point.x},${point.y}`).join(' '));
+    const pointMap = new Map(points.map((point) => [point.key, point]));
+    radarPointEls.forEach((el) => {
+        const point = pointMap.get(el.dataset.skill);
+        if (!point) return;
+        el.setAttribute('cx', point.x);
+        el.setAttribute('cy', point.y);
+    });
+};
 
+const renderPathLocks = (level) => {
     const pathNodes = document.querySelectorAll('.path-node[data-path-level]');
     pathNodes.forEach((node) => {
         const required = Number.parseInt(node.dataset.pathLevel || '1', 10);
         if (Number.isNaN(required)) return;
-        node.classList.toggle('locked', progress.level < required);
+        node.classList.toggle('locked', level < required);
     });
+};
 
+const applyUI = ({ progress, tracker, streak, weekMinutes, dailyMinutes, skills, weakestSkill, recentGames }) => {
+    renderXpState(progress);
+    renderSummary(streak, weekMinutes, weakestSkill);
+    renderDailyGoal(dailyMinutes);
+    renderParentChart(dailyMinutes, weekMinutes);
+    renderCoachStars(skills);
+    renderParentSkillStars(skills);
+    renderAchievements(tracker);
+    renderRecentGames(recentGames);
+    renderRadar(skills);
+    renderPathLocks(progress.level);
     setBadge(Math.max(0, Math.min(99, Number(streak) || 0)));
 };
 
@@ -421,9 +562,15 @@ const updateUI = (data) => {
 };
 
 const initProgress = async () => {
+    resolveElements();
     const events = await loadEvents();
     const summary = await buildProgress(events);
     updateUI(summary);
+
+    if (resetButton && resetButton.dataset.progressBound !== 'true') {
+        resetButton.dataset.progressBound = 'true';
+        resetButton.addEventListener('click', resetProgress);
+    }
 };
 
 const recordPracticeEvent = async (input) => {
@@ -513,8 +660,5 @@ document.addEventListener(GOAL_TARGET_CHANGE, async () => {
     const summary = await buildProgress(events);
     updateUI(summary);
 });
-if (resetButton) {
-    resetButton.addEventListener('click', resetProgress);
-}
-
+export const init = initProgress;
 whenReady(initProgress);

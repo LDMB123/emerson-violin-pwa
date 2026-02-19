@@ -45,6 +45,7 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         if (!stage) return;
 
         reported = false;
+        let hasReceivedInitialTuning = false;
         // Remove previous hashchange listener before clearing gameState.
         if (gameState._hashHandler) {
             window.removeEventListener('hashchange', gameState._hashHandler, { passive: true });
@@ -65,6 +66,10 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
 
         reportResult = attachTuning(id, (tuning) => {
             setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
+            if (!hasReceivedInitialTuning) {
+                hasReceivedInitialTuning = true;
+                return;
+            }
             if (typeof onReset === 'function') onReset(gameState);
         });
 

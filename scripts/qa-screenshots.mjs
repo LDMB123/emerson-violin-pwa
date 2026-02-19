@@ -20,7 +20,7 @@ const routes = [
   { name: 'progress', hash: '#view-progress' },
   { name: 'analysis', hash: '#view-analysis' },
   { name: 'parent', hash: '#view-parent' },
-  { name: 'more', hash: '#view-home', action: 'open-more' },
+  { name: 'settings', hash: '#view-settings' },
 ];
 
 const ensureDir = async (dir) => {
@@ -30,14 +30,6 @@ const ensureDir = async (dir) => {
 const captureView = async (page, route, outputPath) => {
   await page.goto(`${baseUrl}${route.hash}`, { waitUntil: 'load' });
   await page.waitForTimeout(300);
-
-  if (route.action === 'open-more') {
-    const trigger = page.locator('button[popovertarget="more-menu"]');
-    if (await trigger.count()) {
-      await trigger.first().click();
-      await page.waitForTimeout(200);
-    }
-  }
 
   await page.screenshot({ path: outputPath, fullPage: true });
 };

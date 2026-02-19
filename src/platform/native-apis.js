@@ -11,19 +11,42 @@ import { getViewId } from '../utils/app-utils.js';
 import { PERSIST_REQUEST_KEY } from '../persistence/storage-keys.js';
 import { OFFLINE_MODE_CHANGE, SOUNDS_CHANGE, PERSIST_APPLIED } from '../utils/event-names.js';
 
-const storageStatusEl = document.querySelector('[data-storage-status]');
-const storageEstimateEl = document.querySelector('[data-storage-estimate]');
-const storageRequestButton = document.querySelector('[data-storage-request]');
-const networkStatusEl = document.querySelector('[data-network-status]');
-const wakeToggle = document.querySelector('#setting-keep-awake');
-const wakeStatusEl = document.querySelector('[data-wake-status]');
-const orientationToggle = document.querySelector('#setting-orientation-lock');
-const orientationStatusEl = document.querySelector('[data-orientation-status]');
-const shareButton = document.querySelector('[data-share-summary]');
-const shareStatusEl = document.querySelector('[data-share-status]');
-const soundToggle = document.querySelector('#setting-sounds');
+let storageStatusEl = null;
+let storageEstimateEl = null;
+let storageRequestButton = null;
+let networkStatusEl = null;
+let wakeToggle = null;
+let wakeStatusEl = null;
+let orientationToggle = null;
+let orientationStatusEl = null;
+let shareButton = null;
+let shareStatusEl = null;
+let soundToggle = null;
 const rootStyle = document.documentElement.style;
-const installStatusEl = document.querySelector('[data-install-status]');
+let installStatusEl = null;
+let globalsBound = false;
+let storageGlobalsBound = false;
+let networkGlobalsBound = false;
+let wakeGlobalsBound = false;
+let orientationGlobalsBound = false;
+let audioFocusGlobalsBound = false;
+let installGlobalsBound = false;
+let visualViewportGlobalsBound = false;
+
+const resolveElements = () => {
+    storageStatusEl = document.querySelector('[data-storage-status]');
+    storageEstimateEl = document.querySelector('[data-storage-estimate]');
+    storageRequestButton = document.querySelector('[data-storage-request]');
+    networkStatusEl = document.querySelector('[data-network-status]');
+    wakeToggle = document.querySelector('#setting-keep-awake');
+    wakeStatusEl = document.querySelector('[data-wake-status]');
+    orientationToggle = document.querySelector('#setting-orientation-lock');
+    orientationStatusEl = document.querySelector('[data-orientation-status]');
+    shareButton = document.querySelector('[data-share-summary]');
+    shareStatusEl = document.querySelector('[data-share-status]');
+    soundToggle = document.querySelector('#setting-sounds');
+    installStatusEl = document.querySelector('[data-install-status]');
+};
 
 const loadPersistRequest = () => {
     try {
@@ -131,11 +154,16 @@ const bindStorageUI = () => {
     updateStorageStatus();
     updateStorageEstimate();
     maybeAutoPersist('boot');
-    if (storageRequestButton) {
+    if (storageRequestButton && storageRequestButton.dataset.nativeBound !== 'true') {
+        storageRequestButton.dataset.nativeBound = 'true';
         storageRequestButton.addEventListener('click', () => {
             updateStorageStatus(true).then(updateStorageEstimate);
         });
     }
+
+    if (storageGlobalsBound) return;
+    storageGlobalsBound = true;
+
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
             updateStorageEstimate();
@@ -169,6 +197,8 @@ const updateNetworkStatus = () => {
 const bindNetworkStatus = () => {
     if (!networkStatusEl) return;
     updateNetworkStatus();
+    if (networkGlobalsBound) return;
+    networkGlobalsBound = true;
     window.addEventListener('online', updateNetworkStatus, { passive: true });
     window.addEventListener('offline', updateNetworkStatus, { passive: true });
     document.addEventListener(OFFLINE_MODE_CHANGE, updateNetworkStatus);
@@ -220,18 +250,26 @@ const requestWakeLock = async () => {
 
 const bindWakeLock = () => {
     if (!wakeToggle) return;
-    wakeToggle.addEventListener('change', requestWakeLock);
-    window.addEventListener('hashchange', requestWakeLock, { passive: true });
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
+    if (wakeToggle.dataset.nativeBound !== 'true') {
+        wakeToggle.dataset.nativeBound = 'true';
+        wakeToggle.addEventListener('change', requestWakeLock);
+    }
+
+    if (!wakeGlobalsBound) {
+        wakeGlobalsBound = true;
+        window.addEventListener('hashchange', requestWakeLock, { passive: true });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                releaseWakeLock();
+            } else {
+                requestWakeLock();
+            }
+        });
+        window.addEventListener('pagehide', () => {
             releaseWakeLock();
-        } else {
-            requestWakeLock();
-        }
-    });
-    window.addEventListener('pagehide', () => {
-        releaseWakeLock();
-    });
+        });
+    }
+
     requestWakeLock();
 };
 
@@ -278,23 +316,31 @@ const requestOrientationLock = async () => {
 
 const bindOrientationLock = () => {
     if (!orientationToggle) return;
-    orientationToggle.addEventListener('change', requestOrientationLock);
-    window.addEventListener('hashchange', requestOrientationLock, { passive: true });
-    window.addEventListener('orientationchange', () => {
-        if (orientationToggle.checked && orientationLocked) {
-            requestOrientationLock();
-        }
-    }, { passive: true });
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
+    if (orientationToggle.dataset.nativeBound !== 'true') {
+        orientationToggle.dataset.nativeBound = 'true';
+        orientationToggle.addEventListener('change', requestOrientationLock);
+    }
+
+    if (!orientationGlobalsBound) {
+        orientationGlobalsBound = true;
+        window.addEventListener('hashchange', requestOrientationLock, { passive: true });
+        window.addEventListener('orientationchange', () => {
+            if (orientationToggle?.checked && orientationLocked) {
+                requestOrientationLock();
+            }
+        }, { passive: true });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                unlockOrientation();
+            } else {
+                requestOrientationLock();
+            }
+        });
+        window.addEventListener('pagehide', () => {
             unlockOrientation();
-        } else {
-            requestOrientationLock();
-        }
-    });
-    window.addEventListener('pagehide', () => {
-        unlockOrientation();
-    });
+        });
+    }
+
     requestOrientationLock();
 };
 
@@ -324,6 +370,8 @@ const buildShareSummary = () => {
 
 const bindShareSummary = () => {
     if (!shareButton) return;
+    if (shareButton.dataset.nativeBound === 'true') return;
+    shareButton.dataset.nativeBound = 'true';
     shareButton.addEventListener('click', async () => {
         const text = buildShareSummary();
         if (!text) return;
@@ -424,11 +472,8 @@ const bindMediaSession = () => {
 };
 
 const bindAudioFocus = () => {
-    const audios = Array.from(document.querySelectorAll('audio'));
-    if (!audios.length) return;
-
     const pauseOthers = (current) => {
-        audios.forEach((audio) => {
+        document.querySelectorAll('audio').forEach((audio) => {
             if (audio !== current && !audio.paused) {
                 audio.pause();
                 audio.currentTime = 0;
@@ -436,7 +481,9 @@ const bindAudioFocus = () => {
         });
     };
 
-    audios.forEach((audio) => {
+    document.querySelectorAll('audio').forEach((audio) => {
+        if (audio.dataset.audioFocusBound === 'true') return;
+        audio.dataset.audioFocusBound = 'true';
         audio.addEventListener('play', () => {
             if (!isSoundEnabled()) {
                 audio.pause();
@@ -446,6 +493,9 @@ const bindAudioFocus = () => {
             pauseOthers(audio);
         });
     });
+
+    if (audioFocusGlobalsBound) return;
+    audioFocusGlobalsBound = true;
 
     document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
@@ -484,7 +534,10 @@ const updateSoundState = () => {
 const bindSoundToggle = () => {
     if (soundToggle) {
         soundToggle.checked = isSoundEnabled();
-        soundToggle.addEventListener('change', updateSoundState);
+        if (soundToggle.dataset.nativeBound !== 'true') {
+            soundToggle.dataset.nativeBound = 'true';
+            soundToggle.addEventListener('change', updateSoundState);
+        }
     }
     updateSoundState();
 };
@@ -507,6 +560,8 @@ const updateInstallState = () => {
 
 const bindInstallState = () => {
     updateInstallState();
+    if (installGlobalsBound) return;
+    installGlobalsBound = true;
     window.addEventListener('appinstalled', updateInstallState);
     window.matchMedia('(display-mode: standalone)').addEventListener('change', updateInstallState);
 };
@@ -529,24 +584,36 @@ const bindVisualViewport = () => {
         return;
     }
     updateKeyboardOffset();
+    if (visualViewportGlobalsBound) return;
+    visualViewportGlobalsBound = true;
     window.visualViewport.addEventListener('resize', updateKeyboardOffset);
     window.visualViewport.addEventListener('scroll', updateKeyboardOffset);
     window.addEventListener('orientationchange', updateKeyboardOffset, { passive: true });
 };
 
-bindStorageUI();
-bindNetworkStatus();
-bindWakeLock();
-bindOrientationLock();
-bindShareSummary();
-bindMediaSession();
-bindAudioFocus();
-bindVisualViewport();
-bindInstallState();
-bindSoundToggle();
+const bindGlobalListeners = () => {
+    if (globalsBound) return;
+    globalsBound = true;
+    document.addEventListener(PERSIST_APPLIED, () => {
+        updateSoundState();
+        requestWakeLock();
+        requestOrientationLock();
+    });
+};
 
-document.addEventListener(PERSIST_APPLIED, () => {
-    updateSoundState();
-    requestWakeLock();
-    requestOrientationLock();
-});
+const initNativeApis = () => {
+    resolveElements();
+    bindStorageUI();
+    bindNetworkStatus();
+    bindWakeLock();
+    bindOrientationLock();
+    bindShareSummary();
+    bindMediaSession();
+    bindAudioFocus();
+    bindVisualViewport();
+    bindInstallState();
+    bindSoundToggle();
+    bindGlobalListeners();
+};
+
+export const init = initNativeApis;

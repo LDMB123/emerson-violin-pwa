@@ -1,36 +1,25 @@
-import { whenReady } from '../utils/dom-ready.js';
+let observer = null;
 
-/**
- * Install Guide Close Button Enhancement
- * Adds a visual close (×) button to the install prompt
- */
+const enhanceExistingGuides = () => {
+    document.querySelectorAll('.install-guide-backdrop').forEach((backdrop) => addCloseButton(backdrop));
+};
 
-const enhanceInstallGuide = () => {
-    // Watch for install guide to be added to DOM
-    const observer = new MutationObserver((mutations) => {
+const bindObserver = () => {
+    if (observer) return;
+    observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
             for (const node of mutation.addedNodes) {
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                    const backdrop = node.classList?.contains('install-guide-backdrop')
-                        ? node
-                        : node.querySelector?.('.install-guide-backdrop');
-
-                    if (backdrop) {
-                        addCloseButton(backdrop);
-                        observer.disconnect(); // Only enhance once
-                    }
+                if (node.nodeType !== Node.ELEMENT_NODE) continue;
+                const backdrop = node.classList?.contains('install-guide-backdrop')
+                    ? node
+                    : node.querySelector?.('.install-guide-backdrop');
+                if (backdrop) {
+                    addCloseButton(backdrop);
                 }
             }
         }
     });
-
     observer.observe(document.body, { childList: true, subtree: true });
-
-    // Also check if it's already in the DOM
-    const existingBackdrop = document.querySelector('.install-guide-backdrop');
-    if (existingBackdrop) {
-        addCloseButton(existingBackdrop);
-    }
 };
 
 const addCloseButton = (backdrop) => {
@@ -59,5 +48,9 @@ const addCloseButton = (backdrop) => {
     panel.insertBefore(closeBtn, panel.firstChild);
 };
 
-// Initialize on load
-whenReady(enhanceInstallGuide);
+const initInstallGuideClose = () => {
+    enhanceExistingGuides();
+    bindObserver();
+};
+
+export const init = initInstallGuideClose;

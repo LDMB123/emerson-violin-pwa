@@ -1,4 +1,5 @@
 import { ACHIEVEMENT_UNLOCKED } from '../utils/event-names.js';
+import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
 
 const dialog = document.getElementById('achievement-modal');
 const badgeImg = document.getElementById('achievement-badge-img');
@@ -21,8 +22,7 @@ const FALLBACK_EMOJI = {
     all_games:     '🎮',
 };
 
-const canSpeak = () =>
-    Boolean(document.querySelector('#setting-voice')?.checked);
+const canSpeak = () => isVoiceCoachEnabled();
 
 const speakBadge = (name) => {
     if (!canSpeak() || document.hidden) return;

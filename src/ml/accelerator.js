@@ -1,8 +1,11 @@
-import { whenReady } from '../utils/dom-ready.js';
-
-const statusEl = document.querySelector('[data-ml-accel]');
-const detailEl = document.querySelector('[data-ml-accel-detail]');
+let statusEl = null;
+let detailEl = null;
 const root = document.documentElement;
+
+const resolveElements = () => {
+    statusEl = document.querySelector('.setting-note[data-ml-accel]') || document.querySelector('[data-ml-accel]');
+    detailEl = document.querySelector('[data-ml-accel-detail]');
+};
 
 const setStatus = (message) => {
     if (statusEl) statusEl.textContent = message;
@@ -29,7 +32,8 @@ const detectWebGPU = async () => {
     }
 };
 
-const init = async () => {
+const initAccelerator = async () => {
+    resolveElements();
     setStatus('ML acceleration: checking…');
     setDetail('');
 
@@ -46,4 +50,4 @@ const init = async () => {
     setDetail('Offline models run with optimized on-device compute.');
 };
 
-whenReady(init);
+export const init = initAccelerator;

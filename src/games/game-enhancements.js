@@ -266,4 +266,6 @@ const initGameEnhancements = () => {
     renderDifficultyPickers();
 };
 
+export const init = initGameEnhancements;
+
 whenReady(initGameEnhancements);

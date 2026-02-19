@@ -2,6 +2,8 @@ const CACHE_VERSION = 'v113';
 const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
 const APP_SHELL_URL = './index.html';
 const OFFLINE_URL = './offline.html';
+const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+const IS_LOCAL_DEV_HOST = LOCALHOST_HOSTS.has(self.location.hostname) || self.location.hostname.endsWith('.local');
 
 let ASSETS_TO_CACHE = [];
 try {
@@ -31,6 +33,10 @@ const STATIC_DESTINATIONS = new Set(['style', 'script', 'font', 'image', 'audio'
 let offlineMode = false;
 
 self.addEventListener('install', (event) => {
+    if (IS_LOCAL_DEV_HOST) {
+        self.skipWaiting();
+        return;
+    }
     event.waitUntil(
         (async () => {
             const cache = await caches.open(CACHE_NAME);
@@ -45,6 +51,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         (async () => {
+            if (IS_LOCAL_DEV_HOST) {
+                await Promise.all((await caches.keys()).map((key) => caches.delete(key)));
+                await self.registration.unregister();
+                return;
+            }
             await Promise.all(
                 (await caches.keys()).map((key) => (key === CACHE_NAME ? null : caches.delete(key)))
             );
@@ -202,6 +213,9 @@ const cacheOnly = async (request) => {
 };
 
 self.addEventListener('fetch', (event) => {
+    if (IS_LOCAL_DEV_HOST) {
+        return;
+    }
     const { request } = event;
     if (request.method !== 'GET') {
         return;

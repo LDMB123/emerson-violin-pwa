@@ -1,60 +1,59 @@
 <section class="view" id="view-home" aria-label="Home">
-        <div class="home-hero">
-          <div class="home-brand">
-            <picture>
-              <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
-              <img src="./assets/illustrations/mascot-happy.png" alt="Panda" class="home-mascot" decoding="async" loading="eager" fetchpriority="high" width="1024" height="1024">
-            </picture>
-            <div class="home-brand-text">
-              <h2 class="home-title">Panda Violin</h2>
-              <p class="home-subtitle">Emerson's Studio</p>
-            </div>
-          </div>
+  <div class="home-mission glass">
+    <div class="home-mission-head">
+      <picture>
+        <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
+        <img src="./assets/illustrations/mascot-happy.png" alt="Happy panda coach" class="home-mascot" decoding="async" loading="eager" fetchpriority="high" width="1024" height="1024">
+      </picture>
+      <div>
+        <p class="home-kicker">Today&apos;s Practice Mission</p>
+        <h2 class="home-title">Ready to play, Emerson?</h2>
+        <p class="home-subtitle">Start with one quick mission and keep your streak alive.</p>
+      </div>
+    </div>
 
-          <div class="home-cards">
-            <div class="goal-card glass" data-progress="daily-goal">
-              <div class="goal-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.87 4.03l1.41-1.41 2.1 2.1-1.41 1.41-2.1-2.1zm-12.7 12.7l2.1 2.1-1.41 1.41-2.1-2.1 1.41-1.41zM12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/><path d="M9.75 2h4.5v3h-4.5zM9.75 19h4.5v3h-4.5z"/></svg></div>
-              <div class="goal-body">
-                <span class="goal-label">Today's Goal</span>
-                <div class="goal-time"><span data-progress="daily-goal-value">15</span> minutes</div>
-                <div class="goal-progress" data-progress="daily-goal-track" role="progressbar" aria-label="Daily goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                  <div class="goal-fill" data-progress="daily-goal-fill"></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="streak-card glass">
-              <span class="streak-fire" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 .67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg></span>
-              <span class="streak-count" data-progress="home-streak">0</span>
-              <span class="streak-label">day streak</span>
-            </div>
-          </div>
+    <div class="mission-stats">
+      <div class="mission-stat mission-stat-streak">
+        <span class="mission-stat-label">Streak</span>
+        <strong class="mission-stat-value"><span data-progress="home-streak">0</span> days</strong>
+      </div>
+      <div class="mission-stat mission-stat-goal">
+        <span class="mission-stat-label">Daily goal</span>
+        <strong class="mission-stat-value"><span data-progress="daily-goal-value">15</span> min</strong>
+        <div class="goal-progress" data-progress="daily-goal-track" role="progressbar" aria-label="Daily goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="goal-fill" data-progress="daily-goal-fill"></div>
         </div>
+      </div>
+    </div>
 
-        <div class="home-grid home-primary">
-          <a href="#view-coach" class="feature-card feature-primary">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 12H7v-2h10v2zm0-3H7V9h10v2zm0-3H7V6h10v2z"/></svg></div>
-            <div class="feature-title">Coach</div>
-          </a>
+    <div class="mission-actions">
+      <button class="btn btn-primary" type="button" data-start-practice>Start Practice</button>
+      <a class="btn btn-secondary" href="#view-coach" data-continue-practice>Continue</a>
+    </div>
 
-          <a href="#view-songs" class="feature-card feature-primary">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
-            <div class="feature-title">Songs</div>
-          </a>
+    <div class="mission-meta">
+      <span class="mission-chip">Week: <strong data-progress="week-minutes">0</strong> min</span>
+      <span class="mission-chip" data-progress="level-label">Level 1</span>
+    </div>
+  </div>
 
-          <a href="#view-games" class="feature-card feature-primary">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
-            <div class="feature-title">Games</div>
-          </a>
+  <div class="home-secondary-grid">
+    <a href="#view-games" class="feature-card feature-primary">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
+      <div class="feature-title">Quick Game</div>
+      <p class="feature-copy">Play a fast challenge.</p>
+    </a>
 
-          <a href="#view-progress" class="feature-card feature-primary">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.5 18.5l6-6 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></div>
-            <div class="feature-title">Progress</div>
-          </a>
-        </div>
+    <a href="#view-songs" class="feature-card feature-primary">
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+      <div class="feature-title">Song Time</div>
+      <p class="feature-copy">Continue your last song.</p>
+    </a>
+  </div>
 
-        <div class="home-mini">
-          <span class="home-mini-chip"><span data-progress="week-minutes">0</span> min this week</span>
-          <span class="home-mini-chip" data-progress="level-label">Level 1</span>
-        </div>
-      </section>
+  <div class="home-utility-links glass" aria-label="App links">
+    <a class="btn btn-ghost" href="#view-settings" data-home-utility="settings">Settings</a>
+    <a class="btn btn-ghost" href="#view-help" data-home-utility="help">Help</a>
+    <a class="btn btn-ghost" href="#view-about" data-home-utility="about">About</a>
+  </div>
+</section>

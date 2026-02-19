@@ -1,11 +1,17 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { OFFLINE_MODE_KEY as MODE_KEY } from '../persistence/storage-keys.js';
 import { OFFLINE_MODE_CHANGE } from '../utils/event-names.js';
 import { hasServiceWorkerSupport } from './sw-support.js';
-const toggle = document.querySelector('#setting-offline-mode');
-const statusEl = document.querySelector('[data-offline-mode-status]');
+
+let toggle = null;
+let statusEl = null;
 let currentEnabled = false;
+let globalsBound = false;
+
+const resolveElements = () => {
+    toggle = document.querySelector('#setting-offline-mode');
+    statusEl = document.querySelector('[data-offline-mode-status]');
+};
 
 const setStatus = (enabled) => {
     if (!statusEl) return;
@@ -51,16 +57,9 @@ const loadState = async () => {
     return Boolean(stored?.enabled);
 };
 
-const init = async () => {
-    const enabled = await loadState();
-    currentEnabled = enabled;
-    await applyState(enabled, false);
-
-    if (toggle) {
-        toggle.addEventListener('change', () => {
-            applyState(toggle.checked, true);
-        });
-    }
+const bindGlobalListeners = () => {
+    if (globalsBound) return;
+    globalsBound = true;
 
     if (hasServiceWorkerSupport()) {
         navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -77,4 +76,24 @@ const init = async () => {
     });
 };
 
-whenReady(init);
+const bindLocalListeners = () => {
+    if (toggle && toggle.dataset.offlineModeBound !== 'true') {
+        toggle.dataset.offlineModeBound = 'true';
+        toggle.addEventListener('change', () => {
+            applyState(toggle.checked, true);
+        });
+    }
+};
+
+const initOfflineMode = async () => {
+    resolveElements();
+    bindLocalListeners();
+    bindGlobalListeners();
+    if (toggle) toggle.disabled = true;
+    const enabled = await loadState();
+    currentEnabled = enabled;
+    await applyState(enabled, false);
+    if (toggle) toggle.disabled = false;
+};
+
+export const init = initOfflineMode;

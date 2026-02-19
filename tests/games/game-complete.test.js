@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GAME_PLAY_AGAIN } from '../../src/utils/event-names.js';
+import { GAME_PLAY_AGAIN, GAME_RECORDED } from '../../src/utils/event-names.js';
 
 const mountGameCompleteDom = () => {
     document.body.innerHTML = `
@@ -53,5 +53,41 @@ describe('game-complete modal', () => {
         document.getElementById('game-complete-play-again')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         expect(onPlayAgain).not.toHaveBeenCalled();
+    });
+
+    it('does not open the dialog when game events fire outside game views', async () => {
+        window.location.hash = '#view-games';
+        await import('../../src/games/game-complete.js');
+        const dialog = document.getElementById('game-complete-modal');
+
+        document.dispatchEvent(new CustomEvent(GAME_RECORDED, {
+            detail: { score: 25, accuracy: 80, stars: 2 },
+        }));
+
+        expect(dialog.showModal).not.toHaveBeenCalled();
+    });
+
+    it('opens the dialog for meaningful game events while a game view is active', async () => {
+        window.location.hash = '#view-game-pitch-quest';
+        await import('../../src/games/game-complete.js');
+        const dialog = document.getElementById('game-complete-modal');
+
+        document.dispatchEvent(new CustomEvent(GAME_RECORDED, {
+            detail: { score: 25, accuracy: 80, stars: 2 },
+        }));
+
+        expect(dialog.showModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores game events when active game id does not match event id', async () => {
+        window.location.hash = '#view-game-pitch-quest';
+        await import('../../src/games/game-complete.js');
+        const dialog = document.getElementById('game-complete-modal');
+
+        document.dispatchEvent(new CustomEvent(GAME_RECORDED, {
+            detail: { id: 'rhythm-dash', score: 25, accuracy: 80, stars: 2 },
+        }));
+
+        expect(dialog.showModal).not.toHaveBeenCalled();
     });
 });

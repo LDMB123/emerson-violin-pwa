@@ -1,0 +1,242 @@
+import { expect, test } from '@playwright/test';
+
+const openHome = async (page) => {
+    await page.goto('/');
+    await page.waitForSelector('#main-content .view', { timeout: 10000 });
+
+    if (await page.locator('#view-onboarding').isVisible().catch(() => false)) {
+        await page.locator('#onboarding-skip').click();
+        await page.waitForURL('**/#view-home');
+    }
+};
+
+const seedEvents = async (page, events) => {
+    await page.evaluate(async ({ seededEvents }) => {
+        const key = 'panda-violin:events:v1';
+        const fallbackKey = `panda-violin:kv:${key}`;
+
+        localStorage.setItem(key, JSON.stringify(seededEvents));
+        localStorage.setItem(fallbackKey, JSON.stringify(seededEvents));
+
+        await new Promise((resolve, reject) => {
+            const request = indexedDB.open('panda-violin-db', 2);
+
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains('kv')) {
+                    db.createObjectStore('kv');
+                }
+                if (!db.objectStoreNames.contains('blobs')) {
+                    db.createObjectStore('blobs');
+                }
+            };
+
+            request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
+            request.onsuccess = () => {
+                const db = request.result;
+                const tx = db.transaction('kv', 'readwrite');
+                tx.objectStore('kv').put(seededEvents, key);
+                tx.oncomplete = () => {
+                    db.close();
+                    resolve();
+                };
+                tx.onerror = () => {
+                    const err = tx.error;
+                    db.close();
+                    reject(err || new Error('IndexedDB write failed'));
+                };
+                tx.onabort = () => {
+                    const err = tx.error;
+                    db.close();
+                    reject(err || new Error('IndexedDB write aborted'));
+                };
+            };
+        });
+    }, { seededEvents: events });
+};
+
+test('progress cards remain functional across navigation', async ({ page }) => {
+    await openHome(page);
+
+    const day = Math.floor(Date.now() / 86400000);
+    const now = Date.now();
+    await seedEvents(page, [
+        { type: 'practice', id: 'pq-step-1', minutes: 8, day, timestamp: now - 2000 },
+        { type: 'game', id: 'pitch-quest', score: 88, accuracy: 88, stars: 4, day, timestamp: now - 1000 },
+    ]);
+
+    await page.goto('/#view-game-pitch-quest');
+    await expect(page.locator('#view-game-pitch-quest')).toBeVisible();
+    await page.locator('#view-game-pitch-quest [data-pitch="check"]').click();
+
+    await page.goto('/#view-progress');
+    await expect(page.locator('#view-progress')).toBeVisible();
+
+    await expect.poll(async () => {
+        return page.locator('[data-recent-game][hidden]').count();
+    }).toBeLessThan(3);
+
+    await page.goto('/#view-home');
+    await expect(page.locator('#view-home')).toBeVisible();
+
+    await page.goto('/#view-progress');
+    await expect(page.locator('#view-progress')).toBeVisible();
+    await expect(page.locator('[data-progress="xp-info"]')).not.toHaveText('0 / 0 XP');
+});
+
+test('backup export remains wired after revisiting backup view', async ({ page }) => {
+    await openHome(page);
+
+    await page.goto('/#view-backup');
+    await expect(page.locator('#view-backup')).toBeVisible();
+    await expect.poll(async () => {
+        return page.locator('[data-export-json]').evaluate((el) => el.dataset.backupBound || '');
+    }).toBe('true');
+
+    const status = page.locator('[data-export-status]');
+    const initial = await status.innerText();
+
+    await page.locator('[data-export-json]').click();
+    await expect.poll(async () => {
+        return page.locator('[data-export-status]').innerText();
+    }).not.toBe(initial);
+
+    await page.goto('/#view-home');
+    await expect(page.locator('#view-home')).toBeVisible();
+
+    await page.goto('/#view-backup');
+    await expect(page.locator('#view-backup')).toBeVisible();
+    await expect.poll(async () => {
+        return page.locator('[data-export-json]').evaluate((el) => el.dataset.backupBound || '');
+    }).toBe('true');
+
+    const revisitInitial = await status.innerText();
+    await page.locator('[data-export-json]').click();
+    await expect.poll(async () => {
+        return page.locator('[data-export-status]').innerText();
+    }).not.toBe(revisitInitial);
+});
+
+test('parent goals remain editable after revisiting parent view', async ({ page }) => {
+    await openHome(page);
+
+    await page.evaluate(() => {
+        sessionStorage.setItem('panda-violin:parent-unlocked', 'true');
+    });
+
+    await page.goto('/#view-parent');
+    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-parent-goal-save]')).toBeEnabled();
+    await expect.poll(async () => {
+        return page.locator('[data-parent-goal-save]').evaluate((el) => el.dataset.parentGoalBound || '');
+    }).toBe('true');
+
+    await page.locator('[data-parent-goal-title-input]').fill('Recital Etude');
+    await page.locator('[data-parent-goal-minutes-input]').fill('120');
+    await page.locator('[data-parent-goal-save]').click();
+    await expect(page.locator('[data-parent-goal-status]')).toContainText('Goal saved');
+    await expect(page.locator('[data-parent-goal-title]')).toContainText('Recital Etude');
+
+    await page.goto('/#view-home');
+    await expect(page.locator('#view-home')).toBeVisible();
+
+    await page.goto('/#view-parent');
+    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-parent-goal-save]')).toBeEnabled();
+    await expect.poll(async () => {
+        return page.locator('[data-parent-goal-save]').evaluate((el) => el.dataset.parentGoalBound || '');
+    }).toBe('true');
+
+    await page.locator('[data-parent-goal-title-input]').fill('Spring Concert');
+    await page.locator('[data-parent-goal-minutes-input]').fill('140');
+    await page.locator('[data-parent-goal-save]').click();
+    await expect(page.locator('[data-parent-goal-status]')).toContainText('Goal saved');
+    await expect(page.locator('[data-parent-goal-title]')).toContainText('Spring Concert');
+});
+
+test('parent PIN gate remains functional after re-render', async ({ page }) => {
+    await openHome(page);
+
+    await page.evaluate(() => {
+        sessionStorage.removeItem('panda-violin:parent-unlocked');
+    });
+
+    await page.goto('/#view-parent');
+    const dialog = page.locator('[data-pin-dialog]');
+    await expect.poll(async () => page.locator('[data-pin-dialog]').count(), { timeout: 10000 }).toBe(1);
+    await expect(dialog).toBeVisible();
+
+    await page.locator('#parent-pin-input').fill('1001');
+    await page.locator('[data-pin-dialog] button[value="confirm"]').click();
+    await expect(dialog).toBeHidden({ timeout: 10000 });
+
+    await page.goto('/#view-home');
+    await expect(page.locator('#view-home')).toBeVisible();
+
+    await page.evaluate(() => {
+        sessionStorage.removeItem('panda-violin:parent-unlocked');
+    });
+
+    await page.goto('/#view-parent');
+    await expect.poll(async () => page.locator('[data-pin-dialog]').count(), { timeout: 10000 }).toBe(1);
+    await expect(dialog).toBeVisible();
+
+    await page.locator('[data-pin-dialog] button[value="cancel"]').click();
+    await page.waitForURL('**/#view-home');
+    await expect(page.locator('#view-home')).toBeVisible();
+});
+
+test('parent advanced controls stay interactive after revisiting parent view', async ({ page }) => {
+    await openHome(page);
+
+    await page.evaluate(() => {
+        sessionStorage.setItem('panda-violin:parent-unlocked', 'true');
+    });
+
+    await page.goto('/#view-parent');
+    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
+    await expect.poll(async () => page.locator('[data-input-status]').innerText()).toContain('Input:');
+    await expect.poll(async () => {
+        return page.locator('#setting-offline-mode').evaluate((el) => el.dataset.offlineModeBound || '');
+    }).toBe('true');
+
+    await page.locator('[data-offline-check]').click();
+    await expect.poll(async () => page.locator('[data-offline-assets]').innerText()).not.toContain('—');
+
+    await page.locator('#setting-offline-mode').evaluate((input) => {
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('[data-offline-mode-status]')).toContainText('Offline mode is on');
+
+    await page.locator('[data-ml-demo]').evaluate((input) => {
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('[data-ml-simulate]')).toBeEnabled();
+
+    await page.goto('/#view-home');
+    await expect(page.locator('#view-home')).toBeVisible();
+
+    await page.goto('/#view-parent');
+    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
+    await expect.poll(async () => page.locator('[data-input-status]').innerText()).toContain('Input:');
+    await expect.poll(async () => {
+        return page.locator('#setting-offline-mode').evaluate((el) => el.dataset.offlineModeBound || '');
+    }).toBe('true');
+
+    await page.locator('[data-offline-check]').click();
+    await expect.poll(async () => page.locator('[data-offline-assets]').innerText()).not.toContain('—');
+
+    await page.locator('#setting-offline-mode').evaluate((input) => {
+        input.checked = false;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('[data-offline-mode-status]')).toContainText('Offline mode is off');
+
+    await page.locator('[data-ml-demo]').evaluate((input) => {
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('[data-ml-simulate]')).toBeEnabled();
+});

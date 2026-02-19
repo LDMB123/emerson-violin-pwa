@@ -1,18 +1,29 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { getAudioPath } from '../audio/format-detection.js';
 import { formatTimestamp } from '../utils/math.js';
 import { OFFLINE_METRICS_KEY as METRICS_KEY } from '../persistence/storage-keys.js';
 import { hasServiceWorkerSupport } from './sw-support.js';
 
-const statusEl = document.querySelector('[data-offline-status]');
-const assetsEl = document.querySelector('[data-offline-assets]');
-const missesEl = document.querySelector('[data-offline-misses]');
-const lastEl = document.querySelector('[data-offline-last]');
-const checkButton = document.querySelector('[data-offline-check]');
-const selfTestButton = document.querySelector('[data-offline-selftest]');
-const selfTestStatusEl = document.querySelector('[data-offline-selftest-status]');
-const repairButton = document.querySelector('[data-offline-repair]');
+let statusEl = null;
+let assetsEl = null;
+let missesEl = null;
+let lastEl = null;
+let checkButton = null;
+let selfTestButton = null;
+let selfTestStatusEl = null;
+let repairButton = null;
+let globalsBound = false;
+
+const resolveElements = () => {
+    statusEl = document.querySelector('[data-offline-status]');
+    assetsEl = document.querySelector('[data-offline-assets]');
+    missesEl = document.querySelector('[data-offline-misses]');
+    lastEl = document.querySelector('[data-offline-last]');
+    checkButton = document.querySelector('[data-offline-check]');
+    selfTestButton = document.querySelector('[data-offline-selftest]');
+    selfTestStatusEl = document.querySelector('[data-offline-selftest-status]');
+    repairButton = document.querySelector('[data-offline-repair]');
+};
 
 const CRITICAL_ASSETS = [
     './',
@@ -54,6 +65,25 @@ const saveMetrics = async (metrics) => {
     await setJSON(METRICS_KEY, metrics);
 };
 
+const formatSelfTestStatus = (metrics) => {
+    if (!metrics.selfTestTotal) {
+        return 'Offline self-test: not run yet.';
+    }
+    const missing = metrics.selfTestTotal - metrics.selfTestPass;
+    const status = missing ? `Missing ${missing}` : 'All checks passed';
+    return `Offline self-test: ${metrics.selfTestPass}/${metrics.selfTestTotal} (${status}).`;
+};
+
+const formatOfflineStatus = (metrics) => {
+    if (!metrics.cachedAssets) {
+        return 'Offline integrity: Not cached yet. Open once while online.';
+    }
+    if (!navigator.onLine) {
+        return 'Offline integrity: Ready for offline use.';
+    }
+    return 'Offline integrity: Ready. Keep installed for best results.';
+};
+
 const updateUI = (metrics) => {
     if (!metrics) return;
     if (assetsEl) assetsEl.textContent = `Cached assets: ${metrics.cachedAssets || 0}`;
@@ -63,27 +93,15 @@ const updateUI = (metrics) => {
         lastEl.textContent = `Last offline check: ${formatTimestamp(lastStamp)}`;
     }
     if (selfTestStatusEl) {
-        if (!metrics.selfTestTotal) {
-            selfTestStatusEl.textContent = 'Offline self-test: not run yet.';
-        } else {
-            const missing = metrics.selfTestTotal - metrics.selfTestPass;
-            const status = missing ? `Missing ${missing}` : 'All checks passed';
-            selfTestStatusEl.textContent = `Offline self-test: ${metrics.selfTestPass}/${metrics.selfTestTotal} (${status}).`;
-        }
+        selfTestStatusEl.textContent = formatSelfTestStatus(metrics);
     }
     if (statusEl) {
-        if (!metrics.cachedAssets) {
-            statusEl.textContent = 'Offline integrity: Not cached yet. Open once while online.';
-        } else if (!navigator.onLine) {
-            statusEl.textContent = 'Offline integrity: Ready for offline use.';
-        } else {
-            statusEl.textContent = 'Offline integrity: Ready. Keep installed for best results.';
-        }
+        statusEl.textContent = formatOfflineStatus(metrics);
     }
 };
 
-const setButtonsEnabled = (enabled) => {
-    const disabled = !enabled;
+const setButtonsSupported = (supported) => {
+    const disabled = !supported;
     if (checkButton) checkButton.disabled = disabled;
     if (selfTestButton) selfTestButton.disabled = disabled;
     if (repairButton) repairButton.disabled = disabled;
@@ -112,7 +130,6 @@ const runCheck = async () => {
         metrics.lastCheck = Date.now();
         await saveMetrics(metrics);
         updateUI(metrics);
-        setButtonsEnabled(false);
         return;
     }
 
@@ -121,7 +138,6 @@ const runCheck = async () => {
     metrics.lastCheck = Date.now();
     await saveMetrics(metrics);
     updateUI(metrics);
-    setButtonsEnabled(true);
 };
 
 const runSelfTest = async () => {
@@ -133,7 +149,6 @@ const runSelfTest = async () => {
         metrics.selfTestAt = Date.now();
         await saveMetrics(metrics);
         updateUI(metrics);
-        setButtonsEnabled(false);
         return;
     }
 
@@ -151,7 +166,6 @@ const runSelfTest = async () => {
     metrics.selfTestAt = Date.now();
     await saveMetrics(metrics);
     updateUI(metrics);
-    setButtonsEnabled(true);
 };
 
 const triggerRepair = async () => {
@@ -187,13 +201,49 @@ const handleMessage = async (event) => {
     }
 };
 
-const init = async () => {
+const bindLocalListeners = () => {
+    if (checkButton && checkButton.dataset.offlineBound !== 'true') {
+        checkButton.dataset.offlineBound = 'true';
+        checkButton.addEventListener('click', () => runCheck());
+    }
+
+    if (selfTestButton && selfTestButton.dataset.offlineBound !== 'true') {
+        selfTestButton.dataset.offlineBound = 'true';
+        selfTestButton.addEventListener('click', () => runSelfTest());
+    }
+
+    if (repairButton && repairButton.dataset.offlineBound !== 'true') {
+        repairButton.dataset.offlineBound = 'true';
+        repairButton.addEventListener('click', () => {
+            const metrics = defaultMetrics();
+            metrics.cachedAssets = 0;
+            updateUI(metrics);
+            triggerRepair();
+        });
+    }
+};
+
+const bindGlobalListeners = () => {
+    if (globalsBound) return;
+    globalsBound = true;
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+
+    window.addEventListener('online', () => runCheck(), { passive: true });
+    window.addEventListener('offline', async () => {
+        const latest = await loadMetrics();
+        updateUI(latest);
+    }, { passive: true });
+};
+
+const initOfflineIntegrity = async () => {
+    resolveElements();
     const metrics = await loadMetrics();
     updateUI(metrics);
-    setButtonsEnabled(true);
+    const supportsServiceWorker = hasServiceWorkerSupport();
+    setButtonsSupported(supportsServiceWorker);
 
-    if (!hasServiceWorkerSupport()) {
-        setButtonsEnabled(false);
+    if (!supportsServiceWorker) {
         if (statusEl) {
             statusEl.textContent = 'Offline integrity: Service worker not supported on this browser.';
         }
@@ -203,33 +253,11 @@ const init = async () => {
         return;
     }
 
-    navigator.serviceWorker.addEventListener('message', handleMessage);
-
-    window.addEventListener('online', () => runCheck(), { passive: true });
-    window.addEventListener('offline', async () => {
-        const latest = await loadMetrics();
-        updateUI(latest);
-    }, { passive: true });
-
-    if (checkButton) {
-        checkButton.addEventListener('click', () => runCheck());
-    }
-
-    if (selfTestButton) {
-        selfTestButton.addEventListener('click', () => runSelfTest());
-    }
-
-    if (repairButton) {
-        repairButton.addEventListener('click', () => {
-            const metrics = defaultMetrics();
-            metrics.cachedAssets = 0;
-            updateUI(metrics);
-            triggerRepair();
-        });
-    }
+    bindGlobalListeners();
+    bindLocalListeners();
 
     runCheck();
     runSelfTest();
 };
 
-whenReady(init);
+export const init = initOfflineIntegrity;

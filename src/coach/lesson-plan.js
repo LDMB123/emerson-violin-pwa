@@ -1,3 +1,4 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { formatTime } from '../games/session-timer.js';
 import { LESSON_STEP, LESSON_COMPLETE, ML_UPDATE, ML_RESET, ML_RECS } from '../utils/event-names.js';
@@ -10,13 +11,9 @@ import {
     formatStepCue,
 } from '../utils/lesson-plan-utils.js';
 
-const planPanel = document.querySelector('[data-lesson-plan="coach"]');
-if (!planPanel) {
-    // No coach lesson plan available in this view.
-} else {
-    const stepsList = planPanel.querySelector('[data-lesson-steps]');
-    const planCta = planPanel.querySelector('[data-lesson="cta"]');
+let teardown = () => {};
 
+const createRunnerMarkup = () => {
     const runner = document.createElement('div');
     runner.className = 'lesson-runner';
     runner.dataset.lessonRunner = 'true';
@@ -39,6 +36,19 @@ if (!planPanel) {
             <a class="btn btn-ghost" data-lesson-runner-cta href="#view-games">Open activity</a>
         </div>
     `;
+    return runner;
+};
+
+const setupLessonPlan = () => {
+    const planPanel = document.querySelector('[data-lesson-plan="coach"]');
+    if (!planPanel) return () => {};
+
+    const existingRunner = planPanel.querySelector('[data-lesson-runner]');
+    if (existingRunner) existingRunner.remove();
+
+    const stepsList = planPanel.querySelector('[data-lesson-steps]');
+    const planCta = planPanel.querySelector('[data-lesson="cta"]');
+    const runner = createRunnerMarkup();
 
     if (planCta) {
         planPanel.insertBefore(runner, planCta);
@@ -55,7 +65,6 @@ if (!planPanel) {
     const startButton = runner.querySelector('[data-lesson-runner-start]');
     const nextButton = runner.querySelector('[data-lesson-runner-next]');
     const ctaButton = runner.querySelector('[data-lesson-runner-cta]');
-
 
     let steps = [];
     let currentIndex = 0;
@@ -111,34 +120,40 @@ if (!planPanel) {
         if (statusEl) statusEl.textContent = message;
     };
 
-    const updateStepDetails = () => {
-        if (!steps.length) {
-            if (stepEl) stepEl.textContent = formatStepLabel(0, 0);
-            if (cueEl) cueEl.textContent = 'Practice a game to unlock a custom plan.';
-            if (timerEl) timerEl.textContent = '00:00';
-            if (ctaButton) ctaButton.setAttribute('href', '#view-games');
-            if (startButton) startButton.disabled = true;
-            if (nextButton) nextButton.disabled = true;
-            return;
-        }
-        const step = steps[currentIndex];
-        if (stepEl) {
-            stepEl.textContent = formatStepLabel(currentIndex, steps.length);
-        }
-        if (cueEl) {
-            cueEl.textContent = formatStepCue(step);
-        }
-        if (ctaButton) {
-            const ctaTarget = step?.cta || recommendedGameId;
-            ctaButton.setAttribute('href', toLessonLink(ctaTarget));
-            ctaButton.textContent = step?.ctaLabel || 'Open activity';
-        }
+    const setRunnerCta = (href, label = 'Open activity') => {
+        if (!ctaButton) return;
+        ctaButton.setAttribute('href', href);
+        ctaButton.textContent = label;
+    };
+
+    const renderEmptyStep = () => {
+        if (stepEl) stepEl.textContent = formatStepLabel(0, 0);
+        if (cueEl) cueEl.textContent = 'Practice a game to unlock a custom plan.';
+        if (timerEl) timerEl.textContent = '00:00';
+        setRunnerCta('#view-games');
+        if (startButton) startButton.disabled = true;
+        if (nextButton) nextButton.disabled = true;
+    };
+
+    const renderCurrentStep = (step) => {
+        if (stepEl) stepEl.textContent = formatStepLabel(currentIndex, steps.length);
+        if (cueEl) cueEl.textContent = formatStepCue(step);
+        const ctaTarget = step?.cta || recommendedGameId;
+        setRunnerCta(toLessonLink(ctaTarget), step?.ctaLabel || 'Open activity');
         if (timerEl) {
             const duration = computeStepDuration(step?.minutes);
             timerEl.textContent = formatTime((remainingSeconds || duration) * 1000);
         }
         if (startButton) startButton.disabled = false;
         if (nextButton) nextButton.disabled = completedSteps >= steps.length;
+    };
+
+    const updateStepDetails = () => {
+        if (!steps.length) {
+            renderEmptyStep();
+            return;
+        }
+        renderCurrentStep(steps[currentIndex]);
         syncStepList();
         updateProgress();
     };
@@ -242,9 +257,6 @@ if (!planPanel) {
         startStep();
     };
 
-    if (startButton) startButton.addEventListener('click', handleStartClick);
-    if (nextButton) nextButton.addEventListener('click', handleNextClick);
-
     const refreshPlan = async () => {
         const recs = await getLearningRecommendations();
         steps = Array.isArray(recs?.lessonSteps) ? recs.lessonSteps : [];
@@ -258,29 +270,59 @@ if (!planPanel) {
         updateStepDetails();
     };
 
+    startButton?.addEventListener('click', handleStartClick);
+    nextButton?.addEventListener('click', handleNextClick);
+
     refreshPlan();
 
-    document.addEventListener(ML_UPDATE, refreshPlan);
-    document.addEventListener(ML_RESET, refreshPlan);
-    document.addEventListener(ML_RECS, refreshPlan);
+    const onMlUpdate = () => refreshPlan();
+    const onMlReset = () => refreshPlan();
+    const onMlRecs = () => refreshPlan();
+    document.addEventListener(ML_UPDATE, onMlUpdate);
+    document.addEventListener(ML_RESET, onMlReset);
+    document.addEventListener(ML_RECS, onMlRecs);
 
+    let observer = null;
     if (stepsList) {
-        const observer = new MutationObserver(() => {
+        observer = new MutationObserver(() => {
             syncStepList();
         });
         observer.observe(stepsList, { childList: true, subtree: false });
     }
 
-    window.addEventListener('hashchange', () => {
+    const onHashChange = () => {
         if (window.location.hash !== '#view-coach') {
             stopTimer();
             if (startButton) startButton.textContent = 'Start';
         }
-    }, { passive: true });
-
-    document.addEventListener('visibilitychange', () => {
+    };
+    const onVisibility = () => {
         if (document.hidden) {
             pauseStep();
         }
-    });
-}
+    };
+
+    window.addEventListener('hashchange', onHashChange, { passive: true });
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+        stopTimer();
+        observer?.disconnect();
+        startButton?.removeEventListener('click', handleStartClick);
+        nextButton?.removeEventListener('click', handleNextClick);
+        document.removeEventListener(ML_UPDATE, onMlUpdate);
+        document.removeEventListener(ML_RESET, onMlReset);
+        document.removeEventListener(ML_RECS, onMlRecs);
+        window.removeEventListener('hashchange', onHashChange);
+        document.removeEventListener('visibilitychange', onVisibility);
+    };
+};
+
+const initLessonPlan = () => {
+    teardown();
+    teardown = setupLessonPlan();
+};
+
+export const init = initLessonPlan;
+
+whenReady(initLessonPlan);

@@ -1,131 +1,238 @@
 <section class="view" id="view-parent" aria-label="Parent Zone">
-        <div class="view-header">
-          <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
-          <h2>Parent Zone</h2>
-          <div class="pin-lock" data-parent-pin-display="" aria-hidden="true">🔒 PIN set</div>
+  <div class="view-header">
+    <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
+    <h2>Parent Zone</h2>
+    <div class="pin-lock" data-parent-pin-display aria-hidden="true">🔒 PIN set</div>
+  </div>
+
+  <dialog class="pin-dialog glass" data-pin-dialog aria-labelledby="parent-pin-title" aria-modal="true" role="dialog">
+    <form method="dialog" class="pin-form">
+      <h3 id="parent-pin-title">Parent Zone</h3>
+      <p>Enter the 4-digit PIN to continue.</p>
+      <label class="sr-only" for="parent-pin-input">Parent PIN</label>
+      <input type="password" id="parent-pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-describedby="parent-pin-error">
+      <p class="pin-error" id="parent-pin-error" data-pin-error role="status" aria-live="polite">Incorrect PIN. Try again.</p>
+      <div class="pin-actions">
+        <button class="btn btn-secondary" type="submit" value="cancel">Cancel</button>
+        <button class="btn btn-primary" type="submit" value="confirm">Unlock</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="parent-layout">
+    <div class="parent-chart glass">
+      <h3>Weekly Practice Summary</h3>
+      <div class="parent-chart-graph">
+        <svg viewBox="0 0 320 160" aria-hidden="true">
+          <path class="parent-chart-line" data-parent="week-line" d="M20 120 L70 100 L120 110 L170 80 L220 90 L270 70 L300 60"></path>
+          <g class="parent-chart-points" data-parent="week-points">
+            <circle cx="20" cy="120" r="4"></circle>
+            <circle cx="70" cy="100" r="4"></circle>
+            <circle cx="120" cy="110" r="4"></circle>
+            <circle cx="170" cy="80" r="4"></circle>
+            <circle cx="220" cy="90" r="4"></circle>
+            <circle cx="270" cy="70" r="4"></circle>
+            <circle cx="300" cy="60" r="4"></circle>
+          </g>
+        </svg>
+      </div>
+      <p class="weekly-summary" data-parent="week-summary">Total: 0 minutes</p>
+    </div>
+
+    <div class="parent-goals glass">
+      <h3>Goal Setting</h3>
+      <p class="parent-goal-note" data-parent-goal-title>Next Recital Piece</p>
+      <div class="goal-progress parent-goal-progress" data-parent="goal-track" role="progressbar" aria-label="Weekly goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="goal-fill" data-parent="goal-fill"></div>
+      </div>
+      <div class="parent-goal-value" data-parent="goal-value">0 / 15</div>
+      <div class="parent-goal-form">
+        <label class="setting-row">
+          <span>Recital piece</span>
+          <input class="parent-goal-input" type="text" data-parent-goal-title-input placeholder="Next recital piece" autocomplete="off">
+        </label>
+        <label class="setting-row">
+          <span>Weekly minutes goal</span>
+          <input class="parent-goal-input" type="number" min="30" max="420" step="5" data-parent-goal-minutes-input>
+        </label>
+        <div class="parent-actions">
+          <button class="btn btn-secondary" type="button" data-parent-goal-save>Save goal</button>
         </div>
+        <p class="parent-settings-note" data-parent-goal-status aria-live="polite">Goal saved.</p>
+      </div>
+    </div>
 
-        <dialog class="pin-dialog glass" data-pin-dialog="" aria-labelledby="parent-pin-title" aria-modal="true" role="dialog">
-          <form method="dialog" class="pin-form">
-            <h3 id="parent-pin-title">Parent Zone</h3>
-            <p>Enter the 4-digit PIN to continue.</p>
-            <label class="sr-only" for="parent-pin-input">Parent PIN</label>
-            <input type="password" id="parent-pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-describedby="parent-pin-error">
-            <p class="pin-error" id="parent-pin-error" data-pin-error="" role="status" aria-live="polite">Incorrect PIN. Try again.</p>
-            <div class="pin-actions">
-              <button class="btn btn-secondary" type="submit" value="cancel">Cancel</button>
-              <button class="btn btn-primary" type="submit" value="confirm">Unlock</button>
-            </div>
-          </form>
-        </dialog>
+    <div class="parent-settings glass">
+      <h3>Practice Reminder</h3>
+      <p class="parent-settings-note" data-reminder-status aria-live="polite">Use iPadOS Reminders or Calendar alerts to keep practice on track.</p>
+      <label class="toggle-setting">
+        <span>Daily reminder</span>
+        <span class="toggle">
+          <input type="checkbox" id="parent-reminder-toggle" checked>
+          <span class="toggle-slider"></span>
+        </span>
+      </label>
+    </div>
 
-        <div class="parent-layout">
-          <div class="parent-chart glass">
-            <h3>Weekly Practice Summary</h3>
-            <div class="parent-chart-graph">
-              <svg viewBox="0 0 320 160" aria-hidden="true">
-                <path class="parent-chart-line" data-parent="week-line" d="M20 120 L70 100 L120 110 L170 80 L220 90 L270 70 L300 60"></path>
-                <g class="parent-chart-points" data-parent="week-points">
-                  <circle cx="20" cy="120" r="4"></circle>
-                  <circle cx="70" cy="100" r="4"></circle>
-                  <circle cx="120" cy="110" r="4"></circle>
-                  <circle cx="170" cy="80" r="4"></circle>
-                  <circle cx="220" cy="90" r="4"></circle>
-                  <circle cx="270" cy="70" r="4"></circle>
-                  <circle cx="300" cy="60" r="4"></circle>
-                </g>
-              </svg>
-              <picture>
-                <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
-                <img src="./assets/illustrations/mascot-focus.png" alt="" class="parent-chart-mascot" loading="lazy" decoding="async">
-              </picture>
-            </div>
-            <p class="weekly-summary" data-parent="week-summary">Total: 0 minutes</p>
-          </div>
+    <div class="parent-settings glass parent-pin-card">
+      <h3>Parent PIN</h3>
+      <p class="parent-settings-note">Update the 4-digit PIN used to open Parent Zone.</p>
+      <label class="setting-row">
+        <span>New PIN</span>
+        <input class="parent-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" data-parent-pin-input aria-label="New parent PIN">
+      </label>
+      <div class="parent-actions">
+        <button class="btn btn-secondary" type="button" data-parent-pin-save>Save PIN</button>
+      </div>
+      <p class="parent-settings-note" data-parent-pin-status aria-live="polite">PIN is set.</p>
+    </div>
 
-          <div class="parent-goals glass">
-            <h3>Goal Setting</h3>
-            <p class="parent-goal-note" data-parent-goal-title="">Next Recital Piece</p>
-            <div class="goal-progress parent-goal-progress" data-parent="goal-track" role="progressbar" aria-label="Weekly goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <div class="goal-fill" data-parent="goal-fill"></div>
-            </div>
-            <div class="parent-goal-value" data-parent="goal-value">0 / 15</div>
-            <div class="parent-goal-form">
-              <label class="setting-row">
-                <span>Recital piece</span>
-                <input class="parent-goal-input" type="text" data-parent-goal-title-input="" placeholder="Next recital piece" autocomplete="off">
-              </label>
-              <label class="setting-row">
-                <span>Weekly minutes goal</span>
-                <input class="parent-goal-input" type="number" min="30" max="420" step="5" data-parent-goal-minutes-input="">
-              </label>
-              <div class="parent-actions">
-                <button class="btn btn-secondary" type="button" data-parent-goal-save="">Save goal</button>
-              </div>
-              <p class="parent-settings-note" data-parent-goal-status="" aria-live="polite">Goal saved.</p>
-            </div>
-          </div>
+    <div class="parent-overview glass">
+      <h3>Child Progress Overview</h3>
+      <div class="overview-skills">
+        <div class="overview-skill"><span class="skill-name">Bow Hold</span><div class="skill-stars" data-parent-skill="bow_control" role="img" aria-label="5 out of 5 stars">★★★★★</div></div>
+        <div class="overview-skill"><span class="skill-name">Intonation</span><div class="skill-stars" data-parent-skill="pitch" role="img" aria-label="4 out of 5 stars">★★★★☆</div></div>
+        <div class="overview-skill"><span class="skill-name">Rhythm</span><div class="skill-stars" data-parent-skill="rhythm" role="img" aria-label="4 out of 5 stars">★★★★☆</div></div>
+      </div>
+      <div class="parent-actions">
+        <a class="btn btn-secondary" href="#view-backup">Export Data</a>
+        <button class="btn btn-primary" type="button" data-share-summary>Share Summary</button>
+      </div>
+      <p class="parent-share-note" data-share-status aria-live="polite">Share this week&apos;s summary via AirDrop, Messages, or Files.</p>
+    </div>
 
-          <div class="parent-settings glass">
-            <h3>Practice Reminder</h3>
-            <p class="parent-settings-note" data-reminder-status="" aria-live="polite">Use iPadOS Reminders or Calendar alerts to keep practice on track.</p>
-            <label class="toggle-setting">
-              <span>Daily reminder</span>
-              <span class="toggle">
-                <input type="checkbox" id="parent-reminder-toggle" checked="">
-                <span class="toggle-slider"></span>
-              </span>
-            </label>
-          </div>
+    <div class="parent-recordings glass">
+      <h3>Practice Recordings</h3>
+      <p class="parent-settings-note" data-parent-recordings-status aria-live="polite">Loading recordings…</p>
+      <div class="parent-recording-list" data-parent-recordings></div>
+      <div class="parent-actions">
+        <button class="btn btn-secondary" type="button" data-parent-clear-recordings>Clear recordings</button>
+      </div>
+    </div>
 
-          <div class="parent-settings glass parent-pin-card">
-            <h3>Parent PIN</h3>
-            <p class="parent-settings-note">Update the 4-digit PIN used to open Parent Zone.</p>
-            <label class="setting-row">
-              <span>New PIN</span>
-              <input class="parent-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" data-parent-pin-input="" aria-label="New parent PIN">
-            </label>
-            <div class="parent-actions">
-              <button class="btn btn-secondary" type="button" data-parent-pin-save="">Save PIN</button>
-            </div>
-            <p class="parent-settings-note" data-parent-pin-status="" aria-live="polite">PIN is set.</p>
-          </div>
+    <div class="parent-advanced glass" data-parent-advanced-controls>
+      <h3>Advanced App Controls</h3>
 
-          <div class="parent-overview glass">
-            <h3>Child Progress Overview</h3>
-            <div class="overview-skills">
-              <div class="overview-skill">
-                <span class="skill-name">Bow Hold</span>
-                <div class="skill-stars" data-parent-skill="bow_control" role="img" aria-label="5 out of 5 stars">★★★★★</div>
-              </div>
-              <div class="overview-skill">
-                <span class="skill-name">Intonation</span>
-                <div class="skill-stars" data-parent-skill="pitch" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
-              </div>
-              <div class="overview-skill">
-                <span class="skill-name">Rhythm</span>
-                <div class="skill-stars" data-parent-skill="rhythm" role="img" aria-label="4 out of 5 stars">★★★★☆</div>
-              </div>
-            </div>
-            <div class="parent-actions">
-              <a class="btn btn-secondary" href="#view-backup">Export Data</a>
-              <button class="btn btn-primary" type="button" data-share-summary="">Share Summary</button>
-            </div>
-            <p class="parent-share-note" data-share-status="" aria-live="polite">Share this week’s summary via AirDrop, Messages, or Files.</p>
-          </div>
+      <div class="parent-advanced-section">
+        <h4>Child Audio Controls</h4>
+        <label class="setting-row">
+          <span>Practice recordings</span>
+          <span class="toggle">
+            <input type="checkbox" id="setting-recordings">
+            <span class="toggle-slider"></span>
+          </span>
+        </label>
+        <p class="setting-note" data-recording-status aria-live="polite">Recording status: ready.</p>
+        <label class="setting-row">
+          <span>Voice coach</span>
+          <span class="toggle">
+            <input type="checkbox" id="setting-voice">
+            <span class="toggle-slider"></span>
+          </span>
+        </label>
+        <p class="setting-note" data-voice-note>Spoken coach tips use built-in iPad voices and work offline.</p>
+      </div>
 
-          <div class="parent-recordings glass">
-            <h3>Practice Recordings</h3>
-            <p class="parent-settings-note" data-parent-recordings-status="" aria-live="polite">Loading recordings…</p>
-            <div class="parent-recording-list" data-parent-recordings=""></div>
-            <div class="parent-actions">
-              <button class="btn btn-secondary" type="button" data-parent-clear-recordings="">Clear recordings</button>
-            </div>
-          </div>
+      <div class="parent-advanced-section">
+        <h4>System Notifications</h4>
+        <label class="setting-row">
+          <span>Notifications</span>
+          <span class="toggle">
+            <input type="checkbox" id="setting-notifications">
+            <span class="toggle-slider"></span>
+          </span>
+        </label>
+        <p class="setting-note" data-notification-status aria-live="polite">Notifications are off.</p>
+      </div>
+
+      <div class="parent-advanced-section">
+        <h4>Offline Storage and Repair</h4>
+        <p class="setting-note" data-storage-status aria-live="polite">Checking offline storage status…</p>
+        <p class="setting-note" data-storage-estimate aria-live="polite">Storage estimate loading…</p>
+        <p class="setting-note" data-network-status aria-live="polite">Network status: checking…</p>
+        <p class="setting-note" data-offline-status aria-live="polite">Offline integrity: checking…</p>
+        <p class="setting-note" data-offline-assets aria-live="polite">Cached assets: —</p>
+        <p class="setting-note" data-offline-misses aria-live="polite">Offline misses: —</p>
+        <p class="setting-note" data-offline-last aria-live="polite">Last offline check: —</p>
+        <label class="setting-row">
+          <span>Offline mode</span>
+          <span class="toggle">
+            <input type="checkbox" id="setting-offline-mode">
+            <span class="toggle-slider"></span>
+          </span>
+        </label>
+        <p class="setting-note" data-offline-mode-status aria-live="polite">Offline mode is off. Cached content will still be used when offline.</p>
+        <div class="settings-actions">
+          <button class="btn btn-secondary" type="button" data-storage-request>Protect offline data</button>
+          <button class="btn btn-secondary" type="button" data-offline-check>Run offline check</button>
+          <button class="btn btn-secondary" type="button" data-offline-selftest>Run offline self-test</button>
+          <button class="btn btn-secondary" type="button" data-offline-repair>Repair offline cache</button>
         </div>
+        <p class="setting-note" data-offline-selftest-status aria-live="polite">Offline self-test: not run yet.</p>
+      </div>
 
-        <picture>
-          <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
-          <img src="./assets/illustrations/mascot-focus.png" alt="" class="corner-mascot parent-mascot" loading="lazy" decoding="async">
-        </picture>
-      </section>
+      <div class="parent-advanced-section">
+        <h4>App Updates</h4>
+        <p class="setting-note" data-sw-status aria-live="polite">Checking for updates…</p>
+        <p class="setting-note" data-sync-status aria-live="polite">Background refresh status: checking…</p>
+        <div class="settings-actions">
+          <button class="btn btn-secondary" type="button" data-sw-update>Check for updates</button>
+          <button class="btn btn-primary" type="button" data-sw-apply hidden>Apply update</button>
+        </div>
+      </div>
+
+      <div class="parent-advanced-section">
+        <h4>Install and Platform Diagnostics</h4>
+        <p class="setting-note" data-install-status aria-live="polite">Install status: Use Add to Home Screen for the best offline experience.</p>
+        <p class="setting-note" data-platform-status aria-live="polite">Checking device features…</p>
+        <p class="setting-note" data-input-status aria-live="polite">Input: checking…</p>
+        <button class="btn btn-secondary" type="button" data-install-help>Show install steps</button>
+      </div>
+
+      <div class="parent-advanced-section">
+        <h4>Adaptive Learning Controls</h4>
+        <p class="setting-note" data-ml-status aria-live="polite">Adaptive learning status loading…</p>
+        <p class="setting-note" data-ml-detail>Most recent: —</p>
+        <p class="setting-note" data-ml-accel aria-live="polite">ML acceleration: checking…</p>
+        <p class="setting-note" data-ml-accel-detail>Checking on-device ML support…</p>
+        <label class="setting-row">
+          <span>Demo mode</span>
+          <span class="toggle">
+            <input type="checkbox" data-ml-demo data-persist="false">
+            <span class="toggle-slider"></span>
+          </span>
+        </label>
+        <div class="settings-actions">
+          <button class="btn btn-secondary" type="button" data-ml-simulate disabled>Simulate adaptive data</button>
+          <button class="btn btn-secondary" type="button" data-ml-reset>Reset adaptive learning</button>
+        </div>
+      </div>
+
+      <div class="parent-advanced-section">
+        <h4>Practice Session Device Controls</h4>
+        <label class="setting-row">
+          <span>Keep screen awake</span>
+          <span class="toggle">
+            <input type="checkbox" id="setting-keep-awake">
+            <span class="toggle-slider"></span>
+          </span>
+        </label>
+        <p class="setting-note" data-wake-status aria-live="polite">Screen stays on during practice sessions.</p>
+
+        <label class="setting-row">
+          <span>Lock orientation</span>
+          <span class="toggle">
+            <input type="checkbox" id="setting-orientation-lock">
+            <span class="toggle-slider"></span>
+          </span>
+        </label>
+        <p class="setting-note" data-orientation-status aria-live="polite">Orientation follows device settings.</p>
+      </div>
+    </div>
+  </div>
+
+  <picture>
+    <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
+    <img src="./assets/illustrations/mascot-focus.png" alt="" class="corner-mascot parent-mascot" loading="lazy" decoding="async">
+  </picture>
+</section>

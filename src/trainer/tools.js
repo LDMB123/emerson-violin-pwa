@@ -1,4 +1,5 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
+import { hasAudioContextSupport } from '../audio/audio-context.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import { setDifficultyBadge } from '../games/shared.js';
@@ -16,8 +17,73 @@ import {
     formatPostureHint,
     formatBowingIntroText,
     shouldClearTapTimes,
-    isBfcachePagehide
+    isBfcachePagehide,
 } from './trainer-utils.js';
+
+const DEFAULT_BPM = 100;
+
+let metronomeSlider = null;
+let metronomeBpmEl = null;
+let metronomeToggle = null;
+let metronomeTap = null;
+let metronomeStatus = null;
+let dialNumber = null;
+let metronomeVisual = null;
+
+let postureInput = null;
+let posturePreview = null;
+let postureImage = null;
+let postureClear = null;
+let postureHint = null;
+
+let bowingIntro = null;
+let bowingChecks = [];
+let audioCards = [];
+
+let metronomeBpm = DEFAULT_BPM;
+let metronomeTimer = null;
+let metronomePlayer = null;
+let tapTimes = [];
+let targetBpm = 90;
+let metronomeReported = false;
+let metronomeTouched = false;
+
+let postureCount = 0;
+let postureTarget = 2;
+let postureReported = false;
+let postureUrl = null;
+
+let bowingTarget = 3;
+let bowingReported = false;
+
+let globalListenersBound = false;
+
+const isPracticeView = () => {
+    const viewId = window.location.hash.replace('#', '') || 'view-home';
+    return isPracticeViewUtil(viewId);
+};
+
+const resolveElements = () => {
+    metronomeSlider = document.querySelector('[data-metronome="slider"]');
+    metronomeBpmEl = document.querySelector('[data-metronome="bpm"]');
+    metronomeToggle = document.querySelector('[data-metronome="toggle"]');
+    metronomeTap = document.querySelector('[data-metronome="tap"]');
+    metronomeStatus = document.querySelector('[data-metronome="status"]');
+    dialNumber = document.querySelector('.trainer-dial .dial-number');
+    metronomeVisual = document.querySelector('.trainer-metronome');
+
+    postureInput = document.querySelector('#posture-capture');
+    posturePreview = document.querySelector('[data-posture-preview]');
+    postureImage = document.querySelector('[data-posture-image]');
+    postureClear = document.querySelector('[data-posture-clear]');
+    postureHint = document.querySelector('.posture-hint');
+
+    const bowingView = document.querySelector('#view-bowing');
+    bowingIntro = bowingView?.querySelector('.game-drill-intro') || null;
+    bowingChecks = Array.from(document.querySelectorAll('#view-bowing input[id^="bow-set-"]'));
+
+    audioCards = Array.from(document.querySelectorAll('.audio-card'));
+};
 
 function updateSliderFill(slider) {
     const min = Number(slider.min) || 0;
@@ -27,52 +93,14 @@ function updateSliderFill(slider) {
     slider.style.setProperty('--slider-fill', `${pct}%`);
 }
 
-const metronomeSlider = document.querySelector('[data-metronome="slider"]');
-const metronomeBpmEl = document.querySelector('[data-metronome="bpm"]');
-const metronomeToggle = document.querySelector('[data-metronome="toggle"]');
-const metronomeTap = document.querySelector('[data-metronome="tap"]');
-const metronomeStatus = document.querySelector('[data-metronome="status"]');
-const dialNumber = document.querySelector('.trainer-dial .dial-number');
-const metronomeVisual = document.querySelector('.trainer-metronome');
-
-const postureInput = document.querySelector('#posture-capture');
-const posturePreview = document.querySelector('[data-posture-preview]');
-const postureImage = document.querySelector('[data-posture-image]');
-const postureClear = document.querySelector('[data-posture-clear]');
-const postureHint = document.querySelector('.posture-hint');
-
-const bowingView = document.querySelector('#view-bowing');
-const bowingIntro = bowingView?.querySelector('.game-drill-intro');
-const bowingChecks = Array.from(document.querySelectorAll('#view-bowing input[id^="bow-set-"]'));
-
-const isPracticeView = () => {
-    const viewId = window.location.hash.replace('#', '') || 'view-home';
-    return isPracticeViewUtil(viewId);
-};
-
-let metronomeBpm = Number.parseInt(metronomeSlider?.value || '100', 10);
-if (Number.isNaN(metronomeBpm)) metronomeBpm = 100;
-
-let metronomeTimer = null;
-let metronomePlayer = null;
-let tapTimes = [];
-let targetBpm = 90;
-let metronomeReported = false;
-let metronomeTouched = false;
-let postureCount = 0;
-let postureTarget = 2;
-let postureReported = false;
-let bowingTarget = 3;
-let bowingReported = false;
-let bowingLastReported = 0;
-
-
 const updateMetronomeDisplay = () => {
     if (metronomeBpmEl) metronomeBpmEl.textContent = `${metronomeBpm} BPM`;
     if (dialNumber) dialNumber.textContent = String(metronomeBpm);
     if (metronomeSlider) {
         metronomeSlider.setAttribute('aria-valuenow', String(metronomeBpm));
         metronomeSlider.setAttribute('aria-valuetext', `${metronomeBpm} BPM`);
+        metronomeSlider.value = String(metronomeBpm);
+        updateSliderFill(metronomeSlider);
     }
     if (metronomeVisual) {
         const duration = 60 / metronomeBpm;
@@ -82,6 +110,17 @@ const updateMetronomeDisplay = () => {
 
 const setMetronomeStatus = (message) => {
     if (metronomeStatus) metronomeStatus.textContent = message;
+};
+
+const syncMetronomeRunningState = () => {
+    const running = Boolean(metronomeTimer);
+    if (metronomeToggle) {
+        metronomeToggle.textContent = running ? 'Stop' : 'Start';
+        metronomeToggle.setAttribute('aria-pressed', running ? 'true' : 'false');
+    }
+    if (metronomeVisual) {
+        metronomeVisual.classList.toggle('is-running', running);
+    }
 };
 
 const reportMetronome = () => {
@@ -96,6 +135,7 @@ const applyMetronomeTuning = async () => {
     const tuning = await getGameTuning('trainer-metronome');
     targetBpm = tuning.targetBpm ?? targetBpm;
     setDifficultyBadge(document.querySelector('#metronome-loops .audio-panel-header'), tuning.difficulty, 'Tempo');
+
     if (metronomeSlider && !metronomeSlider.dataset.userSet) {
         updateBpm(targetBpm);
     }
@@ -105,7 +145,9 @@ const applyMetronomeTuning = async () => {
 };
 
 const getMetronomePlayer = () => {
-    if (!metronomePlayer) metronomePlayer = createTonePlayer();
+    if (!metronomePlayer) {
+        metronomePlayer = createTonePlayer();
+    }
     return metronomePlayer;
 };
 
@@ -123,12 +165,10 @@ const stopMetronome = ({ silent = false } = {}) => {
         metronomeTimer = null;
     }
     tapTimes = [];
-    if (metronomeToggle) {
-        metronomeToggle.textContent = 'Start';
-        metronomeToggle.setAttribute('aria-pressed', 'false');
+    syncMetronomeRunningState();
+    if (!silent) {
+        setMetronomeStatus('Metronome paused.');
     }
-    if (metronomeVisual) metronomeVisual.classList.remove('is-running');
-    if (!silent) setMetronomeStatus('Metronome paused.');
 };
 
 const startMetronome = () => {
@@ -140,11 +180,7 @@ const startMetronome = () => {
     const interval = calculateMetronomeInterval(metronomeBpm);
     playClick();
     metronomeTimer = window.setInterval(playClick, interval);
-    if (metronomeToggle) {
-        metronomeToggle.textContent = 'Stop';
-        metronomeToggle.setAttribute('aria-pressed', 'true');
-    }
-    if (metronomeVisual) metronomeVisual.classList.add('is-running');
+    syncMetronomeRunningState();
     setMetronomeStatus(`Running at ${metronomeBpm} BPM.`);
 };
 
@@ -152,180 +188,112 @@ const refreshMetronome = () => {
     if (metronomeTimer) {
         stopMetronome({ silent: true });
         startMetronome();
-    } else {
-        updateMetronomeDisplay();
+        return;
     }
+    updateMetronomeDisplay();
 };
 
 const updateBpm = (value) => {
     const parsed = Number.parseInt(value, 10);
     if (Number.isNaN(parsed)) return;
     metronomeBpm = clampBpm(parsed);
-    if (metronomeSlider) metronomeSlider.value = String(metronomeBpm);
     updateMetronomeDisplay();
     refreshMetronome();
 };
 
-if (metronomeSlider) {
-    metronomeSlider.dataset.sliderFillBound = 'true';
-    metronomeSlider.addEventListener('input', (event) => {
-        const target = event.target;
-        if (!(target instanceof HTMLInputElement)) return;
-        metronomeSlider.dataset.userSet = 'true';
-        metronomeReported = false;
-        metronomeTouched = true;
-        updateBpm(target.value);
-        updateSliderFill(metronomeSlider);
+const bindRangeInputs = () => {
+    document.querySelectorAll('input[type="range"]').forEach((slider) => {
+        updateSliderFill(slider);
+        if (slider.dataset.sliderFillBound === 'true') return;
+        slider.dataset.sliderFillBound = 'true';
+        slider.addEventListener('input', () => updateSliderFill(slider));
     });
-}
+};
 
-metronomeToggle?.addEventListener('click', () => {
-    if (metronomeTimer) {
-        stopMetronome();
-        return;
-    }
-    metronomeTouched = true;
-    startMetronome();
-});
-
-metronomeTap?.addEventListener('click', () => {
-    const now = performance.now();
-    if (tapTimes.length && shouldClearTapTimes(tapTimes[tapTimes.length - 1], now)) {
-        tapTimes = [];
-    }
-    tapTimes.push(now);
-    if (tapTimes.length > 5) tapTimes.shift();
-    if (tapTimes.length >= 2) {
-        const intervals = tapTimes.slice(1).map((time, index) => time - tapTimes[index]);
-        const bpm = calculateMetronomeBpm(intervals);
-        if (metronomeSlider) metronomeSlider.dataset.userSet = 'true';
-        metronomeReported = false;
-        metronomeTouched = true;
-        updateBpm(bpm);
-        setMetronomeStatus(`Tempo set to ${metronomeBpm} BPM.`);
-        reportMetronome();
-    } else {
-        setMetronomeStatus('Tap again to set tempo.');
-    }
-});
-
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        stopMetronome({ silent: true });
-    }
-});
-
-window.addEventListener('pagehide', (event) => {
-    if (isBfcachePagehide(event)) return;
-    reportMetronome();
-    stopMetronome({ silent: true });
-});
-
-window.addEventListener('hashchange', () => {
-    if (!isPracticeView()) {
-        reportMetronome();
-        stopMetronome({ silent: true });
-    }
-}, { passive: true });
-
-document.addEventListener(SOUNDS_CHANGE, (event) => {
-    if (event.detail?.enabled === false) {
-        stopMetronome({ silent: true });
-        setMetronomeStatus('Sounds are off.');
-    }
-});
-
-updateMetronomeDisplay();
-
-document.querySelectorAll('input[type="range"]').forEach((s) => {
-    updateSliderFill(s);
-    if (!s.dataset.sliderFillBound) {
-        s.dataset.sliderFillBound = 'true';
-        s.addEventListener('input', () => updateSliderFill(s));
-    }
-});
-
-applyMetronomeTuning();
-applyPostureTuning();
-applyBowingTuning();
-
-window.addEventListener('hashchange', () => {
-    if (window.location.hash !== '#view-posture') {
-        reportPosture();
-    }
-    if (window.location.hash !== '#view-bowing') {
-        reportBowing();
-    }
-}, { passive: true });
-
-document.addEventListener(ML_UPDATE, (event) => {
-    if (event.detail?.id === 'trainer-metronome') {
-        metronomeReported = false;
-        applyMetronomeTuning();
-    }
-    if (event.detail?.id === 'trainer-posture') {
-        postureReported = false;
-        applyPostureTuning();
-    }
-    if (event.detail?.id === 'bowing-coach') {
-        bowingReported = false;
-        applyBowingTuning();
-    }
-});
-
-document.addEventListener(ML_RESET, () => {
-    if (metronomeSlider) delete metronomeSlider.dataset.userSet;
-    metronomeReported = false;
-    applyMetronomeTuning();
-    postureReported = false;
-    applyPostureTuning();
-    bowingReported = false;
-    applyBowingTuning();
-});
-
-const audioCards = Array.from(document.querySelectorAll('.audio-card'));
-audioCards.forEach((card) => {
-    const audio = card.querySelector('audio');
-    if (!audio) return;
-    const update = () => {
-        card.classList.toggle('is-playing', !audio.paused);
-    };
-    audio.addEventListener('play', () => {
-        audioCards.forEach((other) => {
-            if (other !== card) other.classList.remove('is-playing');
+const bindMetronomeControls = () => {
+    if (metronomeSlider && metronomeSlider.dataset.metronomeBound !== 'true') {
+        metronomeSlider.dataset.metronomeBound = 'true';
+        metronomeSlider.addEventListener('input', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement)) return;
+            target.dataset.userSet = 'true';
+            metronomeReported = false;
+            metronomeTouched = true;
+            updateBpm(target.value);
+            updateSliderFill(target);
         });
-        if (metronomeTimer) {
-            stopMetronome({ silent: true });
-            setMetronomeStatus('Metronome paused while audio plays.');
-        }
-        update();
-    });
-    audio.addEventListener('pause', update);
-    audio.addEventListener('ended', update);
-});
+    }
 
-if (bowingChecks.length) {
-    bowingChecks.forEach((input) => {
-        input.addEventListener('change', () => {
-            bowingReported = false;
-            updateBowingIntro();
-            const completed = bowingChecks.filter((item) => item.checked).length;
-            if (completed >= bowingTarget) {
-                reportBowing();
+    if (metronomeToggle && metronomeToggle.dataset.metronomeBound !== 'true') {
+        metronomeToggle.dataset.metronomeBound = 'true';
+        metronomeToggle.addEventListener('click', () => {
+            if (metronomeTimer) {
+                stopMetronome();
+                return;
             }
+            metronomeTouched = true;
+            startMetronome();
         });
-    });
-}
-
-let postureUrl = null;
-const clearPosturePreview = () => {
-    if (postureUrl) {
-        URL.revokeObjectURL(postureUrl);
-        postureUrl = null;
     }
-    if (postureImage) postureImage.removeAttribute('src');
-    if (posturePreview) posturePreview.hidden = true;
-    if (postureInput) postureInput.value = '';
+
+    if (metronomeTap && metronomeTap.dataset.metronomeBound !== 'true') {
+        metronomeTap.dataset.metronomeBound = 'true';
+        metronomeTap.addEventListener('click', () => {
+            const now = performance.now();
+            if (tapTimes.length && shouldClearTapTimes(tapTimes[tapTimes.length - 1], now)) {
+                tapTimes = [];
+            }
+            tapTimes.push(now);
+            if (tapTimes.length > 5) {
+                tapTimes.shift();
+            }
+
+            if (tapTimes.length < 2) {
+                setMetronomeStatus('Tap again to set tempo.');
+                return;
+            }
+
+            const intervals = tapTimes.slice(1).map((time, index) => time - tapTimes[index]);
+            const bpm = calculateMetronomeBpm(intervals);
+            if (metronomeSlider) {
+                metronomeSlider.dataset.userSet = 'true';
+            }
+            metronomeReported = false;
+            metronomeTouched = true;
+            updateBpm(bpm);
+            setMetronomeStatus(`Tempo set to ${metronomeBpm} BPM.`);
+            reportMetronome();
+        });
+    }
+};
+
+const bindAudioCards = () => {
+    audioCards.forEach((card) => {
+        const audio = card.querySelector('audio');
+        if (!audio || audio.dataset.trainerAudioBound === 'true') return;
+
+        audio.dataset.trainerAudioBound = 'true';
+        const update = () => {
+            card.classList.toggle('is-playing', !audio.paused);
+        };
+
+        audio.addEventListener('play', () => {
+            document.querySelectorAll('.audio-card').forEach((other) => {
+                if (other !== card) {
+                    other.classList.remove('is-playing');
+                }
+            });
+
+            if (metronomeTimer) {
+                stopMetronome({ silent: true });
+                setMetronomeStatus('Metronome paused while audio plays.');
+            }
+            update();
+        });
+
+        audio.addEventListener('pause', update);
+        audio.addEventListener('ended', update);
+    });
 };
 
 const updatePostureHint = () => {
@@ -341,30 +309,96 @@ const reportPosture = () => {
     updateGameResult('trainer-posture', { accuracy, score }).catch(() => {});
 };
 
-async function applyPostureTuning() {
-    const tuning = await getGameTuning('trainer-posture');
-    postureTarget = tuning.targetChecks ?? postureTarget;
-    setDifficultyBadge(document.querySelector('#view-posture .view-header'), tuning.difficulty, 'Posture');
-    updatePostureHint();
-}
+const clearPosturePreview = () => {
+    if (postureUrl) {
+        URL.revokeObjectURL(postureUrl);
+        postureUrl = null;
+    }
+    if (postureImage) {
+        postureImage.removeAttribute('src');
+    }
+    if (posturePreview) {
+        posturePreview.hidden = true;
+    }
+    if (postureInput) {
+        postureInput.value = '';
+    }
+};
+
+const bindPostureControls = () => {
+    if (postureInput && postureInput.dataset.postureBound !== 'true') {
+        postureInput.dataset.postureBound = 'true';
+        postureInput.addEventListener('change', () => {
+            const file = postureInput.files?.[0];
+            if (!file) {
+                clearPosturePreview();
+                return;
+            }
+
+            clearPosturePreview();
+            postureUrl = URL.createObjectURL(file);
+            if (postureImage) {
+                postureImage.src = postureUrl;
+            }
+            if (posturePreview) {
+                posturePreview.hidden = false;
+            }
+            postureCount += 1;
+            postureReported = false;
+            updatePostureHint();
+        });
+    }
+
+    if (postureClear && postureClear.dataset.postureBound !== 'true') {
+        postureClear.dataset.postureBound = 'true';
+        postureClear.addEventListener('click', () => {
+            clearPosturePreview();
+            reportPosture();
+        });
+    }
+};
 
 const updateBowingIntro = () => {
     if (!bowingIntro) return;
     const base = bowingIntro.dataset.baseText || bowingIntro.textContent || '';
-    if (!bowingIntro.dataset.baseText) bowingIntro.dataset.baseText = base;
+    if (!bowingIntro.dataset.baseText) {
+        bowingIntro.dataset.baseText = base;
+    }
     bowingIntro.textContent = formatBowingIntroText(base, bowingTarget);
 };
 
 const reportBowing = () => {
     if (bowingReported || !bowingChecks.length) return;
     const completed = bowingChecks.filter((input) => input.checked).length;
-    if (!completed || completed === bowingLastReported) return;
+    if (!completed) return;
+
     bowingReported = true;
-    bowingLastReported = completed;
     const accuracy = calculateBowingAccuracy(completed, bowingTarget);
     const score = calculateBowingScore(completed);
     updateGameResult('bowing-coach', { accuracy, score }).catch(() => {});
 };
+
+const bindBowingControls = () => {
+    bowingChecks.forEach((input) => {
+        if (input.dataset.bowingBound === 'true') return;
+        input.dataset.bowingBound = 'true';
+        input.addEventListener('change', () => {
+            bowingReported = false;
+            updateBowingIntro();
+            const completed = bowingChecks.filter((item) => item.checked).length;
+            if (completed >= bowingTarget) {
+                reportBowing();
+            }
+        });
+    });
+};
+
+async function applyPostureTuning() {
+    const tuning = await getGameTuning('trainer-posture');
+    postureTarget = tuning.targetChecks ?? postureTarget;
+    setDifficultyBadge(document.querySelector('#view-posture .view-header'), tuning.difficulty, 'Posture');
+    updatePostureHint();
+}
 
 async function applyBowingTuning() {
     const tuning = await getGameTuning('bowing-coach');
@@ -373,34 +407,100 @@ async function applyBowingTuning() {
     updateBowingIntro();
 }
 
-postureInput?.addEventListener('change', () => {
-    const file = postureInput.files?.[0];
-    if (!file) {
+const bindGlobalListeners = () => {
+    if (globalListenersBound) return;
+    globalListenersBound = true;
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopMetronome({ silent: true });
+        }
+    });
+
+    window.addEventListener('pagehide', (event) => {
+        if (isBfcachePagehide(event)) return;
+        reportMetronome();
+        stopMetronome({ silent: true });
+        reportPosture();
         clearPosturePreview();
-        return;
+    });
+
+    window.addEventListener('hashchange', () => {
+        if (!isPracticeView()) {
+            reportMetronome();
+            stopMetronome({ silent: true });
+        }
+        if (window.location.hash !== '#view-posture') {
+            reportPosture();
+            clearPosturePreview();
+        }
+        if (window.location.hash !== '#view-bowing') {
+            reportBowing();
+        }
+    }, { passive: true });
+
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
+        if (event.detail?.enabled === false) {
+            stopMetronome({ silent: true });
+            setMetronomeStatus('Sounds are off.');
+        }
+    });
+
+    document.addEventListener(ML_UPDATE, (event) => {
+        if (event.detail?.id === 'trainer-metronome') {
+            metronomeReported = false;
+            applyMetronomeTuning();
+        }
+        if (event.detail?.id === 'trainer-posture') {
+            postureReported = false;
+            applyPostureTuning();
+        }
+        if (event.detail?.id === 'bowing-coach') {
+            bowingReported = false;
+            applyBowingTuning();
+        }
+    });
+
+    document.addEventListener(ML_RESET, () => {
+        resolveElements();
+        if (metronomeSlider) {
+            delete metronomeSlider.dataset.userSet;
+        }
+        metronomeReported = false;
+        applyMetronomeTuning();
+
+        postureReported = false;
+        applyPostureTuning();
+
+        bowingReported = false;
+        applyBowingTuning();
+    });
+};
+
+const initTrainerTools = () => {
+    resolveElements();
+    bindGlobalListeners();
+
+    if (!hasAudioContextSupport()) {
+        if (metronomeToggle) metronomeToggle.disabled = true;
+        if (metronomeTap) metronomeTap.disabled = true;
+        setMetronomeStatus('Audio tools are not supported on this device.');
     }
-    clearPosturePreview();
-    postureUrl = URL.createObjectURL(file);
-    if (postureImage) postureImage.src = postureUrl;
-    if (posturePreview) posturePreview.hidden = false;
-    postureCount += 1;
-    postureReported = false;
+
+    bindRangeInputs();
+    bindMetronomeControls();
+    bindAudioCards();
+    bindBowingControls();
+    bindPostureControls();
+
+    updateMetronomeDisplay();
+    syncMetronomeRunningState();
     updatePostureHint();
-});
+    updateBowingIntro();
 
-postureClear?.addEventListener('click', () => {
-    clearPosturePreview();
-    reportPosture();
-});
+    applyMetronomeTuning();
+    applyPostureTuning();
+    applyBowingTuning();
+};
 
-window.addEventListener('pagehide', (event) => {
-    if (isBfcachePagehide(event)) return;
-    reportPosture();
-    clearPosturePreview();
-});
-
-if (typeof AudioContext === 'undefined') {
-    if (metronomeToggle) metronomeToggle.disabled = true;
-    if (metronomeTap) metronomeTap.disabled = true;
-    setMetronomeStatus('Audio tools are not supported on this device.');
-}
+export const init = initTrainerTools;

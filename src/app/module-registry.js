@@ -43,25 +43,16 @@ export const MODULE_LOADERS = {
 };
 
 export const EAGER_MODULES = [
-    'platform',
     'dataSaver',
     'offlineRecovery',
-    'ipadosCapabilities',
-    'inputCapabilities',
     'progress',
     'persist',
 ];
 
 export const IDLE_MODULE_PLAN = [
     ['installToast', 0],
-    ['installGuide', 60],
-    ['installGuideClose', 120],
     ['mlScheduler', 180],
-    ['mlAccelerator', 240],
-    ['offlineIntegrity', 300],
-    ['offlineMode', 360],
-    ['reminders', 420],
-    ['badging', 480],
+    ['badging', 420],
     ['audioPlayer', 540],
 ];
 
@@ -79,10 +70,28 @@ const MODULE_RULES = [
     { when: equals('view-session-review', 'view-analysis'), modules: ['sessionReview', 'recordings'] },
     { when: oneOf(equals('view-songs'), startsWith('view-song-')), modules: ['songProgress', 'songSearch', 'recordings'] },
     { when: equals('view-coach'), modules: ['coachActions', 'focusTimer', 'lessonPlan', 'recommendationsUi'] },
+    { when: equals('view-home', 'view-progress', 'view-parent'), modules: ['progress'] },
     { when: equals('view-trainer', 'view-bowing', 'view-posture'), modules: ['trainerTools'] },
-    { when: equals('view-settings'), modules: ['swUpdates', 'adaptiveUi', 'offlineMode', 'reminders'] },
     { when: equals('view-backup'), modules: ['backupExport'] },
-    { when: equals('view-parent'), modules: ['parentPin', 'parentGoals', 'parentRecordings', 'reminders'] },
+    {
+        when: equals('view-parent'),
+        modules: [
+            'parentPin',
+            'parentGoals',
+            'parentRecordings',
+            'reminders',
+            'platform',
+            'offlineIntegrity',
+            'offlineMode',
+            'swUpdates',
+            'adaptiveUi',
+            'ipadosCapabilities',
+            'inputCapabilities',
+            'installGuide',
+            'installGuideClose',
+            'mlAccelerator',
+        ],
+    },
     { when: oneOf(equals('view-games'), startsWith('view-game-')), modules: ['gameMetrics', 'gameEnhancements', 'gameComplete'] },
     { when: equals('view-progress'), modules: ['recommendationsUi'] },
 ];

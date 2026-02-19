@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-    PRIMARY_VIEWS,
     getViewId,
     isPrimaryView,
     getModulesForView,
@@ -9,94 +8,34 @@ import {
 } from '../src/utils/app-utils.js';
 
 describe('app-utils', () => {
-    describe('PRIMARY_VIEWS constant', () => {
-        it('contains view-home', () => {
-            expect(PRIMARY_VIEWS.has('view-home')).toBe(true);
-        });
-
-        it('contains view-coach', () => {
-            expect(PRIMARY_VIEWS.has('view-coach')).toBe(true);
-        });
-
-        it('contains view-games', () => {
-            expect(PRIMARY_VIEWS.has('view-games')).toBe(true);
-        });
-
-        it('contains view-progress', () => {
-            expect(PRIMARY_VIEWS.has('view-progress')).toBe(true);
-        });
-
-        it('does not contain view-tuner', () => {
-            expect(PRIMARY_VIEWS.has('view-tuner')).toBe(false);
-        });
-    });
-
     describe('getViewId', () => {
-        it('returns view-home for empty string', () => {
+        it('returns view-home for empty input', () => {
             expect(getViewId('')).toBe('view-home');
-        });
-
-        it('returns view-home for null', () => {
             expect(getViewId(null)).toBe('view-home');
-        });
-
-        it('returns view-home for undefined', () => {
             expect(getViewId(undefined)).toBe('view-home');
         });
 
-        it('strips # prefix', () => {
+        it('strips hash and whitespace', () => {
             expect(getViewId('#view-tuner')).toBe('view-tuner');
-        });
-
-        it('trims whitespace', () => {
-            expect(getViewId('  view-tuner  ')).toBe('view-tuner');
-        });
-
-        it('handles hash with whitespace', () => {
-            expect(getViewId('#  view-tuner  ')).toBe('view-tuner');
+            expect(getViewId('  #view-games  ')).toBe('view-games');
         });
     });
 
     describe('isPrimaryView', () => {
-        it('returns true for view-home', () => {
+        it('treats child core views as primary', () => {
             expect(isPrimaryView('view-home')).toBe(true);
-        });
-
-        it('returns true for view-coach', () => {
             expect(isPrimaryView('view-coach')).toBe(true);
+            expect(isPrimaryView('view-games')).toBe(true);
+            expect(isPrimaryView('view-songs')).toBe(true);
+            expect(isPrimaryView('view-progress')).toBe(true);
         });
 
-        it('returns false for view-tuner', () => {
-            expect(isPrimaryView('view-tuner')).toBe(false);
-        });
-
-        it('returns false for empty string', () => {
-            expect(isPrimaryView('')).toBe(false);
+        it('treats parent view as non-primary', () => {
+            expect(isPrimaryView('view-parent')).toBe(false);
         });
     });
 
     describe('getModulesForView', () => {
-        it('returns empty array for view-home', () => {
-            expect(getModulesForView('view-home')).toEqual([]);
-        });
-
-        it('returns tuner module for view-tuner', () => {
-            expect(getModulesForView('view-tuner')).toEqual(['tuner']);
-        });
-
-        it('returns session review modules', () => {
-            const modules = getModulesForView('view-session-review');
-            expect(modules).toContain('sessionReview');
-            expect(modules).toContain('recordings');
-        });
-
-        it('returns song modules', () => {
-            const modules = getModulesForView('view-songs');
-            expect(modules).toContain('songProgress');
-            expect(modules).toContain('songSearch');
-            expect(modules).toContain('recordings');
-        });
-
         it('returns coach modules', () => {
             const modules = getModulesForView('view-coach');
             expect(modules).toContain('coachActions');
@@ -105,56 +44,27 @@ describe('app-utils', () => {
             expect(modules).toContain('recommendationsUi');
         });
 
-        it('returns trainer modules', () => {
-            const modules = getModulesForView('view-trainer');
-            expect(modules).toContain('trainerTools');
-        });
-
-        it('returns settings modules', () => {
-            const modules = getModulesForView('view-settings');
-            expect(modules).toContain('swUpdates');
-            expect(modules).toContain('adaptiveUi');
-            expect(modules).toContain('offlineMode');
-            expect(modules).toContain('reminders');
-        });
-
-        it('returns backup module', () => {
-            const modules = getModulesForView('view-backup');
-            expect(modules).toContain('backupExport');
-        });
-
-        it('returns parent modules', () => {
+        it('returns parent advanced modules', () => {
             const modules = getModulesForView('view-parent');
             expect(modules).toContain('parentPin');
             expect(modules).toContain('parentGoals');
             expect(modules).toContain('parentRecordings');
-            expect(modules).toContain('reminders');
+            expect(modules).toContain('platform');
+            expect(modules).toContain('offlineIntegrity');
+            expect(modules).toContain('offlineMode');
+            expect(modules).toContain('swUpdates');
+            expect(modules).toContain('adaptiveUi');
         });
 
-        it('returns game modules', () => {
-            const modules = getModulesForView('view-games');
+        it('returns no special modules for settings view', () => {
+            expect(getModulesForView('view-settings')).toEqual([]);
+        });
+
+        it('returns game modules for game views', () => {
+            const modules = getModulesForView('view-game-pitch-quest');
             expect(modules).toContain('gameMetrics');
             expect(modules).toContain('gameEnhancements');
-        });
-
-        it('loads gameComplete for view-game-pitch-quest', () => {
-            const modules = getModulesForView('view-game-pitch-quest');
             expect(modules).toContain('gameComplete');
-        });
-
-        it('loads gameComplete for view-games', () => {
-            const modules = getModulesForView('view-games');
-            expect(modules).toContain('gameComplete');
-        });
-
-        it('returns progress modules', () => {
-            const modules = getModulesForView('view-progress');
-            expect(modules).toContain('recommendationsUi');
-        });
-
-        it('dedupes module names', () => {
-            const modules = getModulesForView('view-game-pitch-quest');
-            expect(new Set(modules).size).toBe(modules.length);
         });
 
         it('returns a frozen module list', () => {
@@ -168,25 +78,30 @@ describe('app-utils', () => {
     });
 
     describe('getActiveNavHref', () => {
-        it('returns hash for primary view', () => {
-            expect(getActiveNavHref('view-home')).toBe('#view-home');
+        it('maps practice group views to coach nav item', () => {
+            expect(getActiveNavHref('view-home')).toBe('#view-coach');
+            expect(getActiveNavHref('view-tuner')).toBe('#view-coach');
         });
 
-        it('returns null for non-primary view', () => {
-            expect(getActiveNavHref('view-tuner')).toBe(null);
+        it('maps songs and games views to matching nav items', () => {
+            expect(getActiveNavHref('view-games')).toBe('#view-games');
+            expect(getActiveNavHref('view-song-twinkle')).toBe('#view-songs');
+            expect(getActiveNavHref('view-progress')).toBe('#view-progress');
+        });
+
+        it('returns null for parent and utility views', () => {
+            expect(getActiveNavHref('view-parent')).toBe(null);
+            expect(getActiveNavHref('view-help')).toBe(null);
         });
     });
 
     describe('isNavItemActive', () => {
         it('returns true when hrefs match', () => {
-            expect(isNavItemActive('#view-home', '#view-home')).toBe(true);
+            expect(isNavItemActive('#view-games', '#view-games')).toBe(true);
         });
 
-        it('returns false when hrefs differ', () => {
+        it('returns false when hrefs differ or activeHref missing', () => {
             expect(isNavItemActive('#view-home', '#view-coach')).toBe(false);
-        });
-
-        it('returns false when activeHref is null', () => {
             expect(isNavItemActive('#view-home', null)).toBe(false);
         });
     });

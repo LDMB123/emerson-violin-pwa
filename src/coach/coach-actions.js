@@ -1,5 +1,7 @@
+import { whenReady } from '../utils/dom-ready.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { ML_UPDATE, LESSON_STEP, LESSON_COMPLETE, GAME_RECORDED } from '../utils/event-names.js';
+import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
 
 const GAME_MESSAGES = {
     'pitch-quest':    'Nice pitch work! Try using less pressure on the bow next.',
@@ -18,10 +20,9 @@ const GAME_MESSAGES = {
 };
 
 let pendingGameMessage = null;
-
-const bubble = document.querySelector('[data-progress="coach-speech"]');
-const buttons = Array.from(document.querySelectorAll('[data-coach-action]'));
-const voiceToggle = document.querySelector('#setting-voice');
+let bubble = null;
+let textSpan = null;
+let typingTimer = 0;
 
 const baseMessages = [
     'Warm up with open strings and gentle bows.',
@@ -33,28 +34,14 @@ const baseMessages = [
 
 let messages = [...baseMessages];
 let index = 0;
-if (bubble?.textContent?.trim()) {
-    baseMessages.unshift(bubble.textContent.trim());
-    messages = [...baseMessages];
-}
 
-const textSpan = bubble?.querySelector('.coach-bubble-text');
-let typingTimer = 0;
-
-const setMessage = (message) => {
-    if (!bubble || !textSpan) return;
-    clearTimeout(typingTimer);
-    bubble.classList.remove('is-revealed');
-    bubble.classList.add('is-typing');
-    typingTimer = setTimeout(() => {
-        textSpan.textContent = message;
-        bubble.classList.remove('is-typing');
-        bubble.classList.add('is-revealed');
-    }, 600);
+const resolveCoachElements = () => {
+    bubble = document.querySelector('[data-progress="coach-speech"]');
+    textSpan = bubble?.querySelector('.coach-bubble-text') || null;
+    return Boolean(bubble && textSpan);
 };
 
-const canSpeak = () => Boolean(voiceToggle?.checked)
-    && 'speechSynthesis' in window;
+const canSpeak = () => isVoiceCoachEnabled() && 'speechSynthesis' in window;
 
 const speakMessage = (message) => {
     if (!message || !canSpeak()) return;
@@ -69,6 +56,21 @@ const speakMessage = (message) => {
     } catch {
         // Ignore speech failures
     }
+};
+
+const setMessage = (message) => {
+    if (!resolveCoachElements()) return;
+    clearTimeout(typingTimer);
+    const activeBubble = bubble;
+    const activeTextSpan = textSpan;
+    activeBubble.classList.remove('is-revealed');
+    activeBubble.classList.add('is-typing');
+    typingTimer = window.setTimeout(() => {
+        if (!activeBubble?.isConnected || !activeTextSpan?.isConnected) return;
+        activeTextSpan.textContent = message;
+        activeBubble.classList.remove('is-typing');
+        activeBubble.classList.add('is-revealed');
+    }, 600);
 };
 
 const buildMessages = (recs) => {
@@ -94,7 +96,7 @@ const applyRecommendations = async () => {
     const recs = await getLearningRecommendations();
     messages = buildMessages(recs);
     index = 0;
-    if (bubble && bubble.dataset.coachAuto !== 'false') {
+    if (resolveCoachElements() && bubble.dataset.coachAuto !== 'false') {
         setMessage(messages[0] || bubble.textContent);
     }
 };
@@ -116,20 +118,33 @@ const handleAction = (action) => {
     }
 };
 
+const bindCoachActions = () => {
+    const buttons = Array.from(document.querySelectorAll('[data-coach-action]'));
+    buttons.forEach((button) => {
+        if (button.dataset.coachActionBound === 'true') return;
+        button.dataset.coachActionBound = 'true';
+        button.addEventListener('click', () => {
+            const action = button.dataset.coachAction;
+            handleAction(action);
+            if (resolveCoachElements()) bubble.dataset.coachAuto = 'false';
+        });
+    });
+};
+
 const handleLessonStep = (event) => {
-    if (!bubble) return;
+    if (!resolveCoachElements()) return;
     const detail = event.detail || {};
     const step = detail.step;
     if (!step) return;
-    const index = Number.isFinite(detail.index) ? detail.index : 0;
+    const stepIndex = Number.isFinite(detail.index) ? detail.index : 0;
     const total = Number.isFinite(detail.total) ? detail.total : 1;
     let message = '';
     if (detail.state === 'start') {
-        message = `Step ${index + 1} of ${total}: ${step.label || 'Practice step'}. ${step.cue || ''}`.trim();
+        message = `Step ${stepIndex + 1} of ${total}: ${step.label || 'Practice step'}. ${step.cue || ''}`.trim();
     } else if (detail.state === 'complete') {
-        message = `Nice work! Step ${index + 1} complete.`;
+        message = `Nice work! Step ${stepIndex + 1} complete.`;
     } else if (detail.state === 'pause') {
-        message = `Paused on step ${index + 1}. Resume when you're ready.`;
+        message = `Paused on step ${stepIndex + 1}. Resume when you're ready.`;
     }
     if (message) {
         bubble.dataset.coachAuto = 'false';
@@ -139,24 +154,20 @@ const handleLessonStep = (event) => {
 };
 
 const handleLessonComplete = () => {
-    if (!bubble) return;
+    if (!resolveCoachElements()) return;
     const message = 'Lesson complete! Take a breath, then choose a new plan.';
     bubble.dataset.coachAuto = 'false';
     setMessage(message);
     speakMessage(message);
 };
 
-if (buttons.length) {
-    buttons.forEach((button) => {
-        button.addEventListener('click', () => {
-            const action = button.dataset.coachAction;
-            handleAction(action);
-            if (bubble) bubble.dataset.coachAuto = 'false';
-        });
-    });
-}
+const initCoachActions = () => {
+    resolveCoachElements();
+    bindCoachActions();
+    applyRecommendations();
+};
 
-applyRecommendations();
+export const init = initCoachActions;
 
 document.addEventListener(ML_UPDATE, applyRecommendations);
 document.addEventListener(LESSON_STEP, handleLessonStep);
@@ -168,10 +179,13 @@ document.addEventListener(GAME_RECORDED, (e) => {
     }
 });
 
-if (voiceToggle) {
-    voiceToggle.addEventListener('change', () => {
-        if (!voiceToggle.checked) {
-            window.speechSynthesis.cancel();
-        }
-    });
-}
+document.addEventListener('change', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (target.id !== 'setting-voice') return;
+    if (!target.checked) {
+        window.speechSynthesis.cancel();
+    }
+});
+
+whenReady(initCoachActions);

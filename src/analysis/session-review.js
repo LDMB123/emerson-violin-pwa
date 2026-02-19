@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { getBlob } from '../persistence/storage.js';
 import { loadEvents, loadRecordings, resolveRecordingSource } from '../persistence/loaders.js';
@@ -17,20 +16,34 @@ import {
     getRecentEvents,
 } from '../utils/session-review-utils.js';
 import { createAudioController } from '../utils/audio-utils.js';
+import { buildRecordingSlotState, applyRecordingSlotState } from '../utils/analysis-recordings-utils.js';
 
+let chartLine = null;
+let chartPoints = null;
+let chartCaption = null;
+let minutesEl = null;
+let accuracyEl = null;
+let coachMessageEl = null;
+let coachAltEl = null;
+let recordingEls = [];
+let skillEls = [];
 
-const chartLine = document.querySelector('[data-analysis="chart-line"]');
-const chartPoints = document.querySelector('[data-analysis="chart-points"]');
-const chartCaption = document.querySelector('[data-analysis="chart-caption"]');
-const minutesEl = document.querySelector('[data-analysis="minutes"]');
-const accuracyEl = document.querySelector('[data-analysis="accuracy"]');
-const coachMessageEl = document.querySelector('[data-analysis="coach-message"]');
-const coachAltEl = document.querySelector('[data-analysis="coach-message-alt"]');
-const recordingEls = Array.from(document.querySelectorAll('[data-analysis="recording"]'));
-const skillEls = Array.from(document.querySelectorAll('[data-analysis="skill"]'));
 const { audio: playbackAudio, stop: stopPlayback, setUrl: setPlaybackUrl } = createAudioController();
 let soundListenerBound = false;
 let currentRecordings = [];
+let teardown = () => {};
+
+const resolveElements = () => {
+    chartLine = document.querySelector('[data-analysis="chart-line"]');
+    chartPoints = document.querySelector('[data-analysis="chart-points"]');
+    chartCaption = document.querySelector('[data-analysis="chart-caption"]');
+    minutesEl = document.querySelector('[data-analysis="minutes"]');
+    accuracyEl = document.querySelector('[data-analysis="accuracy"]');
+    coachMessageEl = document.querySelector('[data-analysis="coach-message"]');
+    coachAltEl = document.querySelector('[data-analysis="coach-message-alt"]');
+    recordingEls = Array.from(document.querySelectorAll('[data-analysis="recording"]'));
+    skillEls = Array.from(document.querySelectorAll('[data-analysis="skill"]'));
+};
 
 const updatePlaybackButtons = (enabled) => {
     recordingEls.forEach((el) => {
@@ -49,6 +62,7 @@ const updateChart = (values) => {
     if (!chartLine || !chartPoints || !chartCaption) return;
     const chart = buildChart(values);
     if (!chart) return;
+
     chartLine.setAttribute('d', chart.path);
     chartPoints.replaceChildren();
     chart.points.forEach((point) => {
@@ -58,6 +72,7 @@ const updateChart = (values) => {
         circle.setAttribute('r', '6');
         chartPoints.appendChild(circle);
     });
+
     const latest = values[values.length - 1];
     chartCaption.textContent = chartCaptionFor(latest);
 };
@@ -65,51 +80,31 @@ const updateChart = (values) => {
 const updateRecordings = (events, songMap, recordings) => {
     const recentRecordings = Array.isArray(recordings) ? recordings.slice(0, 2) : [];
     currentRecordings = recentRecordings;
+
     const songEvents = filterSongEvents(events);
     const recent = getRecentEvents(songEvents, 2);
+    const soundEnabled = isSoundEnabled();
+
     recordingEls.forEach((el, index) => {
-        const playButton = el.querySelector('.recording-play');
-        const saveButton = el.querySelector('.recording-save');
-        const item = recent[index];
-        const titleEl = el.querySelector('[data-analysis="recording-title"]');
-        const subEl = el.querySelector('[data-analysis="recording-sub"]');
-        const recording = recentRecordings[index];
-
-        if (recording?.dataUrl || recording?.blobKey) {
-            if (titleEl) titleEl.textContent = recording.title || `Recording ${index + 1}`;
-            if (subEl) subEl.textContent = `Saved clip · ${recording.duration || 0}s`;
-            if (playButton) {
-                playButton.disabled = !isSoundEnabled();
-                playButton.dataset.recordingAvailable = 'true';
-                playButton.dataset.recordingIndex = String(index);
-            }
-            if (saveButton) {
-                saveButton.disabled = false;
-                saveButton.dataset.recordingIndex = String(index);
-            }
-            return;
-        }
-
-        if (!item) {
-            if (titleEl) titleEl.textContent = 'Recording';
-            if (subEl) subEl.textContent = 'No recent play';
-            if (playButton) playButton.disabled = true;
-            if (saveButton) saveButton.disabled = true;
-            return;
-        }
-        const name = songMap.get(item.id) || item.id;
-        if (titleEl) titleEl.textContent = 'Recent Play';
-        if (subEl) subEl.textContent = `${name} · ${Math.round(item.accuracy || 0)}%`;
-        if (playButton) {
-            playButton.disabled = true;
-            delete playButton.dataset.recordingAvailable;
-        }
-        if (saveButton) saveButton.disabled = true;
+        const slotState = buildRecordingSlotState({
+            recording: recentRecordings[index],
+            item: recent[index],
+            index,
+            soundEnabled,
+            songMap,
+        });
+        applyRecordingSlotState({
+            playButton: el.querySelector('.recording-play'),
+            saveButton: el.querySelector('.recording-save'),
+            titleEl: el.querySelector('[data-analysis="recording-title"]'),
+            subEl: el.querySelector('[data-analysis="recording-sub"]'),
+        }, slotState);
     });
 };
 
 const bindRecordingPlayback = () => {
     syncPlaybackSound();
+
     if (!soundListenerBound) {
         soundListenerBound = true;
         document.addEventListener(SOUNDS_CHANGE, (event) => {
@@ -118,16 +113,21 @@ const bindRecordingPlayback = () => {
             if (!enabled) stopPlayback();
         });
     }
+
     recordingEls.forEach((el, index) => {
         const button = el.querySelector('.recording-play');
         if (!button || button.dataset.bound === 'true') return;
+
         button.dataset.bound = 'true';
         button.addEventListener('click', async () => {
             if (!isSoundEnabled()) return;
+
             const recording = currentRecordings[index];
             if (!recording?.dataUrl && !recording?.blobKey) return;
+
             const source = await resolveRecordingSource(recording);
             if (!source) return;
+
             stopPlayback();
             setPlaybackUrl(source.revoke ? source.url : '');
             playbackAudio.src = source.url;
@@ -145,14 +145,18 @@ const bindRecordingExport = () => {
     recordingEls.forEach((el, index) => {
         const button = el.querySelector('.recording-save');
         if (!button || button.dataset.exportBound === 'true') return;
+
         button.dataset.exportBound = 'true';
         button.addEventListener('click', async () => {
             if (button.disabled) return;
+
             const recording = currentRecordings[index];
             if (!recording?.dataUrl && !recording?.blobKey) return;
+
             button.disabled = true;
             const original = button.textContent;
             button.textContent = '…';
+
             try {
                 const blob = recording.blobKey ? await getBlob(recording.blobKey) : null;
                 await exportRecording(recording, index, blob);
@@ -196,8 +200,14 @@ const buildSongMap = () => {
 };
 
 const initSessionReview = async () => {
+    teardown();
+    resolveElements();
+
+    if (!recordingEls.length) return;
+
     const { SkillProfile, SkillCategory } = await getCore();
     const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
+
     const events = await loadEvents();
     const recordings = await loadRecordings();
     const songMap = buildSongMap();
@@ -213,16 +223,22 @@ const initSessionReview = async () => {
     const refreshRecordings = async () => {
         stopPlayback();
         const fresh = await loadRecordings();
+        resolveElements();
         updateRecordings(events, songMap, fresh);
         bindRecordingPlayback();
         bindRecordingExport();
     };
-    window.addEventListener(RECORDINGS_UPDATED, refreshRecordings);
-    window.addEventListener('hashchange', stopPlayback, { passive: true });
-    window.addEventListener('pagehide', stopPlayback, { passive: true });
-    document.addEventListener('visibilitychange', () => {
+
+    const onHashChange = () => stopPlayback();
+    const onPageHide = () => stopPlayback();
+    const onVisibilityChange = () => {
         if (document.hidden) stopPlayback();
-    });
+    };
+
+    window.addEventListener(RECORDINGS_UPDATED, refreshRecordings);
+    window.addEventListener('hashchange', onHashChange, { passive: true });
+    window.addEventListener('pagehide', onPageHide, { passive: true });
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     const today = todayDay();
     const minutes = events.reduce((sum, event) => {
@@ -271,6 +287,14 @@ const initSessionReview = async () => {
     if (recs?.coachActionMessage && coachAltEl) {
         coachAltEl.textContent = recs.coachActionMessage;
     }
+
+    teardown = () => {
+        window.removeEventListener(RECORDINGS_UPDATED, refreshRecordings);
+        window.removeEventListener('hashchange', onHashChange);
+        window.removeEventListener('pagehide', onPageHide);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        stopPlayback();
+    };
 };
 
-whenReady(initSessionReview);
+export const init = initSessionReview;
