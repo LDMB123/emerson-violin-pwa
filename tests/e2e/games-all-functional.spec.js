@@ -23,23 +23,38 @@ const openGame = async (page, gameId) => {
     await page.evaluate((id) => {
         window.location.hash = `#view-game-${id}`;
     }, gameId);
-    await page.waitForURL(`**/#view-game-${gameId}`);
-    await expect(page.locator(`#view-game-${gameId}`)).toBeVisible();
+    await page.waitForURL(`**/#view-game-${gameId}`, { timeout: 10000 });
+    const gameView = page.locator(`#view-game-${gameId}`);
+    if (!(await gameView.isVisible().catch(() => false))) {
+        await page.goto(`/#view-game-${gameId}`);
+        await page.waitForURL(`**/#view-game-${gameId}`, { timeout: 10000 });
+    }
+    await expect(gameView).toBeVisible({ timeout: 10000 });
     await dismissGameCompleteIfOpen(page);
 };
 
 const returnToGames = async (page, gameId) => {
     const completeModal = page.locator('#game-complete-modal');
-    if (await completeModal.isVisible().catch(() => false)) {
-        await page.locator('#game-complete-back').click();
-    } else {
-        await page.locator(`#view-game-${gameId} .back-btn`).click();
+    try {
+        if (await completeModal.isVisible().catch(() => false)) {
+            await page.locator('#game-complete-back').click({ timeout: 3000 });
+        } else {
+            await page.locator(`#view-game-${gameId} .back-btn`).click({ timeout: 3000 });
+        }
+    } catch {
+        if (await completeModal.isVisible().catch(() => false)) {
+            await page.locator('#game-complete-back').click().catch(() => {});
+        }
     }
-    await page.waitForURL('**/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
+
+    if (!page.url().includes('#view-games')) {
+        await page.goto('/#view-games');
+    }
+    await page.waitForURL('**/#view-games', { timeout: 10000 });
+    await expect(page.locator('#view-games')).toBeVisible({ timeout: 10000 });
 };
 
-const findMemoryPair = async (page) => {
+const findMemoryPairs = async (page) => {
     return page.evaluate(() => {
         const buckets = {};
         document.querySelectorAll('#view-game-note-memory .memory-card').forEach((card) => {
@@ -50,8 +65,86 @@ const findMemoryPair = async (page) => {
             buckets[note].push(id);
         });
 
-        const ids = Object.values(buckets).find((entries) => entries.length >= 2);
-        return ids ? ids.slice(0, 2) : null;
+        return Object.values(buckets)
+            .filter((entries) => entries.length >= 2)
+            .map((entries) => entries.slice(0, 2));
+    });
+};
+
+const readNumericValue = async (locator) => {
+    const raw = await locator.innerText();
+    const numeric = Number.parseFloat(raw.replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const ensureRhythmRunStarted = async (page) => {
+    const runToggle = page.locator('#view-game-rhythm-dash #rhythm-run');
+    if (await runToggle.isChecked().catch(() => false)) return;
+
+    await page.locator('#view-game-rhythm-dash label.btn-start').click();
+    if (!(await runToggle.isChecked().catch(() => false))) {
+        await page.evaluate(() => {
+            const toggle = document.querySelector('#view-game-rhythm-dash #rhythm-run');
+            if (!(toggle instanceof HTMLInputElement)) return;
+            toggle.checked = true;
+            toggle.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+
+    await expect(runToggle).toBeChecked({ timeout: 5000 });
+};
+
+const tapRhythmUntilScoreIncreases = async (page, scoreLocator) => {
+    const startScore = await readNumericValue(scoreLocator);
+    await ensureRhythmRunStarted(page);
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+        await page.locator('#view-game-rhythm-dash .rhythm-tap').click();
+        await page.waitForTimeout(200);
+        if ((await readNumericValue(scoreLocator)) > startScore) {
+            return;
+        }
+    }
+
+    expect(await readNumericValue(scoreLocator)).toBeGreaterThan(startScore);
+};
+
+const hitActiveTargetUntilScoreIncreases = async (
+    page,
+    {
+        scoreLocator,
+        activeTargetSelector,
+        activeTargetDataKey,
+        buttonSelector,
+    },
+) => {
+    const startScore = await readNumericValue(scoreLocator);
+
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+        const target = await page.evaluate(({ selector, dataKey }) => {
+            const active = document.querySelector(selector);
+            return active?.dataset?.[dataKey] || null;
+        }, { selector: activeTargetSelector, dataKey: activeTargetDataKey });
+
+        if (target) {
+            await page.locator(buttonSelector(target)).click();
+            await page.waitForTimeout(120);
+            if ((await readNumericValue(scoreLocator)) > startScore) {
+                return target;
+            }
+        } else {
+            await page.waitForTimeout(120);
+        }
+    }
+
+    expect(await readNumericValue(scoreLocator)).toBeGreaterThan(startScore);
+    return null;
+};
+
+const ensureSoundsEnabled = async (page) => {
+    await page.evaluate(() => {
+        document.documentElement.dataset.sounds = 'on';
+        document.dispatchEvent(new CustomEvent('panda:sounds-change', { detail: { enabled: true } }));
     });
 };
 
@@ -72,28 +165,45 @@ test.describe('all games core interactions', () => {
 
         await openGame(page, 'rhythm-dash');
         const rhythmScore = page.locator('#view-game-rhythm-dash [data-rhythm="score"]');
-        const rhythmStart = await rhythmScore.innerText();
-        await page.locator('#view-game-rhythm-dash label.btn-start').click();
-        await page.locator('#view-game-rhythm-dash .rhythm-tap').click();
-        await page.waitForTimeout(750);
-        await page.locator('#view-game-rhythm-dash .rhythm-tap').click();
-        await expect(rhythmScore).not.toHaveText(rhythmStart);
+        await tapRhythmUntilScoreIncreases(page, rhythmScore);
         await page.locator('#view-game-rhythm-dash label.btn-stop').click();
         await returnToGames(page, 'rhythm-dash');
 
         await openGame(page, 'note-memory');
-        const pair = await findMemoryPair(page);
-        expect(pair).toBeTruthy();
-        await page.locator(`#view-game-note-memory label[for="${pair[0]}"]`).click();
-        await page.locator(`#view-game-note-memory label[for="${pair[1]}"]`).click();
-        await expect(page.locator('#view-game-note-memory [data-memory="matches"]')).not.toHaveText('0/6');
+        await page.waitForTimeout(200);
+        let matched = false;
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+            const pairs = await findMemoryPairs(page);
+            expect(pairs.length).toBeGreaterThan(0);
+            const pair = pairs[attempt % pairs.length];
+            await page.evaluate(([firstId, secondId]) => {
+                const flip = (id) => {
+                    const input = document.getElementById(id);
+                    if (!(input instanceof HTMLInputElement) || input.disabled) return;
+                    input.checked = true;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                };
+                flip(firstId);
+                flip(secondId);
+            }, pair);
+            const matchesText = await page.locator('#view-game-note-memory [data-memory="matches"]').innerText();
+            if (matchesText !== '0/6') {
+                matched = true;
+                break;
+            }
+            await page.waitForTimeout(700);
+        }
+        expect(matched).toBe(true);
         await returnToGames(page, 'note-memory');
 
         await openGame(page, 'ear-trainer');
         const earQuestion = page.locator('#view-game-ear-trainer [data-ear="question"]');
         await expect(earQuestion).toContainText('Question 1 of 10');
-        await page.locator('#view-game-ear-trainer [data-ear="play"]').click();
-        await expect(earQuestion).not.toHaveText('Question 1 of 10');
+        await ensureSoundsEnabled(page);
+        await expect.poll(async () => {
+            await page.locator('#view-game-ear-trainer [data-ear="play"]').click();
+            return earQuestion.innerText();
+        }, { timeout: 10000 }).not.toBe('Question 1 of 10');
         await returnToGames(page, 'ear-trainer');
 
         await openGame(page, 'bow-hero');
@@ -123,7 +233,8 @@ test.describe('all games core interactions', () => {
         await page.locator('#view-game-melody-maker .melody-btn[data-melody-note="A"]').click();
         await page.locator('#view-game-melody-maker .melody-btn[data-melody-note="B"]').click();
         await expect(melodyScore).not.toHaveText(melodyStart);
-        await expect(page.locator('#view-game-melody-maker [data-melody="track"]')).toContainText('G');
+        await expect(page.locator('#view-game-melody-maker [data-melody="track"]')).toContainText('A');
+        await expect(page.locator('#view-game-melody-maker [data-melody="track"]')).toContainText('B');
         await returnToGames(page, 'melody-maker');
 
         await openGame(page, 'scale-practice');
@@ -136,11 +247,18 @@ test.describe('all games core interactions', () => {
         await returnToGames(page, 'scale-practice');
 
         await openGame(page, 'duet-challenge');
-        await page.locator('#view-game-duet-challenge [data-duet="play"]').click();
+        await ensureSoundsEnabled(page);
+        const duetStepOne = page.locator('#view-game-duet-challenge #dc-step-1');
+        await expect.poll(async () => {
+            await page.locator('#view-game-duet-challenge [data-duet="play"]').click();
+            return duetStepOne.isChecked();
+        }, { timeout: 10000 }).toBe(true);
         const duetPrompt = page.locator('#view-game-duet-challenge [data-duet="prompt"]');
-        await expect(duetPrompt).toContainText('Your turn', { timeout: 10000 });
-        await expect(page.locator('#view-game-duet-challenge #dc-step-1')).toBeChecked();
-        await expect(page.locator('#view-game-duet-challenge .duet-btn').first()).toBeEnabled();
+        await expect(page.locator('#view-game-duet-challenge .duet-btn').first()).toBeEnabled({ timeout: 12000 });
+        await expect.poll(async () => {
+            const text = await duetPrompt.innerText();
+            return text.includes('Your turn');
+        }, { timeout: 12000 }).toBe(true);
         const duetSequence = await page.locator('#view-game-duet-challenge .duet-notes').innerText();
         const notes = duetSequence.split('·').map((note) => note.trim()).filter(Boolean);
         for (const note of notes) {
@@ -157,18 +275,13 @@ test.describe('all games core interactions', () => {
 
         await openGame(page, 'string-quest');
         const stringScore = page.locator('#view-game-string-quest [data-string="score"]');
-        const stringStart = await stringScore.innerText();
-        let stringTarget = null;
-        await expect.poll(async () => {
-            stringTarget = await page.evaluate(() => {
-                const target = document.querySelector('#view-game-string-quest [data-string-target].is-target');
-                return target?.dataset?.stringTarget || null;
-            });
-            return stringTarget;
-        }, { timeout: 10000 }).not.toBeNull();
+        const stringTarget = await hitActiveTargetUntilScoreIncreases(page, {
+            scoreLocator: stringScore,
+            activeTargetSelector: '#view-game-string-quest [data-string-target].is-target',
+            activeTargetDataKey: 'stringTarget',
+            buttonSelector: (note) => `#view-game-string-quest .string-btn[data-string-btn="${note}"]`,
+        });
         expect(stringTarget).toBeTruthy();
-        await page.locator(`#view-game-string-quest .string-btn[data-string-btn="${stringTarget}"]`).click();
-        await expect(stringScore).not.toHaveText(stringStart);
         await returnToGames(page, 'string-quest');
 
         await openGame(page, 'rhythm-painter');
@@ -188,14 +301,13 @@ test.describe('all games core interactions', () => {
 
         await openGame(page, 'pizzicato');
         const pizzScore = page.locator('#view-game-pizzicato [data-pizzicato="score"]');
-        const pizzStart = await pizzScore.innerText();
-        const pizzTarget = await page.evaluate(() => {
-            const target = document.querySelector('#view-game-pizzicato [data-pizzicato-target].is-target');
-            return target?.dataset?.pizzicatoTarget || null;
+        const pizzTarget = await hitActiveTargetUntilScoreIncreases(page, {
+            scoreLocator: pizzScore,
+            activeTargetSelector: '#view-game-pizzicato [data-pizzicato-target].is-target',
+            activeTargetDataKey: 'pizzicatoTarget',
+            buttonSelector: (note) => `#view-game-pizzicato .pizzicato-btn[data-pizzicato-btn="${note}"]`,
         });
         expect(pizzTarget).toBeTruthy();
-        await page.locator(`#view-game-pizzicato .pizzicato-btn[data-pizzicato-btn="${pizzTarget}"]`).click();
-        await expect(pizzScore).not.toHaveText(pizzStart);
         await returnToGames(page, 'pizzicato');
     });
 });

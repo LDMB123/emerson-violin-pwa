@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { navigateToView } from './helpers/navigate-view.js';
 
 test.describe('Lazy View Loading', () => {
     test.beforeEach(async ({ page }) => {
@@ -40,11 +41,7 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should lazy load coach view from navigation', async ({ page }) => {
-        // Navigate using hash change (CSS :target selector)
-        await page.goto('/#view-coach');
-
-        // Wait for URL and view content
-        await page.waitForURL('**/#view-coach');
+        await navigateToView(page, 'view-coach');
         await expect(page.locator('#view-coach')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('#main-content')).toContainText('Practice Mission', { timeout: 10000 });
     });

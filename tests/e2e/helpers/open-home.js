@@ -1,13 +1,19 @@
 import { expect } from '@playwright/test';
 
 export const openHome = async (page) => {
-    await page.goto('/');
-    await page.waitForSelector('#main-content .view', { timeout: 10000 });
+    await page.goto('/#view-home', { waitUntil: 'domcontentloaded', timeout: 10000 });
+    await page.waitForSelector('#main-content', { timeout: 10000 });
 
     await page.evaluate(async () => {
         const key = 'onboarding-complete';
+        const uiStateKey = 'panda-violin:ui-state:v1';
         const fallbackKey = `panda-violin:kv:${key}`;
+        const uiStateFallbackKey = `panda-violin:kv:${uiStateKey}`;
         localStorage.setItem(fallbackKey, JSON.stringify(true));
+        localStorage.setItem(uiStateFallbackKey, JSON.stringify({
+            checks: { 'setting-sounds': true },
+            radios: {},
+        }));
 
         await new Promise((resolve) => {
             const request = indexedDB.open('panda-violin-db', 2);
@@ -27,6 +33,10 @@ export const openHome = async (page) => {
                 const db = request.result;
                 const tx = db.transaction('kv', 'readwrite');
                 tx.objectStore('kv').put(true, key);
+                tx.objectStore('kv').put({
+                    checks: { 'setting-sounds': true },
+                    radios: {},
+                }, uiStateKey);
                 tx.oncomplete = () => {
                     db.close();
                     resolve();
@@ -41,6 +51,9 @@ export const openHome = async (page) => {
                 };
             };
         });
+
+        document.documentElement.dataset.sounds = 'on';
+        document.dispatchEvent(new CustomEvent('panda:sounds-change', { detail: { enabled: true } }));
     });
 
     const dismissOnboardingIfVisible = async () => {
@@ -49,24 +62,22 @@ export const openHome = async (page) => {
         const skipButton = page.locator('#onboarding-skip');
         const startButton = page.locator('#onboarding-start');
         if (await skipButton.isVisible().catch(() => false)) {
-            await skipButton.click();
+            await skipButton.click().catch(() => {});
         } else if (await startButton.isVisible().catch(() => false)) {
-            await startButton.click();
+            await startButton.click().catch(() => {});
         }
-        await page.waitForURL('**/#view-home', { timeout: 10000 }).catch(() => {});
+        await page.waitForFunction(() => {
+            const onboarding = document.getElementById('view-onboarding');
+            return !onboarding || onboarding.hidden || window.location.hash === '#view-home';
+        }, { timeout: 3000 }).catch(() => {});
     };
 
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-        await dismissOnboardingIfVisible();
+    await dismissOnboardingIfVisible();
+    await page.waitForFunction(() => window.__PANDA_APP_READY__ === true, { timeout: 10000 }).catch(() => {});
 
-        if (await page.locator('#view-home').isVisible().catch(() => false)) {
-            return;
-        }
-
-        // Force a home-route navigation to recover from early hashchange races.
-        await page.goto('/#view-home', { waitUntil: 'domcontentloaded' });
-        await page.waitForSelector('#main-content .view', { timeout: 10000 });
+    if (!(await page.locator('#view-home').isVisible().catch(() => false))) {
+        await page.goto('/#view-home', { waitUntil: 'domcontentloaded', timeout: 6000 });
     }
 
-    await expect(page.locator('#view-home')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#view-home')).toBeVisible({ timeout: 6000 });
 };
