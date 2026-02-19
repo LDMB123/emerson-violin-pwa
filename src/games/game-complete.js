@@ -6,10 +6,15 @@ const accuracyEl = document.getElementById('game-complete-accuracy');
 const starsEl = document.getElementById('game-complete-stars');
 const playAgainBtn = document.getElementById('game-complete-play-again');
 const backBtn = document.getElementById('game-complete-back');
-
-if (!dialog) throw new Error('[game-complete] dialog element not found');
+let bound = false;
 
 const STAR_COUNT = 3;
+const isGameViewActive = () => window.location.hash.startsWith('#view-game-');
+const currentGameId = () => {
+    const viewId = window.location.hash?.replace(/^#/, '') || '';
+    if (!viewId.startsWith('view-game-')) return null;
+    return viewId.replace('view-game-', '');
+};
 
 const renderStars = (stars) => {
     if (!starsEl) return;
@@ -47,37 +52,64 @@ const open = (detail) => {
 
 const close = () => {
     if (!dialog) return;
+    if (!dialog.open) return;
     dialog.close();
 };
 
-// Play Again: deterministically request a reset for the current game view
-if (playAgainBtn) {
-    playAgainBtn.addEventListener('click', () => {
-        close();
-        const viewId = window.location.hash?.replace(/^#/, '') || '';
-        if (!viewId.startsWith('view-game-')) return;
-        document.dispatchEvent(new CustomEvent(GAME_PLAY_AGAIN, { detail: { viewId } }));
+const bindGameComplete = () => {
+    if (bound) return;
+    bound = true;
+    if (!dialog) {
+        console.warn('[game-complete] dialog element not found');
+        return;
+    }
+
+    // Play Again: deterministically request a reset for the current game view
+    if (playAgainBtn) {
+        playAgainBtn.addEventListener('click', () => {
+            close();
+            const viewId = window.location.hash?.replace(/^#/, '') || '';
+            if (!viewId.startsWith('view-game-')) return;
+            document.dispatchEvent(new CustomEvent(GAME_PLAY_AGAIN, { detail: { viewId } }));
+        });
+    }
+
+    // Back to Games: close then navigate
+    if (backBtn) {
+        backBtn.addEventListener('click', () => close());
+    }
+
+    // Close on backdrop click
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) close();
     });
-}
 
-// Back to Games: close then navigate
-if (backBtn) {
-    backBtn.addEventListener('click', () => close());
-}
+    // Any route change should dismiss stale overlays.
+    window.addEventListener('hashchange', () => close(), { passive: true });
 
-// Close on backdrop click
-dialog.addEventListener('click', (e) => {
-    if (e.target === dialog) close();
-});
+    // Listen for game recorded
+    document.addEventListener(GAME_RECORDED, (e) => {
+        const detail = e.detail || {};
+        const { score, accuracy } = detail;
+        // Guard: only show if game produced a meaningful result.
+        // First guard: no numeric values at all (e.g. game type with no scoring).
+        // Second guard: both explicitly zero means no attempts were made.
+        if (!Number.isFinite(score) && !Number.isFinite(accuracy)) return;
+        if (score === 0 && accuracy === 0) return;
+        // Prevent off-route overlays after navigating away from a game view.
+        if (!isGameViewActive()) return;
+        const activeGameId = currentGameId();
+        if (!activeGameId) return;
+        if (typeof detail.id === 'string' && detail.id !== activeGameId) return;
+        open(detail);
+    });
+};
 
-// Listen for game recorded
-document.addEventListener(GAME_RECORDED, (e) => {
-    const detail = e.detail || {};
-    const { score, accuracy } = detail;
-    // Guard: only show if game produced a meaningful result.
-    // First guard: no numeric values at all (e.g. game type with no scoring).
-    // Second guard: both explicitly zero means no attempts were made.
-    if (!Number.isFinite(score) && !Number.isFinite(accuracy)) return;
-    if (score === 0 && accuracy === 0) return;
-    open(detail);
-});
+export const init = () => {
+    bindGameComplete();
+    if (!isGameViewActive()) {
+        close();
+    }
+};
+
+init();

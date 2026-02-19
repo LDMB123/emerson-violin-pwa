@@ -1,121 +1,89 @@
 import { test, expect } from '@playwright/test';
 
 const openHomeView = async (page) => {
-    await page.goto('/');
-    await page.waitForSelector('#main-content .view', { timeout: 10000 });
+  await page.goto('/');
+  await page.waitForSelector('#main-content .view', { timeout: 10000 });
 
-    if (await page.locator('#view-onboarding').isVisible().catch(() => false)) {
-        const onboardingSkip = page.locator('#onboarding-skip');
-        await onboardingSkip.click();
-        await page.waitForURL('**/#view-home');
-    }
+  if (await page.locator('#view-onboarding').isVisible().catch(() => false)) {
+    await page.locator('#onboarding-skip').click();
+    await page.waitForURL('**/#view-home');
+  }
 
-    if (!page.url().includes('#view-home')) {
-        await page.goto('/#view-home');
-    }
+  if (!page.url().includes('#view-home')) {
+    await page.goto('/#view-home');
+  }
 
-    await expect(page.locator('#view-home')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('#view-home')).toBeVisible({ timeout: 10000 });
 };
 
-test.describe('Panda Violin PWA', () => {
-    test.beforeEach(async ({ page }) => {
-        await openHomeView(page);
+test.describe('Kid-first flows', () => {
+  test.beforeEach(async ({ page }) => {
+    await openHomeView(page);
+  });
+
+  test('shows mission-first home and 4-item child nav', async ({ page }) => {
+    await expect(page).toHaveTitle(/Panda Violin/);
+    await expect(page.locator('[data-start-practice]')).toBeVisible();
+    await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(4);
+    await expect(page.locator('[data-parent-lock]')).toBeVisible();
+  });
+
+  test('start practice reaches coach in one tap', async ({ page }) => {
+    await page.locator('[data-start-practice]').click();
+    await page.waitForURL('**/#view-coach');
+
+    await expect(page.locator('#view-coach')).toBeVisible();
+    await expect(page.locator('[data-coach-step-card="tune"]')).toBeVisible();
+    await expect(page.locator('.coach-step-tab.is-active')).toContainText('1 Tune');
+  });
+
+  test('child can reach games and launch a game in two taps', async ({ page }) => {
+    await page.locator('.bottom-nav a[href="#view-games"]').click();
+    await page.waitForURL('**/#view-games');
+    await expect(page.locator('#view-games')).toBeVisible();
+
+    await page.locator('a[href="#view-game-pitch-quest"]').click();
+    await page.waitForURL('**/#view-game-pitch-quest');
+    await expect(page.locator('#view-game-pitch-quest .game-drill')).toBeVisible();
+  });
+
+  test('child can open songs and continue last song in two taps', async ({ page }) => {
+    await page.locator('.bottom-nav a[href="#view-songs"]').click();
+    await page.waitForURL('**/#view-songs');
+
+    await page.locator('[data-continue-last-song]').click();
+    await page.waitForURL(/#view-song-/);
+
+    await expect(page.locator('.song-view')).toBeVisible();
+  });
+
+  test('advanced controls are not visible in child settings', async ({ page }) => {
+    await page.goto('/#view-settings');
+    await expect(page.locator('#view-settings')).toBeVisible();
+    await expect(page.locator('[data-parent-advanced-controls]')).toHaveCount(0);
+    await expect(page.locator('[data-offline-check]')).toHaveCount(0);
+    await expect(page.locator('[data-sw-update]')).toHaveCount(0);
+  });
+
+  test('parent advanced controls are PIN gated', async ({ page }) => {
+    await page.locator('[data-parent-lock]').click();
+    await page.waitForURL('**/#view-parent');
+
+    const dialog = page.locator('[data-pin-dialog]');
+    await expect(dialog).toBeVisible();
+
+    await page.locator('#parent-pin-input').fill('0000');
+    await page.locator('[data-pin-dialog] button[value="confirm"]').click();
+    await expect(dialog).toBeVisible();
+
+    await page.evaluate(() => {
+      sessionStorage.setItem('panda-violin:parent-unlocked', 'true');
     });
+    await page.goto('/#view-parent');
+    await expect(dialog).toBeHidden({ timeout: 10000 });
 
-    test('should load home page with correct title and elements', async ({ page }) => {
-        await expect(page).toHaveTitle(/Panda Violin/);
-        await expect(page.locator('.home-title')).toContainText('Panda Violin');
-        // Check for mascot
-        await expect(page.locator('.home-mascot')).toBeVisible();
-        // Check for nav items
-        await expect(page.locator('.bottom-nav')).toBeVisible();
-    });
-
-    test('should navigate to Coach view', async ({ page }) => {
-        // Click "Coach" in bottom nav
-        await page.click('a[href="#view-coach"]');
-
-        // Check URL hash
-        await page.waitForURL('**/#view-coach');
-        expect(page.url()).toContain('#view-coach');
-
-        // Check view visibility
-        const coachView = page.locator('#view-coach');
-        await expect(coachView).toBeVisible();
-
-        // Check coach elements
-        await expect(page.locator('.coach-mascot')).toBeVisible();
-        await expect(page.locator('#view-coach .practice-focus')).toBeVisible();
-        await expect(page.locator('#view-coach .goal-checklist')).toBeVisible();
-    });
-
-    test('should navigate to Games view and show game list', async ({ page }) => {
-        await page.click('a[href="#view-games"]');
-
-        await page.waitForURL('**/#view-games');
-        expect(page.url()).toContain('#view-games');
-        const gamesView = page.locator('#view-games');
-        await expect(gamesView).toBeVisible();
-
-        // Check for specific games
-        await expect(page.locator('a[href="#view-game-pitch-quest"]')).toBeVisible();
-        await expect(page.locator('a[href="#view-game-rhythm-dash"]')).toBeVisible();
-    });
-
-    test('should verify tuner view functionality', async ({ page }) => {
-        // Navigate directly to avoid hidden/viewport-dependent launcher buttons
-        await page.goto('/#view-tuner');
-
-        await expect(page).toHaveURL(/.*#view-tuner/);
-        await expect(page.locator('#view-tuner')).toBeVisible();
-
-        // Check reference tones
-        await expect(page.locator('#view-tuner .tuner-reference')).toBeVisible();
-        await expect(page.locator('#view-tuner .tuner-reference audio')).toHaveCount(4);
-    });
-
-    test('should launch tools and interact', async ({ page }) => {
-        await page.goto('/#view-trainer');
-        await expect(page.locator('#view-trainer')).toBeVisible();
-
-        // Check offline audio tools
-        await expect(page.locator('#tool-metronome')).toBeVisible();
-        await expect(page.locator('#metronome-loops audio')).toHaveCount(3);
-        await expect(page.locator('#drone-tones audio')).toHaveCount(4);
-    });
-
-    test('should load song library and open a song sheet', async ({ page }) => {
-        await page.goto('/#view-songs');
-        await expect(page.locator('#view-songs')).toBeVisible();
-        await expect(page.locator('.song-card').first()).toBeVisible();
-
-        // Click a song
-        await page.click('.song-card[data-song="twinkle"]');
-
-        // Song sheet should appear
-        await expect(page).toHaveURL(/.*#view-song-twinkle/);
-        const songView = page.locator('#view-song-twinkle');
-        await expect(songView).toBeVisible();
-        await expect(songView.locator('h2')).toContainText('Twinkle Twinkle');
-        await expect(songView.locator('.song-staff')).toBeVisible();
-    });
-
-    test('should launch a game', async ({ page }) => {
-        await page.goto('/#view-games');
-        // Click Pitch Quest
-        await page.click('a[href="#view-game-pitch-quest"]');
-
-        // Check game drill content
-        await expect(page.locator('#view-game-pitch-quest .game-drill')).toBeVisible();
-    });
-
-    test('should show install banner logic', async ({ page }) => {
-        // We can't easily test the native install prompt, but we can check if our component is initialized
-        // or simulate the event if possible.
-        // For now, let's just ensure the component code doesn't crash the page.
-        await expect(page.locator('main')).toBeVisible();
-        // It's hidden by default if not strictly installable criteria met or already installed
-        // forcing it might be tricky without mocking.
-        // We'll skip asserting visibility for now, but ensure no console errors.
-    });
+    await expect(page.locator('[data-parent-advanced-controls]')).toBeVisible();
+    await expect(page.locator('[data-offline-check]')).toBeVisible();
+    await expect(page.locator('[data-sw-update]')).toBeVisible();
+  });
 });

@@ -1,11 +1,21 @@
 import { PERSIST_APPLIED } from '../utils/event-names.js';
 import { downloadFile, tryShareFile } from '../utils/recording-export.js';
 
-const notificationToggle = document.querySelector('#setting-notifications');
-const reminderToggle = document.querySelector('#parent-reminder-toggle');
-const notificationStatusEl = document.querySelector('[data-notification-status]');
-const reminderStatusEl = document.querySelector('[data-reminder-status]');
+let notificationToggle = null;
+let reminderToggle = null;
+let notificationStatusEl = null;
+let reminderStatusEl = null;
 let suppressNotificationChange = false;
+let globalsBound = false;
+
+const hasNotifications = () => 'Notification' in window;
+
+const resolveElements = () => {
+    notificationToggle = document.querySelector('#setting-notifications');
+    reminderToggle = document.querySelector('#parent-reminder-toggle');
+    notificationStatusEl = document.querySelector('[data-notification-status]');
+    reminderStatusEl = document.querySelector('[data-reminder-status]');
+};
 
 const updateNotificationStatus = (message) => {
     if (notificationStatusEl) notificationStatusEl.textContent = message;
@@ -80,6 +90,12 @@ const handleReminderToggle = async () => {
 };
 
 const showNotification = async () => {
+    if (!hasNotifications()) {
+        updateNotificationStatus('Notifications are unavailable on this device.');
+        if (notificationToggle) notificationToggle.checked = false;
+        return;
+    }
+
     let permission = 'default';
     try {
         permission = await Notification.requestPermission();
@@ -126,6 +142,13 @@ const handleNotificationToggle = () => {
 
 const syncNotificationPermission = () => {
     if (!notificationToggle) return;
+    if (!hasNotifications()) {
+        notificationToggle.checked = false;
+        notificationToggle.disabled = true;
+        updateNotificationStatus('Notifications are unavailable on this device.');
+        return;
+    }
+
     if (Notification.permission === 'granted') {
         notificationToggle.disabled = false;
         updateNotificationStatus(notificationToggle.checked ? 'Notifications are on.' : 'Notifications are off.');
@@ -151,13 +174,29 @@ const syncStatuses = () => {
     }
 };
 
-if (notificationToggle) {
-    notificationToggle.addEventListener('change', handleNotificationToggle);
-    syncNotificationPermission();
-}
+const bindLocalListeners = () => {
+    if (notificationToggle && notificationToggle.dataset.remindersBound !== 'true') {
+        notificationToggle.dataset.remindersBound = 'true';
+        notificationToggle.addEventListener('change', handleNotificationToggle);
+    }
 
-if (reminderToggle) {
-    reminderToggle.addEventListener('change', handleReminderToggle);
-}
+    if (reminderToggle && reminderToggle.dataset.remindersBound !== 'true') {
+        reminderToggle.dataset.remindersBound = 'true';
+        reminderToggle.addEventListener('change', handleReminderToggle);
+    }
+};
 
-document.addEventListener(PERSIST_APPLIED, syncStatuses);
+const bindGlobalListeners = () => {
+    if (globalsBound) return;
+    globalsBound = true;
+    document.addEventListener(PERSIST_APPLIED, syncStatuses);
+};
+
+const initReminders = () => {
+    resolveElements();
+    bindLocalListeners();
+    bindGlobalListeners();
+    syncStatuses();
+};
+
+export const init = initReminders;

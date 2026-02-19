@@ -1,22 +1,69 @@
+import { SOUNDS_CHANGE } from '../utils/event-names.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
+
 /**
  * Progressive enhancement: replaces raw <audio controls> inside .audio-card
  * elements with custom play/pause buttons + waveform animation bars.
  *
- * Cards already using .tone-play-btn (tuner reference tones) are skipped.
+ * Cards already shipping their own .tone-play-btn controls (e.g. tuner
+ * reference tones) are intentionally skipped.
  */
 
 const PLAY_SVG = '<svg class="tone-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
 const STOP_SVG = '<svg class="tone-stop-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
 const WAVE_BARS = '<span class="wave-bars" aria-hidden="true"><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span></span>';
 
+let globalsBound = false;
+
+const getCardAudio = (card) => card?.querySelector('audio') || null;
+
+const stopCardAudio = (card, { reset = true } = {}) => {
+    const audio = getCardAudio(card);
+    if (audio && !audio.paused) {
+        audio.pause();
+    }
+    if (audio && reset) {
+        audio.currentTime = 0;
+    }
+    if (card) {
+        card.classList.remove('is-playing');
+    }
+};
+
+const stopAllAudioCards = (exceptCard = null) => {
+    document.querySelectorAll('.audio-card').forEach((card) => {
+        if (exceptCard && card === exceptCard) return;
+        stopCardAudio(card);
+    });
+};
+
+const syncCardSoundState = (card, enabled = isSoundEnabled()) => {
+    if (!card || card.dataset.audioPlayerEnhanced !== 'true') return;
+    const button = card.querySelector('.tone-play-btn');
+    if (button) button.disabled = !enabled;
+    if (!enabled) stopCardAudio(card);
+};
+
+const syncEnhancedSoundState = (enabled = isSoundEnabled()) => {
+    document.querySelectorAll('.audio-card[data-audio-player-enhanced="true"]').forEach((card) => {
+        syncCardSoundState(card, enabled);
+    });
+};
+
 const enhance = (card) => {
-    // Skip cards already enhanced
+    if (!card) return;
+
+    if (card.dataset.audioPlayerEnhanced === 'true') {
+        syncCardSoundState(card);
+        return;
+    }
+
+    // Skip cards already using custom controls from their own module.
     if (card.querySelector('.tone-play-btn')) return;
 
     const audio = card.querySelector('audio[controls]');
     if (!audio) return;
 
-    // Detect string name from label text for accent color
     const label = card.querySelector('.audio-label');
     const labelText = label?.textContent?.trim() ?? '';
     const stringMatch = labelText.match(/^([GDAE])\d?$/i);
@@ -24,74 +71,87 @@ const enhance = (card) => {
         card.dataset.string = stringMatch[1].toUpperCase();
     }
 
-    // Remove controls, hide the element
     audio.removeAttribute('controls');
     audio.hidden = true;
 
-    // Determine aria-label from label text
     const ariaLabel = label ? `Play ${labelText}` : 'Play';
 
-    // Create play button
     const button = document.createElement('button');
     button.className = 'tone-play-btn';
     button.type = 'button';
     button.setAttribute('aria-label', ariaLabel);
     button.innerHTML = PLAY_SVG + STOP_SVG;
 
-    // Create waveform bars
     const waveContainer = document.createElement('span');
     waveContainer.innerHTML = WAVE_BARS;
     const waveBars = waveContainer.firstElementChild;
 
-    // Insert after label, before audio
     card.insertBefore(button, audio);
     card.insertBefore(waveBars, audio);
 
-    // Wire up play/pause
+    const syncPlayingState = () => {
+        card.classList.toggle('is-playing', !audio.paused);
+    };
+
     button.addEventListener('click', () => {
-        if (!audio.paused) {
-            audio.pause();
-            audio.currentTime = 0;
-            card.classList.remove('is-playing');
+        if (!isSoundEnabled()) {
+            syncCardSoundState(card, false);
             return;
         }
 
-        // Stop all other audio cards first
-        document.querySelectorAll('.audio-card.is-playing').forEach((other) => {
-            if (other === card) return;
-            const otherAudio = other.querySelector('audio');
-            if (otherAudio) {
-                otherAudio.pause();
-                otherAudio.currentTime = 0;
-            }
-            other.classList.remove('is-playing');
-        });
+        if (!audio.paused) {
+            stopCardAudio(card);
+            return;
+        }
 
+        stopAllAudioCards(card);
         audio.currentTime = 0;
         audio.play().catch(() => {});
-        card.classList.add('is-playing');
     });
 
-    audio.addEventListener('ended', () => {
-        card.classList.remove('is-playing');
+    audio.addEventListener('play', () => {
+        stopAllAudioCards(card);
+        syncPlayingState();
     });
+    audio.addEventListener('pause', syncPlayingState);
+    audio.addEventListener('ended', syncPlayingState);
 
-    audio.addEventListener('pause', () => {
-        card.classList.remove('is-playing');
-    });
+    card.dataset.audioPlayerEnhanced = 'true';
+    syncCardSoundState(card);
 };
 
 const enhanceAll = () => {
     document.querySelectorAll('.audio-card').forEach(enhance);
 };
 
-// Enhance on initial load
-enhanceAll();
+const bindGlobals = () => {
+    if (globalsBound) return;
+    globalsBound = true;
 
-// Re-enhance after view changes (views are loaded dynamically)
-window.addEventListener('hashchange', () => {
-    // Small delay to let the view HTML settle
-    requestAnimationFrame(() => {
-        requestAnimationFrame(enhanceAll);
+    document.addEventListener(SOUNDS_CHANGE, (event) => {
+        const enabled = event.detail?.enabled !== false;
+        if (!enabled) {
+            stopAllAudioCards();
+        }
+        syncEnhancedSoundState(enabled);
     });
-});
+
+    document.addEventListener('panda:view-rendered', () => {
+        enhanceAll();
+    });
+
+    window.addEventListener('hashchange', () => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(enhanceAll);
+        });
+    });
+};
+
+const initAudioPlayer = () => {
+    enhanceAll();
+    bindGlobals();
+    syncEnhancedSoundState();
+};
+
+initAudioPlayer();
+

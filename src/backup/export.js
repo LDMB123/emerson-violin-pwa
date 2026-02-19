@@ -8,18 +8,28 @@ import {
     ML_LOG_KEY,
 } from '../persistence/storage-keys.js';
 
-const exportButton = document.querySelector('[data-export-json]');
-const exportStatus = document.querySelector('[data-export-status]');
-const importButton = document.querySelector('[data-import-json]');
-const importStatus = document.querySelector('[data-import-status]');
-const importInput = document.querySelector('[data-import-file]');
+let exportButton = null;
+let exportStatus = null;
+let importButton = null;
+let importStatus = null;
+let importInput = null;
+
+const resolveElements = () => {
+    exportButton = document.querySelector('[data-export-json]');
+    exportStatus = document.querySelector('[data-export-status]');
+    importButton = document.querySelector('[data-import-json]');
+    importStatus = document.querySelector('[data-import-status]');
+    importInput = document.querySelector('[data-import-file]');
+};
 
 const normalizeRecordingForExport = async (recording) => {
     if (!recording || typeof recording !== 'object') return null;
     if (recording.dataUrl) return recording;
     if (!recording.blobKey) return recording;
+
     const blob = await getBlob(recording.blobKey);
     if (!blob) return recording;
+
     const dataUrl = await blobToDataUrl(blob);
     return {
         ...recording,
@@ -32,11 +42,13 @@ const normalizeRecordingForExport = async (recording) => {
 const hydrateRecordingForImport = async (recording) => {
     if (!recording || typeof recording !== 'object') return null;
     if (!recording.dataUrl) return recording;
+
     try {
         const blob = await dataUrlToBlob(recording.dataUrl);
         const blobKey = createBlobKey(recording.id || 'import');
         const stored = await setBlob(blobKey, blob);
         if (!stored) return recording;
+
         return {
             ...recording,
             dataUrl: null,
@@ -114,16 +126,19 @@ const applyBackup = async (payload) => {
     const updates = [];
     if (Array.isArray(payload.events)) updates.push(setJSON(EVENT_KEY, payload.events));
     if (payload.uiState && typeof payload.uiState === 'object') updates.push(setJSON(UI_KEY, payload.uiState));
+
     if (Array.isArray(payload.recordings)) {
         const existing = await getJSON(RECORDINGS_KEY);
         if (Array.isArray(existing)) {
             await Promise.allSettled(existing.map((recording) => removeBlob(recording?.blobKey)));
         }
+
         const trimmed = payload.recordings.slice(0, 4);
         const hydrated = (await Promise.all(trimmed.map((recording) => hydrateRecordingForImport(recording))))
             .filter(Boolean);
         updates.push(setJSON(RECORDINGS_KEY, hydrated));
     }
+
     if (payload.adaptiveModel && typeof payload.adaptiveModel === 'object') updates.push(setJSON(ML_MODEL_KEY, payload.adaptiveModel));
     if (Array.isArray(payload.adaptiveLog)) updates.push(setJSON(ML_LOG_KEY, payload.adaptiveLog));
     await Promise.all(updates);
@@ -131,12 +146,14 @@ const applyBackup = async (payload) => {
 
 const pickBackupFile = () => new Promise((resolve) => {
     if (!importInput) return resolve(null);
+
     const handleChange = () => {
         const file = importInput.files?.[0] ?? null;
         importInput.value = '';
         importInput.removeEventListener('change', handleChange);
         resolve(file);
     };
+
     importInput.addEventListener('change', handleChange, { once: true });
     importInput.click();
 });
@@ -151,6 +168,7 @@ const handleImport = async () => {
             updateImportStatus('Import cancelled.');
             return;
         }
+
         const payload = await parseBackup(file);
         updateImportStatus('Importing backup…');
         await applyBackup(payload);
@@ -163,15 +181,28 @@ const handleImport = async () => {
     }
 };
 
-if (importButton) {
-    importButton.addEventListener('click', handleImport);
-}
-if (importInput) {
-    importInput.addEventListener('click', () => {
-        updateImportStatus('Choose a backup file…');
-    });
-}
+const bindLocalListeners = () => {
+    if (exportButton && exportButton.dataset.backupBound !== 'true') {
+        exportButton.dataset.backupBound = 'true';
+        exportButton.addEventListener('click', handleExport);
+    }
 
-if (exportButton) {
-    exportButton.addEventListener('click', handleExport);
-}
+    if (importButton && importButton.dataset.backupBound !== 'true') {
+        importButton.dataset.backupBound = 'true';
+        importButton.addEventListener('click', handleImport);
+    }
+
+    if (importInput && importInput.dataset.backupBound !== 'true') {
+        importInput.dataset.backupBound = 'true';
+        importInput.addEventListener('click', () => {
+            updateImportStatus('Choose a backup file…');
+        });
+    }
+};
+
+const initBackupExport = () => {
+    resolveElements();
+    bindLocalListeners();
+};
+
+export const init = initBackupExport;

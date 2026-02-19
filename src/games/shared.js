@@ -8,7 +8,15 @@ import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
 import { GAME_RECORDED, ML_RESET, SOUNDS_CHANGE } from '../utils/event-names.js';
 
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
-export const cachedEl = (selector) => { let el; return () => (el ??= document.querySelector(selector)); };
+export const cachedEl = (selector) => {
+    let el;
+    return () => {
+        if (!el || !el.isConnected) {
+            el = document.querySelector(selector);
+        }
+        return el;
+    };
+};
 const MAX_EVENTS = 500;
 export const formatCountdown = (seconds) => {
     const safe = Math.max(0, Math.ceil(seconds));

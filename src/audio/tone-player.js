@@ -1,5 +1,6 @@
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
+import { createAudioContext } from './audio-context.js';
 
 export const NOTE_FREQUENCIES = {
     G3: 196.00,
@@ -48,7 +49,8 @@ export const createTonePlayer = () => {
 
     const ensureContext = async () => {
         if (!context) {
-            context = new AudioContext();
+            context = createAudioContext();
+            if (!context) return null;
         }
         if (context.state === 'suspended') {
             await context.resume();
@@ -61,6 +63,7 @@ export const createTonePlayer = () => {
             return false;
         }
         const ctx = await ensureContext();
+        if (!ctx) return false;
         const oscillator = ctx.createOscillator();
         const gainNode = ctx.createGain();
         const now = ctx.currentTime;

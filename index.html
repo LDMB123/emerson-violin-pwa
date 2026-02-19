@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-ui-mode="child">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
   <meta name="theme-color" content="#F56B49" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self'; connect-src 'self'; worker-src 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'" />
 
   <!-- PWA / iPadOS 26.2 Capable -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -24,8 +24,8 @@
   <link rel="apple-touch-icon" sizes="167x167" href="./assets/icons/icon-167.png" />
   <link rel="apple-touch-icon" sizes="152x152" href="./assets/icons/icon-152.png" />
   <link rel="apple-touch-icon" sizes="120x120" href="./assets/icons/icon-120.png" />
-  <link rel="preload" href="./src/assets/fonts/fraunces-vf.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="./src/assets/fonts/nunito-vf.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="./src/assets/fonts/fraunces-vf.woff2" as="font" type="font/woff2" />
+  <link rel="preload" href="./src/assets/fonts/nunito-vf.woff2" as="font" type="font/woff2" />
   <!-- iPadOS Startup Images (Splash Screens) -->
   <link rel="apple-touch-startup-image" href="./assets/icons/icon-512.png"
     media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" />
@@ -52,6 +52,18 @@
 
   <!-- App Container -->
   <div id="app" class="app-container">
+    <header class="app-topbar glass" role="banner">
+      <div class="app-topbar-brand">
+        <span class="app-topbar-title">Panda Violin</span>
+        <span class="app-topbar-subtitle">Today&rsquo;s Practice</span>
+      </div>
+      <a href="#view-parent" class="parent-zone-lock" data-parent-lock aria-label="Open Parent Zone">
+        <span class="parent-zone-lock-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2Zm-6 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4ZM9 8V6a3 3 0 1 1 6 0v2H9Z"/></svg>
+        </span>
+        <span class="parent-zone-lock-label">Parent Zone</span>
+      </a>
+    </header>
 
     <!-- Main Content Area -->
     <main class="main-content" id="main-content">
@@ -60,102 +72,23 @@
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav glass" aria-label="Primary">
-      <a href="#view-home" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3L2 12h3v8h6v-5h2v5h6v-8h3L12 3z"/></svg></span>
-        <span class="nav-label">Home</span>
-      </a>
       <a href="#view-coach" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 12H7v-2h10v2zm0-3H7V9h10v2zm0-3H7V6h10v2z"/></svg></span>
-        <span class="nav-label">Coach</span>
+        <span class="nav-label">Practice</span>
       </a>
       <a href="#view-games" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></span>
         <span class="nav-label">Games</span>
       </a>
+      <a href="#view-songs" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></span>
+        <span class="nav-label">Songs</span>
+      </a>
       <a href="#view-progress" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.5 18.5l6-6 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></span>
         <span class="nav-label">Progress</span>
       </a>
-      <!-- Popover Trigger -->
-      <button class="nav-item" type="button" popovertarget="more-menu" aria-controls="more-menu" aria-expanded="false">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></span>
-        <span class="nav-label">More</span>
-      </button>
     </nav>
-
-    <!-- More Menu Popover -->
-    <div id="more-menu" popover="auto" class="popover-menu glass" role="dialog" aria-label="More menu">
-      <div class="popover-header">
-        <h2>More</h2>
-        <!-- Light dismiss handles closing, but we can keep a close button if desired -->
-        <button class="close-btn" type="button" aria-label="Close menu" popovertarget="more-menu" popovertargetaction="hide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-      </div>
-      <div class="more-menu">
-        <div class="more-section">
-          <span class="more-section-label">Practice</span>
-          <a href="#view-trainer" class="more-item">
-            <span class="more-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg></span>
-            <span>Practice Tools</span>
-          </a>
-          <a href="#view-progress" class="more-item">
-            <span class="more-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg></span>
-            <span>Achievements</span>
-          </a>
-        </div>
-        <div class="more-section">
-          <span class="more-section-label">Settings</span>
-          <a href="#view-settings" class="more-item">
-            <span class="more-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.04 7.04 0 0 0-1.62-.94l-.36-2.54A.48.48 0 0 0 13.93 2h-3.86a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.71 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.49.37 1.03.7 1.62.94l.36 2.54c.05.24.26.41.48.41h3.86c.22 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span>
-            <span>Settings</span>
-          </a>
-          <div class="more-toggles">
-            <label class="more-toggle">
-              <span>Notifications</span>
-              <span class="toggle">
-                <input type="checkbox" id="setting-notifications" />
-                <span class="toggle-slider"></span>
-              </span>
-            </label>
-            <label class="more-toggle">
-              <span>Sounds</span>
-              <span class="toggle">
-                <input type="checkbox" id="setting-sounds" />
-                <span class="toggle-slider"></span>
-              </span>
-            </label>
-          </div>
-          <p class="more-note" data-notification-status aria-live="polite">Notifications are off.</p>
-        </div>
-        <div class="more-section">
-          <span class="more-section-label">About</span>
-          <a href="#view-help" class="more-item">
-            <span class="more-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg></span>
-            <span>Help</span>
-          </a>
-          <a href="#view-about" class="more-item">
-            <span class="more-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></span>
-            <span>About</span>
-          </a>
-          <a href="#view-backup" class="more-item">
-            <span class="more-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg></span>
-            <span>Data Backup</span>
-          </a>
-        </div>
-        <div class="more-section">
-          <span class="more-section-label">Parent</span>
-          <a href="#view-parent" class="more-item">
-            <span class="more-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM12 17c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM9 8V6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9z"/></svg></span>
-            <span>Parent Zone</span>
-          </a>
-        </div>
-      </div>
-      <picture>
-        <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
-        <img src="./assets/illustrations/mascot-happy.png" alt="" class="more-mascot corner-mascot" loading="lazy" decoding="async" />
-      </picture>
-      <div class="more-version">Version 2.0.0</div>
-    </div>
-    <div class="popover-backdrop" data-popover-backdrop hidden aria-hidden="true" role="presentation"></div>
 
   </div>
 

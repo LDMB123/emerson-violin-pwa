@@ -4,7 +4,7 @@
  * - Appears 5 s after first load (if not standalone & not dismissed)
  * - Auto-dismisses after 8 s if user doesn't interact
  * - "Install" CTA opens the full install guide dialog
- * - Adds a pulsing dot on the More nav button while install is available
+ * - Adds a pulsing dot on the Parent Zone lock while install is available
  */
 
 import { INSTALL_TOAST_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
@@ -16,7 +16,7 @@ const AUTO_DISMISS = 8000;
 const toast = document.getElementById('install-toast');
 const actionBtn = toast?.querySelector('[data-install-toast-action]');
 const closeBtn = toast?.querySelector('.install-toast-close');
-const moreBtn = document.querySelector('[popovertarget="more-menu"]');
+const parentLockButton = document.querySelector('[data-parent-lock]');
 
 let autoDismissTimer = null;
 
@@ -61,29 +61,25 @@ const show = () => {
     autoDismissTimer = setTimeout(() => dismiss(false), AUTO_DISMISS);
 };
 
-// Pulsing dot on More nav button
+// Pulsing dot on Parent Zone lock
 const addPulsingDot = () => {
-    if (!moreBtn || moreBtn.querySelector('.nav-pulse')) return;
+    if (!parentLockButton || parentLockButton.querySelector('.nav-pulse')) return;
     const dot = document.createElement('span');
     dot.className = 'nav-pulse';
     dot.setAttribute('aria-hidden', 'true');
-    moreBtn.appendChild(dot);
+    parentLockButton.appendChild(dot);
 };
 
 const removePulsingDot = () => {
-    moreBtn?.querySelector('.nav-pulse')?.remove();
+    parentLockButton?.querySelector('.nav-pulse')?.remove();
 };
 
 // Wire events
 actionBtn?.addEventListener('click', async () => {
     await dismiss(true);
-    // Open the full install guide dialog
-    await import('./install-guide.js');
-    // install-guide.js auto-initializes; trigger manual show via help button
-    const helpBtn = document.querySelector('[data-install-help]');
-    if (helpBtn) {
-        helpBtn.click();
-    }
+    // Open the full install guide dialog from anywhere in the app.
+    const { openInstallGuide } = await import('./install-guide.js');
+    openInstallGuide();
 });
 
 closeBtn?.addEventListener('click', () => dismiss(true));

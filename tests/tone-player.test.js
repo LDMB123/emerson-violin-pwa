@@ -158,4 +158,18 @@ describe('createTonePlayer', () => {
         await promise.catch(() => {});
         vi.useRealTimers();
     });
+
+    it('uses webkitAudioContext fallback when AudioContext is unavailable', async () => {
+        delete globalThis.AudioContext;
+        globalThis.webkitAudioContext = function () { return mockContext; };
+
+        const player = createTonePlayer();
+        vi.useFakeTimers();
+        const promise = player.playNote('A4');
+        await vi.runAllTimersAsync();
+        const result = await promise;
+        expect(result).toBe(true);
+        expect(mockContext.createOscillator).toHaveBeenCalled();
+        vi.useRealTimers();
+    });
 });

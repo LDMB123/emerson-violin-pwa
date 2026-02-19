@@ -1,4 +1,3 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { setJSON, getBlob, removeBlob } from '../persistence/storage.js';
 import { loadRecordings, resolveRecordingSource } from '../persistence/loaders.js';
 import { exportRecording } from '../utils/recording-export.js';
@@ -8,10 +7,18 @@ import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 import { RECORDINGS_UPDATED, SOUNDS_CHANGE } from '../utils/event-names.js';
 import { createAudioController } from '../utils/audio-utils.js';
 
-const listEl = document.querySelector('[data-parent-recordings]');
-const statusEl = document.querySelector('[data-parent-recordings-status]');
-const clearButton = document.querySelector('[data-parent-clear-recordings]');
+let listEl = null;
+let statusEl = null;
+let clearButton = null;
+
 const { audio: playbackAudio, stop: stopPlayback, setUrl: setPlaybackUrl } = createAudioController();
+let globalListenersBound = false;
+
+const resolveElements = () => {
+    listEl = document.querySelector('[data-parent-recordings]');
+    statusEl = document.querySelector('[data-parent-recordings-status]');
+    clearButton = document.querySelector('[data-parent-clear-recordings]');
+};
 
 const updateStatus = (message) => {
     if (statusEl) statusEl.textContent = message;
@@ -68,84 +75,81 @@ const buildRow = (recording, index) => {
     row.appendChild(deleteBtn);
 
     titleDiv.textContent = recording.title || `Recording ${index + 1}`;
-    if (subDiv) {
-        let createdAt = '';
-        if (recording.createdAt) {
-            const stamp = new Date(recording.createdAt);
-            if (!Number.isNaN(stamp.getTime())) {
-                createdAt = stamp.toLocaleDateString();
-            }
+    let createdAt = '';
+    if (recording.createdAt) {
+        const stamp = new Date(recording.createdAt);
+        if (!Number.isNaN(stamp.getTime())) {
+            createdAt = stamp.toLocaleDateString();
         }
-        const parts = [`Duration ${formatDuration(recording.duration || 0)}`];
-        if (createdAt) parts.push(createdAt);
-        subDiv.textContent = parts.join(' · ');
     }
+    const parts = [`Duration ${formatDuration(recording.duration || 0)}`];
+    if (createdAt) parts.push(createdAt);
+    subDiv.textContent = parts.join(' · ');
 
     const hasSource = Boolean(recording.dataUrl || recording.blobKey);
-    if (playBtn) {
-        playBtn.disabled = !isSoundEnabled() || !hasSource;
-        playBtn.addEventListener('click', async () => {
-            if (!isSoundEnabled()) return;
-            if (!hasSource) return;
-            const source = await resolveRecordingSource(recording);
-            if (!source) return;
-            stopPlayback();
-            setPlaybackUrl(source.revoke ? source.url : '');
-            playbackAudio.src = source.url;
-            if (!isSoundEnabled()) return;
-            playbackAudio.play().catch(() => {});
-            if (source.revoke) {
-                playbackAudio.addEventListener('ended', () => stopPlayback(), { once: true });
-            }
-        });
-    }
 
-    if (saveBtn) {
-        saveBtn.disabled = !hasSource;
-        saveBtn.addEventListener('click', async () => {
-            if (!hasSource) return;
-            saveBtn.disabled = true;
-            const original = saveBtn.textContent;
-            saveBtn.textContent = '…';
-            try {
-                const blob = recording.blobKey ? await getBlob(recording.blobKey) : null;
-                await exportRecording(recording, index, blob);
-                saveBtn.textContent = '✓';
-            } catch {
-                saveBtn.textContent = '!';
-            } finally {
-                setTimeout(() => {
-                    saveBtn.textContent = original || '⬇';
-                    saveBtn.disabled = false;
-                }, 800);
-            }
-        });
-    }
+    playBtn.disabled = !isSoundEnabled() || !hasSource;
+    playBtn.addEventListener('click', async () => {
+        if (!isSoundEnabled() || !hasSource) return;
+        const source = await resolveRecordingSource(recording);
+        if (!source) return;
+        stopPlayback();
+        setPlaybackUrl(source.revoke ? source.url : '');
+        playbackAudio.src = source.url;
+        if (!isSoundEnabled()) return;
+        playbackAudio.play().catch(() => {});
+        if (source.revoke) {
+            playbackAudio.addEventListener('ended', () => stopPlayback(), { once: true });
+        }
+    });
 
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', async () => {
-            const ok = window.confirm('Delete this recording?');
-            if (!ok) return;
-            stopPlayback();
-            const recordings = await loadRecordings();
-            recordings.splice(index, 1);
-            if (recording.blobKey) {
-                await removeBlob(recording.blobKey);
-            }
-            await saveRecordings(recordings);
-            render();
-        });
-    }
+    saveBtn.disabled = !hasSource;
+    saveBtn.addEventListener('click', async () => {
+        if (!hasSource) return;
+        saveBtn.disabled = true;
+        const original = saveBtn.textContent;
+        saveBtn.textContent = '…';
+        try {
+            const blob = recording.blobKey ? await getBlob(recording.blobKey) : null;
+            await exportRecording(recording, index, blob);
+            saveBtn.textContent = '✓';
+        } catch {
+            saveBtn.textContent = '!';
+        } finally {
+            setTimeout(() => {
+                saveBtn.textContent = original || '⬇';
+                saveBtn.disabled = false;
+            }, 800);
+        }
+    });
+
+    deleteBtn.addEventListener('click', async () => {
+        const ok = window.confirm('Delete this recording?');
+        if (!ok) return;
+
+        stopPlayback();
+        const recordings = await loadRecordings();
+        recordings.splice(index, 1);
+        if (recording.blobKey) {
+            await removeBlob(recording.blobKey);
+        }
+        await saveRecordings(recordings);
+        render();
+    });
 
     return row;
 };
 
 const render = async () => {
+    resolveElements();
     if (!listEl) return;
+
     const recordings = await loadRecordings();
     listEl.replaceChildren();
 
-    if (clearButton) clearButton.disabled = !recordings.length;
+    if (clearButton) {
+        clearButton.disabled = !recordings.length;
+    }
 
     if (!recordings.length) {
         updateStatus('No recordings saved yet.');
@@ -162,6 +166,7 @@ const render = async () => {
 const clearRecordings = async () => {
     const ok = window.confirm('Clear all saved recordings?');
     if (!ok) return;
+
     stopPlayback();
     const recordings = await loadRecordings();
     await Promise.allSettled(recordings.map((recording) => removeBlob(recording.blobKey)));
@@ -170,18 +175,22 @@ const clearRecordings = async () => {
     updateStatus('All recordings cleared.');
 };
 
-const init = () => {
-    if (clearButton) {
-        clearButton.addEventListener('click', () => {
-            clearRecordings();
-        });
+const bindLocalListeners = () => {
+    if (clearButton && clearButton.dataset.parentRecordingsBound !== 'true') {
+        clearButton.dataset.parentRecordingsBound = 'true';
+        clearButton.addEventListener('click', clearRecordings);
     }
+};
 
-    render();
+const bindGlobalListeners = () => {
+    if (globalListenersBound) return;
+    globalListenersBound = true;
+
     const handleUpdate = () => {
         stopPlayback();
         render();
     };
+
     window.addEventListener(RECORDINGS_UPDATED, handleUpdate);
     document.addEventListener(SOUNDS_CHANGE, (event) => {
         if (event.detail?.enabled === false) {
@@ -197,4 +206,11 @@ const init = () => {
     });
 };
 
-whenReady(init);
+const initParentRecordings = () => {
+    resolveElements();
+    bindGlobalListeners();
+    bindLocalListeners();
+    render();
+};
+
+export const init = initParentRecordings;

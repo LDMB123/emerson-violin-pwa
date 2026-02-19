@@ -1,10 +1,17 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { hasServiceWorkerSupport } from './sw-support.js';
 
-const statusEl = document.querySelector('[data-sw-status]');
-const syncStatusEl = document.querySelector('[data-sync-status]');
-const updateButton = document.querySelector('[data-sw-update]');
-const applyButton = document.querySelector('[data-sw-apply]');
+let statusEl = null;
+let syncStatusEl = null;
+let updateButton = null;
+let applyButton = null;
+let globalsBound = false;
+
+const resolveElements = () => {
+    statusEl = document.querySelector('[data-sw-status]');
+    syncStatusEl = document.querySelector('[data-sync-status]');
+    updateButton = document.querySelector('[data-sw-update]');
+    applyButton = document.querySelector('[data-sw-apply]');
+};
 
 const setStatus = (message) => {
     if (statusEl) statusEl.textContent = message;
@@ -109,7 +116,27 @@ const registerBackgroundRefresh = async (registration) => {
     setSyncStatus('Background refresh not supported on this device.');
 };
 
-const init = async () => {
+const bindGlobalListeners = () => {
+    if (globalsBound) return;
+    globalsBound = true;
+    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange, { once: true });
+};
+
+const bindLocalListeners = () => {
+    if (updateButton && updateButton.dataset.swBound !== 'true') {
+        updateButton.dataset.swBound = 'true';
+        updateButton.addEventListener('click', checkForUpdates);
+    }
+
+    if (applyButton && applyButton.dataset.swBound !== 'true') {
+        applyButton.dataset.swBound = 'true';
+        applyButton.addEventListener('click', applyUpdate);
+    }
+};
+
+const initSwUpdates = async () => {
+    resolveElements();
+
     if (!hasServiceWorkerSupport()) {
         setStatus('Service worker not supported on this browser.');
         setSyncStatus('Background refresh unavailable on this browser.');
@@ -125,18 +152,11 @@ const init = async () => {
         if (updateButton) updateButton.disabled = true;
         return;
     }
+
     bindUpdateFlow(registration);
     registerBackgroundRefresh(registration);
-
-    if (updateButton) {
-        updateButton.addEventListener('click', checkForUpdates);
-    }
-
-    if (applyButton) {
-        applyButton.addEventListener('click', applyUpdate);
-    }
-
-    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange, { once: true });
+    bindLocalListeners();
+    bindGlobalListeners();
 };
 
-whenReady(init);
+export const init = initSwUpdates;

@@ -158,50 +158,60 @@ const { bind } = createGame({
         gameState._updateSoundState = updateSoundState;
         gameState._setStatus = setStatus;
 
+        const playTapPreview = (note) => {
+            if (!isSoundEnabled()) return;
+            const player = getTonePlayer();
+            if (!player) return;
+            player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => {});
+        };
+
+        const updateSequenceProgress = () => {
+            if (gameState._track.length < lengthTarget) return;
+            markChecklist('mm-step-1');
+            const currentSequence = gameState._track.slice(-lengthTarget).join('');
+            if (gameState._lastSequence && currentSequence === gameState._lastSequence && !gameState._repeatMarked) {
+                gameState._repeatMarked = true;
+                markChecklist('mm-step-2');
+            }
+            gameState._lastSequence = currentSequence;
+        };
+
+        const tryTargetMatch = () => {
+            if (gameState._track.length < gameState._targetMotif.length) return;
+            const attempt = gameState._track.slice(-gameState._targetMotif.length).join('');
+            const target = gameState._targetMotif.join('');
+            if (attempt !== target) return;
+            gameState._matchCount += 1;
+            gameState.score += 50;
+            updateScore();
+            setStatus(`Target hit! ${gameState._matchCount} in a row.`);
+            if (gameState._matchCount >= 1) markChecklist('mm-step-1');
+            if (gameState._matchCount >= 2) markChecklist('mm-step-2');
+            if (gameState._matchCount >= 3) reportSession();
+            buildTarget();
+        };
+
+        const handleNoteTap = (note) => {
+            if (gameState._isPlaying) {
+                stopPlayback('Editing melody. Tap Play to hear it.');
+            }
+            gameState._track.push(note);
+            if (gameState._track.length > gameState._maxTrack) gameState._track.shift();
+            gameState.score += 20;
+            gameState._uniqueNotes.add(note);
+            playTapPreview(note);
+            updateTrack();
+            updateScore();
+            updateSequenceProgress();
+            markChecklistIf(gameState._uniqueNotes.size >= 3, 'mm-step-3');
+            tryTargetMatch();
+        };
+
         buttons.forEach((button) => {
             bindTap(button, () => {
                 const note = button.dataset.melodyNote;
                 if (!note) return;
-                if (gameState._isPlaying) {
-                    stopPlayback('Editing melody. Tap Play to hear it.');
-                }
-                gameState._track.push(note);
-                if (gameState._track.length > gameState._maxTrack) gameState._track.shift();
-                gameState.score += 20;
-                gameState._uniqueNotes.add(note);
-                if (isSoundEnabled()) {
-                    const player = getTonePlayer();
-                    if (player) {
-                        player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => {});
-                    }
-                }
-                updateTrack();
-                updateScore();
-                if (gameState._track.length >= lengthTarget) {
-                    markChecklist('mm-step-1');
-                    const currentSequence = gameState._track.slice(-lengthTarget).join('');
-                    if (gameState._lastSequence && currentSequence === gameState._lastSequence && !gameState._repeatMarked) {
-                        gameState._repeatMarked = true;
-                        markChecklist('mm-step-2');
-                    }
-                    gameState._lastSequence = currentSequence;
-                }
-                markChecklistIf(gameState._uniqueNotes.size >= 3, 'mm-step-3');
-
-                if (gameState._track.length >= gameState._targetMotif.length) {
-                    const attempt = gameState._track.slice(-gameState._targetMotif.length).join('');
-                    const target = gameState._targetMotif.join('');
-                    if (attempt === target) {
-                        gameState._matchCount += 1;
-                        gameState.score += 50;
-                        updateScore();
-                        setStatus(`Target hit! ${gameState._matchCount} in a row.`);
-                        if (gameState._matchCount >= 1) markChecklist('mm-step-1');
-                        if (gameState._matchCount >= 2) markChecklist('mm-step-2');
-                        if (gameState._matchCount >= 3) reportSession();
-                        buildTarget();
-                    }
-                }
+                handleNoteTap(note);
             });
         });
 

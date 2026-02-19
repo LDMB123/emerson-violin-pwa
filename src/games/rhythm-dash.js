@@ -41,6 +41,27 @@ let soundsChangeHandler = null;
 let pagehideHandler = null;
 let tuningReport = null;
 
+const cleanupRhythmDashBindings = () => {
+    if (resetRequestHandler) {
+        document.removeEventListener(GAME_PLAY_AGAIN, resetRequestHandler);
+    }
+    if (hashChangeHandler) {
+        window.removeEventListener('hashchange', hashChangeHandler, { passive: true });
+    }
+    if (visibilityHandler) {
+        document.removeEventListener('visibilitychange', visibilityHandler);
+    }
+    if (soundsChangeHandler) {
+        document.removeEventListener(SOUNDS_CHANGE, soundsChangeHandler);
+    }
+    if (pagehideHandler) {
+        window.removeEventListener('pagehide', pagehideHandler, { passive: true });
+    }
+    if (tuningReport?.dispose) {
+        tuningReport.dispose();
+    }
+};
+
 const updateRhythmDash = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-rhythm-dash input[id^="rd-set-"]'));
     if (!inputs.length) return;
@@ -62,24 +83,7 @@ const updateRhythmDash = () => {
 const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-rhythm-dash');
     if (!stage) return;
-    if (resetRequestHandler) {
-        document.removeEventListener(GAME_PLAY_AGAIN, resetRequestHandler);
-    }
-    if (hashChangeHandler) {
-        window.removeEventListener('hashchange', hashChangeHandler, { passive: true });
-    }
-    if (visibilityHandler) {
-        document.removeEventListener('visibilitychange', visibilityHandler);
-    }
-    if (soundsChangeHandler) {
-        document.removeEventListener(SOUNDS_CHANGE, soundsChangeHandler);
-    }
-    if (pagehideHandler) {
-        window.removeEventListener('pagehide', pagehideHandler, { passive: true });
-    }
-    if (tuningReport?.dispose) {
-        tuningReport.dispose();
-    }
+    cleanupRhythmDashBindings();
     const tapButton = stage.querySelector('.rhythm-tap');
     const runToggle = stage.querySelector('#rhythm-run');
     const pauseButton = stage.querySelector('[data-rhythm="pause"]');

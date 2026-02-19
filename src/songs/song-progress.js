@@ -119,6 +119,9 @@ const updateBestAccuracyUI = (events) => {
 const initSongProgress = () => {
     const views = document.querySelectorAll('.song-view');
     views.forEach((view) => {
+        if (view.dataset.songProgressBound === 'true') return;
+        view.dataset.songProgressBound = 'true';
+
         const toggle = view.querySelector('.song-play-toggle');
         const sheet = view.querySelector('.song-sheet');
         const playhead = view.querySelector('.song-playhead');
@@ -135,7 +138,10 @@ const initSongProgress = () => {
             });
         }
     });
+
     loadEvents().then(updateBestAccuracyUI);
 };
+
+export const init = initSongProgress;
 
 whenReady(initSongProgress);

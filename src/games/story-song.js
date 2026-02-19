@@ -125,7 +125,7 @@ const { bind } = createGame({
             stopPlayback({ message: 'Play-along paused.' });
         };
 
-        const resetStory = () => {
+        const resetStoryProgress = () => {
             pageIndex = 0;
             completedNotes = 0;
             completedPages = 0;
@@ -133,6 +133,10 @@ const { bind } = createGame({
             gameState._completedNotes = 0;
             gameState._completedPages = 0;
             gameState.score = 0;
+        };
+
+        const resetStory = () => {
+            resetStoryProgress();
             updatePage(0);
             updateStatus('Press Play-Along to start.');
         };
@@ -141,7 +145,7 @@ const { bind } = createGame({
         gameState._updatePage = updatePage;
         gameState._updateStatus = updateStatus;
 
-        const playStory = async () => {
+        const prepareStoryPlayback = () => {
             if (!toggle || !toggle.checked) return;
             if (!isSoundEnabled()) {
                 stopPlayback({ message: 'Sounds are off. Enable Sounds to play along.' });
@@ -153,18 +157,16 @@ const { bind } = createGame({
                 return;
             }
             if (pageIndex >= storyPages.length || gameState._reported) {
-                pageIndex = 0;
-                completedNotes = 0;
-                completedPages = 0;
-                gameState._pageIndex = 0;
-                gameState._completedNotes = 0;
-                gameState._completedPages = 0;
+                resetStoryProgress();
             }
             const token = ++playToken;
             gameState._isPlaying = true;
             markChecklist('ss-step-1');
             updateStatus('Play-along running — follow the notes.');
+            return { player, token };
+        };
 
+        const playStoryPages = async (player, token) => {
             while (pageIndex < storyPages.length) {
                 if (token !== playToken || !toggle.checked) break;
                 const page = storyPages[pageIndex];
@@ -190,7 +192,9 @@ const { bind } = createGame({
                     await new Promise((resolve) => setTimeout(resolve, Math.max(400, stageSeconds * 250)));
                 }
             }
+        };
 
+        const finalizeStoryPlayback = (token) => {
             if (token !== playToken) return;
             gameState._isPlaying = false;
             if (pageIndex >= storyPages.length) {
@@ -202,6 +206,13 @@ const { bind } = createGame({
             } else {
                 updateStatus('Play-along ready. Tap Play-Along to continue.');
             }
+        };
+
+        const playStory = async () => {
+            const session = prepareStoryPlayback();
+            if (!session) return;
+            await playStoryPages(session.player, session.token);
+            finalizeStoryPlayback(session.token);
         };
 
         toggle?.addEventListener('change', () => {

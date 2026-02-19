@@ -1,22 +1,22 @@
 <section class="view" id="view-backup" aria-label="Backup">
-        <div class="view-header">
-          <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
-          <h2>Data Backup</h2>
-        </div>
-        <div class="backup-layout">
-          <div class="backup-card glass">
-            <h3>Export Practice Summary</h3>
-            <p>Use the Parent Zone to print or save a PDF summary from this device.</p>
-            <a class="btn btn-primary" href="#view-parent">Open Parent Zone</a>
-          </div>
-          <div class="backup-card glass">
-            <h3>Local Storage</h3>
-            <p>All progress is stored locally for offline use. Export a backup to Files or import it on this device.</p>
-            <button class="btn btn-secondary" type="button" data-export-json="">Export Backup</button>
-            <p class="setting-note" data-export-status="" aria-live="polite">Backup not created yet.</p>
-            <button class="btn btn-secondary" type="button" data-import-json="">Import Backup</button>
-            <input type="file" accept="application/json" data-import-file="" hidden="" aria-label="Import backup file">
-            <p class="setting-note" data-import-status="" aria-live="polite">No backup imported yet.</p>
-          </div>
-        </div>
-      </section>
+  <div class="view-header">
+    <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
+    <h2>Backup</h2>
+  </div>
+  <div class="backup-layout">
+    <div class="backup-card glass">
+      <h3>Parent Summary Export</h3>
+      <p>Open Parent Zone to share or save a weekly summary.</p>
+      <a class="btn btn-primary" href="#view-parent">Open Parent Zone</a>
+    </div>
+    <div class="backup-card glass">
+      <h3>Local Data Backup</h3>
+      <p>Export a JSON backup or import one on this device.</p>
+      <button class="btn btn-secondary" type="button" data-export-json>Export Backup</button>
+      <p class="setting-note" data-export-status aria-live="polite">Backup not created yet.</p>
+      <button class="btn btn-secondary" type="button" data-import-json>Import Backup</button>
+      <input type="file" accept="application/json" data-import-file hidden aria-label="Import backup file">
+      <p class="setting-note" data-import-status aria-live="polite">No backup imported yet.</p>
+    </div>
+  </div>
+</section>

@@ -1,22 +1,28 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { createPinHash, verifyPin } from './pin-crypto.js';
+import {
+    PARENT_PIN_KEY as PIN_KEY,
+    PARENT_PIN_LEGACY_KEY as PIN_KEY_LEGACY,
+    PARENT_UNLOCK_KEY as UNLOCK_KEY,
+} from '../persistence/storage-keys.js';
 
-const dialog = document.querySelector('[data-pin-dialog]');
-const input = document.getElementById('parent-pin-input');
-const form = dialog?.querySelector('form');
-const pinDisplayEl = document.querySelector('[data-parent-pin-display]');
-const pinInputEl = document.querySelector('[data-parent-pin-input]');
-const pinSaveButton = document.querySelector('[data-parent-pin-save]');
-const pinStatusEl = document.querySelector('[data-parent-pin-status]');
-
-import { PARENT_PIN_KEY as PIN_KEY, PARENT_PIN_LEGACY_KEY as PIN_KEY_LEGACY, PARENT_UNLOCK_KEY as UNLOCK_KEY } from '../persistence/storage-keys.js';
 let cachedPinData = null;
 let pinReady = null;
+let listenersBound = false;
 
 const normalizePin = (value) => (value || '').replace(/\D/g, '').slice(0, 4);
 
+const getElements = () => {
+    const dialog = document.querySelector('[data-pin-dialog]');
+    const input = document.getElementById('parent-pin-input');
+    const pinDisplayEl = document.querySelector('[data-parent-pin-display]');
+    const pinInputEl = document.querySelector('[data-parent-pin-input]');
+    const pinStatusEl = document.querySelector('[data-parent-pin-status]');
+    return { dialog, input, pinDisplayEl, pinInputEl, pinStatusEl };
+};
+
 const updatePinDisplay = () => {
+    const { pinDisplayEl, pinStatusEl } = getElements();
     if (pinDisplayEl) {
         pinDisplayEl.textContent = '🔒 PIN ••••';
     }
@@ -25,19 +31,19 @@ const updatePinDisplay = () => {
     }
 };
 
+const setPinStatus = (message) => {
+    const { pinStatusEl } = getElements();
+    if (pinStatusEl) pinStatusEl.textContent = message;
+};
+
 const loadPin = async () => {
-    // Try new PBKDF2 format first
     let stored = await getJSON(PIN_KEY);
 
     if (stored?.hash && stored?.salt) {
-        // Valid PBKDF2 format
         cachedPinData = stored;
     } else {
-        // Try legacy v1 format for migration
         const legacy = await getJSON(PIN_KEY_LEGACY);
         if (legacy?.hash) {
-            // Cannot migrate without original PIN, set default
-            console.warn('[PIN] Legacy format detected, resetting to default');
             const defaultPin = '1001';
             const { hash, salt } = await createPinHash(defaultPin);
             cachedPinData = {
@@ -48,7 +54,6 @@ const loadPin = async () => {
             };
             await setJSON(PIN_KEY, cachedPinData);
         } else {
-            // No PIN set, create default 1001
             const defaultPin = '1001';
             const { hash, salt } = await createPinHash(defaultPin);
             cachedPinData = {
@@ -72,16 +77,15 @@ const getPinData = async () => {
     return cachedPinData;
 };
 
-const setPinStatus = (message) => {
-    if (pinStatusEl) pinStatusEl.textContent = message;
-};
-
 const isUnlocked = () => sessionStorage.getItem(UNLOCK_KEY) === 'true';
 
 const showDialog = () => {
+    const { dialog, input } = getElements();
     if (!dialog) return;
+
     dialog.dataset.error = 'false';
     if (input) input.value = '';
+
     if (!dialog.open) {
         dialog.showModal();
         input?.focus();
@@ -89,52 +93,55 @@ const showDialog = () => {
 };
 
 const unlock = () => {
+    const { dialog } = getElements();
     sessionStorage.setItem(UNLOCK_KEY, 'true');
     dialog?.close('ok');
 };
 
 const handleSubmit = async (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    const dialog = form.closest('[data-pin-dialog]');
+    if (!(dialog instanceof HTMLDialogElement)) return;
+
     event.preventDefault();
     const action = event.submitter?.value;
+    const input = dialog.querySelector('#parent-pin-input');
+
     if (action === 'cancel') {
-        dialog?.close('cancel');
+        dialog.close('cancel');
         if (window.location.hash === '#view-parent') {
             window.location.hash = '#view-home';
         }
         return;
     }
+
     const pinData = await getPinData();
     const enteredPin = normalizePin(input?.value);
-    const isValid = await verifyPin(enteredPin, pinData.hash, pinData.salt);
+    const valid = await verifyPin(enteredPin, pinData.hash, pinData.salt);
 
-    if (isValid) {
+    if (valid) {
         unlock();
         return;
     }
-    if (dialog) dialog.dataset.error = 'true';
+
+    dialog.dataset.error = 'true';
     if (input) {
         input.value = '';
         input.focus();
     }
 };
 
-const checkGate = () => {
-    if (window.location.hash !== '#view-parent') return;
-    if (isUnlocked()) return;
-    showDialog();
-};
-
-if (form) {
-    form.addEventListener('submit', handleSubmit);
-}
-
 const savePin = async () => {
+    const { pinInputEl } = getElements();
     if (!pinInputEl) return;
+
     const next = normalizePin(pinInputEl.value);
     if (next.length !== 4) {
         setPinStatus('Enter a 4-digit PIN.');
         return;
     }
+
     const { hash, salt } = await createPinHash(next);
     cachedPinData = {
         hash,
@@ -147,19 +154,43 @@ const savePin = async () => {
     setPinStatus('PIN updated (secure).');
 };
 
-if (pinInputEl) {
-    pinInputEl.addEventListener('input', () => {
-        pinInputEl.value = normalizePin(pinInputEl.value);
+const checkGate = () => {
+    if (window.location.hash !== '#view-parent') return;
+    if (isUnlocked()) return;
+    showDialog();
+};
+
+const bindGlobalListeners = () => {
+    if (listenersBound) return;
+    listenersBound = true;
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (!form.closest('[data-pin-dialog]')) return;
+        handleSubmit(event);
     });
-}
 
-if (pinSaveButton) {
-    pinSaveButton.addEventListener('click', savePin);
-}
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-parent-pin-save]');
+        if (!button) return;
+        savePin();
+    });
 
-window.addEventListener('hashchange', checkGate, { passive: true });
+    document.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        if (target.id !== 'parent-pin-input' && !target.matches('[data-parent-pin-input]')) return;
+        target.value = normalizePin(target.value);
+    });
 
-whenReady(() => {
-    loadPin();
+    window.addEventListener('hashchange', checkGate, { passive: true });
+};
+
+const initParentPin = async () => {
+    bindGlobalListeners();
+    await loadPin();
     checkGate();
-});
+};
+
+export const init = initParentPin;

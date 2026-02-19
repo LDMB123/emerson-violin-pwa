@@ -22,6 +22,7 @@ const gameModules = {
 
 const loaded = new Map();
 const updates = new Set();
+let initialized = false;
 
 let updateScheduled = false;
 const scheduleUpdateAll = () => {
@@ -42,18 +43,30 @@ const loadGame = (viewId) => {
             if (typeof mod?.update === 'function') {
                 updates.add(mod.update);
             }
-            if (typeof mod?.bind === 'function') {
-                const gameId = viewId.replace('view-game-', '');
-                mod.bind(getDifficulty(gameId));
-            }
-            scheduleUpdateAll();
+            return mod;
         })
         .catch((error) => {
             loaded.delete(viewId);
             console.warn(`[game-metrics] Failed to load ${viewId}`, error);
+            return null;
         });
     loaded.set(viewId, promise);
     return promise;
+};
+
+const bindGame = (viewId) => {
+    if (!gameModules[viewId]) return Promise.resolve();
+    return loadGame(viewId).then((mod) => {
+        if (!mod) return;
+        if (typeof mod.bind === 'function') {
+            const gameId = viewId.replace('view-game-', '');
+            mod.bind(getDifficulty(gameId));
+        }
+        if (typeof mod.update === 'function') {
+            mod.update();
+        }
+        scheduleUpdateAll();
+    });
 };
 
 const loadGamesForView = (viewId) => {
@@ -61,7 +74,7 @@ const loadGamesForView = (viewId) => {
         return;
     }
     if (gameModules[viewId]) {
-        loadGame(viewId);
+        bindGame(viewId);
     }
 };
 
@@ -77,13 +90,18 @@ const initMetrics = () => {
     const hash = window.location.hash.slice(1);
     loadGamesForView(hash);
 
-    window.addEventListener('hashchange', () => {
-        const view = window.location.hash.slice(1);
-        loadGamesForView(view);
-    }, { passive: true });
+    if (!initialized) {
+        initialized = true;
+        window.addEventListener('hashchange', () => {
+            const view = window.location.hash.slice(1);
+            loadGamesForView(view);
+        }, { passive: true });
 
-    document.addEventListener('change', handleChange);
+        document.addEventListener('change', handleChange);
+    }
 };
+
+export const init = initMetrics;
 
 whenReady(initMetrics);
 

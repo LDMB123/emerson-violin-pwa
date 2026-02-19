@@ -3,11 +3,20 @@ import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { formatTimestamp } from '../utils/math.js';
 import { ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 
-const statusEl = document.querySelector('[data-ml-status]');
-const detailEl = document.querySelector('[data-ml-detail]');
-const resetButton = document.querySelector('[data-ml-reset]');
-const demoToggle = document.querySelector('[data-ml-demo]');
-const simulateButton = document.querySelector('[data-ml-simulate]');
+let statusEl = null;
+let detailEl = null;
+let resetButton = null;
+let demoToggle = null;
+let simulateButton = null;
+let globalsBound = false;
+
+const resolveElements = () => {
+    statusEl = document.querySelector('[data-ml-status]');
+    detailEl = document.querySelector('[data-ml-detail]');
+    resetButton = document.querySelector('[data-ml-reset]');
+    demoToggle = document.querySelector('[data-ml-demo]');
+    simulateButton = document.querySelector('[data-ml-simulate]');
+};
 
 const updateSummary = async () => {
     if (!statusEl && !detailEl) return;
@@ -69,39 +78,58 @@ const simulateAdaptiveSessions = async () => {
     if (simulateButton) simulateButton.disabled = false;
 };
 
-if (resetButton) {
-    resetButton.addEventListener('click', async () => {
-        resetButton.disabled = true;
-        await resetAdaptiveModel();
-        await updateSummary();
-        resetButton.disabled = false;
-        if (statusEl) statusEl.textContent = 'Adaptive learning reset. New sessions will rebuild difficulty.';
-    });
-}
+const bindLocalListeners = () => {
+    if (resetButton && resetButton.dataset.mlBound !== 'true') {
+        resetButton.dataset.mlBound = 'true';
+        resetButton.addEventListener('click', async () => {
+            resetButton.disabled = true;
+            await resetAdaptiveModel();
+            await updateSummary();
+            resetButton.disabled = false;
+            if (statusEl) statusEl.textContent = 'Adaptive learning reset. New sessions will rebuild difficulty.';
+        });
+    }
 
-if (demoToggle && simulateButton) {
-    simulateButton.disabled = !demoToggle.checked;
-    demoToggle.addEventListener('change', () => {
+    if (demoToggle && simulateButton) {
         simulateButton.disabled = !demoToggle.checked;
-        if (demoToggle.checked && statusEl) {
-            statusEl.textContent = 'Demo mode on. Click simulate to preview adaptive shifts.';
-        } else {
-            updateSummary();
+        if (demoToggle.dataset.mlBound !== 'true') {
+            demoToggle.dataset.mlBound = 'true';
+            demoToggle.addEventListener('change', () => {
+                simulateButton.disabled = !demoToggle.checked;
+                if (demoToggle.checked && statusEl) {
+                    statusEl.textContent = 'Demo mode on. Click simulate to preview adaptive shifts.';
+                } else {
+                    updateSummary();
+                }
+            });
         }
+
+        if (simulateButton.dataset.mlBound !== 'true') {
+            simulateButton.dataset.mlBound = 'true';
+            simulateButton.addEventListener('click', () => {
+                if (!demoToggle.checked) return;
+                simulateAdaptiveSessions();
+            });
+        }
+    }
+};
+
+const bindGlobalListeners = () => {
+    if (globalsBound) return;
+    globalsBound = true;
+    document.addEventListener(ML_UPDATE, () => {
+        updateSummary();
     });
-
-    simulateButton.addEventListener('click', () => {
-        if (!demoToggle.checked) return;
-        simulateAdaptiveSessions();
+    document.addEventListener(ML_RESET, () => {
+        updateSummary();
     });
-}
+};
 
-updateSummary();
-
-document.addEventListener(ML_UPDATE, () => {
+const initAdaptiveUi = () => {
+    resolveElements();
+    bindLocalListeners();
+    bindGlobalListeners();
     updateSummary();
-});
+};
 
-document.addEventListener(ML_RESET, () => {
-    updateSummary();
-});
+export const init = initAdaptiveUi;

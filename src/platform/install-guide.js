@@ -1,9 +1,13 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { INSTALL_GUIDE_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
 import { isIPadOS, isStandalone, isAutomated, setRootDataset } from './platform-utils.js';
 import { markDismissed, wasDismissed } from './dismiss-helpers.js';
-const helpButton = document.querySelector('[data-install-help]');
+
+let helpButton = null;
 let lastFocused = null;
+
+const resolveElements = () => {
+    helpButton = document.querySelector('[data-install-help]');
+};
 
 const buildGuide = () => {
     const backdrop = document.createElement('div');
@@ -133,7 +137,8 @@ const showGuide = async (force = false) => {
     });
 };
 
-const init = () => {
+const initInstallGuide = () => {
+    resolveElements();
     if (isAutomated()) {
         if (helpButton) helpButton.hidden = true;
         return;
@@ -145,7 +150,8 @@ const init = () => {
 
     setRootDataset('platform', 'ipados');
 
-    if (helpButton) {
+    if (helpButton && helpButton.dataset.installGuideBound !== 'true') {
+        helpButton.dataset.installGuideBound = 'true';
         helpButton.addEventListener('click', () => {
             showGuide(true);
         });
@@ -154,4 +160,6 @@ const init = () => {
     showGuide(false);
 };
 
-whenReady(init);
+export const openInstallGuide = () => showGuide(true);
+
+export const init = initInstallGuide;

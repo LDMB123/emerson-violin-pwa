@@ -1,9 +1,15 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { isIPadOS, isStandalone, setRootDataset } from './platform-utils.js';
 
-const statusEl = document.querySelector('[data-platform-status]');
-const voiceToggle = document.querySelector('#setting-voice');
-const voiceNote = document.querySelector('[data-voice-note]');
+let statusEl = null;
+let voiceToggle = null;
+let voiceNote = null;
+let globalsBound = false;
+
+const resolveElements = () => {
+    statusEl = document.querySelector('[data-platform-status]');
+    voiceToggle = document.querySelector('#setting-voice');
+    voiceNote = document.querySelector('[data-voice-note]');
+};
 
 const parseIPadOSVersion = () => {
     const match = navigator.userAgent.match(/OS (\d+)[_\.](\d+)/i);
@@ -23,7 +29,7 @@ const updateStandaloneState = () => {
 const updateVoiceSupport = () => {
     if (voiceToggle) voiceToggle.disabled = false;
     if (voiceNote) voiceNote.textContent = 'Spoken coach tips use built-in iPad voices and work offline.';
-    setRootDataset('voiceCoach', 'true');
+    setRootDataset('voiceSupport', 'true');
 };
 
 const updateStatus = () => {
@@ -38,7 +44,21 @@ const updateStatus = () => {
     statusEl.textContent = `${versionLabel} detected. Running in ${mode} mode.`;
 };
 
-const init = () => {
+const bindGlobalListeners = () => {
+    if (globalsBound) return;
+    globalsBound = true;
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', () => {
+        updateStandaloneState();
+        updateStatus();
+    });
+    window.addEventListener('appinstalled', () => {
+        updateStandaloneState();
+        updateStatus();
+    });
+};
+
+const initIpadosCapabilities = () => {
+    resolveElements();
     const ipados = isIPadOS();
     setRootDataset('platform', ipados ? 'ipados' : 'other');
 
@@ -55,15 +75,7 @@ const init = () => {
     updateStandaloneState();
     updateStatus();
     updateVoiceSupport();
-
-    window.matchMedia('(display-mode: standalone)').addEventListener('change', () => {
-        updateStandaloneState();
-        updateStatus();
-    });
-    window.addEventListener('appinstalled', () => {
-        updateStandaloneState();
-        updateStatus();
-    });
+    bindGlobalListeners();
 };
 
-whenReady(init);
+export const init = initIpadosCapabilities;

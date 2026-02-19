@@ -1,7 +1,11 @@
-import { whenReady } from '../utils/dom-ready.js';
 import { setRootDataset } from './platform-utils.js';
 
-const statusEl = document.querySelector('[data-input-status]');
+let statusEl = null;
+let globalsBound = false;
+
+const resolveElements = () => {
+    statusEl = document.querySelector('[data-input-status]');
+};
 
 const inputLabels = {
     pen: 'Apple Pencil',
@@ -28,12 +32,9 @@ const updateInputType = (type) => {
     setStatus(normalized);
 };
 
-const init = () => {
-    updateHoverCapability();
-
-    const fine = window.matchMedia('(pointer: fine)').matches;
-    updateInputType(fine ? 'mouse' : 'touch');
-
+const bindGlobalListeners = () => {
+    if (globalsBound) return;
+    globalsBound = true;
     window.addEventListener('pointerdown', (event) => {
         if (!event.pointerType) return;
         updateInputType(event.pointerType);
@@ -43,4 +44,13 @@ const init = () => {
     window.matchMedia('(hover: hover)').addEventListener('change', updateHoverCapability);
 };
 
-whenReady(init);
+const initInputCapabilities = () => {
+    resolveElements();
+    updateHoverCapability();
+
+    const fine = window.matchMedia('(pointer: fine)').matches;
+    updateInputType(fine ? 'mouse' : 'touch');
+    bindGlobalListeners();
+};
+
+export const init = initInputCapabilities;
