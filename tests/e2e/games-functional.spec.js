@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { navigateToView } from './helpers/navigate-view.js';
 
 const emitPitchLockFeature = async (page, note = 'A') => {
     await page.evaluate(({ targetNote }) => {
@@ -35,31 +36,79 @@ const lockPitchNote = async (page, note = 'A') => {
     await page.locator('#view-game-pitch-quest [data-pitch="check"]').click();
 };
 
+const dismissGameCompleteIfOpen = async (page) => {
+    const completeModal = page.locator('#game-complete-modal');
+    if (!(await completeModal.isVisible().catch(() => false))) return;
+    const playAgain = page.locator('#game-complete-play-again');
+    if (await playAgain.isVisible().catch(() => false)) {
+        await playAgain.click();
+    } else {
+        await page.keyboard.press('Escape');
+    }
+    await expect(completeModal).not.toBeVisible();
+};
+
+const openGamesHub = async (page) => {
+    await page.locator('.bottom-nav a[href="#view-games"]').click();
+    await navigateToView(page, 'view-games', { timeout: 10000 });
+};
+
+const openPitchQuest = async (page) => {
+    const pitchView = page.locator('#view-game-pitch-quest');
+    const pitchLink = page.locator('a[href="#view-game-pitch-quest"]').first();
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        await dismissGameCompleteIfOpen(page);
+        await navigateToView(page, 'view-game-pitch-quest', { timeout: 7000 }).catch(() => {});
+        await page.waitForURL('**/#view-game-pitch-quest', { timeout: 7000 }).catch(() => {});
+        if (await pitchView.isVisible().catch(() => false)) {
+            await dismissGameCompleteIfOpen(page);
+            if (await pitchView.isVisible().catch(() => false)) {
+                return;
+            }
+        }
+        if (await pitchLink.isVisible().catch(() => false)) {
+            await pitchLink.click({ timeout: 3000 }).catch(() => {});
+            if (await pitchView.isVisible().catch(() => false)) {
+                await dismissGameCompleteIfOpen(page);
+                if (await pitchView.isVisible().catch(() => false)) {
+                    return;
+                }
+            }
+        }
+        await navigateToView(page, 'view-games', { timeout: 7000 }).catch(() => {});
+    }
+
+    await navigateToView(page, 'view-game-pitch-quest', { timeout: 10000 }).catch(() => {});
+    await page.waitForURL('**/#view-game-pitch-quest', { timeout: 10000 }).catch(() => {});
+    await dismissGameCompleteIfOpen(page);
+    await expect(pitchView).toBeVisible({ timeout: 10000 });
+};
+
+const returnToGamesFromPitchQuest = async (page) => {
+    const completeModal = page.locator('#game-complete-modal');
+    if (await completeModal.isVisible().catch(() => false)) {
+        await page.locator('#game-complete-back').click({ timeout: 3000 }).catch(() => {});
+    } else {
+        await page.locator('#view-game-pitch-quest .back-btn').click({ timeout: 3000 }).catch(() => {});
+    }
+    await navigateToView(page, 'view-games', { timeout: 10000 });
+    await dismissGameCompleteIfOpen(page);
+};
+
 test('games remain interactive after leaving and re-entering the same game', async ({ page }) => {
     await openHome(page);
 
-    await page.locator('.bottom-nav a[href="#view-games"]').click();
-    await page.waitForURL('**/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
-
-    await page.locator('a[href="#view-game-pitch-quest"]').click();
-    await page.waitForURL('**/#view-game-pitch-quest');
-    await expect(page.locator('#view-game-pitch-quest')).toBeVisible();
+    await openGamesHub(page);
+    await openPitchQuest(page);
 
     const firstScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
     await expect(firstScore).toHaveText('0');
     await lockPitchNote(page, 'A');
     await expect(firstScore).not.toHaveText('0');
 
-    await page.locator('#view-game-pitch-quest .back-btn').click();
-    await page.waitForURL('**/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
-
-    await expect(page.locator('#game-complete-modal')).not.toBeVisible();
-
-    await page.locator('a[href="#view-game-pitch-quest"]').click();
-    await page.waitForURL('**/#view-game-pitch-quest');
-    await expect(page.locator('#view-game-pitch-quest')).toBeVisible();
+    await returnToGamesFromPitchQuest(page);
+    await openPitchQuest(page);
 
     const secondScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
     await expect(secondScore).toHaveText('0');

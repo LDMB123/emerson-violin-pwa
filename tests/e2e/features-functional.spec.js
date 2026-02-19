@@ -58,6 +58,41 @@ const saveParentGoal = async (page, { title, minutes }) => {
     await expect(page.locator('[data-parent-goal-status]')).toContainText('Goal saved');
 };
 
+const triggerBackupExportAndWaitForStatus = async (page) => {
+    const status = page.locator('[data-export-status]');
+    const sentinel = 'Export pending test trigger';
+    await status.evaluate((el, value) => {
+        el.textContent = value;
+    }, sentinel);
+
+    await page.locator('[data-export-json]').click();
+
+    await expect.poll(async () => {
+        return page.locator('[data-export-status]').innerText();
+    }, { timeout: 10000 }).not.toBe(sentinel);
+
+    await expect(status).not.toContainText('Unable to export backup. Try again.');
+};
+
+const runOfflineCheckAndWaitForAssets = async (page) => {
+    await expect.poll(async () => {
+        return page.evaluate(() => {
+            const button = document.querySelector('[data-offline-check]');
+            if (!(button instanceof HTMLButtonElement)) return false;
+            button.click();
+            return true;
+        });
+    }, { timeout: 10000 }).toBe(true);
+
+    await expect.poll(async () => page.locator('[data-offline-assets]').innerText()).not.toContain('—');
+};
+
+const waitForBoundFlag = async (page, selector, attribute) => {
+    await expect.poll(async () => {
+        return page.locator(selector).getAttribute(attribute).catch(() => '');
+    }, { timeout: 10000 }).toBe('true');
+};
+
 test('progress cards remain functional across navigation', async ({ page }) => {
     await openHome(page);
 
@@ -92,32 +127,18 @@ test('backup export remains wired after revisiting backup view', async ({ page }
 
     await page.goto('/#view-backup');
     await expect(page.locator('#view-backup')).toBeVisible();
-    await expect.poll(async () => {
-        return page.locator('[data-export-json]').evaluate((el) => el.dataset.backupBound || '');
-    }).toBe('true');
+    await waitForBoundFlag(page, '[data-export-json]', 'data-backup-bound');
 
-    const status = page.locator('[data-export-status]');
-    const initial = await status.innerText();
-
-    await page.locator('[data-export-json]').click();
-    await expect.poll(async () => {
-        return page.locator('[data-export-status]').innerText();
-    }).not.toBe(initial);
+    await triggerBackupExportAndWaitForStatus(page);
 
     await page.goto('/#view-home');
     await expect(page.locator('#view-home')).toBeVisible();
 
     await page.goto('/#view-backup');
     await expect(page.locator('#view-backup')).toBeVisible();
-    await expect.poll(async () => {
-        return page.locator('[data-export-json]').evaluate((el) => el.dataset.backupBound || '');
-    }).toBe('true');
+    await waitForBoundFlag(page, '[data-export-json]', 'data-backup-bound');
 
-    const revisitInitial = await status.innerText();
-    await page.locator('[data-export-json]').click();
-    await expect.poll(async () => {
-        return page.locator('[data-export-status]').innerText();
-    }).not.toBe(revisitInitial);
+    await triggerBackupExportAndWaitForStatus(page);
 });
 
 test('parent goals remain editable after revisiting parent view', async ({ page }) => {
@@ -130,9 +151,7 @@ test('parent goals remain editable after revisiting parent view', async ({ page 
     await page.goto('/#view-parent');
     await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('[data-parent-goal-save]')).toBeEnabled();
-    await expect.poll(async () => {
-        return page.locator('[data-parent-goal-save]').evaluate((el) => el.dataset.parentGoalBound || '');
-    }).toBe('true');
+    await waitForBoundFlag(page, '[data-parent-goal-save]', 'data-parent-goal-bound');
 
     await saveParentGoal(page, { title: 'Recital Etude', minutes: 120 });
 
@@ -142,9 +161,7 @@ test('parent goals remain editable after revisiting parent view', async ({ page 
     await page.goto('/#view-parent');
     await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('[data-parent-goal-save]')).toBeEnabled();
-    await expect.poll(async () => {
-        return page.locator('[data-parent-goal-save]').evaluate((el) => el.dataset.parentGoalBound || '');
-    }).toBe('true');
+    await waitForBoundFlag(page, '[data-parent-goal-save]', 'data-parent-goal-bound');
 
     await saveParentGoal(page, { title: 'Spring Concert', minutes: 140 });
 });
@@ -191,14 +208,9 @@ test('parent advanced controls stay interactive after revisiting parent view', a
     await page.goto('/#view-parent');
     await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
     await expect.poll(async () => page.locator('[data-input-status]').innerText()).toContain('Input:');
-    await expect.poll(async () => {
-        return page.locator('#setting-offline-mode').evaluate((el) => el.dataset.offlineModeBound || '');
-    }).toBe('true');
+    await waitForBoundFlag(page, '#setting-offline-mode', 'data-offline-mode-bound');
 
-    const offlineCheck = page.locator('[data-offline-check]');
-    await expect(offlineCheck).toBeVisible({ timeout: 10000 });
-    await offlineCheck.evaluate((el) => el.click());
-    await expect.poll(async () => page.locator('[data-offline-assets]').innerText()).not.toContain('—');
+    await runOfflineCheckAndWaitForAssets(page);
 
     await page.locator('#setting-offline-mode').evaluate((input) => {
         input.checked = true;
@@ -218,13 +230,9 @@ test('parent advanced controls stay interactive after revisiting parent view', a
     await page.goto('/#view-parent');
     await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
     await expect.poll(async () => page.locator('[data-input-status]').innerText()).toContain('Input:');
-    await expect.poll(async () => {
-        return page.locator('#setting-offline-mode').evaluate((el) => el.dataset.offlineModeBound || '');
-    }).toBe('true');
+    await waitForBoundFlag(page, '#setting-offline-mode', 'data-offline-mode-bound');
 
-    await expect(offlineCheck).toBeVisible({ timeout: 10000 });
-    await offlineCheck.evaluate((el) => el.click());
-    await expect.poll(async () => page.locator('[data-offline-assets]').innerText()).not.toContain('—');
+    await runOfflineCheckAndWaitForAssets(page);
 
     await page.locator('#setting-offline-mode').evaluate((input) => {
         input.checked = false;
