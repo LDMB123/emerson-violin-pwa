@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { applyBudgetsToWorkflow } from '../../scripts/apply-performance-recommendation.mjs';
+import {
+    applyBudgetsToWorkflow,
+    assertRecommendationIsApplySafe,
+} from '../../scripts/apply-performance-recommendation.mjs';
 
 describe('apply-performance-recommendation', () => {
     it('replaces FCP and LCP workflow env values', () => {
@@ -26,5 +29,21 @@ describe('apply-performance-recommendation', () => {
             fcpMs: 2200,
             lcpMs: 3200,
         })).toThrow('Failed to locate PERF_BUDGET_FCP_MS / PERF_BUDGET_LCP_MS');
+    });
+
+    it('blocks low-confidence recommendation apply by default', () => {
+        expect(() => assertRecommendationIsApplySafe({
+            confidence: 'low',
+            selection: { selectedRunCount: 2 },
+        })).toThrow('Refusing to apply automatically');
+    });
+
+    it('allows low-confidence recommendation apply when override is enabled', () => {
+        expect(() => assertRecommendationIsApplySafe({
+            confidence: 'low',
+            selection: { selectedRunCount: 2 },
+        }, {
+            allowLowConfidence: true,
+        })).not.toThrow();
     });
 });
