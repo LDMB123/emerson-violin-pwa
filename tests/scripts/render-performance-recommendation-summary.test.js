@@ -7,6 +7,8 @@ describe('render-performance-recommendation-summary', () => {
             confidence: 'high',
             selection: { selectedRunCount: 12, loadedRunCount: 16 },
             recommendedBudgets: { fcpMs: 2400, lcpMs: 3300 },
+            suggestedBudgets: { fcpMs: 2500, lcpMs: 3500 },
+            guardrails: { adjusted: true },
             prGateRecommendation: {
                 mode: 'consider_blocking',
                 reason: 'failure_rate_within_target',
@@ -22,13 +24,14 @@ describe('render-performance-recommendation-summary', () => {
         expect(markdown).toContain('Performance Budget Recommendation');
         expect(markdown).toContain('Runs used: 12 selected / 16 loaded');
         expect(markdown).toContain('Confidence: high');
-        expect(markdown).toContain('FCP <= 2400ms, LCP <= 3300ms');
+        expect(markdown).toContain('FCP <= 2500ms, LCP <= 3500ms');
+        expect(markdown).toContain('Raw recommendation before guardrails: FCP <= 2400ms, LCP <= 3300ms');
         expect(markdown).toContain('PR gate recommendation: Consider Blocking');
         expect(markdown).toContain('target failure rate <= 5%');
         expect(markdown).toContain('Current threshold failure rate: 4.2% (1/24)');
         expect(markdown).toContain('Recommended threshold failure rate: 3.1% (1/32)');
-        expect(markdown).toContain('PERF_BUDGET_FCP_MS=2400');
-        expect(markdown).toContain('PERF_BUDGET_LCP_MS=3300');
+        expect(markdown).toContain('PERF_BUDGET_FCP_MS=2500');
+        expect(markdown).toContain('PERF_BUDGET_LCP_MS=3500');
     });
 
     it('handles sparse recommendation payloads gracefully', () => {

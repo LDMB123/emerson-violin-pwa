@@ -11,9 +11,18 @@ const modeLabel = (mode) => {
 };
 
 export const buildRecommendationSummaryMarkdown = (recommendation) => {
+    const suggestedBudgets = recommendation?.suggestedBudgets ?? recommendation?.recommendedBudgets ?? null;
+    const hasRawBudgets = Number.isFinite(recommendation?.recommendedBudgets?.fcpMs) &&
+        Number.isFinite(recommendation?.recommendedBudgets?.lcpMs);
+    const showGuardrailDelta = recommendation?.guardrails?.adjusted === true &&
+        hasRawBudgets &&
+        Number.isFinite(suggestedBudgets?.fcpMs) &&
+        Number.isFinite(suggestedBudgets?.lcpMs);
     const selectedRuns = safeValue(recommendation?.selection?.selectedRunCount);
     const loadedRuns = safeValue(recommendation?.selection?.loadedRunCount);
     const confidence = safeValue(recommendation?.confidence, 'unknown');
+    const suggestedFcp = safeValue(suggestedBudgets?.fcpMs);
+    const suggestedLcp = safeValue(suggestedBudgets?.lcpMs);
     const recommendedFcp = safeValue(recommendation?.recommendedBudgets?.fcpMs);
     const recommendedLcp = safeValue(recommendation?.recommendedBudgets?.lcpMs);
     const prMode = recommendation?.prGateRecommendation?.mode;
@@ -27,9 +36,13 @@ export const buildRecommendationSummaryMarkdown = (recommendation) => {
         '',
         `- Runs used: ${selectedRuns} selected / ${loadedRuns} loaded`,
         `- Confidence: ${confidence}`,
-        `- Suggested budgets: FCP <= ${recommendedFcp}ms, LCP <= ${recommendedLcp}ms`,
+        `- Suggested budgets: FCP <= ${suggestedFcp}ms, LCP <= ${suggestedLcp}ms`,
         `- PR gate recommendation: ${modeLabel(prMode)} (${prReason}), target failure rate <= ${prTarget}%`,
     ];
+
+    if (showGuardrailDelta) {
+        lines.push(`- Raw recommendation before guardrails: FCP <= ${recommendedFcp}ms, LCP <= ${recommendedLcp}ms`);
+    }
 
     if (currentHealth && recommendedHealth) {
         lines.push(
@@ -44,8 +57,8 @@ export const buildRecommendationSummaryMarkdown = (recommendation) => {
     }
 
     lines.push('', '### Suggested CI Variables', '', '```bash');
-    lines.push(`PERF_BUDGET_FCP_MS=${recommendedFcp}`);
-    lines.push(`PERF_BUDGET_LCP_MS=${recommendedLcp}`);
+    lines.push(`PERF_BUDGET_FCP_MS=${suggestedFcp}`);
+    lines.push(`PERF_BUDGET_LCP_MS=${suggestedLcp}`);
     lines.push('```');
 
     return `${lines.join('\n')}\n`;

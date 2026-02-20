@@ -38,6 +38,20 @@ export const assertRecommendationIsApplySafe = (recommendation, { allowLowConfid
     );
 };
 
+export const selectBudgetsForApply = (recommendation) => {
+    const suggested = recommendation?.suggestedBudgets;
+    const recommended = recommendation?.recommendedBudgets;
+    const useSuggested = Number.isFinite(suggested?.fcpMs) && Number.isFinite(suggested?.lcpMs);
+    const source = useSuggested ? 'suggestedBudgets' : 'recommendedBudgets';
+    const selected = useSuggested ? suggested : recommended;
+
+    return {
+        source,
+        fcpMs: asPositiveInt(selected?.fcpMs),
+        lcpMs: asPositiveInt(selected?.lcpMs),
+    };
+};
+
 const run = () => {
     const inputPath = process.argv[2] || 'artifacts/perf-budget-recommendation.json';
     const workflowPath = process.argv[3] || '.github/workflows/quality.yml';
@@ -56,8 +70,7 @@ const run = () => {
 
     const recommendation = JSON.parse(fs.readFileSync(resolvedInputPath, 'utf8'));
     assertRecommendationIsApplySafe(recommendation, { allowLowConfidence });
-    const fcpMs = asPositiveInt(recommendation?.recommendedBudgets?.fcpMs);
-    const lcpMs = asPositiveInt(recommendation?.recommendedBudgets?.lcpMs);
+    const { source, fcpMs, lcpMs } = selectBudgetsForApply(recommendation);
 
     const workflowSource = fs.readFileSync(resolvedWorkflowPath, 'utf8');
     const updatedWorkflowSource = applyBudgetsToWorkflow(workflowSource, { fcpMs, lcpMs });
@@ -67,7 +80,7 @@ const run = () => {
     }
 
     const mode = dryRun ? 'Dry run' : 'Updated';
-    console.log(`${mode} workflow budgets: FCP=${fcpMs}ms, LCP=${lcpMs}ms`);
+    console.log(`${mode} workflow budgets: FCP=${fcpMs}ms, LCP=${lcpMs}ms (${source})`);
     console.log(`Recommendation source: ${resolvedInputPath}`);
     console.log(`Workflow target: ${resolvedWorkflowPath}`);
 };

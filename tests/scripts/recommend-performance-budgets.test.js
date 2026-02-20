@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+    applyBudgetGuardrails,
     computeBudgetFailureStats,
     inferCurrentBudgetsFromSummaries,
     loadBudgetSummaries,
@@ -156,6 +157,67 @@ describe('recommend-performance-budgets', () => {
             failingRuns: 2,
             failureRatePct: 50,
             passRatePct: 50,
+        });
+    });
+
+    it('applies tighten/loosen guardrails to raw recommendations', () => {
+        const { suggestedBudgets, guardrails } = applyBudgetGuardrails({
+            fcpMs: 1800,
+            lcpMs: 5000,
+        }, {
+            fcpMs: 2500,
+            lcpMs: 3500,
+        }, {
+            maxTightenPct: 10,
+            maxLoosenPct: 20,
+            roundMs: 25,
+        });
+
+        expect(suggestedBudgets).toEqual({
+            fcpMs: 2250,
+            lcpMs: 4200,
+        });
+        expect(guardrails).toMatchObject({
+            enabled: true,
+            adjusted: true,
+            maxTightenPct: 10,
+            maxLoosenPct: 20,
+        });
+        expect(guardrails.fcp).toMatchObject({
+            raw: 1800,
+            lowerBound: 2250,
+            upperBound: 3000,
+            suggested: 2250,
+            adjusted: true,
+        });
+        expect(guardrails.lcp).toMatchObject({
+            raw: 5000,
+            lowerBound: 3150,
+            upperBound: 4200,
+            suggested: 4200,
+            adjusted: true,
+        });
+    });
+
+    it('disables guardrails when current budgets are missing', () => {
+        const { suggestedBudgets, guardrails } = applyBudgetGuardrails({
+            fcpMs: 2300,
+            lcpMs: 3200,
+        }, null, {
+            maxTightenPct: 10,
+            maxLoosenPct: 20,
+            roundMs: 25,
+        });
+
+        expect(suggestedBudgets).toEqual({
+            fcpMs: 2300,
+            lcpMs: 3200,
+        });
+        expect(guardrails).toMatchObject({
+            enabled: false,
+            reason: 'missing_current_budgets',
+            maxTightenPct: 10,
+            maxLoosenPct: 20,
         });
     });
 
