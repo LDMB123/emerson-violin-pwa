@@ -24,6 +24,8 @@ describe('recommend-performance-budgets', () => {
         expect(recommendation.observed.lcp.p95).toBe(2600);
         expect(recommendation.recommendedBudgets.fcpMs).toBe(2075);
         expect(recommendation.recommendedBudgets.lcpMs).toBe(3000);
+        expect(recommendation.confidence).toBe('high');
+        expect(recommendation.notes).toEqual([]);
     });
 
     it('loads summaries recursively and ignores invalid files', () => {
@@ -51,5 +53,17 @@ describe('recommend-performance-budgets', () => {
             validNestedSummaryPath,
             validSummaryPath,
         ].sort());
+    });
+
+    it('marks recommendation confidence low when run count is below threshold', () => {
+        const recommendation = recommendBudgets([
+            { fcp: 1000, lcp: 1500 },
+            { fcp: 1100, lcp: 1600 },
+        ], {
+            minimumRunsForConfidence: 5,
+        });
+
+        expect(recommendation.confidence).toBe('low');
+        expect(recommendation.notes[0]).toContain('Collect at least 5 runs');
     });
 });

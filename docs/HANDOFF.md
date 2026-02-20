@@ -91,6 +91,11 @@ If both pass, you are at a known-good baseline.
     - outputs `artifacts/perf-budget-recommendation.json`
   - Added artifact upload for recommendation output:
     - artifact name: `perf-budget-recommendation`
+- Completed perf recommendation confidence pass (2026-02-20, phase 39):
+  - Added recommendation confidence metadata and low-sample warnings:
+    - `scripts/recommend-performance-budgets.mjs`
+  - Added coverage for confidence behavior:
+    - `tests/scripts/recommend-performance-budgets.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
@@ -399,6 +404,7 @@ npm run audit:perf:recommend -- ./artifacts/perf-history
 ```
 
 The command writes `artifacts/perf-budget-recommendation.json` and prints suggested `PERF_BUDGET_FCP_MS` / `PERF_BUDGET_LCP_MS` values.
+Recommendations include a confidence level (`high` when at least 5 runs are aggregated by default).
 
 If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
