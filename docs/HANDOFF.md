@@ -60,7 +60,14 @@ If both pass, you are at a known-good baseline.
     - `tests/e2e/non-game-bfcache.spec.js`
       - session review recordings
       - parent recordings
-  - Existing realtime pagehide persisted/non-persisted behavior remains covered by unit tests:
+- Completed realtime bfcache WebKit E2E stabilization pass (2026-02-20, phase 34):
+  - Added persisted/unload pagehide behavior coverage for realtime session lifecycle:
+    - `tests/e2e/realtime-bfcache.spec.js`
+  - Added guarded E2E controller hooks (only when `window.__PANDA_E2E_HOOKS__ === true`):
+    - `src/realtime/session-ui.js`
+  - Added guarded E2E realtime-start simulation flag to bypass audio bootstrap in browser tests:
+    - `src/realtime/session-lifecycle.js`
+  - Realtime pagehide persisted/non-persisted behavior remains covered by unit tests:
     - `tests/realtime/session-controller.test.js`
 - Completed feature module completeness + song play-along pass (2026-02-19, phase 27):
   - Added sharp-note support for song playback tones in:
@@ -361,6 +368,9 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 ## Intentional/Expected Caveats
 
 - `audit:perf` enforces LCP via native LCP entries when available, and falls back to Chromium `FirstMeaningfulPaint` delta when LCP entries are unavailable in runtime.
+- Realtime E2E hooks are inert in production unless both test globals are set:
+  - `window.__PANDA_E2E_HOOKS__ === true`
+  - `window.__PANDA_E2E_RT_SIMULATE_START__ === true`
 - Duplicate dependency audit allowlists known transitive duplicates:
   - `entities`
   - `fsevents`
@@ -383,8 +393,8 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 ## Recommended Next Work (Ordered)
 
 1. Tune CI LCP/FCP thresholds using rolling baseline data from workflow runs.
-2. Evaluate a stable WebKit strategy for realtime-start E2E so persisted/non-persisted pagehide can be asserted at UI level (unit coverage already exists).
-3. Decide whether to make Web Vitals trend checks blocking or reporting-only in CI.
+2. Decide whether to keep Web Vitals trend checks blocking or reporting-only in CI.
+3. Decide whether to retain the guarded realtime E2E start-simulation seam long-term or replace it with a dedicated test harness module.
 
 ## Definition of “Ready to Hand Off”
 
