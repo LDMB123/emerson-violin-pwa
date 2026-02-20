@@ -177,6 +177,21 @@ If both pass, you are at a known-good baseline.
   - `audit:full` now includes `audit:perf:config`, so `handoff:verify` blocks on config drift.
   - Added regression coverage:
     - `tests/scripts/audit-performance-budget-config.test.js`
+- Completed perf config strictness + CI gate pass (2026-02-20, phase 48):
+  - Apply helper now fails on ambiguous duplicate threshold keys:
+    - `scripts/apply-performance-recommendation.mjs`
+    - enforces exactly one `PERF_BUDGET_FCP_MS` / `PERF_BUDGET_LCP_MS`
+    - enforces at most one `PERF_BUDGET_CURRENT_*` pair
+  - Perf config audit now validates key occurrence counts and ordering constraints:
+    - `scripts/audit-performance-budget-config.mjs`
+    - detects missing/duplicate perf budget env keys
+    - validates `LCP >= FCP` for both current and enforced thresholds
+    - validates guardrail ordering (`MAX_LOOSEN_PCT >= MAX_TIGHTEN_PCT`)
+  - CI quality workflow now runs perf config audit explicitly:
+    - `.github/workflows/quality.yml`
+  - Added regression coverage:
+    - `tests/scripts/apply-performance-recommendation.test.js`
+    - `tests/scripts/audit-performance-budget-config.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
