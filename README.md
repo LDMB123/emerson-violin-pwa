@@ -44,6 +44,37 @@ npm run audit:deps
 npm run audit:full
 ```
 
+## Playwright Worker Tuning
+
+`playwright.config.js` now defaults to:
+
+- CI: `workers=1`
+- local development: `workers=2`
+
+Use `PW_WORKERS` to override per run:
+
+```bash
+PW_WORKERS=2 npm run test:e2e
+PW_WORKERS=3 npx playwright test
+```
+
+Recommended starting points:
+
+| Machine profile | Recommended `PW_WORKERS` | Notes |
+| --- | --- | --- |
+| CI/shared runner | `1` | Most stable for WebKit and avoids resource contention. |
+| Laptop/desktop (typical dev setup) | `2` | Default local setting; preferred for `handoff:verify`. |
+| High-end local workstation | `3` | Use only after calibration; reduce if hangs appear. |
+
+Calibration flow for higher parallelism:
+
+```bash
+PW_WORKERS=3 npx playwright test tests/e2e/games-all-functional.spec.js --grep "group C: string/painter/story/pizzicato" --repeat-each=5
+PW_WORKERS=3 npm run test:e2e
+```
+
+If either command hangs or intermittently times out, step down by one worker.
+
 ## Quality Gates
 
 - Dead code and unused exports are checked by `knip` using `knip.json`.

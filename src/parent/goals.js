@@ -15,6 +15,7 @@ let minutesInput = null;
 let saveButton = null;
 let statusEl = null;
 let rationaleEl = null;
+let initGeneration = 0;
 
 const resolveElements = () => {
     titleEl = document.querySelector('[data-parent-goal-title]');
@@ -64,9 +65,8 @@ const renderGoal = (goal) => {
     applyWeeklyTarget(goal.weeklyMinutes);
 };
 
-const renderGoalRationale = async () => {
+const renderGoalRationale = (recs) => {
     if (!rationaleEl) return;
-    const recs = await getLearningRecommendations().catch(() => null);
     const action = Array.isArray(recs?.nextActions) ? recs.nextActions[0] : null;
     if (action?.rationale) {
         rationaleEl.textContent = `Coach rationale: ${action.rationale}`;
@@ -81,6 +81,9 @@ const renderGoalRationale = async () => {
 };
 
 const saveGoal = async () => {
+    resolveElements();
+    if (!saveButton) return;
+
     const title = titleInput?.value?.trim() || DEFAULT_GOAL.title;
     const minutesRaw = minutesInput?.value || DEFAULT_GOAL.weeklyMinutes;
     const minutes = Number.parseInt(minutesRaw, 10);
@@ -95,32 +98,42 @@ const saveGoal = async () => {
         weeklyMinutes: clamp(minutes, 30, 420),
     };
 
+    setFormDisabled(true);
+    setStatus('Saving goal…');
+
     await setJSON(GOAL_KEY, goal);
     renderGoal(goal);
     setStatus('Goal saved.');
     document.dispatchEvent(new CustomEvent(GOAL_TARGET_CHANGE, {
         detail: { weeklyMinutes: goal.weeklyMinutes, title: goal.title },
     }));
+    setFormDisabled(false);
 };
 
 const bindLocalListeners = () => {
-    if (titleInput && titleInput.dataset.parentGoalBound !== 'true') {
+    if (titleInput) {
         titleInput.dataset.parentGoalBound = 'true';
-        titleInput.addEventListener('input', () => setStatus('Unsaved changes.'));
+        titleInput.oninput = () => setStatus('Unsaved changes.');
     }
 
-    if (minutesInput && minutesInput.dataset.parentGoalBound !== 'true') {
+    if (minutesInput) {
         minutesInput.dataset.parentGoalBound = 'true';
-        minutesInput.addEventListener('input', () => setStatus('Unsaved changes.'));
+        minutesInput.oninput = () => setStatus('Unsaved changes.');
     }
 
-    if (saveButton && saveButton.dataset.parentGoalBound !== 'true') {
+    if (saveButton) {
         saveButton.dataset.parentGoalBound = 'true';
-        saveButton.addEventListener('click', saveGoal);
+        saveButton.onclick = () => {
+            saveGoal().catch(() => {
+                setStatus('Unable to save goal. Try again.');
+                setFormDisabled(false);
+            });
+        };
     }
 };
 
 const initParentGoals = async () => {
+    const generation = ++initGeneration;
     resolveElements();
     if (!saveButton) return;
 
@@ -129,13 +142,19 @@ const initParentGoals = async () => {
     setStatus('Loading goal…');
 
     try {
-        const goal = await loadGoal();
+        const [goal, recs] = await Promise.all([
+            loadGoal(),
+            getLearningRecommendations().catch(() => null),
+        ]);
+        if (generation !== initGeneration) return;
         renderGoal(goal);
-        await renderGoalRationale();
-        setStatus('Goal saved.');
+        renderGoalRationale(recs);
+        setStatus('Goal ready.');
     } catch {
+        if (generation !== initGeneration) return;
         setStatus('Unable to load goal. Try again.');
     } finally {
+        if (generation !== initGeneration) return;
         setFormDisabled(false);
     }
 };
