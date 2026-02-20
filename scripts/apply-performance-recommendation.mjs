@@ -26,10 +26,23 @@ export const applyBudgetsToWorkflow = (workflowSource, { fcpMs, lcpMs }) => {
         .replace(LCP_PATTERN, `PERF_BUDGET_LCP_MS: '${lcpMs}'`);
 };
 
+export const assertRecommendationIsApplySafe = (recommendation, { allowLowConfidence = false } = {}) => {
+    const confidence = recommendation?.confidence;
+    if (confidence === 'high' || allowLowConfidence) {
+        return;
+    }
+    const selectedRuns = recommendation?.selection?.selectedRunCount ?? 0;
+    throw new Error(
+        `Recommendation confidence is "${confidence || 'unknown'}" with ${selectedRuns} selected run(s). ` +
+        'Refusing to apply automatically; set PERF_BUDGET_APPLY_ALLOW_LOW_CONFIDENCE=true to override.',
+    );
+};
+
 const run = () => {
     const inputPath = process.argv[2] || 'artifacts/perf-budget-recommendation.json';
     const workflowPath = process.argv[3] || '.github/workflows/quality.yml';
     const dryRun = process.env.PERF_BUDGET_APPLY_DRY_RUN === 'true';
+    const allowLowConfidence = process.env.PERF_BUDGET_APPLY_ALLOW_LOW_CONFIDENCE === 'true';
 
     const resolvedInputPath = path.resolve(inputPath);
     const resolvedWorkflowPath = path.resolve(workflowPath);
@@ -42,6 +55,7 @@ const run = () => {
     }
 
     const recommendation = JSON.parse(fs.readFileSync(resolvedInputPath, 'utf8'));
+    assertRecommendationIsApplySafe(recommendation, { allowLowConfidence });
     const fcpMs = asPositiveInt(recommendation?.recommendedBudgets?.fcpMs);
     const lcpMs = asPositiveInt(recommendation?.recommendedBudgets?.lcpMs);
 
