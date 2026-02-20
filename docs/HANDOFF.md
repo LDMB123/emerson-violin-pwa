@@ -84,6 +84,13 @@ If both pass, you are at a known-good baseline.
     - push/main: `PERF_BUDGET_REPORT_ONLY=false` (blocking gate)
   - Added helper regression coverage:
     - `tests/scripts/audit-performance-budgets.test.js`
+- Completed CI perf recommendation artifact pass (2026-02-20, phase 38):
+  - Added per-run recommendation generation in CI:
+    - `.github/workflows/quality.yml`
+    - `Recommend performance budgets (informational)`
+    - outputs `artifacts/perf-budget-recommendation.json`
+  - Added artifact upload for recommendation output:
+    - artifact name: `perf-budget-recommendation`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
