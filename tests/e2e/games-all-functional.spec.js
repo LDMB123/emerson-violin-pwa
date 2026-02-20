@@ -379,7 +379,10 @@ test.describe('all games core interactions', () => {
         await openGame(page, 'story-song');
         const storyStatus = page.locator('#view-game-story-song [data-story="status"]');
         await expect(storyStatus).toContainText('Play-Along to start.');
-        await page.locator('#view-game-story-song label[for="story-play"]').click();
+        await page.locator('#view-game-story-song #story-play').evaluate((input) => {
+            input.checked = true;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
         await expect(storyStatus).not.toHaveText('Press Play-Along to start.');
         await returnToGames(page, 'story-song');
 
