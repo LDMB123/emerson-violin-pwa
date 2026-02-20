@@ -1,4 +1,5 @@
 import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
+import { hasE2ERealtimeStartSimulation } from './session-test-flags.js';
 
 export const createSessionLifecycle = ({
     state,
@@ -20,9 +21,7 @@ export const createSessionLifecycle = ({
     rtQualityEvent,
 }) => {
     let globalBindingsReady = false;
-    const shouldSimulateSessionStart = () =>
-        typeof window !== 'undefined' &&
-        window.__PANDA_E2E_RT_SIMULATE_START__ === true;
+    const shouldSimulateSessionStart = () => hasE2ERealtimeStartSimulation(globalThis.window);
 
     const setLifecycleFlags = ({
         active = state.active,
