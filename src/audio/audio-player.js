@@ -1,5 +1,6 @@
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { prepareAudioElementSource } from './format-detection.js';
 
 /**
  * Progressive enhancement: replaces raw <audio controls> inside .audio-card
@@ -63,6 +64,7 @@ const enhance = (card) => {
 
     const audio = card.querySelector('audio[controls]');
     if (!audio) return;
+    prepareAudioElementSource(audio);
 
     const label = card.querySelector('.audio-label');
     const labelText = label?.textContent?.trim() ?? '';
@@ -154,4 +156,3 @@ const initAudioPlayer = () => {
 };
 
 initAudioPlayer();
-
