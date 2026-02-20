@@ -12,6 +12,16 @@ const lcpBudgetMs = Number.parseFloat(process.env.PERF_BUDGET_LCP_MS || '3500');
 const startupTimeoutMs = Number.parseInt(process.env.PERF_BUDGET_STARTUP_TIMEOUT_MS || '30000', 10);
 const summaryOutputPath = process.env.PERF_BUDGET_OUTPUT || 'artifacts/perf-budget-summary.json';
 
+const parseBooleanEnv = (value, fallback = false) => {
+    if (value === undefined || value === null || value === '') return fallback;
+    const normalized = String(value).trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+    if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+    return fallback;
+};
+
+const reportOnly = parseBooleanEnv(process.env.PERF_BUDGET_REPORT_ONLY, false);
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const median = (values) => {
@@ -161,6 +171,7 @@ const collectSample = async (browser, runIndex) => {
 const run = async () => {
     console.log(`Performance budget audit starting (${sampleCount} samples @ ${baseUrl})`);
     console.log(`Budgets: FCP <= ${fcpBudgetMs}ms, LCP <= ${lcpBudgetMs}ms`);
+    console.log(`Mode: ${reportOnly ? 'report-only' : 'blocking'}`);
 
     const preview = startPreviewServer();
     let browser = null;
@@ -172,6 +183,7 @@ const run = async () => {
             fcpMs: fcpBudgetMs,
             lcpMs: lcpBudgetMs,
         },
+        reportOnly,
         samples: [],
         medians: null,
         pass: false,
@@ -217,9 +229,16 @@ const run = async () => {
         }
 
         if (failures.length) {
-            failures.forEach((message) => console.error(message));
+            const note = 'Performance budgets exceeded.';
             summary.failures = failures;
             summary.pass = false;
+            if (reportOnly) {
+                summary.notes.push(`${note} Report-only mode is enabled, so this run is non-blocking.`);
+                failures.forEach((message) => console.warn(message));
+                console.warn('Performance budget audit completed in report-only mode.');
+                return;
+            }
+            failures.forEach((message) => console.error(message));
             process.exitCode = 1;
             return;
         }

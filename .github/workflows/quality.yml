@@ -46,6 +46,7 @@ jobs:
           PERF_BUDGET_FCP_MS: '2500'
           PERF_BUDGET_LCP_MS: '3500'
           PERF_BUDGET_SAMPLES: '3'
+          PERF_BUDGET_REPORT_ONLY: 'false'
 
       - name: Upload performance budget summary
         if: always()
