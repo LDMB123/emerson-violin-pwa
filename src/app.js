@@ -6,7 +6,7 @@ import {
     isNavItemActive,
     toMissionCheckpointHref,
 } from './utils/app-utils.js';
-import { getAudioPath } from './audio/format-detection.js';
+import { isAudioAssetPath, prepareAudioElementSource } from './audio/format-detection.js';
 import { ViewLoader } from './views/view-loader.js';
 import { getRouteMeta, getViewPath } from './views/view-paths.js';
 import { showViewError } from './views/view-error.js';
@@ -622,12 +622,11 @@ const registerServiceWorker = () => {
 };
 
 const rewriteAudioSources = (root = document) => {
-    const audioElements = root.querySelectorAll('audio[src*="/assets/audio/"]');
+    const audioElements = root.querySelectorAll('audio[src]');
     audioElements.forEach((audio) => {
         const currentSrc = audio.getAttribute('src');
-        if (currentSrc) {
-            audio.setAttribute('src', getAudioPath(currentSrc));
-        }
+        if (!isAudioAssetPath(currentSrc)) return;
+        prepareAudioElementSource(audio, currentSrc);
     });
 };
 
