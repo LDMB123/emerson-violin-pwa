@@ -56,5 +56,20 @@ jobs:
           path: artifacts/perf-budget-summary.json
           if-no-files-found: warn
 
+      - name: Recommend performance budgets (informational)
+        if: always()
+        continue-on-error: true
+        run: npm run audit:perf:recommend -- artifacts/perf-budget-summary.json
+        env:
+          PERF_BUDGET_RECOMMENDATION_OUTPUT: artifacts/perf-budget-recommendation.json
+
+      - name: Upload performance budget recommendation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-budget-recommendation
+          path: artifacts/perf-budget-recommendation.json
+          if-no-files-found: warn
+
       - name: E2E tests
         run: npm run test:e2e
