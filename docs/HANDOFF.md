@@ -170,6 +170,13 @@ If both pass, you are at a known-good baseline.
     - apply fails when only one `PERF_BUDGET_CURRENT_*` key exists.
   - Added regression coverage:
     - `tests/scripts/apply-performance-recommendation.test.js`
+- Completed perf budget-config audit pass (2026-02-20, phase 47):
+  - Added workflow config validator to catch threshold drift and invalid recommendation bounds:
+    - `scripts/audit-performance-budget-config.mjs`
+    - npm script: `audit:perf:config`
+  - `audit:full` now includes `audit:perf:config`, so `handoff:verify` blocks on config drift.
+  - Added regression coverage:
+    - `tests/scripts/audit-performance-budget-config.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
@@ -434,6 +441,7 @@ If both pass, you are at a known-good baseline.
 - `npm run lint:all`
 - `npm run audit:deadcode`
 - `npm run audit:deps`
+- `npm run audit:perf:config`
 - `npm run audit:view-sync`
 - `npm run qa:effectiveness`
 - `npm run audit:modules`
