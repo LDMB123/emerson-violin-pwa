@@ -96,6 +96,15 @@ If both pass, you are at a known-good baseline.
     - `scripts/recommend-performance-budgets.mjs`
   - Added coverage for confidence behavior:
     - `tests/scripts/recommend-performance-budgets.test.js`
+- Completed perf rolling-baseline selection pass (2026-02-20, phase 40):
+  - Added recommendation input filtering for recent baseline windows:
+    - `scripts/recommend-performance-budgets.mjs`
+    - supports `PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS` and `PERF_BUDGET_RECOMMENDATION_MAX_RUNS`
+  - Recommendation output now includes selection metadata:
+    - loaded runs vs selected runs
+    - dropped run counts (out-of-window / missing timestamp)
+  - Added regression coverage for selection behavior:
+    - `tests/scripts/recommend-performance-budgets.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
@@ -439,9 +448,11 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Recommended Next Work (Ordered)
 
-1. Tune CI LCP/FCP thresholds using rolling baseline data from workflow runs (`npm run audit:perf:recommend -- <artifact-folder>`).
-2. Revisit whether pull-request runs should stay report-only after thresholds are recalibrated.
-3. Decide whether to retain the guarded realtime E2E start-simulation seam long-term or replace it with a dedicated test harness module.
+1. Calibrate CI LCP/FCP thresholds from downloaded workflow artifacts using a rolling window, e.g.:
+   - `PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS=30 PERF_BUDGET_RECOMMENDATION_MAX_RUNS=20 npm run audit:perf:recommend -- <artifact-folder>`
+2. Apply calibrated values to `PERF_BUDGET_FCP_MS` and `PERF_BUDGET_LCP_MS` in `.github/workflows/quality.yml`, then monitor PR noise for 1-2 weeks.
+3. Revisit whether pull-request runs should stay report-only once calibrated thresholds are stable.
+4. Decide whether to retain the guarded realtime E2E start-simulation seam long-term or replace it with a dedicated test harness module.
 
 ## Definition of “Ready to Hand Off”
 
