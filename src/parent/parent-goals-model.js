@@ -5,12 +5,12 @@ import { PARENT_GOAL_KEY as GOAL_KEY } from '../persistence/storage-keys.js';
 const MIN_WEEKLY_MINUTES = 30;
 const MAX_WEEKLY_MINUTES = 420;
 
-export const DEFAULT_PARENT_GOAL = {
+const DEFAULT_PARENT_GOAL = {
     title: 'Next Recital Piece',
     weeklyMinutes: 90,
 };
 
-export const normalizeParentGoal = (stored) => {
+const normalizeParentGoal = (stored) => {
     const title = typeof stored?.title === 'string' && stored.title.trim()
         ? stored.title.trim()
         : DEFAULT_PARENT_GOAL.title;

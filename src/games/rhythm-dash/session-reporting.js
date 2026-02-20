@@ -8,7 +8,7 @@ import {
     getObjectiveSummary,
 } from './helpers.js';
 
-export const computeRhythmAccuracy = ({
+const computeRhythmAccuracy = ({
     timingScores,
     tapHistory,
     targetBpm,

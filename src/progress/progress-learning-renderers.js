@@ -1,4 +1,4 @@
-export const renderChipGrid = (container, chips, emptyText) => {
+const renderChipGrid = (container, chips, emptyText) => {
     if (!container) return;
     container.replaceChildren();
     if (!Array.isArray(chips) || !chips.length) {

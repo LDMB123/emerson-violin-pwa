@@ -28,7 +28,7 @@ const parseVersion = (cacheKey) => {
     return Number.isNaN(rawVersion) ? 0 : rawVersion;
 };
 
-export const selectOfflineCache = async () => {
+const selectOfflineCache = async () => {
     const keys = await caches.keys();
     const matchingKeys = keys
         .filter((key) => key.startsWith(OFFLINE_CACHE_PREFIX))

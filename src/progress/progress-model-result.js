@@ -7,7 +7,7 @@ import { loadGameMasteryState } from '../games/game-mastery.js';
 import { getSongCatalog } from '../songs/song-library.js';
 import { formatRecentScore } from './progress-utils.js';
 
-export const buildRecentGames = (gameEvents) => gameEvents
+const buildRecentGames = (gameEvents) => gameEvents
     .slice(-3)
     .reverse()
     .map((event) => ({

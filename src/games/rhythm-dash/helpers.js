@@ -9,7 +9,7 @@ import {
     formatRegularStatus,
 } from '../../utils/rhythm-dash-utils.js';
 
-export const RHYTHM_OBJECTIVE_IDS = ['rd-set-1', 'rd-set-2', 'rd-set-3'];
+const RHYTHM_OBJECTIVE_IDS = ['rd-set-1', 'rd-set-2', 'rd-set-3'];
 
 export const resolveRhythmDashElements = (stage) => ({
     tapButton: stage.querySelector('.rhythm-tap'),
