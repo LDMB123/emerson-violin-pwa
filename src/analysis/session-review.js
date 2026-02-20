@@ -4,6 +4,7 @@ import { getCore } from '../wasm/load-core.js';
 import { RECORDINGS_UPDATED } from '../utils/event-names.js';
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { coachMessageFor } from '../utils/session-review-utils.js';
+import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
 import { createSessionReviewRenderer } from './session-review-render.js';
 import { createSessionReviewRecordingController } from './session-review-recording-controls.js';
 import { buildSessionStats, buildSkillProfile } from './session-review-data.js';
@@ -48,7 +49,10 @@ const initSessionReview = async () => {
     };
 
     const onHashChange = () => recordingController.stop();
-    const onPageHide = () => recordingController.stop();
+    const onPageHide = (event) => {
+        if (isBfcachePagehide(event)) return;
+        recordingController.stop();
+    };
     const onVisibilityChange = () => {
         if (document.hidden) recordingController.stop();
     };

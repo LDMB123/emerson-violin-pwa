@@ -1,5 +1,6 @@
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
+import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
 
 const createEmptyElements = () => ({
     soundToggle: null,
@@ -133,7 +134,8 @@ export const createMediaSoundController = () => {
                 pauseAllAudio();
             }
         });
-        window.addEventListener('pagehide', () => {
+        window.addEventListener('pagehide', (event) => {
+            if (isBfcachePagehide(event)) return;
             pauseAllAudio();
         });
         window.addEventListener('hashchange', () => {

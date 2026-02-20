@@ -1,5 +1,6 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { PERSIST_APPLIED, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
+import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
 import { setDifficultyBadge } from '../games/shared.js';
 import { shouldStopFocusTimer } from './focus-timer-utils.js';
 
@@ -179,7 +180,10 @@ const bindGlobalListeners = () => {
             stopWhenInactive({ force: true });
         }
     });
-    window.addEventListener('pagehide', () => stopWhenInactive({ force: true }));
+    window.addEventListener('pagehide', (event) => {
+        if (isBfcachePagehide(event)) return;
+        stopWhenInactive({ force: true });
+    });
 
     document.addEventListener(PERSIST_APPLIED, () => {
         if (!resolveElements()) return;

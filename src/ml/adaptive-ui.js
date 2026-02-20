@@ -9,6 +9,9 @@ let resetButton = null;
 let demoToggle = null;
 let simulateButton = null;
 let globalsBound = false;
+const boundResetButtons = new WeakSet();
+const boundDemoToggles = new WeakSet();
+const boundSimulateButtons = new WeakSet();
 
 const resolveElements = () => {
     statusEl = document.querySelector('[data-ml-status]');
@@ -79,8 +82,8 @@ const simulateAdaptiveSessions = async () => {
 };
 
 const bindLocalListeners = () => {
-    if (resetButton && resetButton.dataset.mlBound !== 'true') {
-        resetButton.dataset.mlBound = 'true';
+    if (resetButton && !boundResetButtons.has(resetButton)) {
+        boundResetButtons.add(resetButton);
         resetButton.addEventListener('click', async () => {
             resetButton.disabled = true;
             await resetAdaptiveModel();
@@ -92,8 +95,8 @@ const bindLocalListeners = () => {
 
     if (demoToggle && simulateButton) {
         simulateButton.disabled = !demoToggle.checked;
-        if (demoToggle.dataset.mlBound !== 'true') {
-            demoToggle.dataset.mlBound = 'true';
+        if (!boundDemoToggles.has(demoToggle)) {
+            boundDemoToggles.add(demoToggle);
             demoToggle.addEventListener('change', () => {
                 simulateButton.disabled = !demoToggle.checked;
                 if (demoToggle.checked && statusEl) {
@@ -104,8 +107,8 @@ const bindLocalListeners = () => {
             });
         }
 
-        if (simulateButton.dataset.mlBound !== 'true') {
-            simulateButton.dataset.mlBound = 'true';
+        if (!boundSimulateButtons.has(simulateButton)) {
+            boundSimulateButtons.add(simulateButton);
             simulateButton.addEventListener('click', () => {
                 if (!demoToggle.checked) return;
                 simulateAdaptiveSessions();

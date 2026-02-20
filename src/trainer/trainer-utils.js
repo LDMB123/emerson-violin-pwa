@@ -1,4 +1,5 @@
 import { clamp, deviationAccuracy } from '../utils/math.js';
+import { isBfcachePagehide as isBfcachePagehideEvent } from '../utils/lifecycle-utils.js';
 
 /**
  * Determines if the given view ID represents a practice view.
@@ -135,5 +136,5 @@ export const shouldClearTapTimes = (lastTapTime, currentTime, threshold = 2000) 
  * @returns {boolean} True when the event is persisted (bfcache snapshot)
  */
 export const isBfcachePagehide = (event) => {
-    return Boolean(event && typeof event === 'object' && event.persisted === true);
+    return isBfcachePagehideEvent(event);
 };

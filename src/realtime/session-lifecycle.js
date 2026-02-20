@@ -1,3 +1,5 @@
+import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
+
 export const createSessionLifecycle = ({
     state,
     getSessionState,
@@ -186,7 +188,8 @@ export const createSessionLifecycle = ({
                 }
             });
 
-            window.addEventListener('pagehide', () => {
+            window.addEventListener('pagehide', (event) => {
+                if (isBfcachePagehide(event)) return;
                 if (state.active) {
                     lifecycle.stopSession('pagehide').catch(() => {});
                 }

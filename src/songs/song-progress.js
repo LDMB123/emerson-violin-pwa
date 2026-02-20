@@ -4,6 +4,7 @@ import { clamp } from '../utils/math.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import { getSongIdFromViewId, parseDuration } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
 import { assessSongAttempt } from './song-assessment.js';
 import { saveSongCheckpoint } from './song-progression.js';
 import { recordSongEvent } from './song-progress-recording.js';
@@ -128,7 +129,8 @@ const bindGlobalPlaybackListeners = () => {
         }
     });
 
-    window.addEventListener('pagehide', () => {
+    window.addEventListener('pagehide', (event) => {
+        if (isBfcachePagehide(event)) return;
         stopActiveSongToggles();
     });
 

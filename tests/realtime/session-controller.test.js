@@ -32,6 +32,23 @@ vi.mock('../../src/realtime/policy-engine.js', () => policyMocks);
 
 const nextTick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+const createPersistedPagehideEvent = () => {
+    const event = typeof PageTransitionEvent === 'function'
+        ? new PageTransitionEvent('pagehide', { persisted: true })
+        : new Event('pagehide');
+    if (!('persisted' in event) || event.persisted !== true) {
+        try {
+            Object.defineProperty(event, 'persisted', {
+                configurable: true,
+                value: true,
+            });
+        } catch {
+            // Ignore if persisted is non-configurable on this platform.
+        }
+    }
+    return event;
+};
+
 const createFakeAudioHarness = ({ workerMode = 'auto' } = {}) => {
     class FakeAudioNode {
         connect() {
@@ -454,6 +471,44 @@ describe('realtime session controller interface', () => {
         expect(state.active).toBe(false);
         expect(state.paused).toBe(false);
         expect(state.listening).toBe(false);
+    });
+
+    it('stops active sessions on non-persisted pagehide', async () => {
+        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
+        const { init, startSession, getSessionState } = await loadSessionController();
+
+        init();
+        await startSession();
+        emitFeatureFrame(FakeAudioWorkletNode, { cents: 9, confidence: 0.62 });
+        await nextTick();
+
+        window.dispatchEvent(new Event('pagehide'));
+        await nextTick();
+        await nextTick();
+
+        const state = getSessionState();
+        expect(state.active).toBe(false);
+        expect(state.paused).toBe(false);
+        expect(state.listening).toBe(false);
+    });
+
+    it('keeps active sessions during persisted bfcache pagehide snapshots', async () => {
+        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
+        const { init, startSession, getSessionState, stopSession } = await loadSessionController();
+
+        init();
+        await startSession();
+        emitFeatureFrame(FakeAudioWorkletNode, { cents: 11, confidence: 0.66 });
+        await nextTick();
+
+        window.dispatchEvent(createPersistedPagehideEvent());
+        await nextTick();
+        await nextTick();
+
+        const state = getSessionState();
+        expect(state.active).toBe(true);
+
+        await stopSession('test-stop');
     });
 
     it('handles pause/resume/stop safely when no active session exists', async () => {

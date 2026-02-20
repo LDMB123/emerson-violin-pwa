@@ -326,6 +326,7 @@ self.__ASSETS__ = [
   "./src/utils/event-names.js",
   "./src/utils/feature-flags.js",
   "./src/utils/lesson-plan-utils.js",
+  "./src/utils/lifecycle-utils.js",
   "./src/utils/math.js",
   "./src/utils/recommendations-utils.js",
   "./src/utils/recording-export.js",

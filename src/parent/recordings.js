@@ -1,6 +1,7 @@
 import { loadRecordings } from '../persistence/loaders.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { RECORDINGS_UPDATED, SOUNDS_CHANGE } from '../utils/event-names.js';
+import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
 import { getVisibleRecordings } from './parent-recordings-data.js';
 import { createParentRecordingsRenderer } from './parent-recordings-render.js';
 import { createParentRecordingsInteractions } from './parent-recordings-interactions.js';
@@ -61,7 +62,8 @@ const bindGlobalListeners = () => {
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) interactions.stop();
     });
-    window.addEventListener('pagehide', () => {
+    window.addEventListener('pagehide', (event) => {
+        if (isBfcachePagehide(event)) return;
         interactions.stop();
     });
 };
