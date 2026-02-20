@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const FCP_PATTERN = /PERF_BUDGET_FCP_MS:\s*'[^']+'/;
 const LCP_PATTERN = /PERF_BUDGET_LCP_MS:\s*'[^']+'/;
+const CURRENT_FCP_PATTERN = /PERF_BUDGET_CURRENT_FCP_MS:\s*'[^']+'/;
+const CURRENT_LCP_PATTERN = /PERF_BUDGET_CURRENT_LCP_MS:\s*'[^']+'/;
 
 const asPositiveInt = (value) => {
     const parsed = Number.parseInt(value, 10);
@@ -20,10 +22,23 @@ export const applyBudgetsToWorkflow = (workflowSource, { fcpMs, lcpMs }) => {
     if (!FCP_PATTERN.test(workflowSource) || !LCP_PATTERN.test(workflowSource)) {
         throw new Error('Failed to locate PERF_BUDGET_FCP_MS / PERF_BUDGET_LCP_MS in workflow source.');
     }
+    const hasCurrentFcp = CURRENT_FCP_PATTERN.test(workflowSource);
+    const hasCurrentLcp = CURRENT_LCP_PATTERN.test(workflowSource);
+    if (hasCurrentFcp !== hasCurrentLcp) {
+        throw new Error('Found only one PERF_BUDGET_CURRENT_* key; expected both or neither.');
+    }
 
-    return workflowSource
+    let updatedWorkflowSource = workflowSource
         .replace(FCP_PATTERN, `PERF_BUDGET_FCP_MS: '${fcpMs}'`)
         .replace(LCP_PATTERN, `PERF_BUDGET_LCP_MS: '${lcpMs}'`);
+
+    if (hasCurrentFcp && hasCurrentLcp) {
+        updatedWorkflowSource = updatedWorkflowSource
+            .replace(CURRENT_FCP_PATTERN, `PERF_BUDGET_CURRENT_FCP_MS: '${fcpMs}'`)
+            .replace(CURRENT_LCP_PATTERN, `PERF_BUDGET_CURRENT_LCP_MS: '${lcpMs}'`);
+    }
+
+    return updatedWorkflowSource;
 };
 
 export const assertRecommendationIsApplySafe = (recommendation, { allowLowConfidence = false } = {}) => {
@@ -73,6 +88,9 @@ const run = () => {
     const { source, fcpMs, lcpMs } = selectBudgetsForApply(recommendation);
 
     const workflowSource = fs.readFileSync(resolvedWorkflowPath, 'utf8');
+    const currentBudgetKeysPresent =
+        CURRENT_FCP_PATTERN.test(workflowSource) &&
+        CURRENT_LCP_PATTERN.test(workflowSource);
     const updatedWorkflowSource = applyBudgetsToWorkflow(workflowSource, { fcpMs, lcpMs });
 
     if (!dryRun) {
@@ -80,7 +98,8 @@ const run = () => {
     }
 
     const mode = dryRun ? 'Dry run' : 'Updated';
-    console.log(`${mode} workflow budgets: FCP=${fcpMs}ms, LCP=${lcpMs}ms (${source})`);
+    const currentSyncLabel = currentBudgetKeysPresent ? 'current thresholds synced' : 'no current-threshold keys';
+    console.log(`${mode} workflow budgets: FCP=${fcpMs}ms, LCP=${lcpMs}ms (${source}; ${currentSyncLabel})`);
     console.log(`Recommendation source: ${resolvedInputPath}`);
     console.log(`Workflow target: ${resolvedWorkflowPath}`);
 };
