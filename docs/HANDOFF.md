@@ -42,6 +42,17 @@ If both pass, you are at a known-good baseline.
     - `tests/scripts/audit-view-sync.test.js`
     - `package.json` (`audit:view-sync`)
   - `audit:full` now enforces inline/route home view sync (`index.html#view-home` vs `public/views/home.html`).
+- Completed CI performance budget gate pass (2026-02-20, phase 32):
+  - Added production-preview performance budget audit:
+    - `scripts/audit-performance-budgets.mjs`
+    - `package.json` (`audit:perf`)
+  - Updated CI quality workflow to install Chromium + WebKit and run LCP/FCP budget checks:
+    - `.github/workflows/quality.yml`
+  - Budgets currently enforced in CI:
+    - FCP median <= `2500ms`
+    - LCP median <= `3500ms`
+  - Stabilized story-song interaction in group-C game E2E flow:
+    - `tests/e2e/games-all-functional.spec.js`
 - Completed feature module completeness + song play-along pass (2026-02-19, phase 27):
   - Added sharp-note support for song playback tones in:
     - `src/audio/tone-player.js`
@@ -340,6 +351,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Intentional/Expected Caveats
 
+- `audit:perf` enforces LCP via native LCP entries when available, and falls back to Chromium `FirstMeaningfulPaint` delta when LCP entries are unavailable in runtime.
 - Duplicate dependency audit allowlists known transitive duplicates:
   - `entities`
   - `fsevents`
@@ -361,7 +373,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Recommended Next Work (Ordered)
 
-1. Add performance budget checks (LCP/FCP thresholds) to CI once target values are finalized.
+1. Tune CI LCP/FCP thresholds using rolling baseline data from workflow runs.
 2. Add dedicated E2E coverage for non-game bfcache restore flows (recordings/realtime/parent controls).
 3. Decide whether to make Web Vitals trend checks blocking or reporting-only in CI.
 
