@@ -192,6 +192,12 @@ If both pass, you are at a known-good baseline.
   - Added regression coverage:
     - `tests/scripts/apply-performance-recommendation.test.js`
     - `tests/scripts/audit-performance-budget-config.test.js`
+- Completed docs alignment pass (2026-02-20, phase 49):
+  - Updated repository-facing docs to match current quality gates and toolchain:
+    - `README.md`
+    - `CLAUDE.md`
+  - Refreshed current status/test counts and added perf-config audit visibility in command lists.
+  - Updated caveat text to reflect retired extraction flow and current `audit:view-sync` check.
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`

@@ -2,15 +2,12 @@
 
 Local-first violin practice app for iPad-focused use, with an onboarding flow, practice tools, games, coach guidance, and offline behavior.
 
-## Current Status (February 18, 2026)
+## Current Status (February 20, 2026)
 
-- `npm run lint`: passing
-- `npm test`: passing (23 files, 405 tests)
-- `npm run build`: passing
-- `npx playwright test`: passing (18 tests)
-- Lighthouse (local dev):
-  - Baseline: Performance 60 / Accessibility 100 / Best Practices 100 / SEO 100
-  - After optimization pass: Performance 65 / Accessibility 100 / Best Practices 100 / SEO 100
+- `npm run lint:all`: passing
+- `npm run test:coverage`: passing (64 files, 595 tests)
+- `npm run test:e2e`: passing (47 tests)
+- `npm run handoff:verify`: passing (`audit:full` + E2E)
 
 ## Stack
 
@@ -41,6 +38,11 @@ npm run build
 npm run preview
 npm run audit:deadcode
 npm run audit:deps
+npm run audit:perf:config
+npm run audit:view-sync
+npm run audit:modules
+npm run audit:a11y
+npm run audit:learning
 npm run audit:full
 ```
 
@@ -79,7 +81,8 @@ If either command hangs or intermittently times out, step down by one worker.
 
 - Dead code and unused exports are checked by `knip` using `knip.json`.
 - Duplicate dependency versions are checked by `scripts/audit-dependency-duplicates.mjs`.
-- CI runs `lint:all`, dead-code/dependency audits, unit tests, build, and Playwright E2E on PRs and pushes to `main`.
+- Performance budget config drift is checked by `scripts/audit-performance-budget-config.mjs`.
+- CI runs `lint:all`, dead-code/dependency/config audits, unit tests, build, performance budget checks, and Playwright E2E on PRs and pushes to `main`.
 - Detailed handoff/debug report: `docs/plans/2026-02-18-debug-optimization-report.md`.
 - Operator runbook for zero-context pickup: `docs/HANDOFF.md`.
 
@@ -104,4 +107,4 @@ wasm/           Rust source for WASM modules
 
 ## Important Caveat
 
-`scripts/extract-views.js` currently reports `0` extracted views because views are now maintained directly in `public/views/` rather than embedded in `index.html`.
+View extraction from `index.html` has been retired; view parity is now enforced via `npm run audit:view-sync` against `public/views/home.html`.
