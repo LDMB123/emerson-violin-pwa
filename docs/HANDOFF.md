@@ -18,6 +18,30 @@ If both pass, you are at a known-good baseline.
 - Stabilized lazy-view routing and onboarding-aware E2E behavior.
 - Added IndexedDB fallback to localStorage for JSON persistence paths.
 - Consolidated duplicated file share/download logic via `tryShareFile()` in `src/utils/recording-export.js`.
+- Completed bfcache restore blocker pass (2026-02-20, phase 30):
+  - Added shared persisted-pagehide helper in:
+    - `src/utils/lifecycle-utils.js`
+  - Applied bfcache-safe `pagehide` guards across non-game teardown paths in:
+    - `src/analysis/session-review.js`
+    - `src/coach/focus-timer.js`
+    - `src/parent/recordings.js`
+    - `src/platform/media-sound-controller.js`
+    - `src/realtime/session-lifecycle.js`
+    - `src/recordings/recordings.js`
+    - `src/songs/song-progress.js`
+    - `src/trainer/trainer-utils.js`
+  - Hardened parent adaptive controls listener binding against recycled DOM attributes:
+    - `src/ml/adaptive-ui.js`
+  - Added regression coverage for lifecycle helper and realtime pagehide behavior:
+    - `tests/lifecycle-utils.test.js`
+    - `tests/realtime/session-controller.test.js`
+- Completed extractor-flow decision pass (2026-02-20, phase 31):
+  - Retired `scripts/extract-views.js` from `predev` and `prebuild`.
+  - Added explicit home-view parity audit:
+    - `scripts/audit-view-sync.mjs`
+    - `tests/scripts/audit-view-sync.test.js`
+    - `package.json` (`audit:view-sync`)
+  - `audit:full` now enforces inline/route home view sync (`index.html#view-home` vs `public/views/home.html`).
 - Completed feature module completeness + song play-along pass (2026-02-19, phase 27):
   - Added sharp-note support for song playback tones in:
     - `src/audio/tone-player.js`
@@ -275,6 +299,7 @@ If both pass, you are at a known-good baseline.
 - `npm run lint:all`
 - `npm run audit:deadcode`
 - `npm run audit:deps`
+- `npm run audit:view-sync`
 - `npm run qa:effectiveness`
 - `npm run audit:modules`
 - `npm run build`
@@ -315,7 +340,6 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Intentional/Expected Caveats
 
-- `scripts/extract-views.js` currently extracts the generated shell view(s) while canonical route HTML continues to live in `public/views/`.
 - Duplicate dependency audit allowlists known transitive duplicates:
   - `entities`
   - `fsevents`
@@ -337,9 +361,9 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Recommended Next Work (Ordered)
 
-1. Investigate and resolve bfcache restore blockers reported during prior optimization pass.
-2. Decide whether to retire `scripts/extract-views.js` or restore extractor-driven view source flow.
-3. Add performance budget checks (LCP/FCP thresholds) to CI once target values are finalized.
+1. Add performance budget checks (LCP/FCP thresholds) to CI once target values are finalized.
+2. Add dedicated E2E coverage for non-game bfcache restore flows (recordings/realtime/parent controls).
+3. Decide whether to make Web Vitals trend checks blocking or reporting-only in CI.
 
 ## Definition of “Ready to Hand Off”
 
