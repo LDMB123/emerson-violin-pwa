@@ -80,6 +80,13 @@ If both pass, you are at a known-good baseline.
     - `scripts/audit-performance-budgets.mjs` (`PERF_BUDGET_REPORT_ONLY`)
   - Set explicit CI mode default to blocking:
     - `.github/workflows/quality.yml` (`PERF_BUDGET_REPORT_ONLY: 'false'`)
+- Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
+  - Centralized realtime E2E flag guards with localhost-only enforcement:
+    - `src/realtime/session-test-flags.js`
+    - `src/realtime/session-ui.js`
+    - `src/realtime/session-lifecycle.js`
+  - Added guard regression coverage:
+    - `tests/realtime/session-test-flags.test.js`
 - Completed feature module completeness + song play-along pass (2026-02-19, phase 27):
   - Added sharp-note support for song playback tones in:
     - `src/audio/tone-player.js`
@@ -391,6 +398,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
   - `false` (default): blocking on budget threshold violations
   - `true`: report-only (still writes summary artifact, does not fail on budget overages)
 - Realtime E2E hooks are inert in production unless both test globals are set:
+- Realtime E2E hooks/simulation flags are localhost-only and inert in production unless both test globals are set:
   - `window.__PANDA_E2E_HOOKS__ === true`
   - `window.__PANDA_E2E_RT_SIMULATE_START__ === true`
 - Duplicate dependency audit allowlists known transitive duplicates:

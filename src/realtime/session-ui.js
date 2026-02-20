@@ -8,6 +8,7 @@ import {
 } from './session-controller.js';
 import { RT_STATE, RT_FALLBACK, RT_SESSION_STARTED, RT_SESSION_STOPPED } from '../utils/event-names.js';
 import { createSessionUiControls } from './session-ui-controls.js';
+import { hasE2ERealtimeHooks } from './session-test-flags.js';
 
 let bound = false;
 const controls = createSessionUiControls({
@@ -20,7 +21,7 @@ const controls = createSessionUiControls({
 
 const exposeE2EHooks = () => {
     if (typeof window === 'undefined') return;
-    if (window.__PANDA_E2E_HOOKS__ !== true) return;
+    if (!hasE2ERealtimeHooks(window)) return;
     window.__PANDA_RT_TEST_HOOKS__ = {
         startSession,
         stopSession,
