@@ -135,6 +135,14 @@ If both pass, you are at a known-good baseline.
     - `artifacts/perf-budget-recommendation.md`
   - Added regression coverage for summary rendering:
     - `tests/scripts/render-performance-recommendation-summary.test.js`
+- Completed perf recommendation apply automation pass (2026-02-20, phase 44):
+  - Added workflow threshold apply helper:
+    - `scripts/apply-performance-recommendation.mjs`
+    - npm script: `audit:perf:apply`
+  - Supports dry runs with:
+    - `PERF_BUDGET_APPLY_DRY_RUN=true`
+  - Added regression coverage for workflow budget replacement:
+    - `tests/scripts/apply-performance-recommendation.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
@@ -481,7 +489,10 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 1. Calibrate CI LCP/FCP thresholds from downloaded workflow artifacts using a rolling window, e.g.:
    - `PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS=30 PERF_BUDGET_RECOMMENDATION_MAX_RUNS=20 npm run audit:perf:recommend -- <artifact-folder>`
 2. Use `prGateRecommendation` + `thresholdHealth` from `artifacts/perf-budget-recommendation.json` to decide whether PR mode should remain report-only or switch to blocking.
-3. Apply calibrated values to `PERF_BUDGET_FCP_MS` and `PERF_BUDGET_LCP_MS` in `.github/workflows/quality.yml`, then monitor PR noise for 1-2 weeks.
+3. Apply calibrated values with:
+   - `npm run audit:perf:apply -- artifacts/perf-budget-recommendation.json .github/workflows/quality.yml`
+   - optional dry run: `PERF_BUDGET_APPLY_DRY_RUN=true npm run audit:perf:apply -- ...`
+   - then monitor PR noise for 1-2 weeks.
 4. Decide whether to retain the guarded realtime E2E start-simulation seam long-term or replace it with a dedicated test harness module.
 
 ## Definition of “Ready to Hand Off”
