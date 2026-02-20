@@ -1,6 +1,6 @@
 const AUTO_GOALS_KEY = 'panda-violin:coach-auto-goals:v1';
 
-export const GOAL_BY_GAME = Object.freeze({
+const GOAL_BY_GAME = Object.freeze({
     'pitch-quest': 'goal-warmup',
     'tuning-time': 'goal-warmup',
     'scale-practice': 'goal-scale',

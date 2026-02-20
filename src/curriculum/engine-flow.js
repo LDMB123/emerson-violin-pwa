@@ -2,10 +2,10 @@ import { loadEvents } from '../persistence/loaders.js';
 import { getCurriculumContent } from './content-loader.js';
 import { loadCurriculumState } from './state.js';
 
-export const FLOW_FIRST_TIME = 'first_time';
-export const FLOW_PROGRESSING = 'progressing';
+const FLOW_FIRST_TIME = 'first_time';
+const FLOW_PROGRESSING = 'progressing';
 export const FLOW_REGRESSING = 'regressing';
-export const FLOW_STABLE = 'stable';
+const FLOW_STABLE = 'stable';
 
 export const PHASE_BY_FLOW = {
     [FLOW_FIRST_TIME]: 'onramp',

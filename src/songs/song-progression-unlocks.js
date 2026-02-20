@@ -16,7 +16,7 @@ const hasMetChallengePrerequisites = (song, curriculumState) => {
     return prerequisites.every((id) => completedUnitIds.includes(id));
 };
 
-export const isSongUnlockedForState = (song, {
+const isSongUnlockedForState = (song, {
     curriculumState = null,
     songProgressState = null,
 } = {}) => {

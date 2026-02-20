@@ -3,7 +3,7 @@ import {
     confidenceBandFrom,
 } from './contracts.js';
 
-export const PRESET_BOUNDS = Object.freeze({
+const PRESET_BOUNDS = Object.freeze({
     gentle: Object.freeze({
         pitchToleranceCents: 12,
         rhythmToleranceMs: 120,
@@ -31,7 +31,7 @@ export const HARD_RAILS = Object.freeze({
     minCooldownMs: 800,
 });
 
-export const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const getBounds = (preset) => PRESET_BOUNDS[preset] || PRESET_BOUNDS.standard;
 

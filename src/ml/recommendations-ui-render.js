@@ -3,7 +3,7 @@ import { toLessonLink } from '../utils/lesson-plan-utils.js';
 
 const formatBpm = (value) => `${Math.round(value)} BPM`;
 
-export const formatMinutes = (value) => `${Math.max(0, Math.round(value || 0))} min`;
+const formatMinutes = (value) => `${Math.max(0, Math.round(value || 0))} min`;
 
 const sumStepMinutes = (steps = []) => (
     steps.reduce((sum, step) => sum + Math.max(1, Math.round(step?.minutes || 3)), 0)

@@ -34,7 +34,7 @@ export const createRunnerMarkup = () => {
     return runner;
 };
 
-export const setRunnerCta = (ctaButton, href, label = 'Open activity') => {
+const setRunnerCta = (ctaButton, href, label = 'Open activity') => {
     if (!ctaButton) return;
     ctaButton.setAttribute('href', href);
     ctaButton.textContent = label;

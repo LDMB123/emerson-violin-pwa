@@ -44,7 +44,7 @@ export const applyFrame = ({
     setStatusText(inTune ? `In tune (±${tolerance}¢) ✨` : 'Adjust to center.');
 };
 
-export const frameRenderKey = (frame) => {
+const frameRenderKey = (frame) => {
     if (!frame || !frame.hasSignal) return 'none';
     const { cents, frequency } = normalizeFrameMetrics(frame);
     return `${frame.note || '--'}|${cents}|${frequency}`;

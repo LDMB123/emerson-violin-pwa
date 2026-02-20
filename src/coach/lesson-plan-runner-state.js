@@ -1,4 +1,4 @@
-export const toRunnerStep = (step, index) => ({
+const toRunnerStep = (step, index) => ({
     id: step?.id || `runner-step-${index + 1}`,
     label: step?.label || `Practice step ${index + 1}`,
     cue: step?.cue || '',
@@ -9,7 +9,7 @@ export const toRunnerStep = (step, index) => ({
     source: step?.source || 'plan',
 });
 
-export const toLessonRunnerStep = (step, index, recommendedGameId) => ({
+const toLessonRunnerStep = (step, index, recommendedGameId) => ({
     id: step?.id || `lesson-step-${index + 1}`,
     label: step?.label || `Practice step ${index + 1}`,
     cue: step?.cue || '',
