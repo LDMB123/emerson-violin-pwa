@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
     loadBudgetSummaries,
     recommendBudgets,
+    selectSummariesForRecommendation,
 } from '../../scripts/recommend-performance-budgets.mjs';
 
 describe('recommend-performance-budgets', () => {
@@ -65,5 +66,56 @@ describe('recommend-performance-budgets', () => {
 
         expect(recommendation.confidence).toBe('low');
         expect(recommendation.notes[0]).toContain('Collect at least 5 runs');
+    });
+
+    it('filters to a recency window and keeps the most recent runs first', () => {
+        const { summaries, selection } = selectSummariesForRecommendation([
+            { fcp: 1000, lcp: 1500, finishedAt: '2026-02-20T09:00:00.000Z' },
+            { fcp: 1100, lcp: 1600, finishedAt: '2026-02-18T09:00:00.000Z' },
+            { fcp: 1200, lcp: 1700, finishedAt: '2026-02-01T09:00:00.000Z' },
+        ], {
+            windowDays: 7,
+            nowMs: Date.parse('2026-02-20T12:00:00.000Z'),
+        });
+
+        expect(summaries).toHaveLength(2);
+        expect(summaries[0].fcp).toBe(1000);
+        expect(summaries[1].fcp).toBe(1100);
+        expect(selection).toMatchObject({
+            loadedRunCount: 3,
+            selectedRunCount: 2,
+            windowDays: 7,
+            droppedOutsideWindow: 1,
+            droppedWithoutTimestamp: 0,
+        });
+    });
+
+    it('drops runs without timestamps when applying recency filtering', () => {
+        const { summaries, selection } = selectSummariesForRecommendation([
+            { fcp: 1000, lcp: 1500 },
+            { fcp: 1100, lcp: 1600, finishedAt: '2026-02-20T09:00:00.000Z' },
+        ], {
+            windowDays: 7,
+            nowMs: Date.parse('2026-02-20T12:00:00.000Z'),
+        });
+
+        expect(summaries).toHaveLength(1);
+        expect(summaries[0].fcp).toBe(1100);
+        expect(selection.droppedWithoutTimestamp).toBe(1);
+    });
+
+    it('caps selection to the most recent run count when requested', () => {
+        const { summaries, selection } = selectSummariesForRecommendation([
+            { fcp: 1000, lcp: 1500, finishedAt: '2026-02-20T09:00:00.000Z' },
+            { fcp: 1100, lcp: 1600, finishedAt: '2026-02-19T09:00:00.000Z' },
+            { fcp: 1200, lcp: 1700, finishedAt: '2026-02-18T09:00:00.000Z' },
+        ], {
+            maxRecentRuns: 2,
+        });
+
+        expect(summaries).toHaveLength(2);
+        expect(summaries[0].fcp).toBe(1000);
+        expect(summaries[1].fcp).toBe(1100);
+        expect(selection.maxRecentRuns).toBe(2);
     });
 });

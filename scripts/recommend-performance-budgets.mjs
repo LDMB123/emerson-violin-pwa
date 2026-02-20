@@ -6,6 +6,8 @@ const formatMs = (value) => `${Math.round(value * 10) / 10}ms`;
 
 const roundUp = (value, step) => Math.ceil(value / step) * step;
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 const percentileNearestRank = (values, percentile) => {
     if (!Array.isArray(values) || values.length === 0) return null;
     if (!Number.isFinite(percentile)) return null;
@@ -46,6 +48,22 @@ const walkJsonFiles = (targetPath) => {
     return files;
 };
 
+const parseSummaryTimestampMs = (entry) => {
+    const candidates = [entry?.finishedAt, entry?.startedAt];
+    for (const candidate of candidates) {
+        const timestampMs = Date.parse(candidate);
+        if (Number.isFinite(timestampMs)) {
+            return timestampMs;
+        }
+    }
+    return null;
+};
+
+const parsePositiveInteger = (value) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
 export const loadBudgetSummaries = (inputs) => {
     const paths = (Array.isArray(inputs) && inputs.length ? inputs : ['artifacts/perf-budget-summary.json'])
         .flatMap((input) => walkJsonFiles(input));
@@ -70,6 +88,65 @@ export const loadBudgetSummaries = (inputs) => {
             return [];
         }
     });
+};
+
+export const selectSummariesForRecommendation = (
+    summaries,
+    {
+        windowDays = null,
+        maxRecentRuns = null,
+        nowMs = Date.now(),
+    } = {},
+) => {
+    const source = Array.isArray(summaries) ? summaries : [];
+    const hasWindowFilter = Number.isFinite(windowDays) && windowDays > 0;
+    const hasMaxRunsFilter = Number.isFinite(maxRecentRuns) && maxRecentRuns > 0;
+    const cutoffMs = hasWindowFilter ? nowMs - (windowDays * MS_PER_DAY) : null;
+
+    let droppedWithoutTimestamp = 0;
+    let droppedOutsideWindow = 0;
+
+    const timestamped = source.map((entry) => ({
+        ...entry,
+        __timestampMs: parseSummaryTimestampMs(entry),
+    }));
+
+    let filtered = timestamped.filter((entry) => {
+        if (!hasWindowFilter) {
+            return true;
+        }
+        if (!Number.isFinite(entry.__timestampMs)) {
+            droppedWithoutTimestamp += 1;
+            return false;
+        }
+        if (entry.__timestampMs < cutoffMs) {
+            droppedOutsideWindow += 1;
+            return false;
+        }
+        return true;
+    });
+
+    filtered.sort((a, b) => {
+        const aMs = Number.isFinite(a.__timestampMs) ? a.__timestampMs : Number.NEGATIVE_INFINITY;
+        const bMs = Number.isFinite(b.__timestampMs) ? b.__timestampMs : Number.NEGATIVE_INFINITY;
+        return bMs - aMs;
+    });
+
+    if (hasMaxRunsFilter) {
+        filtered = filtered.slice(0, maxRecentRuns);
+    }
+
+    return {
+        summaries: filtered.map(({ __timestampMs, ...entry }) => entry),
+        selection: {
+            loadedRunCount: source.length,
+            selectedRunCount: filtered.length,
+            windowDays: hasWindowFilter ? windowDays : null,
+            maxRecentRuns: hasMaxRunsFilter ? maxRecentRuns : null,
+            droppedWithoutTimestamp,
+            droppedOutsideWindow,
+        },
+    };
 };
 
 export const recommendBudgets = (
@@ -151,17 +228,37 @@ const run = () => {
         process.env.PERF_BUDGET_RECOMMENDATION_MIN_RUNS || '5',
         10,
     );
+    const windowDays = parsePositiveInteger(process.env.PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS);
+    const maxRecentRuns = parsePositiveInteger(process.env.PERF_BUDGET_RECOMMENDATION_MAX_RUNS);
     const inputs = process.argv.slice(2);
 
-    const summaries = loadBudgetSummaries(inputs);
+    const loadedSummaries = loadBudgetSummaries(inputs);
+    const { summaries, selection } = selectSummariesForRecommendation(loadedSummaries, {
+        windowDays,
+        maxRecentRuns,
+    });
     const recommendation = recommendBudgets(summaries, {
         headroomPct,
         roundMs,
         minimumRunsForConfidence,
     });
+    recommendation.selection = selection;
     const resolvedOutputPath = writeRecommendation(recommendation, outputPath);
 
-    console.log(`Loaded ${recommendation.inputRunCount} performance summary file(s).`);
+    console.log(`Loaded ${selection.loadedRunCount} performance summary file(s).`);
+    console.log(`Selected ${selection.selectedRunCount} run(s) for recommendation.`);
+    if (selection.windowDays) {
+        console.log(`Selection filter: last ${selection.windowDays} day(s).`);
+        if (selection.droppedWithoutTimestamp) {
+            console.warn(`Dropped ${selection.droppedWithoutTimestamp} run(s) without timestamps.`);
+        }
+        if (selection.droppedOutsideWindow) {
+            console.log(`Dropped ${selection.droppedOutsideWindow} run(s) outside the recency window.`);
+        }
+    }
+    if (selection.maxRecentRuns) {
+        console.log(`Selection cap: most recent ${selection.maxRecentRuns} run(s).`);
+    }
     console.log(`Observed FCP p95: ${formatMs(recommendation.observed.fcp.p95)}`);
     console.log(`Observed LCP p95: ${formatMs(recommendation.observed.lcp.p95)}`);
     console.log(`Recommendation confidence: ${recommendation.confidence}`);
