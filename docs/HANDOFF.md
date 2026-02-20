@@ -126,6 +126,15 @@ If both pass, you are at a known-good baseline.
     - `.github/workflows/quality.yml`
   - Added regression coverage for PR gate recommendation behavior:
     - `tests/scripts/recommend-performance-budgets.test.js`
+- Completed perf recommendation summary publishing pass (2026-02-20, phase 43):
+  - Added markdown recommendation summary renderer:
+    - `scripts/render-performance-recommendation-summary.mjs`
+    - npm script: `audit:perf:summary`
+  - CI now publishes recommendation summary to workflow job summary and artifact output:
+    - `.github/workflows/quality.yml`
+    - `artifacts/perf-budget-recommendation.md`
+  - Added regression coverage for summary rendering:
+    - `tests/scripts/render-performance-recommendation-summary.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`

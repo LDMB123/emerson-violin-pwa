@@ -66,12 +66,21 @@ jobs:
           PERF_BUDGET_CURRENT_LCP_MS: '3500'
           PERF_BUDGET_RECOMMENDATION_PR_TARGET_FAILURE_PCT: '5'
 
+      - name: Summarize performance recommendation
+        if: always()
+        continue-on-error: true
+        run: npm run audit:perf:summary -- artifacts/perf-budget-recommendation.json
+        env:
+          PERF_BUDGET_RECOMMENDATION_SUMMARY_OUTPUT: artifacts/perf-budget-recommendation.md
+
       - name: Upload performance budget recommendation
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: perf-budget-recommendation
-          path: artifacts/perf-budget-recommendation.json
+          path: |
+            artifacts/perf-budget-recommendation.json
+            artifacts/perf-budget-recommendation.md
           if-no-files-found: warn
 
       - name: E2E tests
