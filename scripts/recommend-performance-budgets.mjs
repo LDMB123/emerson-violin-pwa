@@ -65,6 +65,11 @@ const parsePositiveInteger = (value) => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
 
+const parsePositiveNumber = (value) => {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
 const roundPct = (value) => Math.round(value * 10) / 10;
 
 export const loadBudgetSummaries = (inputs) => {
@@ -199,6 +204,58 @@ export const computeBudgetFailureStats = (summaries, budgets) => {
     };
 };
 
+export const recommendPrGateMode = (
+    recommendation,
+    {
+        targetFailureRatePct = 5,
+    } = {},
+) => {
+    const confidence = recommendation?.confidence;
+    const current = recommendation?.thresholdHealth?.current;
+    const recommended = recommendation?.thresholdHealth?.recommended;
+    const hasThresholdHealth =
+        Number.isFinite(current?.failureRatePct) &&
+        Number.isFinite(recommended?.failureRatePct);
+
+    if (confidence !== 'high') {
+        return {
+            mode: 'report_only',
+            reason: 'low_confidence',
+            targetFailureRatePct,
+            currentFailureRatePct: hasThresholdHealth ? current.failureRatePct : null,
+            recommendedFailureRatePct: hasThresholdHealth ? recommended.failureRatePct : null,
+        };
+    }
+
+    if (!hasThresholdHealth) {
+        return {
+            mode: 'report_only',
+            reason: 'missing_threshold_health',
+            targetFailureRatePct,
+            currentFailureRatePct: null,
+            recommendedFailureRatePct: null,
+        };
+    }
+
+    if (current.failureRatePct <= targetFailureRatePct && recommended.failureRatePct <= targetFailureRatePct) {
+        return {
+            mode: 'consider_blocking',
+            reason: 'failure_rate_within_target',
+            targetFailureRatePct,
+            currentFailureRatePct: current.failureRatePct,
+            recommendedFailureRatePct: recommended.failureRatePct,
+        };
+    }
+
+    return {
+        mode: 'report_only',
+        reason: 'failure_rate_above_target',
+        targetFailureRatePct,
+        currentFailureRatePct: current.failureRatePct,
+        recommendedFailureRatePct: recommended.failureRatePct,
+    };
+};
+
 export const recommendBudgets = (
     summaries,
     {
@@ -280,6 +337,9 @@ const run = () => {
     );
     const currentFcpBudget = parsePositiveInteger(process.env.PERF_BUDGET_CURRENT_FCP_MS);
     const currentLcpBudget = parsePositiveInteger(process.env.PERF_BUDGET_CURRENT_LCP_MS);
+    const prTargetFailureRatePct = parsePositiveNumber(
+        process.env.PERF_BUDGET_RECOMMENDATION_PR_TARGET_FAILURE_PCT,
+    ) || 5;
     const windowDays = parsePositiveInteger(process.env.PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS);
     const maxRecentRuns = parsePositiveInteger(process.env.PERF_BUDGET_RECOMMENDATION_MAX_RUNS);
     const inputs = process.argv.slice(2);
@@ -311,6 +371,9 @@ const run = () => {
             },
         };
     }
+    recommendation.prGateRecommendation = recommendPrGateMode(recommendation, {
+        targetFailureRatePct: prTargetFailureRatePct,
+    });
     recommendation.selection = selection;
     const resolvedOutputPath = writeRecommendation(recommendation, outputPath);
 
@@ -343,6 +406,9 @@ const run = () => {
             `Recommended-budget failure rate: ${recommended.failureRatePct}% (${recommended.failingRuns}/${recommended.totalRuns}) at FCP<=${recommended.budgets.fcpMs}ms LCP<=${recommended.budgets.lcpMs}ms`,
         );
     }
+    console.log(
+        `PR gate recommendation: ${recommendation.prGateRecommendation.mode} (${recommendation.prGateRecommendation.reason})`,
+    );
     console.log(`Suggested CI env:\nPERF_BUDGET_FCP_MS=${recommendation.recommendedBudgets.fcpMs}\nPERF_BUDGET_LCP_MS=${recommendation.recommendedBudgets.lcpMs}`);
     console.log(`Recommendation written to ${resolvedOutputPath}`);
 };
