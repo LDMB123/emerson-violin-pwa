@@ -6,6 +6,7 @@ export const MODULE_LOADERS = {
     platform: () => import('../platform/native-apis.js'),
     dataSaver: () => import('../platform/data-saver.js'),
     offlineRecovery: () => import('../platform/offline-recovery.js'),
+    installPrompt: () => import('../platform/install-prompt.js'),
     installGuide: () => import('../platform/install-guide.js'),
     installGuideClose: () => import('../platform/install-guide-close.js'),
     installToast: () => import('../platform/install-toast.js'),
@@ -13,6 +14,7 @@ export const MODULE_LOADERS = {
     inputCapabilities: () => import('../platform/input-capabilities.js'),
     mlScheduler: () => import('../ml/offline-scheduler.js'),
     mlAccelerator: () => import('../ml/accelerator.js'),
+    webVitals: () => import('../platform/web-vitals.js'),
     offlineIntegrity: () => import('../platform/offline-integrity.js'),
     offlineMode: () => import('../platform/offline-mode.js'),
     progress: () => import('../progress/progress.js'),
@@ -37,6 +39,8 @@ export const MODULE_LOADERS = {
     parentPin: () => import('../parent/pin.js'),
     parentRecordings: () => import('../parent/recordings.js'),
     parentGoals: () => import('../parent/goals.js'),
+    parentDataControls: () => import('../parent/data-controls.js'),
+    parentPerformanceReview: () => import('../parent/performance-review.js'),
     swUpdates: () => import('../platform/sw-updates.js'),
     adaptiveUi: () => import('../ml/adaptive-ui.js'),
     recommendationsUi: () => import('../ml/recommendations-ui.js'),
@@ -51,9 +55,11 @@ export const MODULE_LOADERS = {
 export const EAGER_MODULES = [
     'dataSaver',
     'offlineRecovery',
+    'installPrompt',
     'progress',
     'persist',
     'realtimeOverlay',
+    'webVitals',
 ];
 
 export const IDLE_MODULE_PLAN = [
@@ -94,6 +100,8 @@ const MODULE_RULES = [
             'parentPin',
             'parentGoals',
             'parentRecordings',
+            'parentDataControls',
+            'parentPerformanceReview',
             'realtimeReview',
             'reminders',
             'platform',

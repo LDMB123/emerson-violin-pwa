@@ -1,4 +1,5 @@
 import { createGame } from './game-shell.js';
+import { bindVisibilityLifecycle } from './game-interactive-runtime.js';
 import {
     cachedEl,
     formatCountdown,
@@ -10,6 +11,15 @@ import {
     playToneNote,
     stopTonePlayer,
 } from './shared.js';
+import {
+    computeBowStrokeFeedback,
+    resolveBowStrokeNote,
+} from './bow-hero-stroke.js';
+import {
+    renderBowHeroStars,
+    handleBowHeroRunToggleChange,
+} from './bow-hero-state.js';
+import { createBowHeroTimerLifecycle } from './bow-hero-timer.js';
 
 const bowStarsEl = cachedEl('[data-bow="stars"]');
 
@@ -40,7 +50,7 @@ const { bind } = createGame({
         if (gameState._statusEl) gameState._statusEl.textContent = 'Press Start to begin the timer.';
         if (gameState._runToggle) gameState._runToggle.checked = false;
     },
-    onBind: (stage, difficulty, { reportSession, gameState }) => {
+    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const strokeButton = stage.querySelector('.bow-stroke');
         const runToggle = stage.querySelector('#bow-hero-run');
         const timerEl = stage.querySelector('[data-bow="timer"]');
@@ -54,12 +64,6 @@ const { bind } = createGame({
         // difficulty.complexity: visual feedback only for this game (star/stroke milestones are fixed)
         const targetTempo = Math.round(72 * difficulty.speed);
         const timeLimit = Math.round(105 * difficulty.speed);
-        let remaining = timeLimit;
-        let timerId = null;
-        let endTime = null;
-        let runStartedAt = 0;
-        let paused = false;
-        let pausedAt = 0;
         let lastStrokeAt = 0;
         let smoothStreak = 0;
 
@@ -76,7 +80,7 @@ const { bind } = createGame({
             if (statusEl) statusEl.textContent = message;
         };
 
-        const updateTimer = () => {
+        const updateTimer = (remaining) => {
             if (timerEl) timerEl.textContent = formatCountdown(remaining);
         };
 
@@ -85,7 +89,7 @@ const { bind } = createGame({
             strokeCount = 0;
             gameState.starCount = 0;
             gameState.strokeCount = 0;
-            stars.forEach((star) => star.classList.remove('is-lit'));
+            renderBowHeroStars({ stars, starCount });
             setLiveNumber(starsEl, 'liveStars', starCount);
         };
 
@@ -96,95 +100,51 @@ const { bind } = createGame({
             reportSession();
         };
 
-        const stopTimer = () => {
-            if (timerId) {
-                clearInterval(timerId);
-                timerId = null;
-            }
-            endTime = null;
-            gameState._timerId = null;
-        };
-
-        const pauseTimer = () => {
-            if (!timerId) return;
-            if (endTime) {
-                remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-            }
-            stopTimer();
-            paused = true;
-            pausedAt = Date.now();
-            setStatus('Paused while app is in the background.');
-        };
+        const timerLifecycle = createBowHeroTimerLifecycle({
+            timeLimit,
+            runToggle,
+            shouldResetStarsBeforeStart: () => starCount > 0,
+            resetStars,
+            updateTimer,
+            setStatus,
+            onThirtySeconds: () => {
+                markChecklist('bh-step-4');
+            },
+            onTimeElapsed: () => {
+                markChecklist('bh-step-5');
+                finalizeRun();
+            },
+            setTimerHandle: (timerId) => {
+                gameState._timerId = timerId;
+            },
+            canResume: () => Boolean(runToggle?.checked)
+                && window.location.hash === '#view-game-bow-hero',
+            now: () => Date.now(),
+            setIntervalFn: (callback, delay) => window.setInterval(callback, delay),
+            clearIntervalFn: (timerId) => window.clearInterval(timerId),
+        });
 
         gameState._onDeactivate = () => {
-            pauseTimer();
+            timerLifecycle.pauseTimer();
             stopTonePlayer();
-        };
-
-        const resumeTimer = () => {
-            if (!paused) return;
-            if (!runToggle?.checked) return;
-            if (window.location.hash !== '#view-game-bow-hero') return;
-            if (remaining <= 0) return;
-            if (pausedAt && runStartedAt) {
-                runStartedAt += Date.now() - pausedAt;
-            }
-            paused = false;
-            pausedAt = 0;
-            startTimer();
-        };
-
-        const startTimer = () => {
-            if (timerId) return;
-            paused = false;
-            if (remaining <= 0) remaining = timeLimit;
-            if (remaining === timeLimit && starCount > 0) resetStars();
-            if (!runStartedAt) runStartedAt = Date.now();
-            endTime = Date.now() + remaining * 1000;
-            timerId = window.setInterval(() => {
-                if (!endTime) return;
-                remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-                updateTimer();
-                if (remaining <= 0) {
-                    stopTimer();
-                    if (runToggle) runToggle.checked = false;
-                    setStatus('Time! Tap Start to begin another round.');
-                    markChecklist('bh-step-5');
-                    finalizeRun();
-                }
-                if (runStartedAt && Date.now() - runStartedAt >= 30000) {
-                    markChecklist('bh-step-4');
-                }
-            }, 300);
-            gameState._timerId = timerId;
-            updateTimer();
-            setStatus('Timer running. Keep bow strokes steady.');
         };
 
         bindTap(strokeButton, () => {
             starCount = Math.min(stars.length, starCount + 1);
             strokeCount += 1;
-            stars.forEach((star, index) => {
-                star.classList.toggle('is-lit', index < starCount);
-            });
+            renderBowHeroStars({ stars, starCount });
             setLiveNumber(starsEl, 'liveStars', starCount);
             const now = performance.now();
-            if (lastStrokeAt) {
-                const interval = now - lastStrokeAt;
-                const bpm = Math.round(60000 / Math.max(120, interval));
-                const deviation = Math.abs(bpm - targetTempo) / Math.max(targetTempo, 1);
-                if (deviation <= 0.18) {
-                    smoothStreak += 1;
-                    setStatus(`Smooth strokes! ${bpm} BPM · streak x${smoothStreak}.`);
-                } else {
-                    smoothStreak = 0;
-                    setStatus(`Aim for ${targetTempo} BPM · current ${bpm} BPM.`);
-                }
-            } else {
-                setStatus('Nice stroke! Keep going.');
-            }
+            const strokeFeedback = computeBowStrokeFeedback({
+                lastStrokeAt,
+                now,
+                targetTempo,
+                smoothStreak,
+            });
+            smoothStreak = strokeFeedback.smoothStreak;
+            setStatus(strokeFeedback.statusMessage);
             lastStrokeAt = now;
-            const strokeNote = strokeCount % 2 === 0 ? 'A' : 'D';
+            const strokeNote = resolveBowStrokeNote(strokeCount);
             playToneNote(strokeNote, { duration: 0.16, volume: 0.12, type: 'triangle' });
             markChecklistIf(strokeCount >= 8, 'bh-step-1');
             markChecklistIf(strokeCount >= 16, 'bh-step-2');
@@ -192,29 +152,24 @@ const { bind } = createGame({
         });
 
         runToggle?.addEventListener('change', () => {
-            if (runToggle.checked) {
-                startTimer();
-            } else {
-                stopTimer();
-                runStartedAt = 0;
-                paused = false;
-                pausedAt = 0;
-                setStatus('Paused. Tap Start to resume.');
-                if (strokeCount > 0) {
-                    finalizeRun();
-                }
-            }
+            handleBowHeroRunToggleChange({
+                runToggle,
+                startTimer: timerLifecycle.startTimer,
+                stopTimer: timerLifecycle.stopTimer,
+                resetPauseState: timerLifecycle.resetPauseState,
+                setStatus,
+                strokeCount,
+                finalizeRun,
+            });
         });
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                pauseTimer();
-            } else {
-                resumeTimer();
-            }
+        bindVisibilityLifecycle({
+            onHidden: timerLifecycle.pauseTimer,
+            onVisible: timerLifecycle.resumeTimer,
+            registerCleanup,
         });
 
-        updateTimer();
+        timerLifecycle.renderTimer();
         setStatus('Press Start to begin the timer.');
     },
 });

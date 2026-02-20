@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
   <meta name="theme-color" content="#F56B49" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'" />
 
   <!-- PWA / iPadOS 26.2 Capable -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -152,6 +152,7 @@
         <div class="home-utility-links glass" aria-label="App links">
           <a class="btn btn-ghost" href="#view-settings" data-home-utility="settings">Settings</a>
           <a class="btn btn-ghost" href="#view-help" data-home-utility="help">Help</a>
+          <a class="btn btn-ghost" href="#view-privacy" data-home-utility="privacy">Privacy</a>
           <a class="btn btn-ghost" href="#view-about" data-home-utility="about">About</a>
         </div>
       </section>

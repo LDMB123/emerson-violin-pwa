@@ -1,6 +1,7 @@
 import { RT_CUE, RT_STATE } from '../utils/event-names.js';
 
 const FALLBACK_ASSET = './assets/illustrations/mascot-happy.webp';
+const LISTENING_PULSE_INTERVAL_MS = 750;
 
 const DEFAULT_STATE_MAP = Object.freeze({
     listening: FALLBACK_ASSET,
@@ -17,6 +18,7 @@ let cueAvatar = null;
 let hideTimer = null;
 let stateMap = { ...DEFAULT_STATE_MAP };
 let globalBound = false;
+let lastListeningPulseAt = 0;
 
 const prefersReducedMotion = () => {
     const explicit = document.querySelector('#setting-reduce-motion');
@@ -94,6 +96,7 @@ const bindGlobalListeners = () => {
     document.addEventListener(RT_CUE, (event) => {
         const cue = event.detail || {};
         const message = cue.message || 'Keep going.';
+        lastListeningPulseAt = Date.now();
         showOverlay(message, cue.state, cue.dwellMs);
     });
 
@@ -108,6 +111,9 @@ const bindGlobalListeners = () => {
             return;
         }
         if (!overlay?.hidden) return;
+        const now = Date.now();
+        if (now - lastListeningPulseAt < LISTENING_PULSE_INTERVAL_MS) return;
+        lastListeningPulseAt = now;
         showOverlay('Listening…', detail.cueState || 'listening', 1400);
     });
 };

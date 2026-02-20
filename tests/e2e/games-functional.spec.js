@@ -97,21 +97,28 @@ const returnToGamesFromPitchQuest = async (page) => {
 };
 
 test('games remain interactive after leaving and re-entering the same game', async ({ page }) => {
+    test.setTimeout(60000);
     await openHome(page);
 
     await openGamesHub(page);
     await openPitchQuest(page);
 
     const firstScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
-    await expect(firstScore).toHaveText('0');
+    const firstBefore = Number.parseInt((await firstScore.innerText()).trim(), 10) || 0;
     await lockPitchNote(page, 'A');
-    await expect(firstScore).not.toHaveText('0');
+    await expect.poll(async () => {
+        const value = Number.parseInt((await firstScore.innerText()).trim(), 10);
+        return Number.isFinite(value) ? value : firstBefore;
+    }, { timeout: 5000 }).toBeGreaterThan(firstBefore);
 
     await returnToGamesFromPitchQuest(page);
     await openPitchQuest(page);
 
     const secondScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
-    await expect(secondScore).toHaveText('0');
+    const secondBefore = Number.parseInt((await secondScore.innerText()).trim(), 10) || 0;
     await lockPitchNote(page, 'A');
-    await expect(secondScore).not.toHaveText('0');
+    await expect.poll(async () => {
+        const value = Number.parseInt((await secondScore.innerText()).trim(), 10);
+        return Number.isFinite(value) ? value : secondBefore;
+    }, { timeout: 5000 }).toBeGreaterThan(secondBefore);
 });

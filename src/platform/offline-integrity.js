@@ -1,8 +1,13 @@
-import { getJSON, setJSON } from '../persistence/storage.js';
-import { getAudioPath } from '../audio/format-detection.js';
 import { formatTimestamp } from '../utils/math.js';
-import { OFFLINE_METRICS_KEY as METRICS_KEY } from '../persistence/storage-keys.js';
 import { hasServiceWorkerSupport } from './sw-support.js';
+import {
+    defaultOfflineMetrics,
+    loadOfflineMetrics,
+    saveOfflineMetrics,
+    formatOfflineSelfTestStatus,
+    formatOfflineStatus,
+} from './offline-integrity-metrics.js';
+import { runOfflineCacheCheck, runOfflineAssetSelfTest } from './offline-integrity-cache.js';
 
 let statusEl = null;
 let assetsEl = null;
@@ -13,6 +18,7 @@ let selfTestButton = null;
 let selfTestStatusEl = null;
 let repairButton = null;
 let globalsBound = false;
+let metricMutationQueue = Promise.resolve();
 
 const resolveElements = () => {
     statusEl = document.querySelector('[data-offline-status]');
@@ -25,65 +31,6 @@ const resolveElements = () => {
     repairButton = document.querySelector('[data-offline-repair]');
 };
 
-const CRITICAL_ASSETS = [
-    './',
-    './index.html',
-    './manifest.webmanifest',
-    './offline.html',
-    './src/app.js',
-    './src/styles/app.css',
-    './src/assets/fonts/fraunces-vf.woff2',
-    './src/assets/fonts/nunito-vf.woff2',
-    './assets/icons/icon-192.png',
-    './assets/illustrations/mascot-happy.png',
-    getAudioPath('./assets/audio/violin-a4.wav'),
-    getAudioPath('./assets/audio/violin-g3.wav'),
-    getAudioPath('./assets/audio/violin-d4.wav'),
-    getAudioPath('./assets/audio/violin-e5.wav'),
-    getAudioPath('./assets/audio/metronome-90.wav'),
-    getAudioPath('./assets/audio/metronome-60.wav'),
-    getAudioPath('./assets/audio/metronome-120.wav'),
-];
-
-const defaultMetrics = () => ({
-    cachedAssets: 0,
-    misses: 0,
-    lastMiss: 0,
-    lastRefresh: 0,
-    lastCheck: 0,
-    selfTestPass: 0,
-    selfTestTotal: 0,
-    selfTestAt: 0,
-});
-
-const loadMetrics = async () => {
-    const stored = await getJSON(METRICS_KEY);
-    return { ...defaultMetrics(), ...(stored || {}) };
-};
-
-const saveMetrics = async (metrics) => {
-    await setJSON(METRICS_KEY, metrics);
-};
-
-const formatSelfTestStatus = (metrics) => {
-    if (!metrics.selfTestTotal) {
-        return 'Offline self-test: not run yet.';
-    }
-    const missing = metrics.selfTestTotal - metrics.selfTestPass;
-    const status = missing ? `Missing ${missing}` : 'All checks passed';
-    return `Offline self-test: ${metrics.selfTestPass}/${metrics.selfTestTotal} (${status}).`;
-};
-
-const formatOfflineStatus = (metrics) => {
-    if (!metrics.cachedAssets) {
-        return 'Offline integrity: Not cached yet. Open once while online.';
-    }
-    if (!navigator.onLine) {
-        return 'Offline integrity: Ready for offline use.';
-    }
-    return 'Offline integrity: Ready. Keep installed for best results.';
-};
-
 const updateUI = (metrics) => {
     if (!metrics) return;
     if (assetsEl) assetsEl.textContent = `Cached assets: ${metrics.cachedAssets || 0}`;
@@ -93,7 +40,7 @@ const updateUI = (metrics) => {
         lastEl.textContent = `Last offline check: ${formatTimestamp(lastStamp)}`;
     }
     if (selfTestStatusEl) {
-        selfTestStatusEl.textContent = formatSelfTestStatus(metrics);
+        selfTestStatusEl.textContent = formatOfflineSelfTestStatus(metrics);
     }
     if (statusEl) {
         statusEl.textContent = formatOfflineStatus(metrics);
@@ -107,65 +54,34 @@ const setButtonsSupported = (supported) => {
     if (repairButton) repairButton.disabled = disabled;
 };
 
-const selectCache = async () => {
-    const keys = await caches.keys();
-    const matches = keys
-        .filter((key) => key.startsWith('panda-violin-local-'))
-        .map((key) => {
-            const parts = key.split('-v');
-            const version = parts.length > 1 ? Number.parseInt(parts[parts.length - 1], 10) : 0;
-            return { key, version: Number.isNaN(version) ? 0 : version };
+const mutateMetrics = async (mutator) => {
+    metricMutationQueue = metricMutationQueue
+        .catch(() => {})
+        .then(async () => {
+            const metrics = await loadOfflineMetrics();
+            mutator(metrics);
+            await saveOfflineMetrics(metrics);
+            updateUI(metrics);
+            return metrics;
         });
-    if (!matches.length) return null;
-    matches.sort((a, b) => a.version - b.version);
-    const latest = matches[matches.length - 1]?.key;
-    return latest ? caches.open(latest) : null;
+    return metricMutationQueue;
 };
 
 const runCheck = async () => {
-    const metrics = await loadMetrics();
-    const cache = await selectCache();
-    if (!cache) {
-        metrics.cachedAssets = 0;
-        metrics.lastCheck = Date.now();
-        await saveMetrics(metrics);
-        updateUI(metrics);
-        return;
-    }
-
-    const requests = await cache.keys();
-    metrics.cachedAssets = requests.length;
-    metrics.lastCheck = Date.now();
-    await saveMetrics(metrics);
-    updateUI(metrics);
+    const result = await runOfflineCacheCheck();
+    await mutateMetrics((metrics) => {
+        metrics.cachedAssets = result.cachedAssets;
+        metrics.lastCheck = result.lastCheck;
+    });
 };
 
 const runSelfTest = async () => {
-    const metrics = await loadMetrics();
-    const cache = await selectCache();
-    if (!cache) {
-        metrics.selfTestPass = 0;
-        metrics.selfTestTotal = CRITICAL_ASSETS.length;
-        metrics.selfTestAt = Date.now();
-        await saveMetrics(metrics);
-        updateUI(metrics);
-        return;
-    }
-
-    let passCount = 0;
-    for (const asset of CRITICAL_ASSETS) {
-        const absolute = new URL(asset, window.location.href).toString();
-        const match = await cache.match(absolute);
-        if (match) {
-            passCount += 1;
-        }
-    }
-
-    metrics.selfTestPass = passCount;
-    metrics.selfTestTotal = CRITICAL_ASSETS.length;
-    metrics.selfTestAt = Date.now();
-    await saveMetrics(metrics);
-    updateUI(metrics);
+    const result = await runOfflineAssetSelfTest();
+    await mutateMetrics((metrics) => {
+        metrics.selfTestPass = result.selfTestPass;
+        metrics.selfTestTotal = result.selfTestTotal;
+        metrics.selfTestAt = result.selfTestAt;
+    });
 };
 
 const triggerRepair = async () => {
@@ -181,23 +97,22 @@ const triggerRepair = async () => {
 
 const handleMessage = async (event) => {
     if (!event?.data?.type) return;
-    const metrics = await loadMetrics();
 
     if (event.data.type === 'OFFLINE_MISS') {
-        metrics.misses += 1;
-        metrics.lastMiss = event.data.timestamp || Date.now();
-        await saveMetrics(metrics);
-        updateUI(metrics);
+        await mutateMetrics((metrics) => {
+            metrics.misses += 1;
+            metrics.lastMiss = event.data.timestamp || Date.now();
+        });
         return;
     }
 
     if (event.data.type === 'OFFLINE_REFRESH') {
-        if (Number.isFinite(event.data.assetCount)) {
-            metrics.cachedAssets = event.data.assetCount;
-        }
-        metrics.lastRefresh = event.data.timestamp || Date.now();
-        await saveMetrics(metrics);
-        updateUI(metrics);
+        await mutateMetrics((metrics) => {
+            if (Number.isFinite(event.data.assetCount)) {
+                metrics.cachedAssets = event.data.assetCount;
+            }
+            metrics.lastRefresh = event.data.timestamp || Date.now();
+        });
     }
 };
 
@@ -215,7 +130,7 @@ const bindLocalListeners = () => {
     if (repairButton && repairButton.dataset.offlineBound !== 'true') {
         repairButton.dataset.offlineBound = 'true';
         repairButton.addEventListener('click', () => {
-            const metrics = defaultMetrics();
+            const metrics = defaultOfflineMetrics();
             metrics.cachedAssets = 0;
             updateUI(metrics);
             triggerRepair();
@@ -231,14 +146,14 @@ const bindGlobalListeners = () => {
 
     window.addEventListener('online', () => runCheck(), { passive: true });
     window.addEventListener('offline', async () => {
-        const latest = await loadMetrics();
+        const latest = await loadOfflineMetrics();
         updateUI(latest);
     }, { passive: true });
 };
 
 const initOfflineIntegrity = async () => {
     resolveElements();
-    const metrics = await loadMetrics();
+    const metrics = await loadOfflineMetrics();
     updateUI(metrics);
     const supportsServiceWorker = hasServiceWorkerSupport();
     setButtonsSupported(supportsServiceWorker);

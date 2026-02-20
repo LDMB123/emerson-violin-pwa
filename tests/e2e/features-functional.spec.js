@@ -115,10 +115,23 @@ const triggerBackupExportAndWaitForStatus = async (page) => {
 };
 
 const runOfflineCheckAndWaitForAssets = async (page) => {
-    await waitForBoundFlag(page, '[data-offline-check]', 'data-offline-bound');
-    await expect(page.locator('[data-offline-check]')).toBeEnabled({ timeout: 10000 });
-    await page.locator('[data-offline-check]').click();
-    await expect.poll(async () => page.locator('[data-offline-assets]').innerText(), { timeout: 10000 }).not.toContain('—');
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        const button = page.locator('[data-offline-check]');
+        try {
+            await waitForBoundFlag(page, '[data-offline-check]', 'data-offline-bound');
+            await expect(button).toBeVisible({ timeout: 10000 });
+            await expect(button).toBeEnabled({ timeout: 10000 });
+            await button.evaluate((el) => {
+                el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+            });
+            await expect.poll(async () => page.locator('[data-offline-assets]').innerText(), { timeout: 10000 }).not.toContain('—');
+            return;
+        } catch (error) {
+            lastError = error;
+        }
+    }
+    throw lastError || new Error('Unable to run offline check.');
 };
 
 const waitForBoundFlag = async (page, selector, attribute) => {

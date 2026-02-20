@@ -1,16 +1,24 @@
 import { createGame } from './game-shell.js';
+import { createPlaybackRuntime } from './game-interactive-runtime.js';
 import {
     readLiveNumber,
-    setLiveNumber,
     markChecklist,
     markChecklistIf,
     bindTap,
     getTonePlayer,
-    stopTonePlayer,
     buildNoteSequence,
-    createSoundsChangeBinding,
+    bindSoundsChange,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { resetMelodyMakerTrackState } from './melody-maker-state.js';
+import { playMelodyMakerSequence } from './melody-maker-playback.js';
+import {
+    setMelodyMakerStatus,
+    renderMelodyMakerTrack,
+    renderMelodyMakerScore,
+    renderMelodyMakerTarget,
+} from './melody-maker-view.js';
+import { handleMelodyMakerNoteTap } from './melody-maker-track.js';
 
 const updateMelodyMaker = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-melody-maker input[id^="mm-step-"]'));
@@ -21,20 +29,13 @@ const updateMelodyMaker = () => {
     if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 30);
 };
 
-const bindSoundsChange = createSoundsChangeBinding();
-
 const { bind } = createGame({
     id: 'melody-maker',
     computeAccuracy: (state) => state._lengthTarget
         ? Math.min(1, (state._track?.length ?? 0) / state._lengthTarget) * 100
         : 0,
     onReset: (gameState) => {
-        if (gameState._track) gameState._track.length = 0;
-        gameState.score = 0;
-        gameState._lastSequence = '';
-        gameState._repeatMarked = false;
-        gameState._matchCount = 0;
-        if (gameState._uniqueNotes) gameState._uniqueNotes.clear();
+        resetMelodyMakerTrackState(gameState);
         if (gameState._stopPlayback) gameState._stopPlayback();
         if (gameState._updateTrack) gameState._updateTrack();
         if (gameState._updateScore) gameState._updateScore();
@@ -45,7 +46,7 @@ const { bind } = createGame({
             gameState._maxTrack = Math.max(gameState._lengthTarget + 2, 6);
         }
     },
-    onBind: (stage, difficulty, { reportSession, gameState }) => {
+    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const buttons = Array.from(stage.querySelectorAll('.melody-btn'));
         const trackEl = stage.querySelector('[data-melody="track"]');
         const scoreEl = stage.querySelector('[data-melody="score"]');
@@ -71,24 +72,23 @@ const { bind } = createGame({
         gameState._repeatMarked = false;
         gameState._matchCount = 0;
         gameState._targetMotif = ['G', 'A', 'B', 'C'];
-        gameState._isPlaying = false;
-        gameState._playToken = 0;
+        const playback = createPlaybackRuntime();
+        gameState._isPlaying = playback.playing;
 
         const setStatus = (message) => {
-            if (statusEl) statusEl.textContent = message;
+            setMelodyMakerStatus(statusEl, message);
         };
 
         const updateTrack = () => {
-            if (trackEl) trackEl.textContent = gameState._track.length ? gameState._track.join(' · ') : 'Tap notes to build a melody.';
+            renderMelodyMakerTrack(trackEl, gameState._track);
         };
 
         const updateScore = () => {
-            setLiveNumber(scoreEl, 'liveScore', gameState.score);
+            renderMelodyMakerScore(scoreEl, gameState.score);
         };
 
         const updateTarget = () => {
-            if (!targetEl) return;
-            targetEl.textContent = `Target: ${gameState._targetMotif.join(' · ')}`;
+            renderMelodyMakerTarget(targetEl, gameState._targetMotif);
         };
 
         const buildTarget = () => {
@@ -99,14 +99,13 @@ const { bind } = createGame({
         };
 
         const stopPlayback = (message) => {
-            gameState._playToken += 1;
-            gameState._isPlaying = false;
-            stopTonePlayer();
+            playback.stop();
+            gameState._isPlaying = playback.playing;
             if (message) setStatus(message);
         };
 
         gameState._onDeactivate = () => {
-            if (!gameState._isPlaying) return;
+            if (!playback.playing) return;
             stopPlayback();
         };
 
@@ -119,36 +118,22 @@ const { bind } = createGame({
             }
         };
 
-        const playSequence = async (notes, message) => {
-            if (!notes.length) {
-                setStatus('Add notes to hear your melody.');
-                return;
-            }
-            if (!isSoundEnabled()) {
-                setStatus('Sounds are off. Enable Sounds to play.');
-                return;
-            }
-            const player = getTonePlayer();
-            if (!player) {
-                setStatus('Audio is unavailable on this device.');
-                return;
-            }
-            const token = ++gameState._playToken;
-            gameState._isPlaying = true;
-            setStatus(message);
-            const played = await player.playSequence(notes, {
-                tempo,
-                gap: 0.12,
-                duration: 0.4,
-                volume: 0.22,
-                type: 'triangle',
-            });
-            if (token !== gameState._playToken || !played) return;
-            gameState._isPlaying = false;
-            setStatus('Nice! Try a new variation or hit Play again.');
-            markChecklist('mm-step-4');
-            reportSession();
-        };
+        const playSequence = (notes, message) => playMelodyMakerSequence({
+            notes,
+            isSoundEnabled,
+            setStatus,
+            getPlayer: getTonePlayer,
+            playback,
+            tempo,
+            setIsPlaying: (isPlaying) => {
+                gameState._isPlaying = isPlaying;
+            },
+            startMessage: message,
+            onComplete: () => {
+                markChecklist('mm-step-4');
+                reportSession();
+            },
+        });
 
         // Store helpers for onReset (closures that read exclusively from gameState)
         gameState._stopPlayback = stopPlayback;
@@ -165,64 +150,31 @@ const { bind } = createGame({
             player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => {});
         };
 
-        const updateSequenceProgress = () => {
-            if (gameState._track.length < lengthTarget) return;
-            markChecklist('mm-step-1');
-            const currentSequence = gameState._track.slice(-lengthTarget).join('');
-            if (gameState._lastSequence && currentSequence === gameState._lastSequence && !gameState._repeatMarked) {
-                gameState._repeatMarked = true;
-                markChecklist('mm-step-2');
-            }
-            gameState._lastSequence = currentSequence;
-        };
-
-        const tryTargetMatch = () => {
-            if (gameState._track.length < gameState._targetMotif.length) return;
-            const attempt = gameState._track.slice(-gameState._targetMotif.length).join('');
-            const target = gameState._targetMotif.join('');
-            if (attempt !== target) return;
-            gameState._matchCount += 1;
-            gameState.score += 50;
-            updateScore();
-            setStatus(`Target hit! ${gameState._matchCount} in a row.`);
-            if (gameState._matchCount >= 1) markChecklist('mm-step-1');
-            if (gameState._matchCount >= 2) markChecklist('mm-step-2');
-            if (gameState._matchCount >= 3) reportSession();
-            buildTarget();
-        };
-
-        const handleNoteTap = (note) => {
-            if (gameState._isPlaying) {
-                stopPlayback('Editing melody. Tap Play to hear it.');
-            }
-            gameState._track.push(note);
-            if (gameState._track.length > gameState._maxTrack) gameState._track.shift();
-            gameState.score += 20;
-            gameState._uniqueNotes.add(note);
-            playTapPreview(note);
-            updateTrack();
-            updateScore();
-            updateSequenceProgress();
-            markChecklistIf(gameState._uniqueNotes.size >= 3, 'mm-step-3');
-            tryTargetMatch();
-        };
-
         buttons.forEach((button) => {
             bindTap(button, () => {
                 const note = button.dataset.melodyNote;
                 if (!note) return;
-                handleNoteTap(note);
+                handleMelodyMakerNoteTap({
+                    note,
+                    gameState,
+                    playback,
+                    stopPlayback,
+                    playTapPreview,
+                    updateTrack,
+                    updateScore,
+                    lengthTarget,
+                    setStatus,
+                    buildTarget,
+                    reportSession,
+                    markChecklist,
+                    markChecklistIf,
+                });
             });
         });
 
         bindTap(clearButton, () => {
             reportSession();
-            gameState._track.length = 0;
-            gameState.score = 0;
-            gameState._lastSequence = '';
-            gameState._repeatMarked = false;
-            gameState._uniqueNotes.clear();
-            gameState._matchCount = 0;
+            resetMelodyMakerTrackState(gameState);
             stopPlayback();
             updateTrack();
             updateScore();
@@ -246,7 +198,7 @@ const { bind } = createGame({
             }
             updateSoundState();
         };
-        bindSoundsChange(soundsHandler);
+        bindSoundsChange(soundsHandler, registerCleanup);
 
         updateTrack();
         updateScore();

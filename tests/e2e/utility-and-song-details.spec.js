@@ -7,6 +7,7 @@ test('utility routes are reachable from home links', async ({ page }) => {
     const routes = [
         { key: 'settings', viewId: 'view-settings' },
         { key: 'help', viewId: 'view-help' },
+        { key: 'privacy', viewId: 'view-privacy' },
         { key: 'about', viewId: 'view-about' },
     ];
 

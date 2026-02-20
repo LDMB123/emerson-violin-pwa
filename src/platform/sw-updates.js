@@ -1,4 +1,6 @@
 import { hasServiceWorkerSupport } from './sw-support.js';
+import { createSwUpdateFlowController } from './sw-update-flow.js';
+import { createSwRefreshController } from './sw-refresh-controller.js';
 
 let statusEl = null;
 let syncStatusEl = null;
@@ -25,38 +27,13 @@ const showApply = (show) => {
     if (applyButton) applyButton.hidden = !show;
 };
 
-const handleControllerChange = () => {
-    setStatus('Update applied. Reloading…');
-    window.location.reload();
-};
-
-const bindUpdateFlow = (registration) => {
-    if (!registration) return;
-
-    if (registration.waiting) {
-        setStatus('Update ready to apply.');
-        showApply(true);
-    } else {
-        setStatus('App is up to date.');
-        showApply(false);
-    }
-
-    registration.addEventListener('updatefound', () => {
-        setStatus('Update downloading…');
-        const newWorker = registration.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed') {
-                if (navigator.serviceWorker.controller) {
-                    setStatus('Update ready to apply.');
-                    showApply(true);
-                } else {
-                    setStatus('App ready for offline use.');
-                }
-            }
-        });
-    });
-};
+const updateFlowController = createSwUpdateFlowController({
+    setStatus,
+    showApply,
+});
+const refreshController = createSwRefreshController({
+    setSyncStatus,
+});
 
 const applyUpdate = async () => {
     if (!hasServiceWorkerSupport()) {
@@ -81,45 +58,16 @@ const checkForUpdates = async () => {
             return;
         }
         await registration.update();
-        bindUpdateFlow(registration);
+        updateFlowController.bindUpdateFlow(registration);
     } catch {
         setStatus('Unable to check for updates right now.');
     }
 };
 
-const registerBackgroundRefresh = async (registration) => {
-    if (!registration) return;
-    if ('periodicSync' in registration) {
-        try {
-            await registration.periodicSync.register('panda-refresh', {
-                minInterval: 24 * 60 * 60 * 1000,
-            });
-            setSyncStatus('Background refresh enabled.');
-            return;
-        } catch {
-            setSyncStatus('Background refresh blocked by the system.');
-            return;
-        }
-    }
-
-    if ('sync' in registration) {
-        try {
-            await registration.sync.register('panda-refresh');
-            setSyncStatus('Background refresh queued for next online session.');
-            return;
-        } catch {
-            setSyncStatus('Background refresh unavailable right now.');
-            return;
-        }
-    }
-
-    setSyncStatus('Background refresh not supported on this device.');
-};
-
 const bindGlobalListeners = () => {
     if (globalsBound) return;
     globalsBound = true;
-    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange, { once: true });
+    navigator.serviceWorker.addEventListener('controllerchange', updateFlowController.handleControllerChange, { once: true });
 };
 
 const bindLocalListeners = () => {
@@ -153,8 +101,8 @@ const initSwUpdates = async () => {
         return;
     }
 
-    bindUpdateFlow(registration);
-    registerBackgroundRefresh(registration);
+    updateFlowController.bindUpdateFlow(registration);
+    refreshController.registerBackgroundRefresh(registration);
     bindLocalListeners();
     bindGlobalListeners();
 };

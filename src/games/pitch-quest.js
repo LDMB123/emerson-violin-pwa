@@ -9,8 +9,12 @@ import {
     playToneNote,
     stopTonePlayer,
 } from './shared.js';
-import { clamp } from '../utils/math.js';
 import { RT_STATE } from '../utils/event-names.js';
+import {
+    formatPitchQuestTargetStatus,
+} from './pitch-quest-feedback.js';
+import { resolvePitchQuestAttempt } from './pitch-quest-attempt.js';
+import { applyPitchQuestLiveFeature } from './pitch-quest-live-feature.js';
 
 const pitchScoreEl = cachedEl('[data-pitch="score"]');
 const pitchStarsEl = cachedEl('[data-pitch="stars"]');
@@ -45,7 +49,7 @@ const { bind } = createGame({
         if (gameState._noteEl) gameState._noteEl.textContent = '--';
         if (gameState._gauge) gameState._gauge.style.setProperty('--pitch-offset', '0deg');
     },
-    onBind: (stage, difficulty, { reportSession, gameState }) => {
+    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const statusEl = stage.querySelector('[data-pitch="status"]');
         const checkButton = stage.querySelector('[data-pitch="check"]');
         const scoreEl = stage.querySelector('[data-pitch="score"]');
@@ -83,10 +87,6 @@ const { bind } = createGame({
 
         gameState._onDeactivate = () => {
             stopTonePlayer();
-            if (gameState._rtHandler) {
-                document.removeEventListener(RT_STATE, gameState._rtHandler);
-                gameState._rtHandler = null;
-            }
         };
 
         const getTargetNote = () => {
@@ -98,46 +98,31 @@ const { bind } = createGame({
         const updateTargetStatus = () => {
             if (!statusEl) return;
             const note = getTargetNote();
-            statusEl.textContent = note ? `Target: ${note} · ±${tolerance}¢` : 'Pick a target note.';
+            statusEl.textContent = formatPitchQuestTargetStatus({
+                targetNote: note,
+                tolerance,
+            });
         };
 
         const updateLiveFeature = (feature) => {
             if (!feature) return;
             gameState.liveFeature = feature;
-            const cents = clamp(Math.round(feature.cents || 0), -50, 50);
-            if (offsetEl) offsetEl.textContent = `${cents > 0 ? '+' : ''}${cents} cents`;
-            if (noteEl) noteEl.textContent = feature.note || '--';
-            if (gauge) gauge.style.setProperty('--pitch-offset', `${cents * 0.5}deg`);
-
             const targetNote = getTargetNote();
-            const inTune = Math.abs(cents) <= tolerance;
-            const matchingNote = targetNote && (feature.note || '').startsWith(targetNote);
-
-            if (inTune && matchingNote) {
-                const now = Date.now();
-                stabilityStreak = now - lastStableAt <= 1800 ? stabilityStreak + 1 : 1;
-                lastStableAt = now;
-                if (stabilityStreak >= 3) {
-                    markChecklist('pq-step-5');
-                }
-            } else {
-                stabilityStreak = 0;
-            }
-            if (stabilityEl) stabilityEl.textContent = `${stabilityStreak}x`;
-
-            if (feedbackEl) {
-                if (!feature.hasSignal) {
-                    feedbackEl.textContent = 'Listening for your note...';
-                } else if (inTune && matchingNote) {
-                    feedbackEl.textContent = `Great lock on ${targetNote}.`;
-                } else if (!matchingNote) {
-                    feedbackEl.textContent = `Aim for ${targetNote || 'the target note'}.`;
-                } else if (cents > 0) {
-                    feedbackEl.textContent = 'A little lower.';
-                } else {
-                    feedbackEl.textContent = 'A little higher.';
-                }
-            }
+            const nextState = applyPitchQuestLiveFeature({
+                feature,
+                targetNote,
+                tolerance,
+                stabilityStreak,
+                lastStableAt,
+                offsetEl,
+                noteEl,
+                gauge,
+                stabilityEl,
+                feedbackEl,
+                markChecklist,
+            });
+            stabilityStreak = nextState.stabilityStreak;
+            lastStableAt = nextState.lastStableAt;
         };
 
         const onRealtimeState = (event) => {
@@ -147,8 +132,10 @@ const { bind } = createGame({
             updateLiveFeature(feature);
         };
 
-        gameState._rtHandler = onRealtimeState;
         document.addEventListener(RT_STATE, onRealtimeState);
+        registerCleanup(() => {
+            document.removeEventListener(RT_STATE, onRealtimeState);
+        });
 
         targets.forEach((radio) => {
             radio.addEventListener('change', () => {
@@ -177,27 +164,30 @@ const { bind } = createGame({
                 return;
             }
 
-            const cents = Number.isFinite(feature.cents) ? feature.cents : 0;
-            const inTune = Math.abs(cents) <= tolerance;
-            const matchedNote = (feature.note || '').startsWith(targetNote);
-            const matched = inTune && matchedNote;
+            const attempt = resolvePitchQuestAttempt({
+                feature,
+                targetNote,
+                tolerance,
+                streak,
+                score,
+                stars,
+            });
 
             gameState.attempts += 1;
-            if (matched) {
+            if (attempt.matched) {
                 gameState.hits += 1;
-                streak += 1;
-                gameState.streak = streak;
-                score += 20 + streak * 4;
-                stars = Math.max(stars, Math.min(3, Math.ceil(streak / 2)));
+                streak = attempt.nextStreak;
+                gameState.streak = attempt.nextStreak;
+                score = attempt.nextScore;
+                stars = attempt.nextStars;
                 markChecklist(noteStepMap[targetNote]);
-                if (streak >= 2) markChecklist('pq-step-6');
-                playToneNote(targetNote, { duration: 0.3, volume: 0.2, type: 'triangle' });
+                if (attempt.markStep6) markChecklist('pq-step-6');
             } else {
-                streak = 0;
+                streak = attempt.nextStreak;
                 gameState.streak = 0;
-                score = Math.max(0, score - 8);
-                playToneNote(cents > 0 ? 'F#' : 'F', { duration: 0.2, volume: 0.14, type: 'sawtooth' });
+                score = attempt.nextScore;
             }
+            playToneNote(attempt.audioNote, attempt.audioOptions);
 
             gameState.score = score;
             gameState.stars = stars;
@@ -231,4 +221,3 @@ const updatePitchQuest = () => {
 };
 
 export { updatePitchQuest as update, bind };
-

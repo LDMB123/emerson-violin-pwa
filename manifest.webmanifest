@@ -59,12 +59,15 @@
       "src": "./assets/mockups/screen_home_1769391215723.png",
       "sizes": "1024x1024",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Home view showing daily mission and practice shortcuts"
     },
     {
       "src": "./assets/mockups/screen_games_menu_1769391385366.png",
       "sizes": "1024x1024",
-      "type": "image/png"
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Games menu showing violin practice game options"
     }
   ],
   "shortcuts": [

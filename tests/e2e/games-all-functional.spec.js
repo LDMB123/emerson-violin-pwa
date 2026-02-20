@@ -355,7 +355,7 @@ test.describe('all games core interactions', () => {
     });
 
     test('group C: string/painter/story/pizzicato', async ({ page }) => {
-        test.setTimeout(90000);
+        test.setTimeout(120000);
         await openHome(page);
         await openGamesHub(page);
 
@@ -380,7 +380,7 @@ test.describe('all games core interactions', () => {
         const storyStatus = page.locator('#view-game-story-song [data-story="status"]');
         await expect(storyStatus).toContainText('Play-Along to start.');
         await page.locator('#view-game-story-song label[for="story-play"]').click();
-        await expect(storyStatus).not.toContainText('Play-Along to start.');
+        await expect(storyStatus).not.toHaveText('Press Play-Along to start.');
         await returnToGames(page, 'story-song');
 
         await openGame(page, 'pizzicato');

@@ -7,7 +7,9 @@ import {
     playToneNote,
     stopTonePlayer,
 } from './shared.js';
-import { clamp, deviationAccuracy } from '../utils/math.js';
+import { deviationAccuracy } from '../utils/math.js';
+import { computeScalePracticeTapResult } from './scale-practice-tap.js';
+import { applyScalePracticeTempoUpdate } from './scale-practice-tempo.js';
 
 const updateScalePractice = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-scale-practice input[id^="sp-step-"]'));
@@ -60,25 +62,15 @@ const { bind } = createGame({
         };
 
         const updateTempo = () => {
-            if (!slider || !tempoEl) return;
-            const tempo = Number.parseInt(slider.value, 10);
-            tempoEl.textContent = `${tempo} BPM`;
-            slider.setAttribute('aria-valuenow', String(tempo));
-            slider.setAttribute('aria-valuetext', `${tempo} BPM`);
-            if (statusEl) statusEl.textContent = `Tempo set to ${tempo} BPM · Goal ${targetTempo} BPM.`;
-            if (tempo <= 70) {
-                tempoTags.add('slow');
-                markChecklist('sp-step-1');
-            }
-            if (tempo >= 80 && tempo <= 95) {
-                tempoTags.add('target');
-                markChecklist('sp-step-2');
-            }
-            if (tempo >= 100) {
-                tempoTags.add('fast');
-                markChecklist('sp-step-3');
-            }
-            markChecklistIf(tempoTags.size >= 3, 'sp-step-4');
+            applyScalePracticeTempoUpdate({
+                slider,
+                tempoEl,
+                statusEl,
+                targetTempo,
+                tempoTags,
+                markChecklist,
+                markChecklistIf,
+            });
         };
 
         slider?.addEventListener('input', () => {
@@ -97,34 +89,27 @@ const { bind } = createGame({
             const now = performance.now();
             if (gameState.lastTap) {
                 const interval = now - gameState.lastTap;
-                const ideal = 60000 / targetTempo;
-                const deviation = Math.abs(interval - ideal);
-                const timingScore = clamp(1 - deviation / ideal, 0, 1);
-                gameState.timingScores.push(timingScore);
-                if (gameState.timingScores.length > 8) gameState.timingScores.shift();
-                let label = 'Off';
-                if (timingScore >= 0.9) label = 'Perfect';
-                else if (timingScore >= 0.75) label = 'Great';
-                else if (timingScore >= 0.6) label = 'Good';
-                gameState.score += Math.round(8 + timingScore * 12);
+                const tapResult = computeScalePracticeTapResult({
+                    interval,
+                    targetTempo,
+                    timingScores: gameState.timingScores,
+                    score: gameState.score,
+                    scaleIndex: gameState.scaleIndex,
+                    scaleNotes,
+                });
+                gameState.timingScores = tapResult.timingScores;
+                gameState.score = tapResult.score;
+                gameState.scaleIndex = tapResult.scaleIndex;
+                gameState.accuracy = tapResult.accuracy;
                 if (scoreEl) scoreEl.textContent = String(gameState.score);
-                if (ratingEl) ratingEl.textContent = `Timing: ${label}`;
-                if (timingScore >= 0.75) markChecklist('sp-step-2');
-                if (timingScore >= 0.6) markChecklist('sp-step-1');
-                if (timingScore >= 0.9) markChecklist('sp-step-4');
-                if (timingScore >= 0.75) {
-                    const note = scaleNotes[gameState.scaleIndex % scaleNotes.length];
-                    playToneNote(note, { duration: 0.22, volume: 0.18, type: 'triangle' });
-                    gameState.scaleIndex += 1;
-                } else if (timingScore > 0) {
-                    playToneNote('F', { duration: 0.18, volume: 0.12, type: 'sawtooth' });
+                if (ratingEl) ratingEl.textContent = `Timing: ${tapResult.label}`;
+                if (tapResult.markStep2) markChecklist('sp-step-2');
+                if (tapResult.markStep1) markChecklist('sp-step-1');
+                if (tapResult.markStep4) markChecklist('sp-step-4');
+                if (tapResult.noteAction) {
+                    playToneNote(tapResult.noteAction.note, tapResult.noteAction.options);
                 }
-                gameState.accuracy = clamp(
-                    (gameState.timingScores.reduce((sum, value) => sum + value, 0) / gameState.timingScores.length) * 100,
-                    0,
-                    100,
-                );
-                if (gameState.timingScores.length >= 4) {
+                if (tapResult.shouldReport) {
                     reportSession();
                 }
             }

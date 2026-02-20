@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RT_PROFILE_KEY } from '../../src/persistence/storage-keys.js';
+import { RT_STATE } from '../../src/utils/event-names.js';
 
 const storageMocks = vi.hoisted(() => ({
     getJSON: vi.fn(async () => null),
@@ -299,6 +300,23 @@ describe('realtime session controller interface', () => {
         await stopSession('test-stop');
     });
 
+    it('does not persist high-frequency realtime state events to the event log', async () => {
+        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
+        const { startSession, stopSession } = await loadSessionController();
+
+        await startSession();
+        emitFeatureFrame(FakeAudioWorkletNode, { cents: 12, confidence: 0.55 });
+        emitFeatureFrame(FakeAudioWorkletNode, { cents: 5, confidence: 0.62 });
+        await nextTick();
+        await nextTick();
+
+        const stateLogCalls = eventLogMocks.appendRealtimeEvent.mock.calls
+            .filter(([eventName]) => eventName === RT_STATE);
+        expect(stateLogCalls).toHaveLength(0);
+
+        await stopSession('test-stop');
+    });
+
     it('falls back to in-thread policy evaluation when Worker is unavailable', async () => {
         const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
         const { startSession, stopSession } = await loadSessionController();
@@ -353,6 +371,37 @@ describe('realtime session controller interface', () => {
         expect(latestProfile.longTermRhythmBiasMs).toBeCloseTo(14, 3);
 
         await stopSession('test-stop');
+    });
+
+    it('throttles profile persistence during active sampling and flushes on stop', async () => {
+        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
+        const { startSession, stopSession } = await loadSessionController();
+
+        await startSession();
+        emitFeatureFrame(FakeAudioWorkletNode, {
+            cents: 8,
+            rhythmOffsetMs: 20,
+            confidence: 0.9,
+        });
+        emitFeatureFrame(FakeAudioWorkletNode, {
+            cents: 9,
+            rhythmOffsetMs: 22,
+            confidence: 0.92,
+        });
+        await nextTick();
+        await nextTick();
+
+        const writesDuringSession = storageMocks.setJSON.mock.calls
+            .filter(([key]) => key === RT_PROFILE_KEY)
+            .length;
+        expect(writesDuringSession).toBe(1);
+
+        await stopSession('test-stop');
+
+        const totalWrites = storageMocks.setJSON.mock.calls
+            .filter(([key]) => key === RT_PROFILE_KEY)
+            .length;
+        expect(totalWrites).toBe(2);
     });
 
     it('pauses for parent entry and resumes on return to child practice views', async () => {

@@ -52,21 +52,21 @@
 
 import {
     cachedEl,
-    readLiveNumber,
     markChecklist,
     markChecklistIf,
-    setDifficultyBadge,
-    recordGameEvent,
-    attachTuning,
-    bindTap,
     playToneNote,
     playToneSequence,
     stopTonePlayer,
     buildNoteSequence,
-    updateScoreCombo,
 } from './shared.js';
-import { GAME_META } from './game-config.js';
-import { GAME_PLAY_AGAIN } from '../utils/event-names.js';
+import { bindGameSessionLifecycle } from './game-session-lifecycle.js';
+import { updateSequenceSummary } from './sequence-game-view.js';
+import { createSequenceGameRuntime } from './sequence-game-runtime.js';
+import { createSequenceGameSessionHandlers } from './sequence-game-session.js';
+import { createSequenceGameViewRuntime } from './sequence-game-view-runtime.js';
+import { cleanupSequenceGameBinding } from './sequence-game-lifecycle.js';
+import { bindSequenceGameButtons } from './sequence-game-button-bindings.js';
+import { attachSequenceGameTuning } from './sequence-game-tuning.js';
 
 const NOTE_POOL = ['G', 'D', 'A', 'E'];
 const COMPLEXITY_SEQ_LENGTHS = [3, 4, 5];
@@ -103,9 +103,7 @@ export function createSequenceGame(config) {
     // Cached element lookups for update() which is called before bind() runs.
     const cachedScoreEl = cachedEl(`[data-${prefix}="score"]`);
     const cachedComboEl = cachedEl(`[data-${prefix}="combo"]`);
-    let hashHandler = null;
-    let playAgainHandler = null;
-    let pagehideHandler = null;
+    let lifecycleCleanup = null;
     let reportResult = null;
 
     /**
@@ -114,26 +112,13 @@ export function createSequenceGame(config) {
      * values exist yet (mirrors pattern in original pizzicato.js / string-quest.js).
      */
     const update = () => {
-        const inputs = Array.from(
-            document.querySelectorAll(`${viewId} input[id^="${stepPrefix}-step-"]`),
-        );
-        if (!inputs.length) return;
-        const checked = inputs.filter((input) => input.checked).length;
-        const scoreEl = cachedScoreEl();
-        const comboEl = cachedComboEl();
-        const liveScore = readLiveNumber(scoreEl, 'liveScore');
-        const liveCombo = readLiveNumber(comboEl, 'liveCombo');
-        if (scoreEl) {
-            scoreEl.textContent = String(
-                Number.isFinite(liveScore)
-                    ? liveScore
-                    : checked * stepScore + (checked === inputs.length ? stepScore : 0),
-            );
-        }
-        if (comboEl) {
-            const combo = Number.isFinite(liveCombo) ? liveCombo : checked;
-            comboEl.textContent = `x${combo}`;
-        }
+        updateSequenceSummary({
+            viewId,
+            stepPrefix,
+            stepScore,
+            scoreEl: cachedScoreEl(),
+            comboEl: cachedComboEl(),
+        });
     };
 
     /**
@@ -142,193 +127,104 @@ export function createSequenceGame(config) {
     const bind = (difficulty = { speed: 1.0, complexity: 1 }) => {
         const stage = document.querySelector(viewId);
         if (!stage) return;
-        if (hashHandler) {
-            window.removeEventListener('hashchange', hashHandler);
-        }
-        if (playAgainHandler) {
-            document.removeEventListener(GAME_PLAY_AGAIN, playAgainHandler);
-        }
-        if (pagehideHandler) {
-            window.removeEventListener('pagehide', pagehideHandler, { passive: true });
-        }
-        if (reportResult?.dispose) {
-            reportResult.dispose();
-        }
-
-        const scoreEl = stage.querySelector(`[data-${prefix}="score"]`);
-        const comboEl = stage.querySelector(`[data-${prefix}="combo"]`);
-        const statusEl = stage.querySelector(`[data-${prefix}="${statusKey}"]`);
-        const sequenceEl = stage.querySelector(`[data-${prefix}="sequence"]`);
-        const buttons = Array.from(stage.querySelectorAll(buttonClass));
-        // CSS attribute uses kebab-case (data-pizzicato-target), dataset key is camelCase.
-        const targets = Array.from(stage.querySelectorAll(`[data-${prefix}-target]`));
+        cleanupSequenceGameBinding({ lifecycleCleanup, reportResult });
+        lifecycleCleanup = null;
+        reportResult = null;
 
         // difficulty.complexity adjusts sequence length (speed has no timing loop here)
         const sequenceLength = COMPLEXITY_SEQ_LENGTHS[difficulty.complexity] ?? 4;
 
-        let sequence = NOTE_POOL.slice();
-        let seqIndex = 0;
-        let combo = 0;
-        let score = 0;
-        let misses = 0;
-        let sessionStartedAt = Date.now();
+        const runtimeApi = createSequenceGameRuntime({
+            notePool: NOTE_POOL,
+            sequenceLength,
+            buildNoteSequence,
+        });
+        const { runtime, buildSequence } = runtimeApi;
 
-        // Extra state exposed to callbacks.
-        // hitNotes is used by pizzicato for unique-note tracking.
-        // lastCorrectNote is used by string-quest for D→A crossing detection.
-        const hitNotes = new Set();
-        let lastCorrectNote = null;
-
-        const buildSequence = () => {
-            sequence = buildNoteSequence(NOTE_POOL, sequenceLength);
-            seqIndex = 0;
-        };
-
-        const updateTargets = (message) => {
-            const targetNote = sequence[seqIndex];
-            targets.forEach((target) => {
-                target.classList.toggle(
-                    'is-target',
-                    target.dataset[targetDataAttr] === targetNote,
-                );
-            });
-            if (statusEl) {
-                statusEl.textContent =
-                    message || `Target: ${targetNote} string · Combo goal x${comboTarget}.`;
-            }
-            if (sequenceEl) {
-                sequenceEl.textContent = `Sequence: ${sequence.join(' · ')}`;
-            }
-        };
-
-        const updateScoreboard = () => updateScoreCombo(scoreEl, comboEl, score, combo);
-
-        reportResult = attachTuning(id, (tuning) => {
-            buildSequence();
-            setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
-            updateTargets();
+        const {
+            buttons,
+            updateTargets,
+            updateScoreboard,
+        } = createSequenceGameViewRuntime({
+            stage,
+            prefix,
+            statusKey,
+            buttonClass,
+            targetDataAttr,
+            comboTarget,
+            getSequence: () => runtime.sequence,
+            getSeqIndex: () => runtime.seqIndex,
+            getScore: () => runtime.score,
+            getCombo: () => runtime.combo,
         });
 
-        const reportSession = () => {
-            if (score <= 0) return;
-            const accuracy = comboTarget ? Math.min(1, combo / comboTarget) * 100 : 0;
-            reportResult({ accuracy, score });
-            const objectiveTier = stage.dataset.gameObjectiveTier
-                || (difficulty.complexity >= 2 ? 'mastery' : difficulty.complexity >= 1 ? 'core' : 'foundation');
-            const objectivePack = GAME_META?.[id]?.objectivePacks?.[objectiveTier] || [];
-            const checklistInputs = Array.from(stage.querySelectorAll('input[type="checkbox"][id]'))
-                .filter((input) => /(-step-|set-)/.test(input.id));
-            const objectiveTotal = objectivePack.length || checklistInputs.length || 1;
-            const objectivesCompleted = Math.min(
-                objectiveTotal,
-                checklistInputs.filter((input) => input.checked).length,
-            );
-            const sessionMs = Math.max(0, Date.now() - sessionStartedAt);
-            recordGameEvent(id, {
-                accuracy,
-                score,
-                difficulty: difficulty.complexity >= 2 ? 'hard' : difficulty.complexity >= 1 ? 'medium' : 'easy',
-                tier: objectiveTier,
-                sessionMs,
-                objectiveTotal,
-                objectivesCompleted,
-                mistakes: misses,
-            });
-        };
+        reportResult = attachSequenceGameTuning({
+            id,
+            stage,
+            buildSequence,
+            updateTargets,
+        });
 
-        // Proxy object passed to callbacks so they can read/write game state
-        // without closing over it directly in the factory.
-        const callbackState = {
-            get combo() { return combo; },
-            get score() { return score; },
-            get seqIndex() { return seqIndex; },
-            get sequence() { return sequence; },
-            get hitNotes() { return hitNotes; },
-            get lastCorrectNote() { return lastCorrectNote; },
-            set lastCorrectNote(v) { lastCorrectNote = v; },
+        const { reportSession, callbackState, resetSession } = createSequenceGameSessionHandlers({
+            id,
+            comboTarget,
+            reportResult,
+            stage,
+            difficulty,
+            runtime,
+            runtimeApi,
+            onReset,
             markChecklist,
             markChecklistIf,
-        };
-
-        const resetSession = () => {
-            stopTonePlayer();
-            combo = 0;
-            score = 0;
-            misses = 0;
-            seqIndex = 0;
-            hitNotes.clear();
-            lastCorrectNote = null;
-            sessionStartedAt = Date.now();
-            if (onReset) onReset(callbackState);
-            buildSequence();
-            updateTargets();
-            updateScoreboard();
-        };
+            stopTonePlayer,
+            buildSequence,
+            updateTargets,
+            updateScoreboard,
+        });
 
         updateTargets();
 
-        buttons.forEach((button) => {
-            bindTap(button, () => {
-                const note = button.dataset[btnDataAttr];
-                if (note) {
-                    playToneNote(note, noteOptions);
-                }
-                if (note === sequence[seqIndex]) {
-                    combo += 1;
-                    score += baseScore + combo * comboMult;
-                    seqIndex = (seqIndex + 1) % sequence.length;
-
-                    // Per-hit side effects: unique-note tracking (pizzicato),
-                    // D→A crossing detection (string-quest), etc.
-                    if (onCorrectHit) onCorrectHit(note, callbackState);
-
-                    if (seqIndex === 0) {
-                        // Sequence complete — play flourish, report, rebuild.
-                        const completedSequence = sequence.slice();
-                        markChecklist(completionChecklistId);
-                        reportSession();
-                        buildSequence();
-                        playToneSequence(completedSequence, seqOptions);
-                    }
-                    updateTargets();
-                } else {
-                    combo = 0;
-                    misses += 1;
-                    score = Math.max(0, score - missPenalty);
-                    updateTargets(`Missed. Aim for ${sequence[seqIndex]} next.`);
-                }
-                updateScoreboard();
-                markChecklistIf(combo >= comboTarget, comboChecklistId);
-            });
+        bindSequenceGameButtons({
+            buttons,
+            btnDataAttr,
+            noteOptions,
+            playToneNote,
+            getRuntimeState: () => ({
+                sequence: runtime.sequence,
+                seqIndex: runtime.seqIndex,
+                combo: runtime.combo,
+                score: runtime.score,
+                misses: runtime.misses,
+            }),
+            baseScore,
+            comboMult,
+            missPenalty,
+            onCorrectHit,
+            callbackState,
+            completionChecklistId,
+            comboChecklistId,
+            comboTarget,
+            markChecklist,
+            markChecklistIf,
+            reportSession,
+            buildSequence,
+            playToneSequence,
+            seqOptions,
+            updateTargets,
+            updateScoreboard,
+            applyTapResult: (nextState) => {
+                runtimeApi.applyTapResult(nextState);
+            },
         });
 
-        hashHandler = () => {
-            if (window.location.hash === hashId) {
-                resetSession();
-                return;
-            }
-            stopTonePlayer();
-            reportSession();
-        };
-        playAgainHandler = (event) => {
-            const requestedViewId = event?.detail?.viewId;
-            const expectedViewId = hashId.replace(/^#/, '');
-            const currentViewId = window.location.hash.replace(/^#/, '');
-            if (requestedViewId && requestedViewId !== expectedViewId) return;
-            if (currentViewId !== expectedViewId) return;
-            resetSession();
-        };
-        pagehideHandler = (event) => {
-            const currentViewId = window.location.hash.replace(/^#/, '');
-            const expectedViewId = hashId.replace(/^#/, '');
-            if (currentViewId !== expectedViewId) return;
-            if (event?.persisted) return;
-            stopTonePlayer();
-            reportSession();
-        };
-        window.addEventListener('hashchange', hashHandler, { passive: true });
-        window.addEventListener('pagehide', pagehideHandler, { passive: true });
-        document.addEventListener(GAME_PLAY_AGAIN, playAgainHandler);
+        lifecycleCleanup = bindGameSessionLifecycle({
+            hashId,
+            onReset: resetSession,
+            onDeactivate: () => {
+                stopTonePlayer();
+            },
+            onReport: reportSession,
+        });
     };
 
     return { update, bind };

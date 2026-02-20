@@ -1,13 +1,27 @@
 import { createGame } from './game-shell.js';
+import { createPlaybackRuntime, bindVisibilityLifecycle } from './game-interactive-runtime.js';
 import {
     cachedEl,
     markChecklist,
     markChecklistIf,
     getTonePlayer,
-    stopTonePlayer,
-    createSoundsChangeBinding,
+    bindSoundsChange,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { createStorySongView } from './story-song-view.js';
+import {
+    syncStorySongGameState,
+    computeStorySongProgressAfterPage,
+    resetStorySongProgressState,
+} from './story-song-progress.js';
+import { STORY_SONG_PAGES } from './story-song-pages.js';
+import { stopStorySongPlayback } from './story-song-controls.js';
+import { playStorySongPages } from './story-song-playback-loop.js';
+import {
+    prepareStorySongPlayback,
+    finalizeStorySongPlayback,
+} from './story-song-session.js';
+import { createStorySongVisibilityHandlers } from './story-song-visibility.js';
 
 const storyTitleEl = cachedEl('#view-game-story-song [data-story="title"]');
 
@@ -21,8 +35,6 @@ const updateStorySong = () => {
     }
 };
 
-const bindSoundsChange = createSoundsChangeBinding();
-
 const { bind } = createGame({
     id: 'story-song',
     computeAccuracy: (state) => state._storyPages?.length
@@ -31,37 +43,24 @@ const { bind } = createGame({
     onReset: (gameState) => {
         // Don't interrupt active playback on tuning change
         if (gameState._isPlaying) return;
-        gameState._pageIndex = 0;
-        gameState._completedNotes = 0;
-        gameState._completedPages = 0;
-        gameState.score = 0;
+        syncStorySongGameState({
+            gameState,
+            pageIndex: 0,
+            completedNotes: 0,
+            completedPages: 0,
+            score: 0,
+        });
         if (gameState._updatePage) gameState._updatePage(0);
         if (gameState._updateStatus) gameState._updateStatus('Press Play-Along to start.');
     },
-    onBind: (stage, difficulty, { reportSession, gameState }) => {
+    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const toggle = stage.querySelector('#story-play');
         const statusEl = stage.querySelector('[data-story="status"]');
         const titleEl = stage.querySelector('[data-story="title"]');
         const pageEl = stage.querySelector('[data-story="page"]');
         const notesEl = stage.querySelector('[data-story="notes"]');
         const promptEl = stage.querySelector('[data-story="prompt"]');
-        const storyPages = [
-            {
-                title: 'Open String Overture',
-                prompt: 'Warm up with your open strings.',
-                notes: ['G', 'D', 'A', 'E'],
-            },
-            {
-                title: 'Fingerboard Sparkle',
-                prompt: 'Climb gently with first-finger steps.',
-                notes: ['G', 'A', 'B', 'C'],
-            },
-            {
-                title: 'Finale Glow',
-                prompt: 'Resolve with a soft descent.',
-                notes: ['D', 'C', 'B', 'A'],
-            },
-        ];
+        const storyPages = STORY_SONG_PAGES;
 
         // difficulty.speed: scales playback tempo; speed=1.0 keeps tempo=92 BPM (current behavior)
         // difficulty.complexity: visual feedback only (pages are fixed); speed scales tempo
@@ -71,68 +70,60 @@ const { bind } = createGame({
         let pageIndex = 0;
         let completedNotes = 0;
         let completedPages = 0;
-        let playToken = 0;
+        const playback = createPlaybackRuntime();
 
         // Initialize gameState
         gameState._storyPages = storyPages;
-        gameState._pageIndex = pageIndex;
-        gameState._completedNotes = completedNotes;
-        gameState._completedPages = completedPages;
-        gameState._isPlaying = false;
-        gameState.score = 0;
+        syncStorySongGameState({
+            gameState,
+            pageIndex,
+            completedNotes,
+            completedPages,
+            isPlaying: playback.playing,
+            score: 0,
+        });
 
-        const updateStatus = (message) => {
-            if (!statusEl) return;
-            if (message) {
-                statusEl.textContent = message;
-                return;
-            }
-            statusEl.textContent = toggle?.checked
-                ? 'Play-along running — follow the notes.'
-                : 'Press Play-Along to start.';
-        };
-
-        const updatePage = (index = pageIndex) => {
-            const page = storyPages[index];
-            if (titleEl) {
-                titleEl.textContent = page ? `Story Song Lab · ${page.title}` : 'Story Song Lab';
-            }
-            if (pageEl) {
-                pageEl.textContent = page ? `Page ${index + 1} of ${storyPages.length}` : '';
-            }
-            if (notesEl) {
-                notesEl.textContent = page ? page.notes.join(' · ') : '♪ ♪ ♪';
-            }
-            if (promptEl) {
-                promptEl.textContent = page ? page.prompt : 'Warm up with your open strings.';
-            }
-        };
+        const { updateStatus, updatePage } = createStorySongView({
+            titleEl,
+            pageEl,
+            notesEl,
+            promptEl,
+            statusEl,
+            toggle,
+            storyPages,
+        });
 
         const stopPlayback = ({ keepToggle = false, message } = {}) => {
-            playToken += 1;
-            gameState._isPlaying = false;
-            stopTonePlayer();
-            if (!keepToggle && toggle) {
-                toggle.checked = false;
-            }
-            if (message) {
-                updateStatus(message);
-            }
+            stopStorySongPlayback({
+                playback,
+                toggle,
+                keepToggle,
+                message,
+                updateStatus,
+                setIsPlaying: (isPlaying) => {
+                    syncStorySongGameState({ gameState, isPlaying });
+                },
+            });
         };
 
         gameState._onDeactivate = () => {
-            if (!gameState._isPlaying && !toggle?.checked) return;
+            if (!playback.playing && !toggle?.checked) return;
             stopPlayback({ message: 'Play-along paused.' });
         };
 
         const resetStoryProgress = () => {
-            pageIndex = 0;
-            completedNotes = 0;
-            completedPages = 0;
-            gameState._pageIndex = 0;
-            gameState._completedNotes = 0;
-            gameState._completedPages = 0;
-            gameState.score = 0;
+            resetStorySongProgressState({
+                gameState,
+                setPageIndex: (value) => {
+                    pageIndex = value;
+                },
+                setCompletedNotes: (value) => {
+                    completedNotes = value;
+                },
+                setCompletedPages: (value) => {
+                    completedPages = value;
+                },
+            });
         };
 
         const resetStory = () => {
@@ -145,74 +136,69 @@ const { bind } = createGame({
         gameState._updatePage = updatePage;
         gameState._updateStatus = updateStatus;
 
-        const prepareStoryPlayback = () => {
-            if (!toggle || !toggle.checked) return;
-            if (!isSoundEnabled()) {
-                stopPlayback({ message: 'Sounds are off. Enable Sounds to play along.' });
-                return;
-            }
-            const player = getTonePlayer();
-            if (!player) {
-                stopPlayback({ message: 'Audio is unavailable on this device.' });
-                return;
-            }
-            if (pageIndex >= storyPages.length || gameState._reported) {
-                resetStoryProgress();
-            }
-            const token = ++playToken;
-            gameState._isPlaying = true;
-            markChecklist('ss-step-1');
-            updateStatus('Play-along running — follow the notes.');
-            return { player, token };
-        };
-
-        const playStoryPages = async (player, token) => {
-            while (pageIndex < storyPages.length) {
-                if (token !== playToken || !toggle.checked) break;
-                const page = storyPages[pageIndex];
-                updatePage(pageIndex);
-                const played = await player.playSequence(page.notes, {
-                    tempo: page.tempo ?? tempo,
-                    gap: 0.12,
-                    duration: 0.4,
-                    volume: 0.2,
-                    type: 'triangle',
-                });
-                if (!played || token !== playToken || !toggle.checked) break;
-                completedNotes += page.notes.length;
-                completedPages = Math.max(completedPages, pageIndex + 1);
-                gameState._completedNotes = completedNotes;
-                gameState._completedPages = completedPages;
-                gameState.score = completedNotes * 12 + completedPages * 40;
-                markChecklistIf(page.notes.length >= 4, 'ss-step-2');
-                markChecklist('ss-step-3');
-                pageIndex += 1;
-                gameState._pageIndex = pageIndex;
-                if (pageIndex < storyPages.length) {
-                    await new Promise((resolve) => setTimeout(resolve, Math.max(400, stageSeconds * 250)));
-                }
-            }
-        };
-
-        const finalizeStoryPlayback = (token) => {
-            if (token !== playToken) return;
-            gameState._isPlaying = false;
-            if (pageIndex >= storyPages.length) {
-                updateStatus('Story complete! Tap Play-Along to replay.');
-                if (toggle) toggle.checked = false;
-                reportSession();
-            } else if (!toggle.checked) {
-                updateStatus('Play-along paused. Tap Play-Along to resume.');
-            } else {
-                updateStatus('Play-along ready. Tap Play-Along to continue.');
-            }
-        };
-
         const playStory = async () => {
-            const session = prepareStoryPlayback();
+            const session = prepareStorySongPlayback({
+                toggle,
+                isSoundEnabled,
+                stopPlayback,
+                getPlayer: getTonePlayer,
+                pageIndex,
+                storyPagesLength: storyPages.length,
+                hasReported: Boolean(gameState._reported),
+                resetStoryProgress,
+                playback,
+                syncIsPlaying: (isPlaying) => {
+                    syncStorySongGameState({ gameState, isPlaying });
+                },
+                markChecklist,
+                updateStatus,
+            });
             if (!session) return;
-            await playStoryPages(session.player, session.token);
-            finalizeStoryPlayback(session.token);
+            await playStorySongPages({
+                player: session.player,
+                token: session.token,
+                getPageIndex: () => pageIndex,
+                setPageIndex: (value) => {
+                    pageIndex = value;
+                    syncStorySongGameState({ gameState, pageIndex });
+                },
+                storyPages,
+                isPlaybackCurrent: (tokenValue) => playback.isCurrent(tokenValue),
+                isToggleChecked: () => Boolean(toggle?.checked),
+                updatePage,
+                tempo,
+                stageSeconds,
+                onPageCompleted: ({ page, pageIndex: completedPageIndex }) => {
+                    const nextProgress = computeStorySongProgressAfterPage({
+                        completedNotes,
+                        completedPages,
+                        pageIndex: completedPageIndex,
+                        noteCount: page.notes.length,
+                    });
+                    completedNotes = nextProgress.completedNotes;
+                    completedPages = nextProgress.completedPages;
+                    syncStorySongGameState({
+                        gameState,
+                        completedNotes,
+                        completedPages,
+                        score: nextProgress.score,
+                    });
+                    markChecklistIf(page.notes.length >= 4, 'ss-step-2');
+                    markChecklist('ss-step-3');
+                },
+            });
+            finalizeStorySongPlayback({
+                token: session.token,
+                playback,
+                syncIsPlaying: (isPlaying) => {
+                    syncStorySongGameState({ gameState, isPlaying });
+                },
+                pageIndex,
+                storyPagesLength: storyPages.length,
+                toggle,
+                updateStatus,
+                reportSession,
+            });
         };
 
         toggle?.addEventListener('change', () => {
@@ -237,19 +223,21 @@ const { bind } = createGame({
                 updateStatus('Sounds on. Tap Play-Along to start.');
             }
         };
-        bindSoundsChange(soundsHandler);
+        bindSoundsChange(soundsHandler, registerCleanup);
 
-        document.addEventListener('visibilitychange', () => {
-            if (!toggle) return;
-            if (document.hidden) {
-                wasPlaying = toggle.checked;
-                stopPlayback({ message: 'Play-along paused.' });
-            } else if (wasPlaying) {
-                wasPlaying = false;
-                if (statusEl) {
-                    statusEl.textContent = 'Play-along paused. Tap Play-Along to resume.';
-                }
-            }
+        const visibilityHandlers = createStorySongVisibilityHandlers({
+            toggle,
+            stopPlayback,
+            statusEl,
+            getWasPlaying: () => wasPlaying,
+            setWasPlaying: (value) => {
+                wasPlaying = value;
+            },
+        });
+        bindVisibilityLifecycle({
+            onHidden: visibilityHandlers.onHidden,
+            onVisible: visibilityHandlers.onVisible,
+            registerCleanup,
         });
     },
 });

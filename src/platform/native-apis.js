@@ -1,618 +1,69 @@
-import { isSoundEnabled } from '../utils/sound-state.js';
-import {
-    shouldRetryPersist,
-    formatBytes,
-    isStandalone,
-    setRootDataset,
-    viewAllowsWake,
-    getPreferredOrientation,
-} from './platform-utils.js';
-import { getViewId } from '../utils/app-utils.js';
-import { PERSIST_REQUEST_KEY } from '../persistence/storage-keys.js';
-import { OFFLINE_MODE_CHANGE, SOUNDS_CHANGE, PERSIST_APPLIED } from '../utils/event-names.js';
+import { PERSIST_APPLIED } from '../utils/event-names.js';
+import { createStorageController } from './storage-controller.js';
+import { createPowerControls } from './power-controls.js';
+import { createMediaSoundController } from './media-sound-controller.js';
+import { createShareSummaryController } from './share-summary-controller.js';
+import { createInstallStateController } from './install-state-controller.js';
+import { createViewportOffsetController } from './viewport-offset-controller.js';
 
-let storageStatusEl = null;
-let storageEstimateEl = null;
-let storageRequestButton = null;
-let networkStatusEl = null;
-let wakeToggle = null;
-let wakeStatusEl = null;
-let orientationToggle = null;
-let orientationStatusEl = null;
-let shareButton = null;
-let shareStatusEl = null;
-let soundToggle = null;
-const rootStyle = document.documentElement.style;
-let installStatusEl = null;
 let globalsBound = false;
-let storageGlobalsBound = false;
-let networkGlobalsBound = false;
-let wakeGlobalsBound = false;
-let orientationGlobalsBound = false;
-let audioFocusGlobalsBound = false;
-let installGlobalsBound = false;
-let visualViewportGlobalsBound = false;
+
+const storageController = createStorageController();
+const powerControls = createPowerControls();
+const mediaSoundController = createMediaSoundController();
+const shareSummaryController = createShareSummaryController();
+const installStateController = createInstallStateController();
+const viewportOffsetController = createViewportOffsetController();
 
 const resolveElements = () => {
-    storageStatusEl = document.querySelector('[data-storage-status]');
-    storageEstimateEl = document.querySelector('[data-storage-estimate]');
-    storageRequestButton = document.querySelector('[data-storage-request]');
-    networkStatusEl = document.querySelector('[data-network-status]');
-    wakeToggle = document.querySelector('#setting-keep-awake');
-    wakeStatusEl = document.querySelector('[data-wake-status]');
-    orientationToggle = document.querySelector('#setting-orientation-lock');
-    orientationStatusEl = document.querySelector('[data-orientation-status]');
-    shareButton = document.querySelector('[data-share-summary]');
-    shareStatusEl = document.querySelector('[data-share-status]');
-    soundToggle = document.querySelector('#setting-sounds');
-    installStatusEl = document.querySelector('[data-install-status]');
-};
-
-const loadPersistRequest = () => {
-    try {
-        const raw = localStorage.getItem(PERSIST_REQUEST_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
-    }
-};
-
-const savePersistRequest = (state) => {
-    try {
-        localStorage.setItem(PERSIST_REQUEST_KEY, JSON.stringify(state));
-    } catch {
-        // Ignore storage failures
-    }
-};
-
-const requestPersistentStorage = async (reason) => {
-    if (document.hidden) return false;
-    const previous = loadPersistRequest();
-    if (!shouldRetryPersist(previous)) return false;
-    const nextState = {
-        lastAttempt: Date.now(),
-        reason,
-        persisted: false,
-    };
-    savePersistRequest(nextState);
-    try {
-        const persisted = await navigator.storage.persist();
-        nextState.persisted = Boolean(persisted);
-        savePersistRequest(nextState);
-        return nextState.persisted;
-    } catch {
-        return false;
-    }
-};
-
-const maybeAutoPersist = async (reason) => {
-    const persisted = await navigator.storage.persisted();
-    if (persisted) return;
-    const offlineMode = document.documentElement.dataset.offlineMode === 'on';
-    const shouldAttempt = isStandalone() || offlineMode;
-    if (!shouldAttempt) return;
-    const didPersist = await requestPersistentStorage(reason);
-    if (didPersist) {
-        updateStorageStatus();
-    }
-};
-
-
-const updateStorageEstimate = async () => {
-    try {
-        const { usage, quota } = await navigator.storage.estimate();
-        if (Number.isFinite(quota) && quota > 0) {
-            const ratio = usage / quota;
-            const pressure = ratio > 0.9 ? 'high' : ratio > 0.75 ? 'medium' : 'low';
-            setRootDataset('storagePressure', pressure);
-            if (storageEstimateEl) {
-                const warning = pressure === 'high'
-                    ? ' Storage nearly full — consider exporting recordings.'
-                    : pressure === 'medium'
-                        ? ' Storage starting to fill up.'
-                        : '';
-                storageEstimateEl.textContent = `Storage used: ${formatBytes(usage)} / ${formatBytes(quota)}.${warning}`;
-            }
-        } else {
-            setRootDataset('storagePressure', null);
-            if (storageEstimateEl) {
-                storageEstimateEl.textContent = `Storage used: ${formatBytes(usage)}.`;
-            }
-        }
-    } catch {
-        if (storageEstimateEl) {
-            storageEstimateEl.textContent = 'Storage estimate unavailable right now.';
-        }
-    }
-};
-
-const updateStorageStatus = async (request = false) => {
-    try {
-        let persisted = await navigator.storage.persisted();
-        if (!persisted && request) {
-            persisted = await navigator.storage.persist();
-        }
-        setRootDataset('storagePersisted', persisted ? 'true' : 'false');
-        if (storageRequestButton) {
-            storageRequestButton.disabled = persisted;
-        }
-        if (storageStatusEl) {
-            storageStatusEl.textContent = persisted
-                ? 'Offline storage is protected.'
-                : 'Offline storage may be cleared if the device is low on space.';
-        }
-        return { persisted };
-    } catch {
-        if (storageStatusEl) {
-            storageStatusEl.textContent = 'Unable to confirm offline storage status.';
-        }
-        return { persisted: false };
-    }
-};
-
-const bindStorageUI = () => {
-    updateStorageStatus();
-    updateStorageEstimate();
-    maybeAutoPersist('boot');
-    if (storageRequestButton && storageRequestButton.dataset.nativeBound !== 'true') {
-        storageRequestButton.dataset.nativeBound = 'true';
-        storageRequestButton.addEventListener('click', () => {
-            updateStorageStatus(true).then(updateStorageEstimate);
-        });
-    }
-
-    if (storageGlobalsBound) return;
-    storageGlobalsBound = true;
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            updateStorageEstimate();
-            updateStorageStatus();
-            maybeAutoPersist('visible');
-        }
-    });
-    window.addEventListener('online', () => {
-        updateStorageEstimate();
-        updateStorageStatus();
-        maybeAutoPersist('online');
-    }, { passive: true });
-    document.addEventListener(OFFLINE_MODE_CHANGE, () => {
-        maybeAutoPersist('offline-mode');
-    });
-};
-
-const updateNetworkStatus = () => {
-    if (!networkStatusEl) return;
-    const online = navigator.onLine;
-    const offlineMode = document.documentElement.dataset.offlineMode === 'on';
-    if (offlineMode) {
-        networkStatusEl.textContent = 'Network status: Offline mode enabled (cached-only).';
-        return;
-    }
-    networkStatusEl.textContent = online
-        ? 'Network status: Online (offline mode still available).'
-        : 'Network status: Offline (local content is ready).';
-};
-
-const bindNetworkStatus = () => {
-    if (!networkStatusEl) return;
-    updateNetworkStatus();
-    if (networkGlobalsBound) return;
-    networkGlobalsBound = true;
-    window.addEventListener('online', updateNetworkStatus, { passive: true });
-    window.addEventListener('offline', updateNetworkStatus, { passive: true });
-    document.addEventListener(OFFLINE_MODE_CHANGE, updateNetworkStatus);
-};
-
-let wakeLock = null;
-
-
-const releaseWakeLock = async () => {
-    if (!wakeLock) return;
-    try {
-        await wakeLock.release();
-    } catch {
-        // Ignore release errors
-    }
-    wakeLock = null;
-};
-
-const updateWakeStatus = (message) => {
-    if (wakeStatusEl) wakeStatusEl.textContent = message;
-};
-
-const requestWakeLock = async () => {
-    if (!wakeToggle) return;
-    if (!wakeToggle.checked) {
-        await releaseWakeLock();
-        updateWakeStatus('Screen stays on during practice sessions.');
-        return;
-    }
-    if (document.hidden) return;
-    const viewId = getViewId(window.location.hash);
-    if (!viewAllowsWake(viewId)) {
-        await releaseWakeLock();
-        updateWakeStatus('Enable this while practicing to keep the screen awake.');
-        return;
-    }
-    try {
-        wakeLock = await navigator.wakeLock.request('screen');
-        updateWakeStatus('Screen will stay awake while you practice.');
-        wakeLock.addEventListener('release', () => {
-            if (wakeToggle.checked && !document.hidden) {
-                requestWakeLock();
-            }
-        });
-    } catch {
-        updateWakeStatus('Screen wake lock unavailable right now.');
-    }
-};
-
-const bindWakeLock = () => {
-    if (!wakeToggle) return;
-    if (wakeToggle.dataset.nativeBound !== 'true') {
-        wakeToggle.dataset.nativeBound = 'true';
-        wakeToggle.addEventListener('change', requestWakeLock);
-    }
-
-    if (!wakeGlobalsBound) {
-        wakeGlobalsBound = true;
-        window.addEventListener('hashchange', requestWakeLock, { passive: true });
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                releaseWakeLock();
-            } else {
-                requestWakeLock();
-            }
-        });
-        window.addEventListener('pagehide', () => {
-            releaseWakeLock();
-        });
-    }
-
-    requestWakeLock();
-};
-
-let orientationLocked = false;
-
-const updateOrientationStatus = (message) => {
-    if (orientationStatusEl) orientationStatusEl.textContent = message;
-};
-
-
-const unlockOrientation = () => {
-    if (screen.orientation?.unlock) {
-        screen.orientation.unlock();
-    }
-    orientationLocked = false;
-};
-
-const requestOrientationLock = async () => {
-    if (!orientationToggle) return;
-    if (!orientationToggle.checked) {
-        unlockOrientation();
-        updateOrientationStatus('Orientation follows device settings.');
-        return;
-    }
-    if (!screen.orientation?.lock) {
-        updateOrientationStatus('Orientation lock not available on this device.');
-        return;
-    }
-    if (document.hidden) return;
-    const viewId = getViewId(window.location.hash);
-    if (!viewAllowsWake(viewId)) {
-        unlockOrientation();
-        updateOrientationStatus('Enable this while practicing to keep the orientation fixed.');
-        return;
-    }
-    try {
-        await screen.orientation.lock(getPreferredOrientation());
-        orientationLocked = true;
-        updateOrientationStatus('Orientation locked for practice sessions.');
-    } catch {
-        updateOrientationStatus('Orientation lock unavailable right now. Use Control Center if needed.');
-    }
-};
-
-const bindOrientationLock = () => {
-    if (!orientationToggle) return;
-    if (orientationToggle.dataset.nativeBound !== 'true') {
-        orientationToggle.dataset.nativeBound = 'true';
-        orientationToggle.addEventListener('change', requestOrientationLock);
-    }
-
-    if (!orientationGlobalsBound) {
-        orientationGlobalsBound = true;
-        window.addEventListener('hashchange', requestOrientationLock, { passive: true });
-        window.addEventListener('orientationchange', () => {
-            if (orientationToggle?.checked && orientationLocked) {
-                requestOrientationLock();
-            }
-        }, { passive: true });
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                unlockOrientation();
-            } else {
-                requestOrientationLock();
-            }
-        });
-        window.addEventListener('pagehide', () => {
-            unlockOrientation();
-        });
-    }
-
-    requestOrientationLock();
-};
-
-const buildShareSummary = () => {
-    const weekSummary = document.querySelector('[data-parent="week-summary"]')?.textContent?.trim();
-    const goalValue = document.querySelector('[data-parent="goal-value"]')?.textContent?.trim();
-    const goalTitle = document.querySelector('[data-parent-goal-title]')?.textContent?.trim();
-    const skillLines = Array.from(document.querySelectorAll('.overview-skill')).map((skill) => {
-        const name = skill.querySelector('.skill-name')?.textContent?.trim();
-        const stars = skill.querySelector('.skill-stars')?.textContent?.trim();
-        if (!name || !stars) return null;
-        return `${name}: ${stars}`;
-    }).filter(Boolean);
-
-    const lines = [
-        'Panda Violin — Weekly Summary',
-        weekSummary || 'Weekly practice summary',
-    ];
-    if (goalTitle) lines.push(`Recital focus: ${goalTitle}`);
-    if (goalValue) lines.push(`Goal progress: ${goalValue}`);
-    if (skillLines.length) {
-        lines.push('Skills:');
-        lines.push(...skillLines);
-    }
-    return lines.join('\n');
-};
-
-const bindShareSummary = () => {
-    if (!shareButton) return;
-    if (shareButton.dataset.nativeBound === 'true') return;
-    shareButton.dataset.nativeBound = 'true';
-    shareButton.addEventListener('click', async () => {
-        const text = buildShareSummary();
-        if (!text) return;
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: 'Panda Violin Summary',
-                    text,
-                });
-                if (shareStatusEl) shareStatusEl.textContent = 'Shared.';
-                return;
-            } catch {
-                // User cancelled or share failed; continue to fallback
-            }
-        }
-        try {
-            await navigator.clipboard.writeText(text);
-            if (shareStatusEl) shareStatusEl.textContent = 'Summary copied to clipboard.';
-            return;
-        } catch {
-            // fall through
-        }
-        if (shareStatusEl) shareStatusEl.textContent = 'Sharing not available on this device.';
-    });
-};
-
-const buildAudioLabel = (audio) => {
-    if (!audio) return 'Practice Audio';
-    const labelledBy = audio.getAttribute('aria-labelledby');
-    if (labelledBy) {
-        const labelEl = document.getElementById(labelledBy);
-        if (labelEl?.textContent) return labelEl.textContent.trim();
-    }
-    const tone = audio.dataset.toneAudio;
-    if (tone) return `Reference tone ${tone}`;
-    const panelTitle = audio.closest('.audio-panel')?.querySelector('h3')?.textContent?.trim();
-    if (panelTitle) return panelTitle;
-    return 'Practice Audio';
-};
-
-const bindMediaSession = () => {
-    const audios = Array.from(document.querySelectorAll('audio'));
-    if (!audios.length) return;
-    let currentAudio = null;
-
-    const updateState = (state) => {
-        try {
-            navigator.mediaSession.playbackState = state;
-        } catch {
-            // Ignore unsupported playback state errors
-        }
-    };
-
-    const applyMetadata = (audio) => {
-        const label = buildAudioLabel(audio);
-        try {
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: label,
-                artist: 'Panda Violin',
-                album: 'Practice Tools',
-            });
-        } catch {
-            // Ignore metadata failures
-        }
-    };
-
-    audios.forEach((audio) => {
-        audio.addEventListener('play', () => {
-            currentAudio = audio;
-            applyMetadata(audio);
-            updateState('playing');
-        });
-        audio.addEventListener('pause', () => {
-            if (currentAudio === audio) updateState('paused');
-        });
-        audio.addEventListener('ended', () => {
-            if (currentAudio === audio) updateState('none');
-        });
+    storageController.setElements({
+        statusEl: document.querySelector('[data-storage-status]'),
+        estimateEl: document.querySelector('[data-storage-estimate]'),
+        requestButton: document.querySelector('[data-storage-request]'),
+        networkStatusEl: document.querySelector('[data-network-status]'),
     });
 
-    try {
-        navigator.mediaSession.setActionHandler('play', async () => {
-            if (!isSoundEnabled()) return;
-            if (currentAudio) {
-                await currentAudio.play().catch(() => {});
-            }
-        });
-        navigator.mediaSession.setActionHandler('pause', () => {
-            if (currentAudio) currentAudio.pause();
-        });
-        navigator.mediaSession.setActionHandler('stop', () => {
-            if (currentAudio) currentAudio.pause();
-            updateState('none');
-        });
-    } catch {
-        // Some action handlers may not be supported on this device
-    }
-};
-
-const bindAudioFocus = () => {
-    const pauseOthers = (current) => {
-        document.querySelectorAll('audio').forEach((audio) => {
-            if (audio !== current && !audio.paused) {
-                audio.pause();
-                audio.currentTime = 0;
-            }
-        });
-    };
-
-    document.querySelectorAll('audio').forEach((audio) => {
-        if (audio.dataset.audioFocusBound === 'true') return;
-        audio.dataset.audioFocusBound = 'true';
-        audio.addEventListener('play', () => {
-            if (!isSoundEnabled()) {
-                audio.pause();
-                audio.currentTime = 0;
-                return;
-            }
-            pauseOthers(audio);
-        });
+    powerControls.setElements({
+        wakeToggle: document.querySelector('#setting-keep-awake'),
+        wakeStatusEl: document.querySelector('[data-wake-status]'),
+        orientationToggle: document.querySelector('#setting-orientation-lock'),
+        orientationStatusEl: document.querySelector('[data-orientation-status]'),
     });
 
-    if (audioFocusGlobalsBound) return;
-    audioFocusGlobalsBound = true;
-
-    document.addEventListener(SOUNDS_CHANGE, (event) => {
-        if (event.detail?.enabled === false) {
-            pauseOthers(null);
-        }
+    mediaSoundController.setElements({
+        soundToggle: document.querySelector('#setting-sounds'),
     });
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            pauseOthers(null);
-        }
+    shareSummaryController.setElements({
+        shareButton: document.querySelector('[data-share-summary]'),
+        shareStatusEl: document.querySelector('[data-share-status]'),
     });
-    window.addEventListener('pagehide', () => {
-        pauseOthers(null);
-    });
-    window.addEventListener('hashchange', () => {
-        pauseOthers(null);
-    }, { passive: true });
-};
 
-const resolveSoundState = () => (soundToggle ? soundToggle.checked : isSoundEnabled());
-
-const updateSoundState = () => {
-    const enabled = resolveSoundState();
-    document.documentElement.dataset.sounds = enabled ? 'on' : 'off';
-    document.querySelectorAll('audio').forEach((audio) => {
-        audio.muted = !enabled;
-        if (!enabled && !audio.paused) {
-            audio.pause();
-            audio.currentTime = 0;
-        }
-    });
-    document.dispatchEvent(new CustomEvent(SOUNDS_CHANGE, { detail: { enabled } }));
-};
-
-const bindSoundToggle = () => {
-    if (soundToggle) {
-        soundToggle.checked = isSoundEnabled();
-        if (soundToggle.dataset.nativeBound !== 'true') {
-            soundToggle.dataset.nativeBound = 'true';
-            soundToggle.addEventListener('change', updateSoundState);
-        }
-    }
-    updateSoundState();
-};
-
-const updateInstallState = () => {
-    const standalone = isStandalone();
-    if (document.documentElement) {
-        document.documentElement.dataset.installed = standalone ? 'true' : 'false';
-    }
-    if (installStatusEl) {
-        installStatusEl.textContent = standalone
-            ? 'Install status: Installed on Home Screen.'
-            : 'Install status: Use Add to Home Screen for the best offline experience.';
-    }
-    if (standalone) {
-        updateStorageStatus(true);
-        maybeAutoPersist('installed');
-    }
-};
-
-const bindInstallState = () => {
-    updateInstallState();
-    if (installGlobalsBound) return;
-    installGlobalsBound = true;
-    window.addEventListener('appinstalled', updateInstallState);
-    window.matchMedia('(display-mode: standalone)').addEventListener('change', updateInstallState);
-};
-
-const updateKeyboardOffset = () => {
-    if (!rootStyle) return;
-    const viewport = window.visualViewport;
-    if (!viewport) {
-        rootStyle.setProperty('--keyboard-offset', '0px');
-        return;
-    }
-    const rawOffset = window.innerHeight - viewport.height - viewport.offsetTop;
-    const offset = Math.max(0, Math.round(rawOffset));
-    rootStyle.setProperty('--keyboard-offset', `${offset}px`);
-};
-
-const bindVisualViewport = () => {
-    if (!window.visualViewport) {
-        updateKeyboardOffset();
-        return;
-    }
-    updateKeyboardOffset();
-    if (visualViewportGlobalsBound) return;
-    visualViewportGlobalsBound = true;
-    window.visualViewport.addEventListener('resize', updateKeyboardOffset);
-    window.visualViewport.addEventListener('scroll', updateKeyboardOffset);
-    window.addEventListener('orientationchange', updateKeyboardOffset, { passive: true });
+    installStateController.setElement(document.querySelector('[data-install-status]'));
 };
 
 const bindGlobalListeners = () => {
     if (globalsBound) return;
     globalsBound = true;
     document.addEventListener(PERSIST_APPLIED, () => {
-        updateSoundState();
-        requestWakeLock();
-        requestOrientationLock();
+        mediaSoundController.updateSoundState();
+        powerControls.requestWakeLock();
+        powerControls.requestOrientationLock();
     });
 };
 
 const initNativeApis = () => {
     resolveElements();
-    bindStorageUI();
-    bindNetworkStatus();
-    bindWakeLock();
-    bindOrientationLock();
-    bindShareSummary();
-    bindMediaSession();
-    bindAudioFocus();
-    bindVisualViewport();
-    bindInstallState();
-    bindSoundToggle();
+    storageController.bindStorageUI();
+    storageController.bindNetworkStatus();
+    powerControls.bindWakeLock();
+    powerControls.bindOrientationLock();
+    shareSummaryController.bind();
+    mediaSoundController.bindMediaSession();
+    mediaSoundController.bindAudioFocus();
+    viewportOffsetController.bind();
+    installStateController.bind(storageController);
+    mediaSoundController.bindSoundToggle();
     bindGlobalListeners();
 };
 
