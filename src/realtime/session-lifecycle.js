@@ -20,6 +20,9 @@ export const createSessionLifecycle = ({
     rtQualityEvent,
 }) => {
     let globalBindingsReady = false;
+    const shouldSimulateSessionStart = () =>
+        typeof window !== 'undefined' &&
+        window.__PANDA_E2E_RT_SIMULATE_START__ === true;
 
     const setLifecycleFlags = ({
         active = state.active,
@@ -126,7 +129,9 @@ export const createSessionLifecycle = ({
             await prepareSessionStart();
 
             try {
-                await audioGraph.initialize();
+                if (!shouldSimulateSessionStart()) {
+                    await audioGraph.initialize();
+                }
                 await announceSessionStarted();
             } catch (error) {
                 await handleSessionStartFailure(error);

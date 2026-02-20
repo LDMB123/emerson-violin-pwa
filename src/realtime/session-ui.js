@@ -18,6 +18,18 @@ const controls = createSessionUiControls({
     resumeSession,
 });
 
+const exposeE2EHooks = () => {
+    if (typeof window === 'undefined') return;
+    if (window.__PANDA_E2E_HOOKS__ !== true) return;
+    window.__PANDA_RT_TEST_HOOKS__ = {
+        startSession,
+        stopSession,
+        pauseSession,
+        resumeSession,
+        getSessionState,
+    };
+};
+
 const bindGlobal = () => {
     if (bound) return;
     bound = true;
@@ -54,6 +66,7 @@ const bindGlobal = () => {
 
 export const init = () => {
     initSessionController();
+    exposeE2EHooks();
     controls.ensureTopbarIndicator();
     controls.invalidateControls();
     controls.bindButtons();
