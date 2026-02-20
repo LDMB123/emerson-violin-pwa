@@ -3,6 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+    computeBudgetFailureStats,
+    inferCurrentBudgetsFromSummaries,
     loadBudgetSummaries,
     recommendBudgets,
     selectSummariesForRecommendation,
@@ -117,5 +119,42 @@ describe('recommend-performance-budgets', () => {
         expect(summaries[0].fcp).toBe(1000);
         expect(summaries[1].fcp).toBe(1100);
         expect(selection.maxRecentRuns).toBe(2);
+    });
+
+    it('infers current budgets from summary metadata when available', () => {
+        const inferred = inferCurrentBudgetsFromSummaries([
+            { fcp: 1000, lcp: 1500 },
+            { fcp: 1100, lcp: 1600, budgets: { fcpMs: 2500, lcpMs: 3500 } },
+        ]);
+
+        expect(inferred).toEqual({ fcpMs: 2500, lcpMs: 3500 });
+    });
+
+    it('ignores unrealistically tiny inferred budgets from synthetic summaries', () => {
+        const inferred = inferCurrentBudgetsFromSummaries([
+            { fcp: 80, lcp: 90, budgets: { fcpMs: 1, lcpMs: 1 } },
+        ]);
+
+        expect(inferred).toBeNull();
+    });
+
+    it('computes pass/fail rates for a budget threshold', () => {
+        const stats = computeBudgetFailureStats([
+            { fcp: 1200, lcp: 2000 },
+            { fcp: 2600, lcp: 2100 },
+            { fcp: 1100, lcp: 3600 },
+            { fcp: 1300, lcp: 2200 },
+        ], {
+            fcpMs: 2500,
+            lcpMs: 3500,
+        });
+
+        expect(stats).toMatchObject({
+            totalRuns: 4,
+            passingRuns: 2,
+            failingRuns: 2,
+            failureRatePct: 50,
+            passRatePct: 50,
+        });
     });
 });

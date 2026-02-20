@@ -7,6 +7,7 @@ const formatMs = (value) => `${Math.round(value * 10) / 10}ms`;
 const roundUp = (value, step) => Math.ceil(value / step) * step;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MIN_REASONABLE_BUDGET_MS = 100;
 
 const percentileNearestRank = (values, percentile) => {
     if (!Array.isArray(values) || values.length === 0) return null;
@@ -63,6 +64,8 @@ const parsePositiveInteger = (value) => {
     const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
+
+const roundPct = (value) => Math.round(value * 10) / 10;
 
 export const loadBudgetSummaries = (inputs) => {
     const paths = (Array.isArray(inputs) && inputs.length ? inputs : ['artifacts/perf-budget-summary.json'])
@@ -149,6 +152,53 @@ export const selectSummariesForRecommendation = (
     };
 };
 
+export const inferCurrentBudgetsFromSummaries = (summaries) => {
+    const source = Array.isArray(summaries) ? summaries : [];
+    const validBudgets = source
+        .map((entry) => entry?.budgets)
+        .filter((budgets) =>
+            Number.isFinite(budgets?.fcpMs) &&
+            Number.isFinite(budgets?.lcpMs) &&
+            budgets.fcpMs >= MIN_REASONABLE_BUDGET_MS &&
+            budgets.lcpMs >= MIN_REASONABLE_BUDGET_MS
+        );
+
+    if (validBudgets.length === 0) return null;
+
+    const counts = new Map();
+    validBudgets.forEach((budgets) => {
+        const key = `${budgets.fcpMs}:${budgets.lcpMs}`;
+        counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    const [bestKey] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+    const [fcpMs, lcpMs] = bestKey.split(':').map((value) => Number.parseInt(value, 10));
+    return { fcpMs, lcpMs };
+};
+
+export const computeBudgetFailureStats = (summaries, budgets) => {
+    const source = Array.isArray(summaries) ? summaries : [];
+    if (!Number.isFinite(budgets?.fcpMs) || !Number.isFinite(budgets?.lcpMs)) {
+        return null;
+    }
+
+    const failingRuns = source.filter((entry) => (
+        entry.fcp > budgets.fcpMs || entry.lcp > budgets.lcpMs
+    )).length;
+    const totalRuns = source.length;
+    const passingRuns = Math.max(0, totalRuns - failingRuns);
+    const failureRatePct = totalRuns > 0 ? roundPct((failingRuns / totalRuns) * 100) : 0;
+    const passRatePct = totalRuns > 0 ? roundPct((passingRuns / totalRuns) * 100) : 0;
+
+    return {
+        totalRuns,
+        passingRuns,
+        failingRuns,
+        failureRatePct,
+        passRatePct,
+    };
+};
+
 export const recommendBudgets = (
     summaries,
     {
@@ -228,6 +278,8 @@ const run = () => {
         process.env.PERF_BUDGET_RECOMMENDATION_MIN_RUNS || '5',
         10,
     );
+    const currentFcpBudget = parsePositiveInteger(process.env.PERF_BUDGET_CURRENT_FCP_MS);
+    const currentLcpBudget = parsePositiveInteger(process.env.PERF_BUDGET_CURRENT_LCP_MS);
     const windowDays = parsePositiveInteger(process.env.PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS);
     const maxRecentRuns = parsePositiveInteger(process.env.PERF_BUDGET_RECOMMENDATION_MAX_RUNS);
     const inputs = process.argv.slice(2);
@@ -242,6 +294,23 @@ const run = () => {
         roundMs,
         minimumRunsForConfidence,
     });
+    const inferredBudgets = inferCurrentBudgetsFromSummaries(summaries);
+    const effectiveCurrentBudgets = Number.isFinite(currentFcpBudget) && Number.isFinite(currentLcpBudget)
+        ? { fcpMs: currentFcpBudget, lcpMs: currentLcpBudget }
+        : inferredBudgets;
+
+    if (effectiveCurrentBudgets) {
+        recommendation.thresholdHealth = {
+            current: {
+                budgets: effectiveCurrentBudgets,
+                ...computeBudgetFailureStats(summaries, effectiveCurrentBudgets),
+            },
+            recommended: {
+                budgets: recommendation.recommendedBudgets,
+                ...computeBudgetFailureStats(summaries, recommendation.recommendedBudgets),
+            },
+        };
+    }
     recommendation.selection = selection;
     const resolvedOutputPath = writeRecommendation(recommendation, outputPath);
 
@@ -264,6 +333,16 @@ const run = () => {
     console.log(`Recommendation confidence: ${recommendation.confidence}`);
     recommendation.notes.forEach((note) => console.warn(note));
     console.log(`Recommended budgets: FCP <= ${recommendation.recommendedBudgets.fcpMs}ms, LCP <= ${recommendation.recommendedBudgets.lcpMs}ms`);
+    if (recommendation.thresholdHealth) {
+        const current = recommendation.thresholdHealth.current;
+        const recommended = recommendation.thresholdHealth.recommended;
+        console.log(
+            `Current-budget failure rate: ${current.failureRatePct}% (${current.failingRuns}/${current.totalRuns}) at FCP<=${current.budgets.fcpMs}ms LCP<=${current.budgets.lcpMs}ms`,
+        );
+        console.log(
+            `Recommended-budget failure rate: ${recommended.failureRatePct}% (${recommended.failingRuns}/${recommended.totalRuns}) at FCP<=${recommended.budgets.fcpMs}ms LCP<=${recommended.budgets.lcpMs}ms`,
+        );
+    }
     console.log(`Suggested CI env:\nPERF_BUDGET_FCP_MS=${recommendation.recommendedBudgets.fcpMs}\nPERF_BUDGET_LCP_MS=${recommendation.recommendedBudgets.lcpMs}`);
     console.log(`Recommendation written to ${resolvedOutputPath}`);
 };
