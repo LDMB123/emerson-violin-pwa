@@ -282,6 +282,37 @@ If both pass, you are at a known-good baseline.
 
 `npm run handoff:verify` runs all of the above in sequence.
 
+## Playwright Worker Profiles
+
+Playwright worker defaults are now:
+
+- CI: `workers=1`
+- local development: `workers=2`
+
+Override with `PW_WORKERS` when needed:
+
+```bash
+PW_WORKERS=2 npm run test:e2e
+PW_WORKERS=3 npx playwright test
+```
+
+Recommended values by machine profile:
+
+| Machine profile | Recommended `PW_WORKERS` | Notes |
+| --- | --- | --- |
+| CI/shared runner | `1` | Most stable for WebKit and constrained environments. |
+| Typical dev machine | `2` | Default and preferred for `npm run handoff:verify`. |
+| High-end local workstation | `3` | Use only after local calibration. |
+
+Calibration flow:
+
+```bash
+PW_WORKERS=3 npx playwright test tests/e2e/games-all-functional.spec.js --grep "group C: string/painter/story/pizzicato" --repeat-each=5
+PW_WORKERS=3 npm run test:e2e
+```
+
+If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
+
 ## Intentional/Expected Caveats
 
 - `scripts/extract-views.js` currently extracts the generated shell view(s) while canonical route HTML continues to live in `public/views/`.

@@ -52,35 +52,50 @@ const saveParentGoal = async (page, { title, minutes }) => {
     await waitForBoundFlag(page, '[data-parent-goal-minutes-input]', 'data-parent-goal-bound');
     await waitForBoundFlag(page, '[data-parent-goal-save]', 'data-parent-goal-bound');
 
-    await page.locator('[data-parent-goal-title-input]').evaluate((input, value) => {
-        input.value = value;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    }, title);
-    await page.locator('[data-parent-goal-minutes-input]').evaluate((input, value) => {
-        input.value = value;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    }, String(minutes));
-
     const status = page.locator('[data-parent-goal-status]');
     const goalTitle = page.locator('[data-parent-goal-title]');
-    await expect(page.locator('[data-parent-goal-title-input]')).toHaveValue(title);
-    await expect(page.locator('[data-parent-goal-minutes-input]')).toHaveValue(String(minutes));
+    await expect(status).not.toContainText('Loading goal', { timeout: 10000 });
+
+    const applyGoalValues = async () => {
+        await page.locator('[data-parent-goal-title-input]').evaluate((input, value) => {
+            input.value = value;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }, title);
+        await page.locator('[data-parent-goal-minutes-input]').evaluate((input, value) => {
+            input.value = value;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }, String(minutes));
+
+        await expect(page.locator('[data-parent-goal-title-input]')).toHaveValue(title);
+        await expect(page.locator('[data-parent-goal-minutes-input]')).toHaveValue(String(minutes));
+    };
 
     const triggerSave = async () => {
+        const sentinel = `Saving ${Date.now()}`;
+        await status.evaluate((el, value) => {
+            el.textContent = value;
+        }, sentinel);
+
         await expect(page.locator('[data-parent-goal-save]')).toBeEnabled({ timeout: 10000 });
-        await page.locator('[data-parent-goal-save]').evaluate((button) => {
-            button.click();
-        });
+        await page.locator('[data-parent-goal-save]').click();
+
+        await expect.poll(async () => status.innerText(), { timeout: 10000 }).not.toBe(sentinel);
         await expect(status).toContainText('Goal saved');
     };
 
-    await triggerSave();
-    try {
-        await expect.poll(async () => goalTitle.innerText(), { timeout: 10000 }).toContain(title);
-    } catch {
-        await triggerSave();
-        await expect.poll(async () => goalTitle.innerText(), { timeout: 10000 }).toContain(title);
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+            await applyGoalValues();
+            await triggerSave();
+            await expect.poll(async () => goalTitle.innerText(), { timeout: 10000 }).toContain(title);
+            return;
+        } catch (error) {
+            lastError = error;
+        }
     }
+
+    throw lastError || new Error(`Unable to save parent goal "${title}".`);
 };
 
 const triggerBackupExportAndWaitForStatus = async (page) => {
