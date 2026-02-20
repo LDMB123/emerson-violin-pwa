@@ -78,8 +78,10 @@ If both pass, you are at a known-good baseline.
 - Completed perf budget mode-toggle pass (2026-02-20, phase 36):
   - Added report-only toggle support to performance budget audit:
     - `scripts/audit-performance-budgets.mjs` (`PERF_BUDGET_REPORT_ONLY`)
-  - Set explicit CI mode default to blocking:
-    - `.github/workflows/quality.yml` (`PERF_BUDGET_REPORT_ONLY: 'false'`)
+  - Set CI budget mode by event type:
+    - `.github/workflows/quality.yml`
+    - pull_request: `PERF_BUDGET_REPORT_ONLY=true` (non-blocking, baseline collection)
+    - push/main: `PERF_BUDGET_REPORT_ONLY=false` (blocking gate)
   - Added helper regression coverage:
     - `tests/scripts/audit-performance-budgets.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
@@ -425,7 +427,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 ## Recommended Next Work (Ordered)
 
 1. Tune CI LCP/FCP thresholds using rolling baseline data from workflow runs (`npm run audit:perf:recommend -- <artifact-folder>`).
-2. Revisit whether CI should keep `PERF_BUDGET_REPORT_ONLY=false` once threshold baselines stabilize.
+2. Revisit whether pull-request runs should stay report-only after thresholds are recalibrated.
 3. Decide whether to retain the guarded realtime E2E start-simulation seam long-term or replace it with a dedicated test harness module.
 
 ## Definition of “Ready to Hand Off”
