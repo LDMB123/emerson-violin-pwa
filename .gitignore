@@ -5,6 +5,7 @@ dist/
 test-results/
 playwright-report/
 coverage/
+artifacts/
 sw.js
 sw-assets.js
 wasm/target/

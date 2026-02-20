@@ -46,8 +46,10 @@ If both pass, you are at a known-good baseline.
   - Added production-preview performance budget audit:
     - `scripts/audit-performance-budgets.mjs`
     - `package.json` (`audit:perf`)
+    - emits run summary JSON: `artifacts/perf-budget-summary.json`
   - Updated CI quality workflow to install Chromium + WebKit and run LCP/FCP budget checks:
     - `.github/workflows/quality.yml`
+    - uploads `perf-budget-summary` artifact for threshold calibration history
   - Budgets currently enforced in CI:
     - FCP median <= `2500ms`
     - LCP median <= `3500ms`
