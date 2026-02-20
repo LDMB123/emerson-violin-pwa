@@ -62,6 +62,8 @@ jobs:
         run: npm run audit:perf:recommend -- artifacts/perf-budget-summary.json
         env:
           PERF_BUDGET_RECOMMENDATION_OUTPUT: artifacts/perf-budget-recommendation.json
+          PERF_BUDGET_CURRENT_FCP_MS: '2500'
+          PERF_BUDGET_CURRENT_LCP_MS: '3500'
 
       - name: Upload performance budget recommendation
         if: always()

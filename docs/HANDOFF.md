@@ -112,6 +112,7 @@ If both pass, you are at a known-good baseline.
   - Added current-threshold override support:
     - `PERF_BUDGET_CURRENT_FCP_MS`
     - `PERF_BUDGET_CURRENT_LCP_MS`
+    - wired in `.github/workflows/quality.yml` recommendation step for stable CI comparisons
   - Added fallback inference of current thresholds from summary metadata when overrides are not provided.
   - Added regression coverage for threshold inference + pass/fail rate computation:
     - `tests/scripts/recommend-performance-budgets.test.js`
