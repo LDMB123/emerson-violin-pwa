@@ -161,6 +161,15 @@ If both pass, you are at a known-good baseline.
     - `tests/scripts/recommend-performance-budgets.test.js`
     - `tests/scripts/apply-performance-recommendation.test.js`
     - `tests/scripts/render-performance-recommendation-summary.test.js`
+- Completed perf current-threshold sync pass (2026-02-20, phase 46):
+  - Apply helper now also updates recommendation baseline env keys when present:
+    - `PERF_BUDGET_CURRENT_FCP_MS`
+    - `PERF_BUDGET_CURRENT_LCP_MS`
+    - `scripts/apply-performance-recommendation.mjs`
+  - Added guard against partial current-threshold key drift:
+    - apply fails when only one `PERF_BUDGET_CURRENT_*` key exists.
+  - Added regression coverage:
+    - `tests/scripts/apply-performance-recommendation.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
@@ -510,6 +519,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 3. Apply calibrated values with:
    - `npm run audit:perf:apply -- artifacts/perf-budget-recommendation.json .github/workflows/quality.yml`
    - apply now uses guardrailed `suggestedBudgets` when present
+   - when present, `PERF_BUDGET_CURRENT_FCP_MS` / `PERF_BUDGET_CURRENT_LCP_MS` are synced to avoid stale baseline comparisons
    - optional dry run: `PERF_BUDGET_APPLY_DRY_RUN=true npm run audit:perf:apply -- ...`
    - low-confidence override (only when intentionally accepting sparse data): `PERF_BUDGET_APPLY_ALLOW_LOW_CONFIDENCE=true ...`
    - then monitor PR noise for 1-2 weeks.

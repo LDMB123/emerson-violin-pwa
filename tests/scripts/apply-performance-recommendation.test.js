@@ -32,6 +32,46 @@ describe('apply-performance-recommendation', () => {
         })).toThrow('Failed to locate PERF_BUDGET_FCP_MS / PERF_BUDGET_LCP_MS');
     });
 
+    it('also syncs PERF_BUDGET_CURRENT_* keys when present', () => {
+        const workflow = `
+      - name: Performance budget audit (LCP/FCP)
+        env:
+          PERF_BUDGET_FCP_MS: '2500'
+          PERF_BUDGET_LCP_MS: '3500'
+      - name: Recommend performance budgets (informational)
+        env:
+          PERF_BUDGET_CURRENT_FCP_MS: '2500'
+          PERF_BUDGET_CURRENT_LCP_MS: '3500'
+`;
+
+        const updated = applyBudgetsToWorkflow(workflow, {
+            fcpMs: 2300,
+            lcpMs: 3300,
+        });
+
+        expect(updated).toContain("PERF_BUDGET_FCP_MS: '2300'");
+        expect(updated).toContain("PERF_BUDGET_LCP_MS: '3300'");
+        expect(updated).toContain("PERF_BUDGET_CURRENT_FCP_MS: '2300'");
+        expect(updated).toContain("PERF_BUDGET_CURRENT_LCP_MS: '3300'");
+    });
+
+    it('throws when only one PERF_BUDGET_CURRENT_* key is present', () => {
+        const workflow = `
+      - name: Performance budget audit (LCP/FCP)
+        env:
+          PERF_BUDGET_FCP_MS: '2500'
+          PERF_BUDGET_LCP_MS: '3500'
+      - name: Recommend performance budgets (informational)
+        env:
+          PERF_BUDGET_CURRENT_FCP_MS: '2500'
+`;
+
+        expect(() => applyBudgetsToWorkflow(workflow, {
+            fcpMs: 2300,
+            lcpMs: 3300,
+        })).toThrow('Found only one PERF_BUDGET_CURRENT_* key');
+    });
+
     it('blocks low-confidence recommendation apply by default', () => {
         expect(() => assertRecommendationIsApplySafe({
             confidence: 'low',
