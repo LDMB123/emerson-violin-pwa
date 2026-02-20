@@ -186,6 +186,17 @@ export const bindSoundsChange = (handler, registerCleanup = null) => {
     return cleanup;
 };
 
+export const createSoundsChangeBinding = () => {
+    let currentCleanup = null;
+    return (handler) => {
+        if (typeof currentCleanup === 'function') {
+            currentCleanup();
+        }
+        currentCleanup = bindSoundsChange(handler);
+        return currentCleanup;
+    };
+};
+
 export const attachTuning = (id, onUpdate) => {
     const apply = (tuning) => {
         if (!tuning) return;
