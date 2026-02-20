@@ -1,5 +1,6 @@
 import { isRecordingEnabled } from '../utils/feature-flags.js';
 import { getSongIdFromViewId, getSongIdFromHash, parseDuration } from '../utils/recording-export.js';
+import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
 import { createRecordingCaptureController } from './recordings-capture.js';
 import { migrateRecordingsToBlobs, saveRecording } from './recordings-storage.js';
 
@@ -113,7 +114,8 @@ const initRecordings = () => {
             recordingController.stopRecording();
         }
     });
-    window.addEventListener('pagehide', () => {
+    window.addEventListener('pagehide', (event) => {
+        if (isBfcachePagehide(event)) return;
         recordingController.stopRecording();
     });
 
