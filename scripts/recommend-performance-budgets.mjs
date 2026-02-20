@@ -78,6 +78,7 @@ export const recommendBudgets = (
         headroomPct = 15,
         roundMs = 25,
         percentile = 0.95,
+        minimumRunsForConfidence = 5,
     } = {},
 ) => {
     const validSummaries = Array.isArray(summaries) ? summaries : [];
@@ -94,13 +95,23 @@ export const recommendBudgets = (
 
     const recommendedFcpMs = roundUp(fcpP95 * headroomMultiplier, roundMs);
     const recommendedLcpMs = roundUp(lcpP95 * headroomMultiplier, roundMs);
+    const confidence = validSummaries.length >= minimumRunsForConfidence ? 'high' : 'low';
+    const notes = [];
+    if (confidence === 'low') {
+        notes.push(
+            `Only ${validSummaries.length} run(s) were found. Collect at least ${minimumRunsForConfidence} runs before treating recommendations as stable.`,
+        );
+    }
 
     return {
         inputRunCount: validSummaries.length,
+        confidence,
+        notes,
         settings: {
             headroomPct,
             roundMs,
             percentile,
+            minimumRunsForConfidence,
         },
         observed: {
             fcp: {
@@ -136,15 +147,25 @@ const run = () => {
     const outputPath = process.env.PERF_BUDGET_RECOMMENDATION_OUTPUT || 'artifacts/perf-budget-recommendation.json';
     const headroomPct = Number.parseFloat(process.env.PERF_BUDGET_RECOMMENDATION_HEADROOM_PCT || '15');
     const roundMs = Number.parseInt(process.env.PERF_BUDGET_RECOMMENDATION_ROUND_MS || '25', 10);
+    const minimumRunsForConfidence = Number.parseInt(
+        process.env.PERF_BUDGET_RECOMMENDATION_MIN_RUNS || '5',
+        10,
+    );
     const inputs = process.argv.slice(2);
 
     const summaries = loadBudgetSummaries(inputs);
-    const recommendation = recommendBudgets(summaries, { headroomPct, roundMs });
+    const recommendation = recommendBudgets(summaries, {
+        headroomPct,
+        roundMs,
+        minimumRunsForConfidence,
+    });
     const resolvedOutputPath = writeRecommendation(recommendation, outputPath);
 
     console.log(`Loaded ${recommendation.inputRunCount} performance summary file(s).`);
     console.log(`Observed FCP p95: ${formatMs(recommendation.observed.fcp.p95)}`);
     console.log(`Observed LCP p95: ${formatMs(recommendation.observed.lcp.p95)}`);
+    console.log(`Recommendation confidence: ${recommendation.confidence}`);
+    recommendation.notes.forEach((note) => console.warn(note));
     console.log(`Recommended budgets: FCP <= ${recommendation.recommendedBudgets.fcpMs}ms, LCP <= ${recommendation.recommendedBudgets.lcpMs}ms`);
     console.log(`Suggested CI env:\nPERF_BUDGET_FCP_MS=${recommendation.recommendedBudgets.fcpMs}\nPERF_BUDGET_LCP_MS=${recommendation.recommendedBudgets.lcpMs}`);
     console.log(`Recommendation written to ${resolvedOutputPath}`);
