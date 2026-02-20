@@ -150,7 +150,8 @@ const run = () => {
     console.log(`Recommendation written to ${resolvedOutputPath}`);
 };
 
-const isDirectExecution = path.resolve(process.argv[1] || '') === fileURLToPath(import.meta.url);
+const isDirectExecution = !process.env.VITEST &&
+    path.resolve(process.argv[1] || '') === fileURLToPath(import.meta.url);
 
 if (isDirectExecution) {
     try {

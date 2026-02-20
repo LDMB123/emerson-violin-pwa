@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { chromium } from '@playwright/test';
+import { fileURLToPath } from 'node:url';
 
 const host = process.env.PERF_BUDGET_HOST || '127.0.0.1';
 const port = Number.parseInt(process.env.PERF_BUDGET_PORT || '4173', 10);
@@ -12,7 +12,7 @@ const lcpBudgetMs = Number.parseFloat(process.env.PERF_BUDGET_LCP_MS || '3500');
 const startupTimeoutMs = Number.parseInt(process.env.PERF_BUDGET_STARTUP_TIMEOUT_MS || '30000', 10);
 const summaryOutputPath = process.env.PERF_BUDGET_OUTPUT || 'artifacts/perf-budget-summary.json';
 
-const parseBooleanEnv = (value, fallback = false) => {
+export const parseBooleanEnv = (value, fallback = false) => {
     if (value === undefined || value === null || value === '') return fallback;
     const normalized = String(value).trim().toLowerCase();
     if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
@@ -32,6 +32,17 @@ const median = (values) => {
 };
 
 const formatMs = (value) => `${Math.round(value * 10) / 10}ms`;
+
+export const getBudgetFailures = ({ fcpMedian, lcpMedian, fcpBudgetMs, lcpBudgetMs }) => {
+    const failures = [];
+    if (fcpMedian > fcpBudgetMs) {
+        failures.push(`Median FCP ${formatMs(fcpMedian)} exceeds budget ${fcpBudgetMs}ms.`);
+    }
+    if (lcpMedian > lcpBudgetMs) {
+        failures.push(`Median LCP ${formatMs(lcpMedian)} exceeds budget ${lcpBudgetMs}ms.`);
+    }
+    return failures;
+};
 
 const writeSummary = (summary) => {
     const outputPath = path.resolve(summaryOutputPath);
@@ -193,6 +204,7 @@ const run = async () => {
 
     try {
         await waitForPreviewServer(preview);
+        const { chromium } = await import('@playwright/test');
         browser = await chromium.launch({ headless: true });
 
         const samples = [];
@@ -220,13 +232,12 @@ const run = async () => {
         console.log(`Median FCP: ${formatMs(fcpMedian)}`);
         console.log(`Median LCP: ${formatMs(lcpMedian)}`);
 
-        const failures = [];
-        if (fcpMedian > fcpBudgetMs) {
-            failures.push(`Median FCP ${formatMs(fcpMedian)} exceeds budget ${fcpBudgetMs}ms.`);
-        }
-        if (lcpMedian > lcpBudgetMs) {
-            failures.push(`Median LCP ${formatMs(lcpMedian)} exceeds budget ${lcpBudgetMs}ms.`);
-        }
+        const failures = getBudgetFailures({
+            fcpMedian,
+            lcpMedian,
+            fcpBudgetMs,
+            lcpBudgetMs,
+        });
 
         if (failures.length) {
             const note = 'Performance budgets exceeded.';
@@ -259,7 +270,12 @@ const run = async () => {
     }
 };
 
-run().catch((error) => {
-    console.error(`Performance budget audit failed: ${error.message}`);
-    process.exit(1);
-});
+const isDirectExecution = !process.env.VITEST &&
+    path.resolve(process.argv[1] || '') === fileURLToPath(import.meta.url);
+
+if (isDirectExecution) {
+    run().catch((error) => {
+        console.error(`Performance budget audit failed: ${error.message}`);
+        process.exit(1);
+    });
+}
