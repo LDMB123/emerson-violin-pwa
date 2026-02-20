@@ -7,6 +7,7 @@ import {
     inferCurrentBudgetsFromSummaries,
     loadBudgetSummaries,
     recommendBudgets,
+    recommendPrGateMode,
     selectSummariesForRecommendation,
 } from '../../scripts/recommend-performance-budgets.mjs';
 
@@ -155,6 +156,74 @@ describe('recommend-performance-budgets', () => {
             failingRuns: 2,
             failureRatePct: 50,
             passRatePct: 50,
+        });
+    });
+
+    it('recommends report-only when confidence is low', () => {
+        const prRecommendation = recommendPrGateMode({
+            confidence: 'low',
+        }, {
+            targetFailureRatePct: 5,
+        });
+
+        expect(prRecommendation).toMatchObject({
+            mode: 'report_only',
+            reason: 'low_confidence',
+            targetFailureRatePct: 5,
+        });
+    });
+
+    it('recommends report-only when threshold health is missing', () => {
+        const prRecommendation = recommendPrGateMode({
+            confidence: 'high',
+        }, {
+            targetFailureRatePct: 5,
+        });
+
+        expect(prRecommendation).toMatchObject({
+            mode: 'report_only',
+            reason: 'missing_threshold_health',
+            targetFailureRatePct: 5,
+        });
+    });
+
+    it('recommends consider-blocking when both failure rates are within target', () => {
+        const prRecommendation = recommendPrGateMode({
+            confidence: 'high',
+            thresholdHealth: {
+                current: { failureRatePct: 2.5 },
+                recommended: { failureRatePct: 1.1 },
+            },
+        }, {
+            targetFailureRatePct: 5,
+        });
+
+        expect(prRecommendation).toMatchObject({
+            mode: 'consider_blocking',
+            reason: 'failure_rate_within_target',
+            targetFailureRatePct: 5,
+            currentFailureRatePct: 2.5,
+            recommendedFailureRatePct: 1.1,
+        });
+    });
+
+    it('recommends report-only when either failure rate exceeds target', () => {
+        const prRecommendation = recommendPrGateMode({
+            confidence: 'high',
+            thresholdHealth: {
+                current: { failureRatePct: 8.5 },
+                recommended: { failureRatePct: 3.2 },
+            },
+        }, {
+            targetFailureRatePct: 5,
+        });
+
+        expect(prRecommendation).toMatchObject({
+            mode: 'report_only',
+            reason: 'failure_rate_above_target',
+            targetFailureRatePct: 5,
+            currentFailureRatePct: 8.5,
+            recommendedFailureRatePct: 3.2,
         });
     });
 });
