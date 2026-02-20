@@ -69,6 +69,12 @@ If both pass, you are at a known-good baseline.
     - `src/realtime/session-lifecycle.js`
   - Realtime pagehide persisted/non-persisted behavior remains covered by unit tests:
     - `tests/realtime/session-controller.test.js`
+- Completed perf-threshold calibration helper pass (2026-02-20, phase 35):
+  - Added summary aggregation + budget recommendation utility:
+    - `scripts/recommend-performance-budgets.mjs`
+    - `package.json` (`audit:perf:recommend`)
+  - Added regression coverage:
+    - `tests/scripts/recommend-performance-budgets.test.js`
 - Completed feature module completeness + song play-along pass (2026-02-19, phase 27):
   - Added sharp-note support for song playback tones in:
     - `src/audio/tone-player.js`
@@ -363,6 +369,14 @@ PW_WORKERS=3 npx playwright test tests/e2e/games-all-functional.spec.js --grep "
 PW_WORKERS=3 npm run test:e2e
 ```
 
+Perf budget calibration flow (after downloading prior `perf-budget-summary` artifacts into a local folder):
+
+```bash
+npm run audit:perf:recommend -- ./artifacts/perf-history
+```
+
+The command writes `artifacts/perf-budget-recommendation.json` and prints suggested `PERF_BUDGET_FCP_MS` / `PERF_BUDGET_LCP_MS` values.
+
 If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Intentional/Expected Caveats
@@ -392,7 +406,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Recommended Next Work (Ordered)
 
-1. Tune CI LCP/FCP thresholds using rolling baseline data from workflow runs.
+1. Tune CI LCP/FCP thresholds using rolling baseline data from workflow runs (`npm run audit:perf:recommend -- <artifact-folder>`).
 2. Decide whether to keep Web Vitals trend checks blocking or reporting-only in CI.
 3. Decide whether to retain the guarded realtime E2E start-simulation seam long-term or replace it with a dedicated test harness module.
 
