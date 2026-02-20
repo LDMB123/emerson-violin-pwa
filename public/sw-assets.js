@@ -283,6 +283,7 @@ self.__ASSETS__ = [
   "./src/realtime/session-runtime-preset-controller.js",
   "./src/realtime/session-runtime-state-publisher.js",
   "./src/realtime/session-runtime-state.js",
+  "./src/realtime/session-test-flags.js",
   "./src/realtime/session-ui-controls.js",
   "./src/realtime/session-ui.js",
   "./src/recordings/recordings-capture.js",
