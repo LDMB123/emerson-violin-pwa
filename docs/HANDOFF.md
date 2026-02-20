@@ -146,6 +146,21 @@ If both pass, you are at a known-good baseline.
     - `PERF_BUDGET_APPLY_ALLOW_LOW_CONFIDENCE=true`
   - Added regression coverage for workflow budget replacement:
     - `tests/scripts/apply-performance-recommendation.test.js`
+- Completed perf guardrail propagation pass (2026-02-20, phase 45):
+  - Added recommendation guardrails and suggested thresholds:
+    - `scripts/recommend-performance-budgets.mjs`
+    - emits `suggestedBudgets` + `guardrails` metadata
+    - supports `PERF_BUDGET_RECOMMENDATION_MAX_TIGHTEN_PCT` / `PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT`
+  - Apply helper now prefers `suggestedBudgets` (falls back to `recommendedBudgets`):
+    - `scripts/apply-performance-recommendation.mjs`
+  - Recommendation summary now renders guardrailed suggestion values and raw pre-guardrail values when adjusted:
+    - `scripts/render-performance-recommendation-summary.mjs`
+  - Wired guardrail env defaults in CI recommendation step:
+    - `.github/workflows/quality.yml`
+  - Added regression coverage for guardrails and suggested-budget propagation:
+    - `tests/scripts/recommend-performance-budgets.test.js`
+    - `tests/scripts/apply-performance-recommendation.test.js`
+    - `tests/scripts/render-performance-recommendation-summary.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
@@ -494,10 +509,14 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 2. Use `prGateRecommendation` + `thresholdHealth` from `artifacts/perf-budget-recommendation.json` to decide whether PR mode should remain report-only or switch to blocking.
 3. Apply calibrated values with:
    - `npm run audit:perf:apply -- artifacts/perf-budget-recommendation.json .github/workflows/quality.yml`
+   - apply now uses guardrailed `suggestedBudgets` when present
    - optional dry run: `PERF_BUDGET_APPLY_DRY_RUN=true npm run audit:perf:apply -- ...`
    - low-confidence override (only when intentionally accepting sparse data): `PERF_BUDGET_APPLY_ALLOW_LOW_CONFIDENCE=true ...`
    - then monitor PR noise for 1-2 weeks.
-4. Decide whether to retain the guarded realtime E2E start-simulation seam long-term or replace it with a dedicated test harness module.
+4. Tune guardrail limits if recommendation drift is too aggressive/conservative:
+   - `PERF_BUDGET_RECOMMENDATION_MAX_TIGHTEN_PCT`
+   - `PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT`
+5. Decide whether to retain the guarded realtime E2E start-simulation seam long-term or replace it with a dedicated test harness module.
 
 ## Definition of “Ready to Hand Off”
 

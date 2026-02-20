@@ -65,6 +65,8 @@ jobs:
           PERF_BUDGET_CURRENT_FCP_MS: '2500'
           PERF_BUDGET_CURRENT_LCP_MS: '3500'
           PERF_BUDGET_RECOMMENDATION_PR_TARGET_FAILURE_PCT: '5'
+          PERF_BUDGET_RECOMMENDATION_MAX_TIGHTEN_PCT: '10'
+          PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT: '20'
 
       - name: Summarize performance recommendation
         if: always()

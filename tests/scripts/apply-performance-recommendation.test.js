@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     applyBudgetsToWorkflow,
     assertRecommendationIsApplySafe,
+    selectBudgetsForApply,
 } from '../../scripts/apply-performance-recommendation.mjs';
 
 describe('apply-performance-recommendation', () => {
@@ -45,5 +46,26 @@ describe('apply-performance-recommendation', () => {
         }, {
             allowLowConfidence: true,
         })).not.toThrow();
+    });
+
+    it('prefers suggested budgets when available', () => {
+        expect(selectBudgetsForApply({
+            recommendedBudgets: { fcpMs: 2400, lcpMs: 3400 },
+            suggestedBudgets: { fcpMs: 2500, lcpMs: 3500 },
+        })).toEqual({
+            source: 'suggestedBudgets',
+            fcpMs: 2500,
+            lcpMs: 3500,
+        });
+    });
+
+    it('falls back to recommended budgets when suggested budgets are missing', () => {
+        expect(selectBudgetsForApply({
+            recommendedBudgets: { fcpMs: 2400, lcpMs: 3400 },
+        })).toEqual({
+            source: 'recommendedBudgets',
+            fcpMs: 2400,
+            lcpMs: 3400,
+        });
     });
 });

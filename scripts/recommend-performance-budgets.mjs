@@ -71,6 +71,8 @@ const parsePositiveNumber = (value) => {
 };
 
 const roundPct = (value) => Math.round(value * 10) / 10;
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const roundToStep = (value, step) => Math.round(value / step) * step;
 
 export const loadBudgetSummaries = (inputs) => {
     const paths = (Array.isArray(inputs) && inputs.length ? inputs : ['artifacts/perf-budget-summary.json'])
@@ -201,6 +203,67 @@ export const computeBudgetFailureStats = (summaries, budgets) => {
         failingRuns,
         failureRatePct,
         passRatePct,
+    };
+};
+
+export const applyBudgetGuardrails = (
+    recommendedBudgets,
+    currentBudgets,
+    {
+        maxTightenPct = 10,
+        maxLoosenPct = 20,
+        roundMs = 25,
+    } = {},
+) => {
+    if (!Number.isFinite(currentBudgets?.fcpMs) || !Number.isFinite(currentBudgets?.lcpMs)) {
+        return {
+            suggestedBudgets: {
+                fcpMs: recommendedBudgets?.fcpMs,
+                lcpMs: recommendedBudgets?.lcpMs,
+            },
+            guardrails: {
+                enabled: false,
+                reason: 'missing_current_budgets',
+                maxTightenPct,
+                maxLoosenPct,
+            },
+        };
+    }
+
+    const applyMetricGuardrail = (metric, rawValue, currentValue) => {
+        const lowerBound = currentValue * (1 - (maxTightenPct / 100));
+        const upperBound = currentValue * (1 + (maxLoosenPct / 100));
+        const clampedValue = clamp(rawValue, lowerBound, upperBound);
+        const roundedValue = clamp(roundToStep(clampedValue, roundMs), lowerBound, upperBound);
+        const suggestedValue = Math.round(roundedValue);
+
+        return {
+            metric,
+            current: currentValue,
+            raw: rawValue,
+            lowerBound: Math.round(lowerBound),
+            upperBound: Math.round(upperBound),
+            suggested: suggestedValue,
+            adjusted: suggestedValue !== rawValue,
+        };
+    };
+
+    const fcp = applyMetricGuardrail('fcp', recommendedBudgets.fcpMs, currentBudgets.fcpMs);
+    const lcp = applyMetricGuardrail('lcp', recommendedBudgets.lcpMs, currentBudgets.lcpMs);
+
+    return {
+        suggestedBudgets: {
+            fcpMs: fcp.suggested,
+            lcpMs: lcp.suggested,
+        },
+        guardrails: {
+            enabled: true,
+            maxTightenPct,
+            maxLoosenPct,
+            fcp,
+            lcp,
+            adjusted: fcp.adjusted || lcp.adjusted,
+        },
     };
 };
 
@@ -340,6 +403,12 @@ const run = () => {
     const prTargetFailureRatePct = parsePositiveNumber(
         process.env.PERF_BUDGET_RECOMMENDATION_PR_TARGET_FAILURE_PCT,
     ) || 5;
+    const maxTightenPct = parsePositiveNumber(
+        process.env.PERF_BUDGET_RECOMMENDATION_MAX_TIGHTEN_PCT,
+    ) || 10;
+    const maxLoosenPct = parsePositiveNumber(
+        process.env.PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT,
+    ) || 20;
     const windowDays = parsePositiveInteger(process.env.PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS);
     const maxRecentRuns = parsePositiveInteger(process.env.PERF_BUDGET_RECOMMENDATION_MAX_RUNS);
     const inputs = process.argv.slice(2);
@@ -358,6 +427,17 @@ const run = () => {
     const effectiveCurrentBudgets = Number.isFinite(currentFcpBudget) && Number.isFinite(currentLcpBudget)
         ? { fcpMs: currentFcpBudget, lcpMs: currentLcpBudget }
         : inferredBudgets;
+    const { suggestedBudgets, guardrails } = applyBudgetGuardrails(
+        recommendation.recommendedBudgets,
+        effectiveCurrentBudgets,
+        {
+            maxTightenPct,
+            maxLoosenPct,
+            roundMs,
+        },
+    );
+    recommendation.suggestedBudgets = suggestedBudgets;
+    recommendation.guardrails = guardrails;
 
     if (effectiveCurrentBudgets) {
         recommendation.thresholdHealth = {
@@ -366,8 +446,8 @@ const run = () => {
                 ...computeBudgetFailureStats(summaries, effectiveCurrentBudgets),
             },
             recommended: {
-                budgets: recommendation.recommendedBudgets,
-                ...computeBudgetFailureStats(summaries, recommendation.recommendedBudgets),
+                budgets: recommendation.suggestedBudgets,
+                ...computeBudgetFailureStats(summaries, recommendation.suggestedBudgets),
             },
         };
     }
@@ -395,7 +475,10 @@ const run = () => {
     console.log(`Observed LCP p95: ${formatMs(recommendation.observed.lcp.p95)}`);
     console.log(`Recommendation confidence: ${recommendation.confidence}`);
     recommendation.notes.forEach((note) => console.warn(note));
-    console.log(`Recommended budgets: FCP <= ${recommendation.recommendedBudgets.fcpMs}ms, LCP <= ${recommendation.recommendedBudgets.lcpMs}ms`);
+    console.log(`Recommended budgets (raw): FCP <= ${recommendation.recommendedBudgets.fcpMs}ms, LCP <= ${recommendation.recommendedBudgets.lcpMs}ms`);
+    if (recommendation.guardrails?.adjusted) {
+        console.log(`Suggested budgets (guardrailed): FCP <= ${recommendation.suggestedBudgets.fcpMs}ms, LCP <= ${recommendation.suggestedBudgets.lcpMs}ms`);
+    }
     if (recommendation.thresholdHealth) {
         const current = recommendation.thresholdHealth.current;
         const recommended = recommendation.thresholdHealth.recommended;
@@ -409,7 +492,7 @@ const run = () => {
     console.log(
         `PR gate recommendation: ${recommendation.prGateRecommendation.mode} (${recommendation.prGateRecommendation.reason})`,
     );
-    console.log(`Suggested CI env:\nPERF_BUDGET_FCP_MS=${recommendation.recommendedBudgets.fcpMs}\nPERF_BUDGET_LCP_MS=${recommendation.recommendedBudgets.lcpMs}`);
+    console.log(`Suggested CI env:\nPERF_BUDGET_FCP_MS=${recommendation.suggestedBudgets.fcpMs}\nPERF_BUDGET_LCP_MS=${recommendation.suggestedBudgets.lcpMs}`);
     console.log(`Recommendation written to ${resolvedOutputPath}`);
 };
 
