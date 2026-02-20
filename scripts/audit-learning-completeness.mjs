@@ -79,7 +79,10 @@ const eventNamesModule = await import(pathToFileURL(resolve(process.cwd(), 'src/
             `Event contract ${key} is missing.`);
     });
 
-const recommendationsSource = readFileSync(resolve(process.cwd(), 'src/ml/recommendations.js'), 'utf8');
+const recommendationsSource = [
+    readFileSync(resolve(process.cwd(), 'src/ml/recommendations.js'), 'utf8'),
+    readFileSync(resolve(process.cwd(), 'src/ml/recommendations-core.js'), 'utf8'),
+].join('\n');
 assertRule(/\bmission\b/.test(recommendationsSource), 'Recommendations must include mission contract fields.');
 assertRule(/\bmastery\b/.test(recommendationsSource), 'Recommendations must include mastery contract fields.');
 assertRule(/\bnextActions\b/.test(recommendationsSource), 'Recommendations must include nextActions contract fields.');
