@@ -1,70 +1,33 @@
-import { getJSON, setJSON } from '../persistence/storage.js';
-import { createPinHash, verifyPin } from './pin-crypto.js';
+import { verifyPin } from './pin-crypto.js';
 import {
     PARENT_PIN_KEY as PIN_KEY,
     PARENT_PIN_LEGACY_KEY as PIN_KEY_LEGACY,
     PARENT_UNLOCK_KEY as UNLOCK_KEY,
 } from '../persistence/storage-keys.js';
+import {
+    loadPinData,
+    savePinData,
+    normalizePin,
+    isParentUnlocked,
+    markParentUnlocked,
+} from './pin-state.js';
+import {
+    closePinDialog,
+    getPinElements,
+    setPinStatus,
+    showPinDialog,
+    updatePinDisplay,
+} from './pin-view.js';
 
 let cachedPinData = null;
 let pinReady = null;
 let listenersBound = false;
 
-const normalizePin = (value) => (value || '').replace(/\D/g, '').slice(0, 4);
-
-const getElements = () => {
-    const dialog = document.querySelector('[data-pin-dialog]');
-    const input = document.getElementById('parent-pin-input');
-    const pinDisplayEl = document.querySelector('[data-parent-pin-display]');
-    const pinInputEl = document.querySelector('[data-parent-pin-input]');
-    const pinStatusEl = document.querySelector('[data-parent-pin-status]');
-    return { dialog, input, pinDisplayEl, pinInputEl, pinStatusEl };
-};
-
-const updatePinDisplay = () => {
-    const { pinDisplayEl, pinStatusEl } = getElements();
-    if (pinDisplayEl) {
-        pinDisplayEl.textContent = '🔒 PIN ••••';
-    }
-    if (pinStatusEl) {
-        pinStatusEl.textContent = 'PIN is set.';
-    }
-};
-
-const setPinStatus = (message) => {
-    const { pinStatusEl } = getElements();
-    if (pinStatusEl) pinStatusEl.textContent = message;
-};
-
 const loadPin = async () => {
-    let stored = await getJSON(PIN_KEY);
-
-    if (stored?.hash && stored?.salt) {
-        cachedPinData = stored;
-    } else {
-        const legacy = await getJSON(PIN_KEY_LEGACY);
-        if (legacy?.hash) {
-            const defaultPin = '1001';
-            const { hash, salt } = await createPinHash(defaultPin);
-            cachedPinData = {
-                hash,
-                salt,
-                createdAt: Date.now(),
-                migrated: true,
-            };
-            await setJSON(PIN_KEY, cachedPinData);
-        } else {
-            const defaultPin = '1001';
-            const { hash, salt } = await createPinHash(defaultPin);
-            cachedPinData = {
-                hash,
-                salt,
-                createdAt: Date.now(),
-            };
-            await setJSON(PIN_KEY, cachedPinData);
-        }
-    }
-
+    cachedPinData = await loadPinData({
+        pinKey: PIN_KEY,
+        legacyPinKey: PIN_KEY_LEGACY,
+    });
     updatePinDisplay();
     return cachedPinData;
 };
@@ -77,25 +40,9 @@ const getPinData = async () => {
     return cachedPinData;
 };
 
-const isUnlocked = () => sessionStorage.getItem(UNLOCK_KEY) === 'true';
-
-const showDialog = () => {
-    const { dialog, input } = getElements();
-    if (!dialog) return;
-
-    dialog.dataset.error = 'false';
-    if (input) input.value = '';
-
-    if (!dialog.open) {
-        dialog.showModal();
-        input?.focus();
-    }
-};
-
 const unlock = () => {
-    const { dialog } = getElements();
-    sessionStorage.setItem(UNLOCK_KEY, 'true');
-    dialog?.close('ok');
+    markParentUnlocked(UNLOCK_KEY);
+    closePinDialog('ok');
 };
 
 const handleSubmit = async (event) => {
@@ -133,7 +80,7 @@ const handleSubmit = async (event) => {
 };
 
 const savePin = async () => {
-    const { pinInputEl } = getElements();
+    const { pinInputEl } = getPinElements();
     if (!pinInputEl) return;
 
     const next = normalizePin(pinInputEl.value);
@@ -142,13 +89,10 @@ const savePin = async () => {
         return;
     }
 
-    const { hash, salt } = await createPinHash(next);
-    cachedPinData = {
-        hash,
-        salt,
-        updatedAt: Date.now(),
-    };
-    await setJSON(PIN_KEY, cachedPinData);
+    cachedPinData = await savePinData({
+        pinKey: PIN_KEY,
+        pin: next,
+    });
     pinInputEl.value = '';
     updatePinDisplay();
     setPinStatus('PIN updated (secure).');
@@ -156,8 +100,8 @@ const savePin = async () => {
 
 const checkGate = () => {
     if (window.location.hash !== '#view-parent') return;
-    if (isUnlocked()) return;
-    showDialog();
+    if (isParentUnlocked(UNLOCK_KEY)) return;
+    showPinDialog();
 };
 
 const bindGlobalListeners = () => {

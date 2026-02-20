@@ -65,10 +65,25 @@ const curriculumMocks = vi.hoisted(() => ({
     })),
 }));
 
+const songProgressMocks = vi.hoisted(() => ({
+    collectDueSongReviews: vi.fn(async () => []),
+}));
+
+const gameMasteryMocks = vi.hoisted(() => ({
+    loadGameMasteryState: vi.fn(async () => ({ games: {} })),
+}));
+
+const songLibraryMocks = vi.hoisted(() => ({
+    getSongCatalog: vi.fn(async () => ({ byId: {} })),
+}));
+
 vi.mock('../src/persistence/storage.js', () => storageMocks);
 vi.mock('../src/persistence/loaders.js', () => loaderMocks);
 vi.mock('../src/ml/adaptive-engine.js', () => adaptiveMocks);
 vi.mock('../src/curriculum/engine.js', () => curriculumMocks);
+vi.mock('../src/songs/song-progression.js', () => songProgressMocks);
+vi.mock('../src/games/game-mastery.js', () => gameMasteryMocks);
+vi.mock('../src/songs/song-library.js', () => songLibraryMocks);
 
 import {
     getLearningRecommendations,
@@ -84,6 +99,9 @@ describe('learning recommendations', () => {
         loaderMocks.loadEvents.mockClear();
         adaptiveMocks.getAdaptiveLog.mockClear();
         adaptiveMocks.getGameTuning.mockClear();
+        songProgressMocks.collectDueSongReviews.mockClear();
+        gameMasteryMocks.loadGameMasteryState.mockClear();
+        songLibraryMocks.getSongCatalog.mockClear();
         state.cache = null;
         state.tuningFails = false;
         state.tuning = { targetBpm: 88 };
@@ -129,6 +147,27 @@ describe('learning recommendations', () => {
         expect(recs).toEqual(state.cache.recommendations);
         expect(loaderMocks.loadEvents).not.toHaveBeenCalled();
         expect(storageMocks.setJSON).not.toHaveBeenCalled();
+    });
+
+    it('dedupes concurrent cache reads into a single storage request', async () => {
+        state.cache = {
+            updatedAt: Date.now(),
+            recommendations: {
+                recommendedGameId: 'rhythm-dash',
+                coachMessage: 'cached',
+            },
+        };
+
+        const [first, second, third] = await Promise.all([
+            getLearningRecommendations(),
+            getLearningRecommendations(),
+            getLearningRecommendations(),
+        ]);
+
+        expect(first).toEqual(state.cache.recommendations);
+        expect(second).toEqual(state.cache.recommendations);
+        expect(third).toEqual(state.cache.recommendations);
+        expect(storageMocks.getJSON).toHaveBeenCalledTimes(1);
     });
 
     it('returns stale cache immediately and refreshes in background', async () => {
@@ -201,5 +240,79 @@ describe('learning recommendations', () => {
         const songStep = recs.lessonSteps[recs.lessonSteps.length - 1];
         expect(recs.songLevel).toBe('advanced');
         expect(songStep.label).toContain('challenge');
+    });
+
+    it('prepends due review action when spaced review items are overdue', async () => {
+        songProgressMocks.collectDueSongReviews.mockResolvedValue([
+            {
+                id: 'twinkle',
+                dueAt: Date.now() - 1000,
+                overdueMs: 1000,
+                tier: 'foundation',
+                attempts: 2,
+            },
+        ]);
+        songLibraryMocks.getSongCatalog.mockResolvedValue({
+            byId: {
+                twinkle: { id: 'twinkle', title: 'Twinkle' },
+            },
+        });
+
+        const recs = await getLearningRecommendations({ allowCached: false });
+        expect(recs.nextActions[0]).toMatchObject({
+            id: 'due-review',
+            label: 'Review due: Twinkle',
+            href: '#view-song-twinkle',
+        });
+    });
+
+    it('prefers the most overdue game review when songs and games are both due', async () => {
+        const now = Date.now();
+        songProgressMocks.collectDueSongReviews.mockResolvedValue([
+            {
+                id: 'twinkle',
+                dueAt: now - 5_000,
+                overdueMs: 5_000,
+                tier: 'foundation',
+                attempts: 3,
+            },
+        ]);
+        gameMasteryMocks.loadGameMasteryState.mockResolvedValue({
+            games: {
+                'rhythm-dash': {
+                    attempts: 4,
+                    tier: 'foundation',
+                    updatedAt: now - (3 * 24 * 60 * 60 * 1000),
+                },
+            },
+        });
+
+        const recs = await getLearningRecommendations({ allowCached: false });
+        expect(recs.nextActions[0]).toMatchObject({
+            id: 'due-review',
+            label: 'Review due: Rhythm Dash',
+            href: '#view-game-rhythm-dash',
+        });
+    });
+
+    it('falls back to safe defaults when due review sources fail', async () => {
+        songProgressMocks.collectDueSongReviews.mockRejectedValue(new Error('songs unavailable'));
+        gameMasteryMocks.loadGameMasteryState.mockRejectedValue(new Error('games unavailable'));
+        songLibraryMocks.getSongCatalog.mockRejectedValue(new Error('catalog unavailable'));
+
+        const recs = await getLearningRecommendations({ allowCached: false });
+        expect(recs.nextActions.some((action) => action.id === 'due-review')).toBe(false);
+    });
+
+    it('builds an idle mission contract when curriculum mission is unavailable', async () => {
+        curriculumMocks.ensureCurrentMission.mockResolvedValueOnce(null);
+
+        const recs = await getLearningRecommendations({ allowCached: false });
+        expect(recs.mission).toMatchObject({
+            id: null,
+            status: 'idle',
+            steps: [],
+        });
+        expect(recs.nextActions.some((action) => action.id === 'resume-mission-step')).toBe(false);
     });
 });

@@ -1,7 +1,9 @@
-const CACHE_VERSION = 'v113';
+const CACHE_VERSION = 'v114';
 const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
+const RUNTIME_CACHE_NAME = `${CACHE_NAME}-runtime`;
 const APP_SHELL_URL = './index.html';
 const OFFLINE_URL = './offline.html';
+const RUNTIME_CACHE_MAX_ENTRIES = 180;
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const IS_LOCAL_DEV_HOST = LOCALHOST_HOSTS.has(self.location.hostname) || self.location.hostname.endsWith('.local');
 
@@ -45,7 +47,6 @@ self.addEventListener('install', (event) => {
             if (failed.length) console.warn('[SW] precache failures:', failed.length);
         })()
     );
-    self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -57,7 +58,11 @@ self.addEventListener('activate', (event) => {
                 return;
             }
             await Promise.all(
-                (await caches.keys()).map((key) => (key === CACHE_NAME ? null : caches.delete(key)))
+                (await caches.keys()).map((key) => (
+                    (key === CACHE_NAME || key === RUNTIME_CACHE_NAME)
+                        ? null
+                        : caches.delete(key)
+                ))
             );
             try {
                 await self.registration?.navigationPreload?.enable();
@@ -89,11 +94,28 @@ const parseRange = (rangeHeader, size) => {
     return { start, end };
 };
 
+const trimRuntimeCache = async () => {
+    const cache = await caches.open(RUNTIME_CACHE_NAME);
+    const keys = await cache.keys();
+    const overflow = keys.length - RUNTIME_CACHE_MAX_ENTRIES;
+    if (overflow <= 0) return;
+    await Promise.all(keys.slice(0, overflow).map((key) => cache.delete(key)));
+};
+
+const matchCached = async (request, { ignoreSearch = false } = {}) => {
+    const runtimeCache = await caches.open(RUNTIME_CACHE_NAME);
+    const runtimeHit = await runtimeCache.match(request, { ignoreSearch });
+    if (runtimeHit) return runtimeHit;
+
+    const precache = await caches.open(CACHE_NAME);
+    const precacheHit = await precache.match(request, { ignoreSearch });
+    return precacheHit || null;
+};
+
 const respondWithRange = async (request) => {
     const rangeHeader = request.headers.get('range');
     if (!rangeHeader) return null;
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request.url);
+    const cached = await matchCached(request.url);
     if (!cached) return null;
     const buffer = await cached.arrayBuffer();
     const range = parseRange(rangeHeader, buffer.byteLength);
@@ -110,13 +132,15 @@ const respondWithRange = async (request) => {
 };
 
 const cacheFirst = async (request) => {
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request);
+    const runtimeCache = await caches.open(RUNTIME_CACHE_NAME);
+    const precache = await caches.open(CACHE_NAME);
+    const cached = await runtimeCache.match(request) || await precache.match(request);
     if (cached) return cached.clone();
     try {
         const response = await fetch(request);
         if (response && response.ok) {
-            await cache.put(request, response.clone());
+            await runtimeCache.put(request, response.clone());
+            await trimRuntimeCache();
         }
         return response;
     } catch {
@@ -126,11 +150,14 @@ const cacheFirst = async (request) => {
 };
 
 const staleWhileRevalidate = async (request, event) => {
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request);
+    const runtimeCache = await caches.open(RUNTIME_CACHE_NAME);
+    const precache = await caches.open(CACHE_NAME);
+    const cached = await runtimeCache.match(request) || await precache.match(request);
     const fetchPromise = fetch(request).then((response) => {
         if (response && response.ok) {
-            cache.put(request, response.clone());
+            runtimeCache.put(request, response.clone())
+                .then(() => trimRuntimeCache())
+                .catch(() => {});
         }
         return response;
     });
@@ -205,8 +232,7 @@ const handleNavigation = async (event) => {
 };
 
 const cacheOnly = async (request) => {
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request, { ignoreSearch: true });
+    const cached = await matchCached(request, { ignoreSearch: true });
     if (cached) return cached;
     await notifyOfflineMiss(request, 'cache-only');
     return Response.error();

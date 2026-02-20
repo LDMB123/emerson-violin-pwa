@@ -3,8 +3,8 @@ import {
     attachTuning,
     setDifficultyBadge,
 } from './shared.js';
-import { GAME_META } from './game-config.js';
-import { GAME_PLAY_AGAIN } from '../utils/event-names.js';
+import { bindGameSessionLifecycle } from './game-session-lifecycle.js';
+import { resolveGameObjectiveProgress } from './game-objectives.js';
 
 /**
  * createGame — factory for universal game boilerplate.
@@ -46,19 +46,16 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         const stage = document.querySelector(viewId);
         if (!stage) return;
 
+        if (typeof gameState._disposeBindings === 'function') {
+            try {
+                gameState._disposeBindings();
+            } catch {
+                // Ignore cleanup failures from previous session bindings.
+            }
+        }
         reported = false;
         sessionStartedAt = Date.now();
         let hasReceivedInitialTuning = false;
-        // Remove previous hashchange listener before clearing gameState.
-        if (gameState._hashHandler) {
-            window.removeEventListener('hashchange', gameState._hashHandler, { passive: true });
-        }
-        if (gameState._playAgainHandler) {
-            document.removeEventListener(GAME_PLAY_AGAIN, gameState._playAgainHandler);
-        }
-        if (gameState._pagehideHandler) {
-            window.removeEventListener('pagehide', gameState._pagehideHandler, { passive: true });
-        }
         if (reportResult?.dispose) {
             reportResult.dispose();
         }
@@ -66,6 +63,24 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         Object.keys(gameState).forEach((key) => {
             delete gameState[key];
         });
+
+        const cleanupFns = [];
+        const registerCleanup = (cleanup) => {
+            if (typeof cleanup !== 'function') return cleanup;
+            cleanupFns.push(cleanup);
+            return cleanup;
+        };
+        const disposeBindings = () => {
+            while (cleanupFns.length) {
+                const cleanup = cleanupFns.pop();
+                try {
+                    cleanup();
+                } catch {
+                    // Ignore cleanup failures to ensure remaining handlers still dispose.
+                }
+            }
+        };
+        gameState._disposeBindings = disposeBindings;
 
         reportResult = attachTuning(id, (tuning) => {
             setDifficultyBadge(stage.querySelector('.game-header'), tuning.difficulty);
@@ -76,41 +91,6 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             if (typeof onReset === 'function') onReset(gameState);
         });
 
-        const objectiveTierFromComplexity = (complexity) => {
-            if (complexity >= 2) return 'mastery';
-            if (complexity >= 1) return 'core';
-            return 'foundation';
-        };
-
-        const objectiveTier = () => (
-            stage.dataset.gameObjectiveTier
-            || objectiveTierFromComplexity(Number(difficulty?.complexity || 0))
-        );
-
-        const objectiveTotalForTier = (tier) => {
-            const pack = GAME_META?.[id]?.objectivePacks?.[tier];
-            if (Array.isArray(pack) && pack.length) return pack.length;
-            return 0;
-        };
-
-        const checklistProgress = (objectiveTotal) => {
-            const candidates = Array.from(stage.querySelectorAll('input[type="checkbox"][id]'))
-                .filter((input) => !input.id.startsWith('setting-'))
-                .filter((input) => !input.id.includes('parent-'))
-                .filter((input) => /(-step-|set-)/.test(input.id));
-            const completed = candidates.filter((input) => input.checked).length;
-            if (objectiveTotal > 0) {
-                return {
-                    objectiveTotal,
-                    objectivesCompleted: Math.min(objectiveTotal, completed),
-                };
-            }
-            return {
-                objectiveTotal: candidates.length,
-                objectivesCompleted: completed,
-            };
-        };
-
         const reportSession = () => {
             if (reported) return;
             const accuracy = typeof computeAccuracy === 'function' ? computeAccuracy(gameState) : 0;
@@ -118,9 +98,16 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             reported = true;
             reportResult({ accuracy, score: gameState.score || 0 });
 
-            const tier = objectiveTier();
-            const objectiveTotal = objectiveTotalForTier(tier);
-            const objectiveProgress = checklistProgress(objectiveTotal);
+            const objectiveProgress = resolveGameObjectiveProgress({
+                stage,
+                gameId: id,
+                difficultyComplexity: difficulty?.complexity || 0,
+                includeInput: (input) => (
+                    !input.id.startsWith('setting-')
+                    && !input.id.includes('parent-')
+                    && /(-step-|set-)/.test(input.id)
+                ),
+            });
             const mistakes = Number.isFinite(gameState.mistakes)
                 ? Math.max(0, Math.round(gameState.mistakes))
                 : Math.max(0, objectiveProgress.objectiveTotal - objectiveProgress.objectivesCompleted);
@@ -133,7 +120,7 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
                 accuracy,
                 score: gameState.score || 0,
                 difficulty: difficultyLevel,
-                tier,
+                tier: objectiveProgress.tier,
                 sessionMs,
                 objectiveTotal: objectiveProgress.objectiveTotal,
                 objectivesCompleted: objectiveProgress.objectivesCompleted,
@@ -147,42 +134,28 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             if (typeof onReset === 'function') onReset(gameState);
         };
 
-        const shell = { reportSession, resetSession, gameState };
+        const shell = {
+            reportSession,
+            resetSession,
+            gameState,
+            // Register cleanup for global listeners created in onBind.
+            // These callbacks run on re-bind and on game deactivation.
+            registerCleanup,
+        };
 
         onBind(stage, difficulty, shell);
 
-        const hashHandler = () => {
-            if (window.location.hash === `#view-game-${id}`) {
-                resetSession();
-                return;
-            }
-            if (typeof gameState._onDeactivate === 'function') {
-                gameState._onDeactivate();
-            }
-            reportSession();
-        };
-        const playAgainHandler = (event) => {
-            const requestedViewId = event?.detail?.viewId;
-            const currentViewId = window.location.hash.replace(/^#/, '');
-            if (requestedViewId && requestedViewId !== `view-game-${id}`) return;
-            if (currentViewId !== `view-game-${id}`) return;
-            resetSession();
-        };
-        const pagehideHandler = (event) => {
-            const currentViewId = window.location.hash.replace(/^#/, '');
-            if (currentViewId !== `view-game-${id}`) return;
-            if (event?.persisted) return;
-            if (typeof gameState._onDeactivate === 'function') {
-                gameState._onDeactivate();
-            }
-            reportSession();
-        };
-        gameState._hashHandler = hashHandler;
-        gameState._playAgainHandler = playAgainHandler;
-        gameState._pagehideHandler = pagehideHandler;
-        window.addEventListener('hashchange', hashHandler, { passive: true });
-        window.addEventListener('pagehide', pagehideHandler, { passive: true });
-        document.addEventListener(GAME_PLAY_AGAIN, playAgainHandler);
+        registerCleanup(bindGameSessionLifecycle({
+            hashId: `#view-game-${id}`,
+            onReset: resetSession,
+            onDeactivate: () => {
+                if (typeof gameState._onDeactivate === 'function') {
+                    gameState._onDeactivate();
+                }
+                disposeBindings();
+            },
+            onReport: reportSession,
+        }));
     }
 
     return { update, bind };

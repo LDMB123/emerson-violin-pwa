@@ -1,0 +1,21 @@
+export const createSequenceCallbackState = ({
+    getCombo,
+    getScore,
+    getSeqIndex,
+    getSequence,
+    hitNotes,
+    getLastCorrectNote,
+    setLastCorrectNote,
+    markChecklist,
+    markChecklistIf,
+}) => ({
+    get combo() { return getCombo(); },
+    get score() { return getScore(); },
+    get seqIndex() { return getSeqIndex(); },
+    get sequence() { return getSequence(); },
+    get hitNotes() { return hitNotes; },
+    get lastCorrectNote() { return getLastCorrectNote(); },
+    set lastCorrectNote(value) { setLastCorrectNote(value); },
+    markChecklist,
+    markChecklistIf,
+});

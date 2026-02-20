@@ -10,6 +10,7 @@
 import { INSTALL_TOAST_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
 import { isStandalone, isAutomated } from './platform-utils.js';
 import { markDismissed, wasDismissed } from './dismiss-helpers.js';
+import { INSTALL_PROMPT_CHANGE_EVENT, canPromptInstall, promptInstall } from './install-prompt.js';
 const SHOW_DELAY = 5000;
 const AUTO_DISMISS = 8000;
 
@@ -74,8 +75,19 @@ const removePulsingDot = () => {
     parentLockButton?.querySelector('.nav-pulse')?.remove();
 };
 
+const updateActionLabel = () => {
+    if (!actionBtn) return;
+    actionBtn.textContent = canPromptInstall() ? 'Install app' : 'Install';
+};
+
 // Wire events
 actionBtn?.addEventListener('click', async () => {
+    const result = await promptInstall();
+    if (result.prompted) {
+        await dismiss(result.accepted);
+        return;
+    }
+
     await dismiss(true);
     // Open the full install guide dialog from anywhere in the app.
     const { openInstallGuide } = await import('./install-guide.js');
@@ -89,6 +101,8 @@ const init = async () => {
     if (isAutomated() || isStandalone()) return;
     if (await wasDismissed(DISMISS_KEY)) return;
 
+    updateActionLabel();
+    document.addEventListener(INSTALL_PROMPT_CHANGE_EVENT, updateActionLabel);
     addPulsingDot();
     setTimeout(show, SHOW_DELAY);
 };

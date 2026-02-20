@@ -14,6 +14,7 @@ const STATIC_ROUTE_META = {
     'view-analysis': { persona: 'child', primaryTask: false, navGroup: 'practice' },
     'view-help': { persona: 'child', primaryTask: false, navGroup: 'utility' },
     'view-about': { persona: 'child', primaryTask: false, navGroup: 'utility' },
+    'view-privacy': { persona: 'child', primaryTask: false, navGroup: 'utility' },
     'view-backup': { persona: 'child', primaryTask: false, navGroup: 'utility' },
     'view-settings': { persona: 'child', primaryTask: false, navGroup: 'utility' },
     'view-parent': { persona: 'parent', primaryTask: false, navGroup: 'parent' },

@@ -1,13 +1,19 @@
 import { createGame } from './game-shell.js';
+import { createAudioCueBank } from './game-audio-cues.js';
 import {
     cachedEl,
     markChecklist,
     markChecklistIf,
     bindTap,
     playToneNote,
-    createSoundsChangeBinding,
+    bindSoundsChange,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import {
+    renderEarTrainerDots,
+    setEarTrainerQuestion,
+    clearEarTrainerChoices,
+} from './ear-trainer-view.js';
 
 const earQuestionEl = cachedEl('[data-ear="question"]');
 
@@ -20,8 +26,6 @@ const updateEarTrainer = () => {
         questionEl.textContent = `Rounds complete: ${checked}/${inputs.length}`;
     }
 };
-
-const bindSoundsChange = createSoundsChangeBinding();
 
 const { bind } = createGame({
     id: 'ear-trainer',
@@ -49,7 +53,7 @@ const { bind } = createGame({
         if (gameState._setQuestion) gameState._setQuestion(`Question 1 of ${rounds}`);
         if (gameState._updateStreak) gameState._updateStreak();
     },
-    onBind: (stage, difficulty, { reportSession, resetSession, gameState }) => {
+    onBind: (stage, difficulty, { reportSession, resetSession, gameState, registerCleanup }) => {
         const playButton = stage.querySelector('[data-ear="play"]');
         const questionEl = stage.querySelector('[data-ear="question"]');
         const streakEl = stage.querySelector('[data-ear="streak"]');
@@ -59,12 +63,12 @@ const { bind } = createGame({
         const audioD = stage.querySelector('audio[aria-labelledby="ear-d-label"]');
         const audioA = stage.querySelector('audio[aria-labelledby="ear-a-label"]');
         const audioE = stage.querySelector('audio[aria-labelledby="ear-e-label"]');
-        const audioMap = {
+        const cueBank = createAudioCueBank({
             G: audioG,
             D: audioD,
             A: audioA,
             E: audioE,
-        };
+        });
 
         // difficulty.speed: visual feedback only for this game (audio files play at fixed speed)
         // difficulty.complexity: narrows the note pool; complexity=1 (medium) = all 4 strings (current behavior)
@@ -93,16 +97,15 @@ const { bind } = createGame({
         gameState._choices = choices;
 
         const setActiveDot = () => {
-            dots.forEach((dot, index) => {
-                dot.classList.toggle('is-active', index === gameState.currentIndex && index < rounds);
-                dot.classList.toggle('is-disabled', index >= rounds);
+            renderEarTrainerDots({
+                dots,
+                currentIndex: gameState.currentIndex,
+                rounds,
             });
         };
 
         const setQuestion = (text) => {
-            if (!questionEl) return;
-            questionEl.textContent = text;
-            questionEl.dataset.live = 'true';
+            setEarTrainerQuestion(questionEl, text);
         };
 
         const updateStreak = () => {
@@ -127,12 +130,7 @@ const { bind } = createGame({
 
         gameState._onDeactivate = () => {
             gameState.currentTone = null;
-            Object.values(audioMap).forEach((audio) => {
-                if (audio && !audio.paused) {
-                    audio.pause();
-                    audio.currentTime = 0;
-                }
-            });
+            cueBank.stopAll();
         };
 
         updateSoundState();
@@ -140,16 +138,11 @@ const { bind } = createGame({
         const soundsHandler = (event) => {
             if (event.detail?.enabled === false) {
                 setQuestion('Sounds are off. Turn on Sounds to play.');
-                Object.values(audioMap).forEach((audio) => {
-                    if (audio && !audio.paused) {
-                        audio.pause();
-                        audio.currentTime = 0;
-                    }
-                });
+                cueBank.stopAll();
             }
             updateSoundState();
         };
-        bindSoundsChange(soundsHandler);
+        bindSoundsChange(soundsHandler, registerCleanup);
 
         bindTap(playButton, () => {
             if (!isSoundEnabled()) {
@@ -161,11 +154,7 @@ const { bind } = createGame({
                 setQuestion('New round! Listen and tap the matching note.');
             }
             gameState.currentTone = tonePool[Math.floor(Math.random() * tonePool.length)];
-            const audio = gameState.currentTone ? audioMap[gameState.currentTone] : null;
-            if (audio) {
-                audio.currentTime = 0;
-                audio.play().catch(() => {});
-            }
+            cueBank.play(gameState.currentTone);
             const total = rounds || 10;
             setQuestion(`Question ${Math.min(gameState.currentIndex + 1, total)} of ${total} · Tap the matching note.`);
         });
@@ -197,9 +186,7 @@ const { bind } = createGame({
                 }
                 gameState.currentTone = null;
                 gameState.currentIndex = Math.min(gameState.currentIndex + 1, rounds);
-                choices.forEach((choiceItem) => {
-                    choiceItem.checked = false;
-                });
+                clearEarTrainerChoices(choices);
                 setActiveDot();
                 if (gameState.currentIndex >= rounds) {
                     markChecklist('et-step-6');

@@ -1,5 +1,4 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
-import { isSoundEnabled } from '../utils/sound-state.js';
 import {
     RT_STATE,
     ML_UPDATE,
@@ -12,6 +11,14 @@ import {
     getSessionState,
     init as initSessionController,
 } from '../realtime/session-controller.js';
+import {
+    applyFrame,
+    resetDisplay,
+    realtimeRenderKey,
+    setStatus,
+    updateControlState,
+} from './tuner-view.js';
+import { bindToneButtons } from './tuner-tone-controls.js';
 
 let livePanel = null;
 let startButton = null;
@@ -28,8 +35,31 @@ let tolerance = 8;
 let inTuneCount = 0;
 let detectCount = 0;
 let globalListenersBound = false;
+let pendingRealtimeFrame = 0;
+let pendingRealtimeState = null;
+let lastRenderedStateKey = '';
 
 const isTunerView = () => window.location.hash === '#view-tuner';
+const isSessionListening = (session) => Boolean(session?.active) && !session?.paused;
+const idleStatusText = () => `Tap Start Listening (±${tolerance}¢).`;
+const listeningStatusText = () => `Listening… play a note (±${tolerance}¢).`;
+
+const getDisplayRefs = () => ({
+    livePanel,
+    noteEl,
+    centsEl,
+    freqEl,
+});
+
+const getControlRefs = () => ({
+    startButton,
+    stopButton,
+    livePanel,
+});
+
+const setStatusText = (text) => {
+    setStatus(statusEl, text);
+};
 
 const resolveElements = () => {
     livePanel = document.querySelector('#tuner-live');
@@ -45,74 +75,76 @@ const resolveElements = () => {
         Array.from(document.querySelectorAll('[data-tone-audio]')).map((audio) => [audio.dataset.toneAudio, audio]),
     );
     refToneButtons = Array.from(document.querySelectorAll('[data-ref-tone]'));
+    lastRenderedStateKey = '';
 
     return Boolean(livePanel && startButton && stopButton);
 };
 
-const setStatus = (text) => {
-    if (statusEl) statusEl.textContent = text;
+const applyRealtimeState = (detail) => {
+    const key = realtimeRenderKey(detail);
+    if (key === lastRenderedStateKey) return;
+    lastRenderedStateKey = key;
+    const listening = Boolean(detail?.listening) && !detail?.paused;
+    updateControlState(getControlRefs(), listening);
+    applyFrame({
+        frame: detail?.lastFeature,
+        tolerance,
+        viewRefs: getDisplayRefs(),
+        listeningStatusText: listeningStatusText(),
+        setStatusText,
+        onDetection: (inTune) => {
+            detectCount += 1;
+            if (inTune) inTuneCount += 1;
+        },
+    });
 };
 
-const resetDisplay = () => {
-    if (noteEl) noteEl.textContent = '--';
-    if (centsEl) centsEl.textContent = '±0 cents';
-    if (freqEl) freqEl.textContent = '0 Hz';
-    if (livePanel) livePanel.classList.remove('in-tune');
-    if (livePanel) livePanel.style.setProperty('--tuner-offset', '0');
+const flushPendingRealtimeState = () => {
+    if (pendingRealtimeFrame) {
+        window.cancelAnimationFrame(pendingRealtimeFrame);
+        pendingRealtimeFrame = 0;
+    }
+    pendingRealtimeState = null;
 };
 
-const applyFrame = (frame) => {
-    if (!frame || !frame.hasSignal) {
-        resetDisplay();
-        setStatus(`Listening… play a note (±${tolerance}¢).`);
+const scheduleRealtimeState = (detail) => {
+    pendingRealtimeState = detail || {};
+    if (pendingRealtimeFrame) return;
+    if (typeof window.requestAnimationFrame !== 'function') {
+        applyRealtimeState(pendingRealtimeState);
+        pendingRealtimeState = null;
         return;
     }
-
-    const cents = Number.isFinite(frame.cents) ? Math.round(frame.cents) : 0;
-    const frequency = Number.isFinite(frame.frequency) ? Math.round(frame.frequency * 10) / 10 : 0;
-    const inTune = Math.abs(cents) <= tolerance;
-
-    if (noteEl) noteEl.textContent = frame.note || '--';
-    if (centsEl) centsEl.textContent = `${cents > 0 ? '+' : ''}${cents} cents`;
-    if (freqEl) freqEl.textContent = `${frequency} Hz`;
-    if (livePanel) {
-        livePanel.style.setProperty('--tuner-offset', String(Math.max(-50, Math.min(50, cents))));
-        livePanel.classList.toggle('in-tune', inTune);
-    }
-
-    detectCount += 1;
-    if (inTune) inTuneCount += 1;
-
-    setStatus(inTune ? `In tune (±${tolerance}¢) ✨` : 'Adjust to center.');
-};
-
-const updateControlState = (active) => {
-    if (startButton) {
-        startButton.disabled = Boolean(active);
-        startButton.setAttribute('aria-pressed', active ? 'true' : 'false');
-        startButton.textContent = active ? 'Listening' : 'Start Listening';
-    }
-    if (stopButton) stopButton.disabled = !active;
-    if (livePanel) livePanel.classList.toggle('is-active', Boolean(active));
+    pendingRealtimeFrame = window.requestAnimationFrame(() => {
+        pendingRealtimeFrame = 0;
+        if (!isTunerView()) {
+            pendingRealtimeState = null;
+            return;
+        }
+        applyRealtimeState(pendingRealtimeState || {});
+        pendingRealtimeState = null;
+    });
 };
 
 const startTuner = async () => {
     if (!resolveElements()) return;
     inTuneCount = 0;
     detectCount = 0;
-    setStatus('Starting microphone…');
+    setStatusText('Starting microphone…');
     const session = await startSession();
-    updateControlState(session.active && !session.paused);
+    updateControlState(getControlRefs(), session.active && !session.paused);
     if (!session.active) {
-        setStatus('Microphone unavailable. Try helper tones below.');
+        setStatusText('Microphone unavailable. Try helper tones below.');
     }
 };
 
 const stopTuner = async () => {
     await stopSession('tuner-stop');
-    updateControlState(false);
-    resetDisplay();
-    setStatus(`Tap Start Listening (±${tolerance}¢).`);
+    flushPendingRealtimeState();
+    lastRenderedStateKey = '';
+    updateControlState(getControlRefs(), false);
+    resetDisplay(getDisplayRefs());
+    setStatusText(idleStatusText());
 
     if (detectCount > 0) {
         const accuracy = (inTuneCount / detectCount) * 100;
@@ -120,59 +152,6 @@ const stopTuner = async () => {
     }
     inTuneCount = 0;
     detectCount = 0;
-};
-
-const playToneSample = (tone) => {
-    const sample = toneSamples.get(tone);
-    if (!sample) return;
-
-    if (!isSoundEnabled()) {
-        setStatus('Sounds are off. Turn on Sounds to hear this tone.');
-        return;
-    }
-
-    toneSamples.forEach((audio) => {
-        if (!audio.paused) {
-            audio.pause();
-            audio.currentTime = 0;
-        }
-        audio.closest('.audio-card')?.classList.remove('is-playing');
-    });
-
-    const card = sample.closest('.audio-card');
-    sample.currentTime = 0;
-    sample.play().catch(() => {});
-    card?.classList.add('is-playing');
-    sample.onended = () => card?.classList.remove('is-playing');
-};
-
-const bindToneButtons = () => {
-    toneButtons.forEach((button) => {
-        if (button.dataset.tunerToneBound === 'true') return;
-        button.dataset.tunerToneBound = 'true';
-        button.addEventListener('click', () => {
-            playToneSample(button.dataset.tone);
-        });
-    });
-
-    refToneButtons.forEach((button) => {
-        if (button.dataset.tunerRefBound === 'true') return;
-        button.dataset.tunerRefBound = 'true';
-        button.addEventListener('click', () => {
-            const tone = button.dataset.refTone;
-            const card = button.closest('.audio-card');
-            const sample = toneSamples.get(tone);
-
-            if (sample && !sample.paused) {
-                sample.pause();
-                sample.currentTime = 0;
-                card?.classList.remove('is-playing');
-                return;
-            }
-
-            playToneSample(tone);
-        });
-    });
 };
 
 const bindLocalListeners = () => {
@@ -185,14 +164,19 @@ const bindLocalListeners = () => {
         stopButton.dataset.tunerBound = 'true';
         stopButton.addEventListener('click', stopTuner);
     }
-    bindToneButtons();
+    bindToneButtons({
+        toneButtons,
+        refToneButtons,
+        toneSamples,
+        setStatus: setStatusText,
+    });
 };
 
 const applyTuning = async () => {
     const tuning = await getGameTuning('tuner');
     tolerance = tuning.tolerance ?? tolerance;
     setDifficultyBadge(document.querySelector('#tuner-live .tuner-card-header'), tuning.difficulty);
-    setStatus(`Tap Start Listening (±${tolerance}¢).`);
+    setStatusText(idleStatusText());
 };
 
 const bindGlobalListeners = () => {
@@ -202,20 +186,21 @@ const bindGlobalListeners = () => {
     window.addEventListener('hashchange', () => {
         if (!isTunerView()) return;
         const session = getSessionState();
-        const active = Boolean(session.active) && !session.paused;
-        updateControlState(active);
-        applyFrame(session.lastFeature);
-        if (!active) {
-            setStatus(`Tap Start Listening (±${tolerance}¢).`);
+        const listening = isSessionListening(session);
+        applyRealtimeState({
+            listening,
+            paused: session.paused,
+            lastFeature: session.lastFeature,
+        });
+        if (!listening) {
+            setStatusText(idleStatusText());
         }
     }, { passive: true });
 
     document.addEventListener(RT_STATE, (event) => {
         if (!isTunerView()) return;
         const detail = event.detail || {};
-        const listening = Boolean(detail.listening) && !detail.paused;
-        updateControlState(listening);
-        applyFrame(detail.lastFeature);
+        scheduleRealtimeState(detail);
     });
 
     document.addEventListener(ML_UPDATE, (event) => {
@@ -238,13 +223,31 @@ const initTuner = () => {
     if (!startButton || !stopButton) return;
     bindLocalListeners();
     const session = getSessionState();
-    const active = Boolean(session.active) && !session.paused;
-    updateControlState(active);
+    const active = isSessionListening(session);
+    lastRenderedStateKey = '';
+    updateControlState(getControlRefs(), active);
     if (session.lastFeature && active) {
-        applyFrame(session.lastFeature);
+        applyFrame({
+            frame: session.lastFeature,
+            tolerance,
+            viewRefs: getDisplayRefs(),
+            listeningStatusText: listeningStatusText(),
+            setStatusText,
+            onDetection: () => {},
+        });
+        lastRenderedStateKey = realtimeRenderKey({
+            listening: active,
+            paused: session.paused,
+            lastFeature: session.lastFeature,
+        });
     } else {
-        resetDisplay();
-        setStatus(`Tap Start Listening (±${tolerance}¢).`);
+        resetDisplay(getDisplayRefs());
+        setStatusText(idleStatusText());
+        lastRenderedStateKey = realtimeRenderKey({
+            listening: active,
+            paused: session.paused,
+            lastFeature: null,
+        });
     }
     applyTuning();
 };

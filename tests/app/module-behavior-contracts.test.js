@@ -18,6 +18,132 @@ vi.mock('../../src/utils/dom-ready.js', () => ({
     },
 }));
 
+vi.mock('../../src/wasm/load-core.js', () => {
+    const SkillCategory = Object.freeze({
+        Pitch: 'pitch',
+        Rhythm: 'rhythm',
+        BowControl: 'bow_control',
+        Posture: 'posture',
+        Reading: 'reading',
+    });
+
+    class SkillProfile {
+        constructor() {
+            this.pitch = 50;
+            this.rhythm = 50;
+            this.bow_control = 50;
+            this.posture = 50;
+            this.reading = 50;
+        }
+
+        update_skill(category, score) {
+            if (typeof category !== 'string') return;
+            const value = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0;
+            if (Object.values(SkillCategory).includes(category)) {
+                this[category] = value;
+            }
+        }
+
+        weakest_skill() {
+            const values = [
+                ['pitch', this.pitch],
+                ['rhythm', this.rhythm],
+                ['bow_control', this.bow_control],
+                ['posture', this.posture],
+                ['reading', this.reading],
+            ];
+            values.sort((left, right) => left[1] - right[1]);
+            return values[0]?.[0] || 'pitch';
+        }
+    }
+
+    class PlayerProgress {
+        constructor() {
+            this.level = 1;
+            this.xp = 0;
+        }
+
+        #recomputeLevel() {
+            const levelSize = 120;
+            this.level = Math.max(1, Math.floor(this.xp / levelSize) + 1);
+        }
+
+        log_practice(minutes = 0) {
+            this.xp += Math.max(0, Math.round(minutes * 5));
+            this.#recomputeLevel();
+        }
+
+        log_game_score(_id, score = 0) {
+            this.xp += Math.max(0, Math.round((Number(score) || 0) * 0.2));
+            this.#recomputeLevel();
+        }
+
+        log_song_complete(score = 0) {
+            this.xp += Math.max(0, Math.round((Number(score) || 0) * 0.15));
+            this.#recomputeLevel();
+        }
+
+        xp_to_next_level() {
+            const levelSize = 120;
+            const nextLevelXp = this.level * levelSize;
+            return Math.max(0, nextLevelXp - this.xp);
+        }
+
+        level_progress() {
+            const levelSize = 120;
+            const previousLevelXp = (this.level - 1) * levelSize;
+            const progress = ((this.xp - previousLevelXp) / levelSize) * 100;
+            return Math.max(0, Math.min(100, Math.round(progress)));
+        }
+    }
+
+    class AchievementTracker {
+        #unlocked = new Set();
+
+        unlock(id) {
+            if (id) this.#unlocked.add(id);
+        }
+
+        is_unlocked(id) {
+            return this.#unlocked.has(id);
+        }
+
+        check_progress() {
+            return undefined;
+        }
+    }
+
+    const calculate_streak = (days) => {
+        const values = Array.from(days || [])
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value))
+            .sort((left, right) => left - right);
+        if (!values.length) return 0;
+
+        let streak = 1;
+        let best = 1;
+        for (let index = 1; index < values.length; index += 1) {
+            if (values[index] === values[index - 1] + 1) {
+                streak += 1;
+            } else if (values[index] !== values[index - 1]) {
+                streak = 1;
+            }
+            best = Math.max(best, streak);
+        }
+        return best;
+    };
+
+    return {
+        getCore: async () => ({
+            PlayerProgress,
+            AchievementTracker,
+            SkillProfile,
+            SkillCategory,
+            calculate_streak,
+        }),
+    };
+});
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const gameMetricsPath = path.join(repoRoot, 'src/games/game-metrics.js');
 const gameMetricsSource = fs.readFileSync(gameMetricsPath, 'utf8');

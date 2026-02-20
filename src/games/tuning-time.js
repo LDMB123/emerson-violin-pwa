@@ -1,7 +1,13 @@
 import { createGame } from './game-shell.js';
-import { markChecklist, bindTap, readLiveNumber, createSoundsChangeBinding } from './shared.js';
+import { createAudioCueBank } from './game-audio-cues.js';
+import { markChecklist, bindTap, readLiveNumber, bindSoundsChange } from './shared.js';
 import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import {
+    formatTuningProgressMessage,
+    setTuningStatusText,
+    renderTuningProgress,
+} from './tuning-time-view.js';
 
 const updateTuningTime = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-tuning-time input[id^="tt-step-"]'));
@@ -11,8 +17,6 @@ const updateTuningTime = () => {
     const liveScore = readLiveNumber(scoreEl, 'liveScore');
     if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 25);
 };
-
-const bindSoundsChange = createSoundsChangeBinding();
 
 const { bind } = createGame({
     id: 'tuning-time',
@@ -25,23 +29,25 @@ const { bind } = createGame({
         const progressEl = gameState._progressEl;
         const progressBar = gameState._progressBar;
         const targetStrings = gameState.targetStrings || 4;
-        if (statusEl) statusEl.textContent = `Tune ${targetStrings} strings to warm up.`;
-        if (progressEl) {
-            progressEl.style.width = '0%';
-            if (progressBar) progressBar.setAttribute('aria-valuenow', 0);
-        }
+        setTuningStatusText(statusEl, `Tune ${targetStrings} strings to warm up.`);
+        renderTuningProgress({
+            progressEl,
+            progressBar,
+            tunedCount: 0,
+            targetStrings,
+        });
     },
-    onBind: (stage, difficulty, { reportSession, gameState }) => {
+    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const statusEl = stage.querySelector('[data-tuning="status"]');
         const progressEl = stage.querySelector('[data-tuning="progress"]');
         const progressBar = progressEl?.parentElement;
         const buttons = Array.from(stage.querySelectorAll('.tuning-btn'));
-        const audioMap = {
+        const cueBank = createAudioCueBank({
             G: stage.querySelector('audio[aria-labelledby="tuning-g-label"]'),
             D: stage.querySelector('audio[aria-labelledby="tuning-d-label"]'),
             A: stage.querySelector('audio[aria-labelledby="tuning-a-label"]'),
             E: stage.querySelector('audio[aria-labelledby="tuning-e-label"]'),
-        };
+        });
         const checklistMap = {
             G: 'tt-step-1',
             D: 'tt-step-2',
@@ -62,21 +68,17 @@ const { bind } = createGame({
         const { targetStrings } = gameState;
 
         if (statusEl && gameState.tunedNotes.size === 0) {
-            statusEl.textContent = `Tune ${targetStrings} strings to warm up.`;
+            setTuningStatusText(statusEl, `Tune ${targetStrings} strings to warm up.`);
         }
-        if (progressEl) {
-            const percent = clamp((gameState.tunedNotes.size / targetStrings) * 100, 0, 100);
-            progressEl.style.width = `${percent}%`;
-            if (progressBar) progressBar.setAttribute('aria-valuenow', Math.round(percent));
-        }
+        renderTuningProgress({
+            progressEl,
+            progressBar,
+            tunedCount: gameState.tunedNotes.size,
+            targetStrings,
+        });
 
         gameState._onDeactivate = () => {
-            Object.values(audioMap).forEach((audio) => {
-                if (audio && !audio.paused) {
-                    audio.pause();
-                    audio.currentTime = 0;
-                }
-            });
+            cueBank.stopAll();
         };
 
         buttons.forEach((button) => {
@@ -84,26 +86,22 @@ const { bind } = createGame({
                 const note = button.dataset.tuningNote;
                 if (!note) return;
                 if (!isSoundEnabled()) {
-                    if (statusEl) statusEl.textContent = 'Sounds are off. Enable Sounds to hear the tone.';
+                    setTuningStatusText(statusEl, 'Sounds are off. Enable Sounds to hear the tone.');
                     return;
                 }
-                const audio = audioMap[note];
-                if (audio) {
-                    audio.currentTime = 0;
-                    audio.play().catch(() => {});
-                }
+                cueBank.play(note);
                 gameState.tunedNotes.add(note);
-                if (statusEl) {
-                    const remaining = Math.max(0, targetStrings - gameState.tunedNotes.size);
-                    statusEl.textContent = remaining
-                        ? `Tuning ${note} · ${remaining} more string${remaining === 1 ? '' : 's'} to go.`
-                        : 'All target strings tuned. Great job!';
-                }
-                if (progressEl) {
-                    const percent = clamp((gameState.tunedNotes.size / targetStrings) * 100, 0, 100);
-                    progressEl.style.width = `${percent}%`;
-                    if (progressBar) progressBar.setAttribute('aria-valuenow', Math.round(percent));
-                }
+                setTuningStatusText(statusEl, formatTuningProgressMessage({
+                    note,
+                    tunedCount: gameState.tunedNotes.size,
+                    targetStrings,
+                }));
+                renderTuningProgress({
+                    progressEl,
+                    progressBar,
+                    tunedCount: gameState.tunedNotes.size,
+                    targetStrings,
+                });
                 markChecklist(checklistMap[note]);
                 if (gameState.tunedNotes.size >= targetStrings) {
                     reportSession();
@@ -112,11 +110,11 @@ const { bind } = createGame({
         });
 
         const soundsHandler = (event) => {
-            if (event.detail?.enabled === false && statusEl) {
-                statusEl.textContent = 'Sounds are off. Enable Sounds to hear tones.';
+            if (event.detail?.enabled === false) {
+                setTuningStatusText(statusEl, 'Sounds are off. Enable Sounds to hear tones.');
             }
         };
-        bindSoundsChange(soundsHandler);
+        bindSoundsChange(soundsHandler, registerCleanup);
     },
 });
 

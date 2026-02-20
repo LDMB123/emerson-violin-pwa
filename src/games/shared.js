@@ -174,13 +174,16 @@ export const recordGameEvent = async (id, payload = {}) => {
     }
 };
 
-export const createSoundsChangeBinding = () => {
-    let _handler = null;
-    return (handler) => {
-        if (_handler) document.removeEventListener(SOUNDS_CHANGE, _handler);
-        _handler = handler;
-        document.addEventListener(SOUNDS_CHANGE, handler);
+export const bindSoundsChange = (handler, registerCleanup = null) => {
+    if (typeof handler !== 'function') return () => {};
+    document.addEventListener(SOUNDS_CHANGE, handler);
+    const cleanup = () => {
+        document.removeEventListener(SOUNDS_CHANGE, handler);
     };
+    if (typeof registerCleanup === 'function') {
+        registerCleanup(cleanup);
+    }
+    return cleanup;
 };
 
 export const attachTuning = (id, onUpdate) => {

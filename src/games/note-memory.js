@@ -1,15 +1,27 @@
 import { createGame } from './game-shell.js';
+import { bindVisibilityLifecycle } from './game-interactive-runtime.js';
 import {
     cachedEl,
-    formatCountdown,
     readLiveNumber,
-    setLiveNumber,
     bindTap,
     playToneNote,
     playToneSequence,
     stopTonePlayer,
-    createSoundsChangeBinding,
+    bindSoundsChange,
 } from './shared.js';
+import {
+    resetNoteMemoryCards,
+    shuffleNoteValues,
+    applyNoteValuesToCards,
+} from './note-memory-cards.js';
+import { createNoteMemoryTimer } from './note-memory-timer.js';
+import {
+    bindNoteMemoryCardInputs,
+} from './note-memory-input.js';
+import { createNoteMemoryMismatchReveal } from './note-memory-mismatch.js';
+import { createNoteMemoryRoundHandlers } from './note-memory-effects.js';
+import { resetNoteMemorySession } from './note-memory-reset.js';
+import { renderNoteMemoryHud } from './note-memory-view.js';
 
 const memoryMatchesEl = cachedEl('[data-memory="matches"]');
 const memoryScoreEl = cachedEl('[data-memory="score"]');
@@ -34,8 +46,6 @@ const updateNoteMemory = () => {
     }
 };
 
-const bindSoundsChange = createSoundsChangeBinding();
-
 const { bind } = createGame({
     id: 'note-memory',
     computeAccuracy: (state) => state._totalPairs
@@ -46,7 +56,7 @@ const { bind } = createGame({
         if (gameState._timerId) return;
         gameState._resetGame?.();
     },
-    onBind: (stage, difficulty, { reportSession, gameState }) => {
+    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const cards = Array.from(stage.querySelectorAll('.memory-card'));
         const timerEl = stage.querySelector('[data-memory="timer"]');
         const matchesEl = stage.querySelector('[data-memory="matches"]');
@@ -66,11 +76,7 @@ const { bind } = createGame({
         // difficulty.complexity: visual feedback only for this game (card grid is fixed in HTML)
         const timeLimit = Math.round(45 * difficulty.speed);
         let timeLeft = timeLimit;
-        let timerId = null;
-        let endTime = null;
         let ended = false;
-        let paused = false;
-        let mismatchTimer = null;
 
         // Store on gameState for computeAccuracy and onReset
         gameState._totalPairs = totalPairs;
@@ -78,44 +84,17 @@ const { bind } = createGame({
         gameState.matches = 0;
 
         const updateHud = () => {
-            if (matchesEl) {
-                matchesEl.dataset.liveMatches = String(matches);
-                matchesEl.textContent = `${matches}/${totalPairs}`;
-            }
-            setLiveNumber(scoreEl, 'liveScore', score);
-            if (streakEl) streakEl.textContent = String(matchStreak);
-            if (timerEl) timerEl.textContent = formatCountdown(timeLeft);
-        };
-
-        const stopTimer = () => {
-            if (timerId) {
-                clearInterval(timerId);
-                timerId = null;
-            }
-            endTime = null;
-            gameState._timerId = null;
-        };
-
-        const pauseTimer = () => {
-            if (!timerId) return;
-            if (endTime) {
-                timeLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-            }
-            stopTimer();
-            paused = true;
-        };
-
-        gameState._onDeactivate = () => {
-            pauseTimer();
-            stopTonePlayer();
-        };
-
-        const resumeTimer = () => {
-            if (!paused || ended) return;
-            if (window.location.hash !== '#view-game-note-memory') return;
-            if (timeLeft <= 0) return;
-            paused = false;
-            startTimer();
+            renderNoteMemoryHud({
+                matchesEl,
+                scoreEl,
+                streakEl,
+                timerEl,
+                matches,
+                totalPairs,
+                score,
+                matchStreak,
+                timeLeft,
+            });
         };
 
         const finalizeGame = () => {
@@ -123,59 +102,67 @@ const { bind } = createGame({
             gameState.score = score;
             reportSession();
         };
+        const timer = createNoteMemoryTimer({
+            getTimeLeft: () => timeLeft,
+            setTimeLeft: (value) => {
+                timeLeft = value;
+            },
+            getEnded: () => ended,
+            setEnded: (value) => {
+                ended = value;
+            },
+            clearLock: () => {
+                lock = false;
+            },
+            updateHud,
+            finalizeGame,
+            setGameTimerId: (value) => {
+                gameState._timerId = value;
+            },
+            isViewActive: () => window.location.hash === '#view-game-note-memory',
+        });
+        const mismatchReveal = createNoteMemoryMismatchReveal({
+            clearLock: () => {
+                lock = false;
+            },
+            updateHud,
+        });
 
-        const startTimer = () => {
-            if (timerId) return;
-            paused = false;
-            endTime = Date.now() + timeLeft * 1000;
-            timerId = window.setInterval(() => {
-                if (!endTime) return;
-                timeLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-                if (timeLeft <= 0) {
-                    timeLeft = 0;
-                    ended = true;
-                    lock = false;
-                    stopTimer();
-                    finalizeGame();
-                }
-                updateHud();
-            }, 300);
-            gameState._timerId = timerId;
+        gameState._onDeactivate = () => {
+            timer.pauseTimer();
+            stopTonePlayer();
         };
 
         const resetGame = () => {
-            stopTimer();
-            if (mismatchTimer) {
-                clearTimeout(mismatchTimer);
-                mismatchTimer = null;
-            }
-            flipped = [];
-            lock = false;
-            matches = 0;
-            score = 0;
-            matchStreak = 0;
-            timeLeft = timeLimit;
-            ended = false;
-            gameState.matches = 0;
-            gameState.score = 0;
-            cards.forEach((card) => {
-                card.classList.remove('is-matched');
-                const input = card.querySelector('input');
-                if (input) {
-                    input.checked = false;
-                    input.disabled = false;
-                }
+            resetNoteMemorySession({
+                stopTimer: () => {
+                    timer.stopTimer();
+                },
+                resetMismatchReveal: () => {
+                    mismatchReveal.reset();
+                },
+                resetRoundState: () => {
+                    flipped = [];
+                    lock = false;
+                    matches = 0;
+                    score = 0;
+                    matchStreak = 0;
+                    timeLeft = timeLimit;
+                    ended = false;
+                },
+                resetGameState: () => {
+                    gameState.matches = 0;
+                    gameState.score = 0;
+                },
+                resetCards: () => {
+                    resetNoteMemoryCards(cards);
+                },
+                shuffleValues: () => shuffleNoteValues(noteValues),
+                applyValuesToCards: (values) => {
+                    applyNoteValuesToCards(cards, values);
+                },
+                updateHud,
             });
-            const values = [...noteValues];
-            for (let i = values.length - 1; i > 0; i -= 1) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [values[i], values[j]] = [values[j], values[i]];
-            }
-            cards.forEach((card, index) => {
-                const back = card.querySelector('.memory-back');
-                if (back && values[index]) back.textContent = values[index];
-            });
-            updateHud();
         };
 
         // Expose resetGame for onReset
@@ -185,77 +172,72 @@ const { bind } = createGame({
             const value = card.querySelector('.memory-back')?.textContent?.trim();
             return value || '';
         };
-
-        const handleMatch = () => {
-            const matchedNotes = flipped.map(({ note }) => note).filter(Boolean);
-            matches += 1;
-            matchStreak += 1;
-            score += 120 + matchStreak * 10;
-            gameState.matches = matches;
-            gameState.score = score;
-            flipped.forEach(({ card, input }) => {
-                card.classList.add('is-matched');
-                if (input) input.disabled = true;
-            });
-            flipped = [];
-            lock = false;
-            if (matchedNotes.length) {
-                playToneSequence(matchedNotes, { tempo: 140, gap: 0.1, duration: 0.22, volume: 0.18, type: 'triangle' });
-            }
-            if (matches >= totalPairs) {
-                ended = true;
-                stopTimer();
-                finalizeGame();
-            }
-            updateHud();
-        };
-
-        const handleMismatch = () => {
-            score = Math.max(0, score - 10);
-            matchStreak = 0;
-            gameState.score = score;
-            const current = [...flipped];
-            flipped = [];
-            if (mismatchTimer) clearTimeout(mismatchTimer);
-            mismatchTimer = window.setTimeout(() => {
-                current.forEach(({ input }) => {
-                    if (input) input.checked = false;
+        const {
+            handleMatch,
+            handleMismatch,
+        } = createNoteMemoryRoundHandlers({
+            getRoundSnapshot: () => ({
+                flipped,
+                matches,
+                matchStreak,
+                score,
+            }),
+            applyRoundSnapshot: (snapshot) => {
+                flipped = snapshot.flipped;
+                matches = snapshot.matches;
+                matchStreak = snapshot.matchStreak;
+                score = snapshot.score;
+            },
+            markMatchedCards: (entries) => {
+                entries.forEach(({ card, input }) => {
+                    card.classList.add('is-matched');
+                    if (input) input.disabled = true;
                 });
+            },
+            updateGameState: ({ matches: nextMatches = matches, score: nextScore = score } = {}) => {
+                gameState.matches = nextMatches;
+                gameState.score = nextScore;
+            },
+            playMatchSequence: (notes) => {
+                playToneSequence(notes, { tempo: 140, gap: 0.1, duration: 0.22, volume: 0.18, type: 'triangle' });
+            },
+            totalPairs,
+            onCompleteAllPairs: () => {
+                ended = true;
+                timer.stopTimer();
+                finalizeGame();
+            },
+            scheduleMismatchReveal: (entries) => {
+                mismatchReveal.scheduleReveal(entries);
+            },
+            releaseLock: () => {
                 lock = false;
-                updateHud();
-            }, 600);
-        };
+            },
+            updateHud,
+        });
 
-        cards.forEach((card) => {
-            const input = card.querySelector('input');
-            if (!input) return;
-            input.addEventListener('change', () => {
-                if (!input.checked) return;
-                if (lock) {
-                    input.checked = false;
-                    return;
-                }
-                if (ended) {
-                    resetGame();
-                    input.checked = false;
-                    return;
-                }
-                if (input.disabled) return;
-                if (!timerId) startTimer();
-                const note = noteForCard(card);
-                flipped.push({ card, input, note });
-                if (note) {
-                    playToneNote(note, { duration: 0.24, volume: 0.18, type: 'triangle' });
-                }
-                if (flipped.length === 2) {
-                    lock = true;
-                    if (flipped[0].note && flipped[0].note === flipped[1].note) {
-                        handleMatch();
-                    } else {
-                        handleMismatch();
-                    }
-                }
-            });
+        bindNoteMemoryCardInputs({
+            cards,
+            getLock: () => lock,
+            setLock: (value) => {
+                lock = value;
+            },
+            getEnded: () => ended,
+            resetGame,
+            isTimerRunning: () => timer.isRunning(),
+            startTimer: () => {
+                timer.startTimer();
+            },
+            noteForCard,
+            getFlipped: () => flipped,
+            setFlipped: (value) => {
+                flipped = value;
+            },
+            playCardTone: (note) => {
+                playToneNote(note, { duration: 0.24, volume: 0.18, type: 'triangle' });
+            },
+            handleMatch,
+            handleMismatch,
         });
 
         bindTap(resetButton, () => {
@@ -267,16 +249,14 @@ const { bind } = createGame({
                 stopTonePlayer();
             }
         };
-        bindSoundsChange(soundsHandler);
+        bindSoundsChange(soundsHandler, registerCleanup);
 
         updateHud();
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                pauseTimer();
-            } else {
-                resumeTimer();
-            }
+        bindVisibilityLifecycle({
+            onHidden: timer.pauseTimer,
+            onVisible: timer.resumeTimer,
+            registerCleanup,
         });
 
         if (window.location.hash === '#view-game-note-memory') {
