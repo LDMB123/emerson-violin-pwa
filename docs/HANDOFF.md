@@ -80,6 +80,8 @@ If both pass, you are at a known-good baseline.
     - `scripts/audit-performance-budgets.mjs` (`PERF_BUDGET_REPORT_ONLY`)
   - Set explicit CI mode default to blocking:
     - `.github/workflows/quality.yml` (`PERF_BUDGET_REPORT_ONLY: 'false'`)
+  - Added helper regression coverage:
+    - `tests/scripts/audit-performance-budgets.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
