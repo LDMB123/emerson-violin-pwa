@@ -1,4 +1,6 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import { chromium } from '@playwright/test';
 
 const host = process.env.PERF_BUDGET_HOST || '127.0.0.1';
@@ -8,6 +10,7 @@ const sampleCount = Number.parseInt(process.env.PERF_BUDGET_SAMPLES || '3', 10);
 const fcpBudgetMs = Number.parseFloat(process.env.PERF_BUDGET_FCP_MS || '2500');
 const lcpBudgetMs = Number.parseFloat(process.env.PERF_BUDGET_LCP_MS || '3500');
 const startupTimeoutMs = Number.parseInt(process.env.PERF_BUDGET_STARTUP_TIMEOUT_MS || '30000', 10);
+const summaryOutputPath = process.env.PERF_BUDGET_OUTPUT || 'artifacts/perf-budget-summary.json';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -19,6 +22,13 @@ const median = (values) => {
 };
 
 const formatMs = (value) => `${Math.round(value * 10) / 10}ms`;
+
+const writeSummary = (summary) => {
+    const outputPath = path.resolve(summaryOutputPath);
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, JSON.stringify(summary, null, 2));
+    console.log(`Performance budget summary written to ${outputPath}`);
+};
 
 const getRelativeCdpMetricMs = (metrics, metricName) => {
     const values = new Map(metrics.map((metric) => [metric.name, metric.value]));
@@ -154,6 +164,20 @@ const run = async () => {
 
     const preview = startPreviewServer();
     let browser = null;
+    const summary = {
+        startedAt: new Date().toISOString(),
+        baseUrl,
+        sampleCount,
+        budgets: {
+            fcpMs: fcpBudgetMs,
+            lcpMs: lcpBudgetMs,
+        },
+        samples: [],
+        medians: null,
+        pass: false,
+        failures: [],
+        notes: [],
+    };
 
     try {
         await waitForPreviewServer(preview);
@@ -163,19 +187,23 @@ const run = async () => {
         for (let index = 0; index < sampleCount; index += 1) {
             const sample = await collectSample(browser, index + 1);
             samples.push(sample);
+            summary.samples.push(sample);
             console.log(
                 `Sample ${index + 1}: FCP ${formatMs(sample.fcp)}, LCP ${formatMs(sample.lcp)} (${sample.lcpSource})`,
             );
         }
 
         if (samples.some((sample) => sample.lcpSource !== 'lcp-entry')) {
-            console.warn('LCP entries unavailable in this runtime; using FirstMeaningfulPaint fallback for budget checks.');
+            const note = 'LCP entries unavailable in this runtime; using FirstMeaningfulPaint fallback for budget checks.';
+            summary.notes.push(note);
+            console.warn(note);
         }
 
         const fcpValues = samples.map((sample) => sample.fcp);
         const lcpValues = samples.map((sample) => sample.lcp);
         const fcpMedian = median(fcpValues);
         const lcpMedian = median(lcpValues);
+        summary.medians = { fcp: fcpMedian, lcp: lcpMedian };
 
         console.log(`Median FCP: ${formatMs(fcpMedian)}`);
         console.log(`Median LCP: ${formatMs(lcpMedian)}`);
@@ -190,12 +218,21 @@ const run = async () => {
 
         if (failures.length) {
             failures.forEach((message) => console.error(message));
+            summary.failures = failures;
+            summary.pass = false;
             process.exitCode = 1;
             return;
         }
 
+        summary.pass = true;
         console.log('Performance budget audit passed.');
+    } catch (error) {
+        summary.failures = [error.message];
+        summary.pass = false;
+        throw error;
     } finally {
+        summary.finishedAt = new Date().toISOString();
+        writeSummary(summary);
         if (browser) {
             await browser.close();
         }
