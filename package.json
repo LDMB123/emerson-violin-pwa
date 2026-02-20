@@ -21,6 +21,7 @@
     "audit:deadcode": "npx knip@5.83.1 --include files,dependencies,exports,duplicates --no-progress",
     "audit:deps": "node scripts/audit-dependency-duplicates.mjs",
     "audit:perf": "node scripts/audit-performance-budgets.mjs",
+    "audit:perf:recommend": "node scripts/recommend-performance-budgets.mjs",
     "audit:view-sync": "node scripts/audit-view-sync.mjs",
     "audit:modules": "node scripts/audit-feature-modules.mjs",
     "audit:a11y": "node scripts/audit-accessibility.mjs",
