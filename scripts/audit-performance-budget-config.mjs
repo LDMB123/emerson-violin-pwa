@@ -16,10 +16,32 @@ const parsePositiveNumber = (value) => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 };
 
+const PERFORMANCE_BUDGET_KEYS = [
+    'PERF_BUDGET_FCP_MS',
+    'PERF_BUDGET_LCP_MS',
+    'PERF_BUDGET_CURRENT_FCP_MS',
+    'PERF_BUDGET_CURRENT_LCP_MS',
+    'PERF_BUDGET_RECOMMENDATION_PR_TARGET_FAILURE_PCT',
+    'PERF_BUDGET_RECOMMENDATION_MAX_TIGHTEN_PCT',
+    'PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT',
+];
+
 const extractSingleQuotedValue = (source, key) => {
     const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const match = source.match(new RegExp(`${escapedKey}:\\s*'([^']+)'`));
     return match ? match[1] : null;
+};
+
+export const countPerformanceBudgetKeyOccurrences = (workflowSource) => {
+    const countForKey = (key) => {
+        const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const matches = workflowSource.match(new RegExp(`${escapedKey}:\\s*'[^']+'`, 'g'));
+        return matches ? matches.length : 0;
+    };
+    return PERFORMANCE_BUDGET_KEYS.reduce((accumulator, key) => {
+        accumulator[key] = countForKey(key);
+        return accumulator;
+    }, {});
 };
 
 export const readPerformanceBudgetConfig = (workflowSource) => {
@@ -43,6 +65,19 @@ export const readPerformanceBudgetConfig = (workflowSource) => {
     };
 };
 
+export const validatePerformanceBudgetKeyOccurrences = (keyOccurrences) => {
+    const issues = [];
+    PERFORMANCE_BUDGET_KEYS.forEach((key) => {
+        const count = keyOccurrences?.[key] ?? 0;
+        if (count === 0) {
+            issues.push(`Missing ${key} in workflow config.`);
+        } else if (count > 1) {
+            issues.push(`Duplicate ${key} entries found (${count}).`);
+        }
+    });
+    return issues;
+};
+
 export const validatePerformanceBudgetConfig = (config) => {
     const issues = [];
     const thresholds = config?.thresholds ?? {};
@@ -61,6 +96,12 @@ export const validatePerformanceBudgetConfig = (config) => {
     }
     if (Number.isFinite(thresholds.lcpMs) && Number.isFinite(current.lcpMs) && thresholds.lcpMs !== current.lcpMs) {
         issues.push(`LCP threshold drift: PERF_BUDGET_LCP_MS=${thresholds.lcpMs} but PERF_BUDGET_CURRENT_LCP_MS=${current.lcpMs}.`);
+    }
+    if (Number.isFinite(thresholds.fcpMs) && Number.isFinite(thresholds.lcpMs) && thresholds.lcpMs < thresholds.fcpMs) {
+        issues.push(`Threshold ordering invalid: PERF_BUDGET_LCP_MS=${thresholds.lcpMs} is lower than PERF_BUDGET_FCP_MS=${thresholds.fcpMs}.`);
+    }
+    if (Number.isFinite(current.fcpMs) && Number.isFinite(current.lcpMs) && current.lcpMs < current.fcpMs) {
+        issues.push(`Current threshold ordering invalid: PERF_BUDGET_CURRENT_LCP_MS=${current.lcpMs} is lower than PERF_BUDGET_CURRENT_FCP_MS=${current.fcpMs}.`);
     }
 
     if (
@@ -84,6 +125,16 @@ export const validatePerformanceBudgetConfig = (config) => {
     ) {
         issues.push('PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT must be > 0 and <= 100.');
     }
+    if (
+        Number.isFinite(recommendation.maxTightenPct) &&
+        Number.isFinite(recommendation.maxLoosenPct) &&
+        recommendation.maxLoosenPct < recommendation.maxTightenPct
+    ) {
+        issues.push(
+            `Guardrail ordering invalid: PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT=${recommendation.maxLoosenPct} ` +
+            `is lower than PERF_BUDGET_RECOMMENDATION_MAX_TIGHTEN_PCT=${recommendation.maxTightenPct}.`,
+        );
+    }
 
     return issues;
 };
@@ -98,7 +149,11 @@ const runAudit = () => {
 
     const workflowSource = fs.readFileSync(workflowPath, 'utf8');
     const config = readPerformanceBudgetConfig(workflowSource);
-    const issues = validatePerformanceBudgetConfig(config);
+    const keyOccurrences = countPerformanceBudgetKeyOccurrences(workflowSource);
+    const issues = [
+        ...validatePerformanceBudgetKeyOccurrences(keyOccurrences),
+        ...validatePerformanceBudgetConfig(config),
+    ];
 
     if (issues.length > 0) {
         console.error('Performance budget config audit failed:');

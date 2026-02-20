@@ -31,6 +31,9 @@ jobs:
       - name: Dependency duplicate audit
         run: npm run audit:deps
 
+      - name: Performance budget config audit
+        run: npm run audit:perf:config
+
       - name: Unit tests
         run: npm test
 

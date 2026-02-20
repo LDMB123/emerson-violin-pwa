@@ -7,6 +7,12 @@ const LCP_PATTERN = /PERF_BUDGET_LCP_MS:\s*'[^']+'/;
 const CURRENT_FCP_PATTERN = /PERF_BUDGET_CURRENT_FCP_MS:\s*'[^']+'/;
 const CURRENT_LCP_PATTERN = /PERF_BUDGET_CURRENT_LCP_MS:\s*'[^']+'/;
 
+const countMatches = (source, pattern) => {
+    const globalFlags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+    const matcher = new RegExp(pattern.source, globalFlags);
+    return Array.from(source.matchAll(matcher)).length;
+};
+
 const asPositiveInt = (value) => {
     const parsed = Number.parseInt(value, 10);
     if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -19,20 +25,31 @@ export const applyBudgetsToWorkflow = (workflowSource, { fcpMs, lcpMs }) => {
     if (typeof workflowSource !== 'string' || workflowSource.length === 0) {
         throw new Error('Workflow source is empty.');
     }
-    if (!FCP_PATTERN.test(workflowSource) || !LCP_PATTERN.test(workflowSource)) {
-        throw new Error('Failed to locate PERF_BUDGET_FCP_MS / PERF_BUDGET_LCP_MS in workflow source.');
+    const fcpKeyCount = countMatches(workflowSource, FCP_PATTERN);
+    const lcpKeyCount = countMatches(workflowSource, LCP_PATTERN);
+    if (fcpKeyCount !== 1 || lcpKeyCount !== 1) {
+        throw new Error(
+            `Expected exactly one PERF_BUDGET_FCP_MS / PERF_BUDGET_LCP_MS entry; ` +
+            `found FCP=${fcpKeyCount}, LCP=${lcpKeyCount}.`,
+        );
     }
-    const hasCurrentFcp = CURRENT_FCP_PATTERN.test(workflowSource);
-    const hasCurrentLcp = CURRENT_LCP_PATTERN.test(workflowSource);
-    if (hasCurrentFcp !== hasCurrentLcp) {
+    const currentFcpKeyCount = countMatches(workflowSource, CURRENT_FCP_PATTERN);
+    const currentLcpKeyCount = countMatches(workflowSource, CURRENT_LCP_PATTERN);
+    if (currentFcpKeyCount !== currentLcpKeyCount) {
         throw new Error('Found only one PERF_BUDGET_CURRENT_* key; expected both or neither.');
+    }
+    if (currentFcpKeyCount > 1 || currentLcpKeyCount > 1) {
+        throw new Error(
+            `Expected at most one PERF_BUDGET_CURRENT_* entry pair; ` +
+            `found CURRENT_FCP=${currentFcpKeyCount}, CURRENT_LCP=${currentLcpKeyCount}.`,
+        );
     }
 
     let updatedWorkflowSource = workflowSource
         .replace(FCP_PATTERN, `PERF_BUDGET_FCP_MS: '${fcpMs}'`)
         .replace(LCP_PATTERN, `PERF_BUDGET_LCP_MS: '${lcpMs}'`);
 
-    if (hasCurrentFcp && hasCurrentLcp) {
+    if (currentFcpKeyCount === 1 && currentLcpKeyCount === 1) {
         updatedWorkflowSource = updatedWorkflowSource
             .replace(CURRENT_FCP_PATTERN, `PERF_BUDGET_CURRENT_FCP_MS: '${fcpMs}'`)
             .replace(CURRENT_LCP_PATTERN, `PERF_BUDGET_CURRENT_LCP_MS: '${lcpMs}'`);
@@ -89,8 +106,8 @@ const run = () => {
 
     const workflowSource = fs.readFileSync(resolvedWorkflowPath, 'utf8');
     const currentBudgetKeysPresent =
-        CURRENT_FCP_PATTERN.test(workflowSource) &&
-        CURRENT_LCP_PATTERN.test(workflowSource);
+        countMatches(workflowSource, CURRENT_FCP_PATTERN) === 1 &&
+        countMatches(workflowSource, CURRENT_LCP_PATTERN) === 1;
     const updatedWorkflowSource = applyBudgetsToWorkflow(workflowSource, { fcpMs, lcpMs });
 
     if (!dryRun) {
