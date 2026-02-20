@@ -105,6 +105,16 @@ If both pass, you are at a known-good baseline.
     - dropped run counts (out-of-window / missing timestamp)
   - Added regression coverage for selection behavior:
     - `tests/scripts/recommend-performance-budgets.test.js`
+- Completed perf threshold-health analytics pass (2026-02-20, phase 41):
+  - Added threshold pass/fail rate analysis to recommendation output:
+    - `scripts/recommend-performance-budgets.mjs`
+    - `thresholdHealth.current` and `thresholdHealth.recommended`
+  - Added current-threshold override support:
+    - `PERF_BUDGET_CURRENT_FCP_MS`
+    - `PERF_BUDGET_CURRENT_LCP_MS`
+  - Added fallback inference of current thresholds from summary metadata when overrides are not provided.
+  - Added regression coverage for threshold inference + pass/fail rate computation:
+    - `tests/scripts/recommend-performance-budgets.test.js`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
