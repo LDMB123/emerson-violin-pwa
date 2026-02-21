@@ -13,7 +13,7 @@ const storageMocks = vi.hoisted(() => ({
         if (key === 'panda-violin:ml:recs-v1') return state.cache;
         return null;
     }),
-    setJSON: vi.fn(async () => {}),
+    setJSON: vi.fn(async () => { }),
 }));
 
 const loaderMocks = vi.hoisted(() => ({
@@ -104,7 +104,7 @@ describe('learning recommendations', () => {
         songLibraryMocks.getSongCatalog.mockClear();
         state.cache = null;
         state.tuningFails = false;
-        state.tuning = { targetBpm: 88 };
+        state.tuning = { targetBpm: 90 };
         state.events = [
             { type: 'song', id: 'twinkle', accuracy: 72, timestamp: Date.now() - 2000 },
             { type: 'song', id: 'mary', accuracy: 78, timestamp: Date.now() - 1000 },
@@ -121,7 +121,7 @@ describe('learning recommendations', () => {
         expect(recs.recommendedGameId).toBeTruthy();
         expect(recs.lessonSteps?.length).toBe(5);
         expect(recs.lessonTotal).toBeGreaterThan(0);
-        expect(recs.metronomeTarget).toBe(88);
+        expect(recs.metronomeTarget).toBe(90);
         expect(recs.coachMessage.length).toBeGreaterThan(0);
         expect(recs.coachActionMessage).toMatch(/^Start with /);
         expect(recs.mission).toMatchObject({

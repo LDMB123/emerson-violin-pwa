@@ -18,15 +18,6 @@ const GAME_CONFIG = {
     'coach-focus': {
         focusMinutes: { easy: 5, medium: 10, hard: 15 },
     },
-    'trainer-metronome': {
-        targetBpm: { easy: 70, medium: 90, hard: 110 },
-    },
-    'trainer-posture': {
-        targetChecks: { easy: 1, medium: 2, hard: 3 },
-    },
-    'bowing-coach': {
-        targetSets: { easy: 2, medium: 3, hard: 4 },
-    },
 };
 
 let cachedModel = null;
@@ -94,9 +85,26 @@ const logDecision = async (entry) => {
     return events;
 };
 
+const applyTimeDecay = (game) => {
+    // Feature: Spaced Repetition Decay (The Forgetting Curve)
+    // If a game hasn't been played in > 3 days, pull the EMA back toward 0.5 (medium)
+    if (!game.updatedAt) return game.ema ?? 0.5;
+
+    const daysSinceLastPlay = (Date.now() - game.updatedAt) / (1000 * 60 * 60 * 24);
+    let ema = game.ema ?? 0.5;
+
+    if (daysSinceLastPlay > 3) {
+        // Decay strength increases the longer they are away, pulling toward 0.5 baseline
+        const decayFactor = clamp((daysSinceLastPlay - 3) * 0.05, 0, 0.4);
+        ema = ema * (1 - decayFactor) + (0.5 * decayFactor);
+    }
+    return ema;
+};
+
 const getTuningFor = (id, model) => {
     const game = getGameState(model, id);
-    const difficulty = resolveDifficulty(game.ema ?? 0.5);
+    const decayedEma = applyTimeDecay(game);
+    const difficulty = resolveDifficulty(decayedEma);
     const config = GAME_CONFIG[id] || {};
     const tuning = { difficulty };
 
@@ -120,7 +128,20 @@ export const updateGameResult = async (id, payload = {}) => {
     const model = await getModel();
     const game = getGameState(model, id);
     const normalized = normalizeScore(payload);
-    const alpha = 0.2;
+
+    // Feature: Spaced Repetition - calculate decay before applying new score
+    game.ema = applyTimeDecay(game);
+
+    // Feature: Dynamic Alpha
+    // Fast start (0.5) for first 5 games to calibrate quickly, then standard 0.2
+    let alpha = game.samples < 5 ? 0.5 : 0.2;
+
+    // Feature: Momentum Boost
+    // If they get a perfect score, give them a bigger bump to unlock 'Hard' faster
+    if (normalized >= 0.95 && game.ema >= 0.5) {
+        alpha = 0.35;
+    }
+
     game.ema = game.samples ? (game.ema * (1 - alpha) + normalized * alpha) : normalized;
     game.samples += 1;
     game.lastScore = normalized;
@@ -138,7 +159,7 @@ export const updateGameResult = async (id, payload = {}) => {
         ema: game.ema,
         samples: game.samples,
     };
-    logDecision(entry).catch(() => {});
+    logDecision(entry).catch(() => { });
     document.dispatchEvent(new CustomEvent(ML_UPDATE, { detail: entry }));
     return tuning;
 };
