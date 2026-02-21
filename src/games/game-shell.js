@@ -143,6 +143,49 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             registerCleanup,
         };
 
+        const handleNavigationIntercept = (e) => {
+            const anchor = e.target.closest('a[href^="#"]');
+            if (!anchor) return;
+
+            // Heuristic for "active" game: user has a score, or game state explicitly says playing/active
+            const isPlaying = gameState.playing
+                || gameState.active
+                || (typeof gameState.score === 'number' && gameState.score > 0)
+                || (typeof gameState.hits === 'number' && gameState.hits > 0);
+
+            if (isPlaying) {
+                e.preventDefault();
+                const modal = document.getElementById('exit-confirm-modal');
+                if (!modal) return;
+
+                const keepPlayingBtn = modal.querySelector('#exit-confirm-keep-playing');
+                const exitGameBtn = modal.querySelector('#exit-confirm-exit');
+
+                const cleanupModal = () => {
+                    keepPlayingBtn?.removeEventListener('click', onKeepPlaying);
+                    exitGameBtn?.removeEventListener('click', onExitGame);
+                };
+
+                const onKeepPlaying = () => {
+                    modal.close();
+                    cleanupModal();
+                };
+
+                const onExitGame = () => {
+                    modal.close();
+                    cleanupModal();
+                    window.location.hash = anchor.getAttribute('href');
+                };
+
+                keepPlayingBtn?.addEventListener('click', onKeepPlaying);
+                exitGameBtn?.addEventListener('click', onExitGame);
+                modal.showModal();
+            }
+        };
+
+        stage.addEventListener('click', handleNavigationIntercept);
+        registerCleanup(() => stage.removeEventListener('click', handleNavigationIntercept));
+
         onBind(stage, difficulty, shell);
 
         registerCleanup(bindGameSessionLifecycle({

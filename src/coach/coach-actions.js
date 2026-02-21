@@ -86,6 +86,13 @@ const handleAction = (action) => {
         const message = `One more time: ${current}`;
         setMessage(message);
         speakMessage(message);
+        return;
+    }
+    if (action === 'hint') {
+        const current = pendingGameMessage || messages[index] || messages[0] || "Explore the app to find new games!";
+        const message = `Here's a tip: ${current}`;
+        setMessage(message);
+        speakMessage(message);
     }
 };
 

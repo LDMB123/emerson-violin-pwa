@@ -5,7 +5,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
   <meta name="theme-color" content="#F56B49" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta http-equiv="Permissions-Policy" content="microphone=(self), camera=(), geolocation=(), payment=(), usb=()" />
 
@@ -60,7 +61,10 @@
       </div>
       <a href="#view-parent" class="parent-zone-lock" data-parent-lock aria-label="Open Parent Zone">
         <span class="parent-zone-lock-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2Zm-6 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4ZM9 8V6a3 3 0 1 1 6 0v2H9Z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2Zm-6 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4ZM9 8V6a3 3 0 1 1 6 0v2H9Z" />
+          </svg>
         </span>
         <span class="parent-zone-lock-label">For Grown-Ups</span>
       </a>
@@ -74,7 +78,9 @@
           <div class="home-mission-head">
             <picture>
               <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
-              <img src="./assets/illustrations/mascot-happy.png" alt="Happy panda coach" class="home-mascot" decoding="async" loading="eager" fetchpriority="high" width="1024" height="1024">
+              <img src="./assets/illustrations/mascot-happy.png" alt="Happy panda coach" class="home-mascot"
+                decoding="async" loading="eager" fetchpriority="high" width="1024" height="1024"
+                data-coach-action="hint" role="button" tabindex="0">
             </picture>
             <div>
               <p class="home-kicker">Today&apos;s Practice Mission</p>
@@ -91,7 +97,8 @@
             <div class="mission-stat mission-stat-goal">
               <span class="mission-stat-label">Daily goal</span>
               <strong class="mission-stat-value"><span data-progress="daily-goal-value">15</span> min</strong>
-              <div class="goal-progress" data-progress="daily-goal-track" role="progressbar" aria-label="Daily goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="goal-progress" data-progress="daily-goal-track" role="progressbar"
+                aria-label="Daily goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                 <div class="goal-fill" data-progress="daily-goal-fill"></div>
               </div>
             </div>
@@ -139,13 +146,18 @@
 
         <div class="home-secondary-grid">
           <a href="#view-games" class="feature-card feature-primary">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path
+                  d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+              </svg></div>
             <div class="feature-title">Quick Game</div>
             <p class="feature-copy">One tap and play.</p>
           </a>
 
           <a href="#view-songs" class="feature-card feature-primary">
-            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+            <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+              </svg></div>
             <div class="feature-title">Song Time</div>
             <p class="feature-copy">Continue your song.</p>
           </a>
@@ -163,15 +175,23 @@
     <!-- Bottom Navigation -->
     <nav class="bottom-nav glass" aria-label="Primary">
       <a href="#view-coach" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 12H7v-2h10v2zm0-3H7V9h10v2zm0-3H7V6h10v2z"/></svg></span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 12H7v-2h10v2zm0-3H7V9h10v2zm0-3H7V6h10v2z" />
+          </svg></span>
         <span class="nav-label">Practice</span>
       </a>
       <a href="#view-games" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+          </svg></span>
         <span class="nav-label">Games</span>
       </a>
       <a href="#view-songs" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+          </svg></span>
         <span class="nav-label">Songs</span>
       </a>
     </nav>
@@ -179,25 +199,39 @@
   </div>
 
   <!-- Game Complete Modal -->
-  <dialog id="game-complete-modal" class="game-complete-dialog" aria-labelledby="game-complete-heading" aria-modal="true">
+  <dialog id="game-complete-modal" class="game-complete-dialog" aria-labelledby="game-complete-heading"
+    aria-modal="true">
     <div class="game-complete-inner">
       <div class="game-complete-confetti" aria-hidden="true">
-        <span class="confetti-piece" style="left:10%;--fall-delay:0s;--fall-dur:1.6s;--fall-drift:20px;background:#E95639"></span>
-        <span class="confetti-piece" style="left:20%;--fall-delay:0.1s;--fall-dur:1.9s;--fall-drift:-15px;background:#F9A93F"></span>
-        <span class="confetti-piece" style="left:30%;--fall-delay:0.2s;--fall-dur:1.7s;--fall-drift:30px;background:#4FB69E"></span>
-        <span class="confetti-piece" style="left:40%;--fall-delay:0.05s;--fall-dur:2.0s;--fall-drift:-25px;background:#E95639"></span>
-        <span class="confetti-piece" style="left:50%;--fall-delay:0.15s;--fall-dur:1.5s;--fall-drift:10px;background:#F9A93F"></span>
-        <span class="confetti-piece" style="left:60%;--fall-delay:0.3s;--fall-dur:1.8s;--fall-drift:-20px;background:#4FB69E"></span>
-        <span class="confetti-piece" style="left:70%;--fall-delay:0.0s;--fall-dur:2.1s;--fall-drift:25px;background:#E95639"></span>
-        <span class="confetti-piece" style="left:80%;--fall-delay:0.25s;--fall-dur:1.6s;--fall-drift:-10px;background:#F9A93F"></span>
-        <span class="confetti-piece" style="left:90%;--fall-delay:0.1s;--fall-dur:1.9s;--fall-drift:15px;background:#4FB69E"></span>
-        <span class="confetti-piece" style="left:15%;--fall-delay:0.4s;--fall-dur:1.7s;--fall-drift:-30px;background:#E95639"></span>
-        <span class="confetti-piece" style="left:55%;--fall-delay:0.35s;--fall-dur:2.0s;--fall-drift:20px;background:#F9A93F"></span>
-        <span class="confetti-piece" style="left:75%;--fall-delay:0.2s;--fall-dur:1.5s;--fall-drift:-15px;background:#4FB69E"></span>
+        <span class="confetti-piece"
+          style="left:10%;--fall-delay:0s;--fall-dur:1.6s;--fall-drift:20px;background:#E95639"></span>
+        <span class="confetti-piece"
+          style="left:20%;--fall-delay:0.1s;--fall-dur:1.9s;--fall-drift:-15px;background:#F9A93F"></span>
+        <span class="confetti-piece"
+          style="left:30%;--fall-delay:0.2s;--fall-dur:1.7s;--fall-drift:30px;background:#4FB69E"></span>
+        <span class="confetti-piece"
+          style="left:40%;--fall-delay:0.05s;--fall-dur:2.0s;--fall-drift:-25px;background:#E95639"></span>
+        <span class="confetti-piece"
+          style="left:50%;--fall-delay:0.15s;--fall-dur:1.5s;--fall-drift:10px;background:#F9A93F"></span>
+        <span class="confetti-piece"
+          style="left:60%;--fall-delay:0.3s;--fall-dur:1.8s;--fall-drift:-20px;background:#4FB69E"></span>
+        <span class="confetti-piece"
+          style="left:70%;--fall-delay:0.0s;--fall-dur:2.1s;--fall-drift:25px;background:#E95639"></span>
+        <span class="confetti-piece"
+          style="left:80%;--fall-delay:0.25s;--fall-dur:1.6s;--fall-drift:-10px;background:#F9A93F"></span>
+        <span class="confetti-piece"
+          style="left:90%;--fall-delay:0.1s;--fall-dur:1.9s;--fall-drift:15px;background:#4FB69E"></span>
+        <span class="confetti-piece"
+          style="left:15%;--fall-delay:0.4s;--fall-dur:1.7s;--fall-drift:-30px;background:#E95639"></span>
+        <span class="confetti-piece"
+          style="left:55%;--fall-delay:0.35s;--fall-dur:2.0s;--fall-drift:20px;background:#F9A93F"></span>
+        <span class="confetti-piece"
+          style="left:75%;--fall-delay:0.2s;--fall-dur:1.5s;--fall-drift:-15px;background:#4FB69E"></span>
       </div>
       <picture>
         <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
-        <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-complete-mascot" width="100" height="100" decoding="async">
+        <img src="./assets/illustrations/mascot-celebrate.png" alt="Tap for a hint!" class="game-complete-mascot"
+          width="100" height="100" decoding="async" data-coach-action="hint" role="button" tabindex="0">
       </picture>
       <h2 id="game-complete-heading" class="game-complete-heading">Great job, Emerson!</h2>
       <div class="game-complete-stars" aria-label="Stars earned" id="game-complete-stars">
@@ -222,44 +256,78 @@
     </div>
   </dialog>
 
-    <dialog id="achievement-modal" aria-modal="true" aria-labelledby="achievement-heading">
-      <div class="achievement-inner">
-        <div class="achievement-confetti" aria-hidden="true">
-          <span class="confetti-piece" style="--fall-delay:0s;--fall-dur:1.1s;--fall-drift:-30px;background:#E95639"></span>
-          <span class="confetti-piece" style="--fall-delay:0.1s;--fall-dur:1.3s;--fall-drift:20px;background:#F9A93F"></span>
-          <span class="confetti-piece" style="--fall-delay:0.2s;--fall-dur:1.0s;--fall-drift:40px;background:#4FB69E"></span>
-          <span class="confetti-piece" style="--fall-delay:0.05s;--fall-dur:1.4s;--fall-drift:-50px;background:#FFF9F3"></span>
-          <span class="confetti-piece" style="--fall-delay:0.3s;--fall-dur:1.2s;--fall-drift:10px;background:#E95639"></span>
-          <span class="confetti-piece" style="--fall-delay:0.15s;--fall-dur:0.9s;--fall-drift:-20px;background:#F9A93F"></span>
-          <span class="confetti-piece" style="--fall-delay:0.25s;--fall-dur:1.5s;--fall-drift:60px;background:#4FB69E"></span>
-          <span class="confetti-piece" style="--fall-delay:0.4s;--fall-dur:1.1s;--fall-drift:-40px;background:#FFF9F3"></span>
-          <span class="confetti-piece" style="--fall-delay:0.35s;--fall-dur:1.3s;--fall-drift:30px;background:#E95639"></span>
-          <span class="confetti-piece" style="--fall-delay:0.45s;--fall-dur:1.0s;--fall-drift:-10px;background:#F9A93F"></span>
-          <span class="confetti-piece" style="--fall-delay:0.5s;--fall-dur:1.2s;--fall-drift:50px;background:#4FB69E"></span>
-          <span class="confetti-piece" style="--fall-delay:0.55s;--fall-dur:1.4s;--fall-drift:-60px;background:#FFF9F3"></span>
-        </div>
-        <div class="achievement-badge-art" id="achievement-badge-art" role="img" aria-label="">
-          <img id="achievement-badge-img" src="" alt="" width="120" height="120" loading="eager">
-          <span class="achievement-badge-fallback" id="achievement-badge-fallback" aria-hidden="true"></span>
-        </div>
-        <h2 id="achievement-heading" class="achievement-heading">New Badge!</h2>
-        <p class="achievement-badge-name" id="achievement-badge-name"></p>
-        <p class="achievement-cheer">You earned it, Emerson!</p>
-        <button id="achievement-yay" class="btn btn-primary achievement-yay">Yay!</button>
+  <dialog id="achievement-modal" aria-modal="true" aria-labelledby="achievement-heading">
+    <div class="achievement-inner">
+      <div class="achievement-confetti" aria-hidden="true">
+        <span class="confetti-piece"
+          style="--fall-delay:0s;--fall-dur:1.1s;--fall-drift:-30px;background:#E95639"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.1s;--fall-dur:1.3s;--fall-drift:20px;background:#F9A93F"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.2s;--fall-dur:1.0s;--fall-drift:40px;background:#4FB69E"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.05s;--fall-dur:1.4s;--fall-drift:-50px;background:#FFF9F3"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.3s;--fall-dur:1.2s;--fall-drift:10px;background:#E95639"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.15s;--fall-dur:0.9s;--fall-drift:-20px;background:#F9A93F"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.25s;--fall-dur:1.5s;--fall-drift:60px;background:#4FB69E"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.4s;--fall-dur:1.1s;--fall-drift:-40px;background:#FFF9F3"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.35s;--fall-dur:1.3s;--fall-drift:30px;background:#E95639"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.45s;--fall-dur:1.0s;--fall-drift:-10px;background:#F9A93F"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.5s;--fall-dur:1.2s;--fall-drift:50px;background:#4FB69E"></span>
+        <span class="confetti-piece"
+          style="--fall-delay:0.55s;--fall-dur:1.4s;--fall-drift:-60px;background:#FFF9F3"></span>
       </div>
-    </dialog>
+      <div class="achievement-badge-art" id="achievement-badge-art" role="img" aria-label="">
+        <img id="achievement-badge-img" src="" alt="" width="120" height="120" loading="eager">
+        <span class="achievement-badge-fallback" id="achievement-badge-fallback" aria-hidden="true"></span>
+      </div>
+      <h2 id="achievement-heading" class="achievement-heading">New Badge!</h2>
+      <p class="achievement-badge-name" id="achievement-badge-name"></p>
+      <p class="achievement-cheer">You earned it, Emerson!</p>
+      <button id="achievement-yay" class="btn btn-primary achievement-yay">Yay!</button>
+    </div>
+  </dialog>
+
+  <!-- Exit Confirmation Modal -->
+  <dialog id="exit-confirm-modal" class="exit-confirm-dialog glass" aria-labelledby="exit-confirm-heading"
+    aria-modal="true">
+    <div class="exit-confirm-inner">
+      <picture>
+        <source srcset="./assets/illustrations/mascot-sad.webp" type="image/webp">
+        <img src="./assets/illustrations/mascot-sad.png" alt="" class="exit-confirm-mascot" width="100" height="100"
+          decoding="async">
+      </picture>
+      <h2 id="exit-confirm-heading" class="exit-confirm-heading">Stop playing?</h2>
+      <p class="exit-confirm-text">You are doing great! Are you sure you want to exit your game?</p>
+      <div class="exit-confirm-actions">
+        <button type="button" id="exit-confirm-keep-playing" class="btn btn-primary" autofocus>Keep Playing</button>
+        <button type="button" id="exit-confirm-exit" class="btn btn-secondary">Exit Game</button>
+      </div>
+    </div>
+  </dialog>
 
   <div class="install-toast glass" id="install-toast" role="status" aria-live="polite" hidden>
     <picture>
       <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
-      <img src="./assets/illustrations/mascot-happy.png" alt="" class="install-toast-mascot" loading="lazy" decoding="async" width="64" height="64" />
+      <img src="./assets/illustrations/mascot-happy.png" alt="" class="install-toast-mascot" loading="lazy"
+        decoding="async" width="64" height="64" />
     </picture>
     <div class="install-toast-body">
       <p class="install-toast-text">Play offline anytime!</p>
       <button class="btn btn-primary btn-sm" type="button" data-install-toast-action>Install</button>
     </div>
     <button class="install-toast-close" type="button" aria-label="Dismiss">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+        aria-hidden="true" width="16" height="16">
+        <path d="M18 6L6 18M6 6l12 12" />
+      </svg>
     </button>
   </div>
 
