@@ -74,9 +74,9 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         ratingEl,
         meterFill,
         meterTrack,
-        targetSlider,
-        targetValue,
-        settingsReset,
+        levelDisplay,
+        bpmDisplay,
+        energyBar,
     } = resolveRhythmDashElements(stage);
     const viewState = createRhythmDashViewState({
         scoreEl,
@@ -173,6 +173,9 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
             mistakes: runtime.mistakes,
             timingScores: runtime.timingScores,
             runStartedAt: runtime.runStartedAt,
+            level: runtime.level,
+            energy: runtime.energy,
+            targetBpm: runtime.targetBpm,
         }),
         applyRuntimeState: (nextState) => {
             applyRhythmDashBeatRuntimeState(runtime, nextState);
@@ -181,8 +184,11 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         setLiveCombo: viewState.setLiveCombo,
         setRating,
         bpmEl,
+        energyBar,
+        levelDisplay,
         setStatus,
         markChecklistIf,
+        pauseRun,
     });
 
     bindRhythmDashUiControls({

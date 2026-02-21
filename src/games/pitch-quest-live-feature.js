@@ -10,6 +10,7 @@ export const applyPitchQuestLiveFeature = ({
     offsetEl,
     noteEl,
     gauge,
+    bambooFillEl,
     stabilityEl,
     feedbackEl,
     markChecklist,
@@ -28,22 +29,38 @@ export const applyPitchQuestLiveFeature = ({
         const now = Date.now();
         nextStabilityStreak = now - lastStableAt <= 1800 ? stabilityStreak + 1 : 1;
         nextLastStableAt = now;
-        if (nextStabilityStreak >= 3) {
-            markChecklist('pq-step-5');
+
+        // Bamboo metaphor: fills up relative to the streak (max 5)
+        const fillPct = Math.min(100, nextStabilityStreak * 20);
+        if (bambooFillEl) {
+            bambooFillEl.style.setProperty('--bamboo-fill', `${fillPct}%`);
+        }
+
+        if (nextStabilityStreak >= 5) {
+            // Auto track the matching note level!
+            const noteStepMap = { G: 'pq-step-1', D: 'pq-step-2', A: 'pq-step-3', E: 'pq-step-4' };
+            markChecklist(noteStepMap[targetNote] || 'pq-step-5');
         }
     } else {
         nextStabilityStreak = 0;
+        if (bambooFillEl) {
+            bambooFillEl.style.setProperty('--bamboo-fill', '0%');
+        }
     }
 
     if (stabilityEl) stabilityEl.textContent = `${nextStabilityStreak}x`;
     if (feedbackEl) {
-        feedbackEl.textContent = formatPitchQuestFeedback({
-            hasSignal: feature.hasSignal,
-            inTune,
-            matchingNote,
-            targetNote,
-            cents,
-        });
+        if (nextStabilityStreak >= 5) {
+            feedbackEl.textContent = 'Bamboo caught! Try another level!';
+        } else {
+            feedbackEl.textContent = formatPitchQuestFeedback({
+                hasSignal: feature.hasSignal,
+                inTune,
+                matchingNote,
+                targetNote,
+                cents,
+            });
+        }
     }
 
     return {

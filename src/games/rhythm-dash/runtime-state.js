@@ -15,6 +15,8 @@ export const createRhythmDashRuntimeState = ({ targetBpm, beatInterval }) => ({
     paused: false,
     pausedByVisibility: false,
     realtimeListening: false,
+    level: 1,
+    energy: 100,
 });
 
 export const applyRhythmDashBeatRuntimeState = (runtime, nextState) => {
@@ -23,6 +25,12 @@ export const applyRhythmDashBeatRuntimeState = (runtime, nextState) => {
     runtime.tapCount = nextState.tapCount;
     runtime.mistakes = nextState.mistakes;
     runtime.timingScores = nextState.timingScores;
+    if (nextState.energy !== undefined) runtime.energy = nextState.energy;
+    if (nextState.level !== undefined) {
+        runtime.level = nextState.level;
+        runtime.targetBpm = nextState.targetBpm;
+        runtime.beatInterval = nextState.beatInterval;
+    }
 };
 
 export const resetRhythmDashIdleState = (runtime) => {
@@ -47,5 +55,7 @@ export const resetRhythmDashRunState = (runtime) => {
     runtime.reported = false;
     runtime.paused = false;
     runtime.pausedByVisibility = false;
+    runtime.level = 1;
+    runtime.energy = 100;
     return { score: runtime.score, combo: runtime.combo };
 };

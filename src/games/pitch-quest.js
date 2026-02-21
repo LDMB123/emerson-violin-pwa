@@ -48,6 +48,7 @@ const { bind } = createGame({
         if (gameState._offsetEl) gameState._offsetEl.textContent = '0 cents';
         if (gameState._noteEl) gameState._noteEl.textContent = '--';
         if (gameState._gauge) gameState._gauge.style.setProperty('--pitch-offset', '0deg');
+        if (gameState._bambooFillEl) gameState._bambooFillEl.style.setProperty('--bamboo-fill', '0%');
     },
     onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const statusEl = stage.querySelector('[data-pitch="status"]');
@@ -59,6 +60,7 @@ const { bind } = createGame({
         const noteEl = stage.querySelector('[data-pitch="live-note"]');
         const offsetEl = stage.querySelector('[data-pitch="offset"]');
         const gauge = stage.querySelector('.pitch-gauge');
+        const bambooFillEl = stage.querySelector('[data-pitch="bamboo-fill"]');
         const targets = Array.from(stage.querySelectorAll('.pitch-target-toggle'));
         const checklist = Array.from(stage.querySelectorAll('input[id^="pq-step-"]'));
 
@@ -84,6 +86,7 @@ const { bind } = createGame({
         gameState._offsetEl = offsetEl;
         gameState._noteEl = noteEl;
         gameState._gauge = gauge;
+        gameState._bambooFillEl = bambooFillEl;
 
         gameState._onDeactivate = () => {
             stopTonePlayer();
@@ -117,6 +120,7 @@ const { bind } = createGame({
                 offsetEl,
                 noteEl,
                 gauge,
+                bambooFillEl,
                 stabilityEl,
                 feedbackEl,
                 markChecklist,
