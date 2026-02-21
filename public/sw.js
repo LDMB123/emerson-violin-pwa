@@ -157,13 +157,13 @@ const staleWhileRevalidate = async (request, event) => {
         if (response && response.ok) {
             runtimeCache.put(request, response.clone())
                 .then(() => trimRuntimeCache())
-                .catch(() => {});
+                .catch(() => { });
         }
         return response;
     });
     if (cached) {
         if (event) {
-            event.waitUntil(fetchPromise.catch(() => {}));
+            event.waitUntil(fetchPromise.catch(() => { }));
         }
         return cached.clone();
     }
@@ -270,7 +270,9 @@ self.addEventListener('fetch', (event) => {
                 (async () => {
                     const ranged = await respondWithRange(request);
                     if (ranged) return ranged;
-                    return cacheOnly(request);
+                    // If offline and not in cache, we MUST fail cleanly rather than trying a generic query 
+                    // which violates Safari's 206 requirements.
+                    return Response.error();
                 })()
             );
             return;
@@ -290,10 +292,12 @@ self.addEventListener('fetch', (event) => {
                 try {
                     const ranged = await respondWithRange(request);
                     if (ranged) return ranged;
+                    // Range request cache miss: Let the browser natively handle the byte stream request
                     return await fetch(request);
-                } catch {
+                } catch (error) {
                     await notifyOfflineMiss(request, 'range');
-                    return Response.error();
+                    // Always try the raw fetch before erroring out on Safari Range requests
+                    return fetch(request).catch(() => Response.error());
                 }
             })()
         );
