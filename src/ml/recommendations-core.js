@@ -1,5 +1,5 @@
 import { loadEvents } from '../persistence/loaders.js';
-import { getAdaptiveLog, getGameTuning } from './adaptive-engine.js';
+import { getAdaptiveLog } from './adaptive-engine.js';
 import {
     GAME_BY_SKILL,
     GAME_LABELS,
@@ -27,10 +27,9 @@ import {
 } from './recommendations-plan.js';
 
 const loadRecommendationInputs = async () => {
-    const [events, adaptiveLog, metronomeTuning, dueSongs, gameMasteryState, songCatalog] = await Promise.all([
+    const [events, adaptiveLog, dueSongs, gameMasteryState, songCatalog] = await Promise.all([
         loadEvents(),
         getAdaptiveLog(),
-        getGameTuning('trainer-metronome').catch(() => ({ targetBpm: 90 })),
         collectDueSongReviews().catch(() => []),
         loadGameMasteryState().catch(() => ({ games: {} })),
         getSongCatalog().catch(() => ({ byId: {} })),
@@ -38,7 +37,7 @@ const loadRecommendationInputs = async () => {
     return {
         events,
         adaptiveLog,
-        metronomeTuning,
+        metronomeTuning: { targetBpm: 90 }, // Stub fallback for deprecated config
         dueSongs,
         gameMasteryState,
         songCatalog,
