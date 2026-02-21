@@ -1,19 +1,13 @@
 <section class="view game-view game-bow-hero" id="view-game-bow-hero" aria-label="Game: Bow Hero">
-  <div class="game-header">
-    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>Exit</a>
-    <h2>Bow Hero</h2>
-    <div class="game-score">Guided Drill</div>
-  </div>
-  <div class="game-content" id="bow-hero-content">
+  <div class="game-content" id="bow-hero-content" style="position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; pointer-events: none;">
     <!-- Full Bleed Background Canvas -->
-    <canvas id="bow-hero-canvas"></canvas>
+    <canvas id="bow-hero-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto;"></canvas>
 
     <div class="bow-hero-stage">
-      <!-- HUD Top Layer -->
-      <div class="game-header">
+      <!-- Top layer HUD -->
+    <div style="position: relative; z-index: 10; padding: var(--space-4); display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto;">
+      <div class="game-header" style="flex: 1; margin: 0; background: none; box-shadow: none; padding: 0;">
+
         <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" />
@@ -21,20 +15,19 @@
         <h2>Bow Hero</h2>
         <div class="game-score">Guided Drill</div>
       </div>
-
-      <!-- Mascot Anchored -->
       <picture>
         <source srcset="./assets/illustrations/mascot-encourage.webp" type="image/webp">
         <img src="./assets/illustrations/mascot-encourage.png" alt="" class="game-mascot mascot-bow" loading="lazy"
           decoding="async">
       </picture>
+    </div>
 
       <input type="checkbox" id="bow-hero-run" class="state-checkbox bow-run-toggle" data-persist="false"
         aria-label="Start Bow Hero">
 
       <!-- Floating Interaction Panel -->
       <div class="glass-panel"
-        style="width: min(100%, 400px); text-align: center; display: flex; flex-direction: column; gap: var(--space-4);">
+        style="pointer-events: auto; width: min(100%, 400px); text-align: center; display: flex; flex-direction: column; gap: var(--space-4);">
         <div class="bow-hero-hud"
           style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2rem; align-items: center;">
           <div class="bow-timer" data-bow="timer" style="color: var(--color-primary); font-size: 1.5rem;">01:45</div>

@@ -1,19 +1,13 @@
 <section class="view game-view game-string-quest" id="view-game-string-quest" aria-label="Game: String Quest">
-  <div class="game-header">
-    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>Exit</a>
-    <h2>String Quest</h2>
-    <div class="game-score">Guided Drill</div>
-  </div>
-  <div class="game-content" id="string-quest-content">
+  <div class="game-content" id="string-quest-content" style="position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; pointer-events: none;">
     <!-- Full Bleed Background Canvas -->
-    <canvas id="string-quest-canvas"></canvas>
+    <canvas id="string-quest-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto;"></canvas>
 
     <div class="string-quest-stage">
-      <!-- HUD Top Layer -->
-      <div class="game-header">
+      <!-- Top layer HUD -->
+    <div style="position: relative; z-index: 10; padding: var(--space-4); display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto;">
+      <div class="game-header" style="flex: 1; margin: 0; background: none; box-shadow: none; padding: 0;">
+
         <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" />
@@ -21,17 +15,16 @@
         <h2>String Quest</h2>
         <div class="game-score">Guided Drill</div>
       </div>
-
-      <!-- Mascot Anchored -->
       <picture>
         <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
         <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-string" loading="lazy"
           decoding="async">
       </picture>
+    </div>
 
       <!-- Floating Interaction Panel -->
       <div class="glass-panel"
-        style="width: min(100%, 400px); text-align: center; display: flex; flex-direction: column; gap: var(--space-4);">
+        style="pointer-events: auto; width: min(100%, 400px); text-align: center; display: flex; flex-direction: column; gap: var(--space-4);">
         <div class="string-quest-hud"
           style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2rem;">
           <div class="string-score">Score <span data-string="score" style="color: var(--color-primary);">0</span></div>

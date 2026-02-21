@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
   <meta name="theme-color" content="#F56B49" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'" />
+    content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta http-equiv="Permissions-Policy" content="microphone=(self), camera=(), geolocation=(), payment=(), usb=()" />
 
@@ -101,10 +101,8 @@
       <section class="view" id="view-home" aria-label="Home">
         <div class="home-kid-hero">
           <picture>
-            <img
-              src="file:///Users/louisherman/.gemini/antigravity/brain/a4f6c440-ff1f-4ed5-a876-fa400d270f49/red_panda_hero_mascot_1771648371132.png"
-              alt="Stunning 3D Red Panda holding a violin" class="home-mascot" decoding="async" loading="eager"
-              width="1024" height="1024" style="filter: drop-shadow(0 20px 30px rgba(0,0,0,0.4)); object-fit: contain;">
+            <img class="hero-mascot" src="/assets/illustrations/epic_mascot.png" alt="Coach Panda" loading="eager"
+              decoding="sync">
           </picture>
           <div class="home-kid-welcome">
             <h1 class="home-kid-title">Ready to play?</h1>

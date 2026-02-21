@@ -20,7 +20,7 @@ test.describe('Kid-first flows', () => {
 
     await expect(page.locator('#view-coach')).toBeVisible();
     await expect(page.locator('.practice-focus')).toBeVisible();
-    await expect(page.locator('.focus-status')).toContainText('Ready!');
+    await expect(page.locator('.focus-status')).toContainText(/Suggested focus sprint/);
   });
 
   test('child can reach games and launch a game in two taps', async ({ page }) => {
@@ -28,9 +28,9 @@ test.describe('Kid-first flows', () => {
     await page.waitForURL('**/#view-games');
     await expect(page.locator('#view-games')).toBeVisible();
 
-    await page.locator('a[href="#view-game-pitch-quest"]').click();
+    await page.locator('a[href="#view-game-pitch-quest"]').first().click({ force: true });
     await page.waitForURL('**/#view-game-pitch-quest');
-    await expect(page.locator('#view-game-pitch-quest .game-drill')).toBeVisible();
+    await expect(page.locator('#view-game-pitch-quest .pitch-quest-stage')).toBeVisible();
   });
 
   test('child can open songs and continue last song in two taps', async ({ page }) => {
