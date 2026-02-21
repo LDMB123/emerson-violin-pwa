@@ -1,13 +1,5 @@
 <section class="view game-view game-rhythm-dash" id="view-game-rhythm-dash" aria-label="Game: Beat Runner">
-  <div class="game-header">
-    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>Exit</a>
-    <h2>Beat Runner</h2>
-    <div class="game-score">Realtime Coach</div>
-  </div>
-  <div class="game-content" id="rhythm-dash-content">
+  <div class="game-content" id="rhythm-dash-content" style="position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; pointer-events: none;">
     <picture>
       <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
       <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-rhythm" loading="lazy"
@@ -41,7 +33,7 @@
         </div>
 
         <canvas id="rhythm-canvas" width="800" height="600" class="rhythm-gpu-canvas"
-          aria-label="Rhythm Dash Canvas"></canvas>
+          aria-label="Rhythm Dash Canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto;"></canvas>
 
         <div class="rhythm-controls">
           <div class="toggle-ui">

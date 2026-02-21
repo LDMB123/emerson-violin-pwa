@@ -22,9 +22,9 @@ const updateEmptyState = (emptyState, visibleCount, query, filter) => {
     emptyState.hidden = false;
 };
 
-export const bindSongSearchFilter = ({ input, cards, filterInputs, emptyState }) => {
+export const bindSongSearchFilter = ({ input = null, cards, filterInputs, emptyState }) => {
     const applyFilter = () => {
-        const query = normalize(input.value || '');
+        const query = normalize(input?.value || '');
         const filter = getFilterValue(filterInputs);
         let visible = 0;
         cards.forEach((card) => {
@@ -53,8 +53,10 @@ export const bindSongSearchFilter = ({ input, cards, filterInputs, emptyState })
         });
     };
 
-    input.addEventListener('input', scheduleFilter);
-    input.addEventListener('search', applyFilter);
+    if (input) {
+        input.addEventListener('input', scheduleFilter);
+        input.addEventListener('search', applyFilter);
+    }
     filterInputs.forEach((option) => option.addEventListener('change', applyFilter));
 
     applyFilter();

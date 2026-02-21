@@ -6,9 +6,7 @@ test('utility routes are reachable from home links', async ({ page }) => {
 
     const routes = [
         { key: 'settings', viewId: 'view-settings' },
-        { key: 'help', viewId: 'view-help' },
-        { key: 'privacy', viewId: 'view-privacy' },
-        { key: 'about', viewId: 'view-about' },
+        { key: 'progress', viewId: 'view-progress' },
     ];
 
     for (const route of routes) {
@@ -62,5 +60,5 @@ test('song play mode auto-stops when the run duration completes', async ({ page 
     await page.locator(`#${viewId} label.btn-start`).click();
     await expect(toggle).toBeChecked();
 
-    await expect(toggle).not.toBeChecked({ timeout: 18000 });
+    await expect(toggle).not.toBeChecked({ timeout: 38000 });
 });

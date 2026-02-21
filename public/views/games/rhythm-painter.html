@@ -1,13 +1,5 @@
 <section class="view game-view game-rhythm-painter" id="view-game-rhythm-painter" aria-label="Game: Rhythm Painter">
-  <div class="game-header">
-    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>Exit</a>
-    <h2>Rhythm Painter</h2>
-    <div class="game-score">Guided Drill</div>
-  </div>
-  <div class="game-content" id="rhythm-painter-content">
+  <div class="game-content" id="rhythm-painter-content" style="position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; pointer-events: none;">
     <picture>
       <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
       <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-painter" loading="lazy"
