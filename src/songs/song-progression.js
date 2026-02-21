@@ -4,11 +4,11 @@ import { clamp, todayDay } from '../utils/math.js';
 import { loadCurriculumState } from '../curriculum/state.js';
 import {
     DAY_MS,
-    dayCounts,
     normalizeSongEntry,
     reviewIntervalDays,
     tierFromCounts,
 } from './song-progression-core.js';
+import { dayCounts } from '../utils/mastery-utils.js';
 import { collectDueSongReviewsFromState } from './song-progression-reviews.js';
 import { buildUnlockMapForCatalog } from './song-progression-unlocks.js';
 

@@ -81,6 +81,27 @@
         height: auto;
     }
 
+    /* Tame 1024x1024 generated mascot assets globally */
+    img[src*="epic_mascot"] {
+        max-width: 100%;
+        max-height: 38vh;
+        object-fit: contain;
+    }
+
+    /* Pop-out mascot for headers instead of breaking flex flow */
+    .view-header .hero-mascot {
+        position: absolute;
+        right: var(--space-4);
+        bottom: 0;
+        height: 160px;
+        width: auto;
+        max-width: 40vw;
+        object-fit: contain;
+        pointer-events: none;
+        z-index: 10;
+        filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
+    }
+
     input,
     select,
     textarea {
@@ -139,9 +160,9 @@
 
         /* Liquid Glass - Ultra Premium */
         --glass-bg: rgba(255, 255, 255, 0.92);
-        --glass-bg-strong: rgba(255, 255, 255, 0.97);
+        --glass-bg-strong: rgba(255, 255, 255, 0.95);
         --glass-bg-light: rgba(255, 255, 255, 0.85);
-        --glass-border: rgba(255, 255, 255, 0.9);
+        --glass-border: rgba(255, 255, 255, 0.6);
         --glass-shadow: var(--elevation-lg);
 
         /* Shadows */
@@ -1140,6 +1161,18 @@
         }
     }
 
+    .string-quest-stage {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(16px, 4vw, 32px) clamp(16px, 4vw, 32px) calc(var(--safe-bottom, 80px) + clamp(16px, 4vw, 32px));
+        z-index: 10;
+        overflow: hidden;
+    }
+
     .goal-card {
         display: flex;
         align-items: center;
@@ -2016,8 +2049,9 @@
 
 .coach-hero-mascot {
     position: relative;
-    /* Allow mascot to bleed */
-    transform: scale(1.2) translateX(-5%);
+    /* Soften the scale so it doesn't overlap text */
+    transform: scale(1.05) translateX(-2%);
+    z-index: 1;
 }
 
 .timer-mascot-container {
@@ -2027,6 +2061,7 @@
 
 .timer-mascot {
     width: 100%;
+    max-height: clamp(250px, 45vh, 450px);
     height: auto;
     object-fit: contain;
     filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
@@ -4391,48 +4426,6 @@
     box-shadow: 0 14px 24px rgba(120, 60, 40, 0.12);
 }
 
-.parent-chart {
-    grid-column: 1 / -1;
-    background: rgba(255, 255, 255, 0.85);
-}
-
-.parent-chart-graph {
-    position: relative;
-    margin-top: var(--space-3);
-    padding: var(--space-3);
-    border-radius: var(--radius-xl);
-    background: rgba(255, 255, 255, 0.75);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-    min-height: 200px;
-}
-
-.parent-chart-graph svg {
-    width: 100%;
-    height: auto;
-}
-
-.parent-chart-line {
-    fill: none;
-    stroke: #69b3b4;
-    stroke-width: 4;
-    stroke-linecap: round;
-}
-
-.parent-chart-points circle {
-    fill: #f2c078;
-    stroke: #fff;
-    stroke-width: 2;
-}
-
-.parent-chart-mascot {
-    position: absolute;
-    right: var(--space-3);
-    bottom: var(--space-3);
-    width: 90px;
-    height: 90px;
-    object-fit: contain;
-    opacity: 0.9;
-}
 
 .weekly-summary {
     margin-top: var(--space-3);
@@ -5565,9 +5558,7 @@
     .song-play-toggle:checked~.song-sheet .song-playhead,
     .song-play-toggle:checked~.song-sheet .song-note,
     .wave-bar,
-    .nav-pulse,
-    .install-toast.is-visible,
-    .install-toast.is-leaving {
+    .nav-pulse {
         animation: none !important;
     }
 
@@ -5575,10 +5566,7 @@
         opacity: 0.8;
     }
 
-    .install-toast.is-visible {
-        transform: translateY(0);
-        opacity: 1;
-    }
+
 
     .btn:active,
     .feature-card:active,
@@ -5757,112 +5745,6 @@
 }
 
 .onboarding-skip:hover {
-    color: var(--color-text);
-}
-
-/* ===========================================================================
-   PWA Install Toast
-   =========================================================================== */
-
-.install-toast {
-    position: fixed;
-    bottom: calc(var(--safe-bottom) + 80px);
-    left: var(--space-4);
-    right: var(--space-4);
-    max-width: 360px;
-    margin: 0 auto;
-    padding: var(--space-3) var(--space-4);
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    z-index: var(--z-toast);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--elevation-lg);
-    transform: translateY(120%);
-    opacity: 0;
-    transition: none;
-}
-
-.install-toast.is-visible {
-    animation: toast-slide-up var(--duration-normal) var(--ease-bounce) forwards;
-}
-
-.install-toast.is-leaving {
-    animation: toast-slide-down var(--duration-fast) var(--ease-out) forwards;
-}
-
-@keyframes toast-slide-up {
-    from {
-        transform: translateY(120%);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-@keyframes toast-slide-down {
-    from {
-        transform: translateY(0);
-        opacity: 1;
-    }
-
-    to {
-        transform: translateY(120%);
-        opacity: 0;
-    }
-}
-
-@media (display-mode: standalone),
-(display-mode: fullscreen) {
-    .install-toast {
-        display: none;
-    }
-}
-
-:root[data-installed="true"] .install-toast {
-    display: none;
-}
-
-.install-toast-mascot {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-md);
-    object-fit: cover;
-    flex-shrink: 0;
-}
-
-.install-toast-body {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    min-width: 0;
-}
-
-.install-toast-text {
-    margin: 0;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    line-height: 1.3;
-    white-space: nowrap;
-}
-
-.install-toast-close {
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    color: var(--color-text-muted);
-    padding: var(--space-1);
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    transition: color var(--duration-fast);
-}
-
-.install-toast-close:hover,
-.install-toast-close:focus-visible {
     color: var(--color-text);
 }
 
@@ -6524,424 +6406,9 @@
     margin-bottom: 1rem;
 }
 
-/* ===========================================================================
-   Phase 15 & 16: Cinematic Practice Tools & Game Modules
-   =========================================================================== */
 
-.game-scale-practice .game-content,
-.game-ear-trainer .game-content,
-.game-pitch-quest .game-content,
-.game-rhythm-dash .game-content,
-.game-note-memory .game-content,
-.game-bow-hero .game-content,
-.game-string-quest .game-content,
-.game-rhythm-painter .game-content,
-.game-story-song .game-content,
-.game-pizzicato .game-content,
-.game-melody-maker .game-content,
-.game-duet-challenge .game-content {
-    display: grid;
-    /* Phase 15/16: Edge-to-edge cinematic layout */
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-6);
-    align-items: start;
-    width: 100vw;
-    margin-left: calc(-50vw + 50%);
-    padding: 0 var(--safe-max);
-    margin-top: calc(var(--space-6) * -1);
-}
-
-.game-stage,
-.scale-practice-stage,
-.ear-trainer-stage,
-.pitch-quest-stage,
-.rhythm-dash-stage,
-.note-memory-stage,
-.bow-hero-stage,
-.string-quest-stage,
-.rhythm-painter-stage,
-.story-song-stage,
-.pizzicato-stage,
-.melody-maker-stage,
-.duet-challenge-stage {
-    padding: clamp(1.5rem, 4vw, 2.8rem);
-    border-radius: 36px;
-    background: linear-gradient(165deg, rgba(255, 246, 235, 0.7), rgba(255, 232, 210, 0.6));
-    box-shadow: 0 40px 80px rgba(88, 45, 28, 0.2);
-    /* Phase 15: Volumetric Glass Control */
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    display: grid;
-    gap: var(--space-4);
-    position: relative;
-    text-align: center;
-}
-
-.game-check-item {
-    padding: var(--space-4);
-    border-radius: var(--radius-xl);
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
-    border: 1px solid rgba(255, 255, 255, 0.9);
-    box-shadow: 0 8px 16px rgba(88, 45, 28, 0.08);
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-    margin-bottom: var(--space-2);
-}
-
-.game-check-item:active {
-    transform: translateY(2px) scale(0.98);
-    background: rgba(220, 240, 225, 0.9);
-}
-
-.game-check-item input[type="checkbox"] {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    border: 2px solid var(--color-primary);
-    accent-color: var(--color-success);
-}
-
-.game-check-item:has(input:checked) {
-    background: linear-gradient(145deg, rgba(220, 255, 230, 0.95), rgba(190, 240, 205, 0.8));
-    border-color: rgba(150, 220, 170, 0.9);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-    transform: translateY(2px);
-}
-
-/* Let the panda grow */
-.game-mascot {
-    width: 100%;
-    height: auto;
-    object-fit: contain;
-    transform: scale(1.3);
-    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.3));
-}
-
-/* ===========================================================================
-   Game complete modal
-   =========================================================================== */
 
 @layer games {
-
-    .game-complete-dialog {
-        border: none;
-        background: transparent;
-        padding: 0;
-        max-width: 100vw;
-        max-height: 100vh;
-        overflow: visible;
-    }
-
-    .game-complete-dialog::backdrop {
-        background: rgba(53, 32, 25, 0.6);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-    }
-
-    .game-complete-inner {
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: var(--radius-xl);
-        padding: var(--space-8) var(--space-6);
-        max-width: 360px;
-        width: calc(100vw - var(--space-8));
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .game-complete-mascot {
-        width: 100px;
-        height: 100px;
-        object-fit: contain;
-        display: block;
-        margin: 0 auto var(--space-4);
-        animation: mascot-bounce 0.6s var(--ease-bounce) both;
-    }
-
-    @keyframes mascot-bounce {
-        from {
-            transform: scale(0.5) translateY(20px);
-            opacity: 0;
-        }
-
-        to {
-            transform: scale(1) translateY(0);
-            opacity: 1;
-        }
-    }
-
-    .game-complete-heading {
-        font-family: var(--font-display);
-        font-size: var(--text-2xl);
-        color: var(--color-primary);
-        margin: 0 0 var(--space-4);
-    }
-
-    .game-complete-stars {
-        display: flex;
-        justify-content: center;
-        gap: var(--space-2);
-        margin-bottom: var(--space-4);
-        font-size: 2rem;
-        line-height: 1;
-    }
-
-    .game-complete-star {
-        display: inline-block;
-        opacity: 0;
-        transform: scale(0.3) rotate(-30deg);
-        transition: opacity 0.3s ease, transform 0.4s var(--ease-bounce);
-    }
-
-    .game-complete-star.revealed {
-        opacity: 1;
-        transform: scale(1) rotate(0deg);
-    }
-
-    .game-complete-star.filled {
-        color: var(--color-gold);
-    }
-
-    .game-complete-star.empty {
-        color: rgba(53, 32, 25, 0.2);
-    }
-
-    .game-complete-stats {
-        display: flex;
-        justify-content: center;
-        gap: var(--space-6);
-        margin-bottom: var(--space-6);
-    }
-
-    .game-complete-stat {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-1);
-    }
-
-    .game-complete-stat-value {
-        font-family: var(--font-display);
-        font-size: var(--text-xl);
-        font-weight: 700;
-        color: var(--color-text);
-    }
-
-    .game-complete-stat-label {
-        font-size: var(--text-xs);
-        color: var(--color-text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }
-
-    .game-complete-actions {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3);
-    }
-
-    /* CSS-only confetti */
-    .game-complete-confetti {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        overflow: hidden;
-        border-radius: var(--radius-xl);
-    }
-
-    .confetti-piece {
-        position: absolute;
-        top: -15px;
-        width: 8px;
-        height: 8px;
-        border-radius: 2px;
-        opacity: 0;
-        animation: confetti-fall var(--fall-dur, 1.8s) var(--fall-delay, 0s) ease-in both;
-    }
-
-    .confetti-piece.circle {
-        border-radius: 50%;
-    }
-
-    .confetti-piece.large {
-        width: 12px;
-        height: 12px;
-    }
-
-    .confetti-piece.small {
-        width: 5px;
-        height: 5px;
-    }
-
-    @keyframes confetti-fall {
-        0% {
-            opacity: 1;
-            transform: translateY(0) rotate(0deg) translateX(0);
-        }
-
-        100% {
-            opacity: 0;
-            transform: translateY(320px) rotate(720deg) translateX(var(--fall-drift, 0px));
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .game-complete-mascot {
-            animation: none;
-            opacity: 1;
-        }
-
-        .confetti-piece {
-            animation: none;
-            opacity: 0;
-        }
-
-        .game-complete-star {
-            opacity: 1;
-            transform: none;
-            transition: none;
-        }
-    }
-
-    :root:has(#setting-reduce-motion:checked) .game-complete-mascot {
-        animation: none;
-        opacity: 1;
-    }
-
-    :root:has(#setting-reduce-motion:checked) .confetti-piece {
-        animation: none;
-        opacity: 0;
-    }
-
-    :root:has(#setting-reduce-motion:checked) .game-complete-star {
-        opacity: 1;
-        transform: none;
-        transition: none;
-    }
-
-    /* ===========================================================================
-       Achievement Celebration Overlay
-       =========================================================================== */
-
-    #achievement-modal {
-        border: none;
-        background: transparent;
-        padding: 0;
-        max-width: 100vw;
-        max-height: 100vh;
-        overflow: visible;
-    }
-
-    #achievement-modal::backdrop {
-        background: rgba(53, 32, 25, 0.55);
-        backdrop-filter: blur(8px) saturate(120%);
-    }
-
-    .achievement-inner {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--space-4);
-        padding: var(--space-8) var(--space-6);
-        max-width: 360px;
-        width: calc(100vw - var(--space-8));
-        text-align: center;
-        background: var(--color-surface);
-        border: 1px solid rgba(255, 249, 243, 0.18);
-        border-radius: var(--radius-2xl);
-        box-shadow: var(--shadow-lg);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .achievement-confetti {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        overflow: hidden;
-    }
-
-    .achievement-badge-art {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        border: 3px solid var(--color-primary);
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--color-bg-alt);
-        animation: mascot-bounce 0.6s var(--ease-bounce) both;
-        flex-shrink: 0;
-    }
-
-    #achievement-badge-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-
-    #achievement-badge-img[src=""] {
-        display: none;
-    }
-
-    .achievement-badge-fallback {
-        font-size: 3rem;
-        line-height: 1;
-    }
-
-    .achievement-heading {
-        font-family: var(--font-display);
-        font-size: var(--text-2xl);
-        font-weight: 700;
-        color: var(--color-secondary);
-        margin: 0;
-    }
-
-    .achievement-badge-name {
-        font-weight: 700;
-        font-size: var(--text-lg);
-        color: var(--color-text);
-        margin: 0;
-    }
-
-    .achievement-cheer {
-        font-size: var(--text-sm);
-        color: var(--color-text-muted);
-        margin: 0;
-    }
-
-    .achievement-yay {
-        min-width: 140px;
-        margin-top: var(--space-2);
-    }
-
-    /* Reduced motion — @media query */
-    @media (prefers-reduced-motion: reduce) {
-        .achievement-badge-art {
-            animation: none;
-        }
-
-        #achievement-modal .confetti-piece {
-            animation: none;
-        }
-    }
-
-    /* Reduced motion — in-app toggle */
-    :root:has(#setting-reduce-motion:checked) .achievement-badge-art {
-        animation: none;
-    }
-
-    :root:has(#setting-reduce-motion:checked) #achievement-modal .confetti-piece {
-        animation: none;
-    }
 
     /* ===========================================================================
        Difficulty Picker
@@ -7011,7 +6478,6 @@
         --color-success: #14532D;
         --glass-bg: rgba(255, 255, 255, 0.98);
         --glass-bg-strong: rgba(255, 255, 255, 1);
-        --glass-bg-light: rgba(255, 255, 255, 0.97);
         --glass-border: rgba(15, 23, 42, 0.12);
         --text-sm: 1rem;
         --text-base: 1.125rem;
@@ -8070,7 +7536,13 @@
     html[data-ui-mode="child"] #view-songs,
     html[data-ui-mode="child"] #view-tuner,
     html[data-ui-mode="child"] #view-progress {
-        overflow: clip;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    /* Fix the Games List Nav Bar overlap */
+    html[data-ui-mode="child"] #view-games {
+        padding-bottom: calc(80px + var(--space-safe-bottom, 24px) + 24px);
     }
 
     html[data-ui-mode="child"] #view-home {
@@ -8326,6 +7798,15 @@
         grid-column: 1 / -1;
     }
 
+    html[data-ui-mode="parent"] .home-mascot {
+        width: clamp(100px, 28vw, 160px);
+        height: auto;
+        object-fit: contain;
+        transform-origin: bottom center;
+        border-radius: var(--radius-2xl);
+        overflow: hidden;
+    }
+
     html[data-ui-mode="parent"] #view-parent {
         width: min(100%, 1120px);
         margin-inline: auto;
@@ -8557,19 +8038,4 @@
 
 .analysis-actions h3 {
     margin: 0;
-}
-/* Fallback for full-bleed immersive game panels */
-.game-content > div:not(canvas):not(.bamboo-container) {
-    pointer-events: auto !important;
-    position: relative !important;
-    z-index: 10 !important;
-}
-.game-content > canvas,
-.game-content > .bamboo-container {
-    pointer-events: auto !important;
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    z-index: 0 !important;
 }

@@ -1,6 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { GAME_MASTERY_KEY } from '../persistence/storage-keys.js';
-import { DEFAULT_MASTERY_THRESHOLDS } from './game-config.js';
+import { DEFAULT_MASTERY_THRESHOLDS, dayCounts } from '../utils/mastery-utils.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -33,15 +33,6 @@ const tierFromDays = (entry, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
     if ((entry.silverDays || 0) >= thresholds.distinctDays) return 'silver';
     if ((entry.bronzeDays || 0) >= thresholds.distinctDays) return 'bronze';
     return 'foundation';
-};
-
-const dayCounts = (days, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
-    const values = Object.values(days || {}).map((value) => Number(value) || 0);
-    return {
-        bronzeDays: values.filter((score) => score >= thresholds.bronze).length,
-        silverDays: values.filter((score) => score >= thresholds.silver).length,
-        goldDays: values.filter((score) => score >= thresholds.gold).length,
-    };
 };
 
 export const loadGameMasteryState = async () => {

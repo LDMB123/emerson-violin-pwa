@@ -8,7 +8,8 @@ import { createAudioController } from '../utils/audio-utils.js';
 import { buildRecordingSlotState, applyRecordingSlotState } from '../utils/analysis-recordings-utils.js';
 
 export const createSessionReviewRecordingController = () => {
-    const { audio: playbackAudio, stop: stopPlayback, setUrl: setPlaybackUrl } = createAudioController();
+    const controller = createAudioController();
+    const { audio: playbackAudio, stop: stopPlayback } = controller;
 
     let recordingEls = [];
     let currentRecordings = [];
@@ -55,15 +56,9 @@ export const createSessionReviewRecordingController = () => {
                 const source = await resolveRecordingSource(recording);
                 if (!source) return;
 
-                stopPlayback();
-                setPlaybackUrl(source.revoke ? source.url : '');
-                playbackAudio.src = source.url;
-                if (source.revoke) {
-                    playbackAudio.addEventListener('ended', () => stopPlayback(), { once: true });
-                }
                 syncPlaybackSound();
                 if (!isSoundEnabled()) return;
-                playbackAudio.play().catch(() => {});
+                await controller.playSource(source);
             });
         });
     };

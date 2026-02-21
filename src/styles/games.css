@@ -104,11 +104,35 @@
     .game-coach {
         display: grid;
         gap: var(--space-3);
-        padding: var(--space-4);
-        border-radius: var(--radius-xl);
-        background: rgba(255, 255, 255, 0.88);
-        box-shadow: 0 16px 28px rgba(120, 60, 40, 0.16);
-        margin-bottom: var(--space-4);
+        padding: clamp(1rem, 4vw, 2rem);
+        border-radius: var(--radius-2xl);
+        background: rgba(255, 250, 245, 0.85);
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.8);
+
+        /* Phase 19: Absolute floating modal centered over game */
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        max-width: 540px;
+        height: max-content;
+        max-height: calc(100vh - 120px);
+        overflow-y: auto;
+        z-index: 10000;
+        pointer-events: auto;
+
+        /* Glass blur over the canvas */
+        backdrop-filter: blur(32px) saturate(180%);
+        -webkit-backdrop-filter: blur(32px) saturate(180%);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+
+        transition: all 0.4s var(--ease-spring);
+    }
+
+    [data-session="active"] .game-coach {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+        pointer-events: none;
+        visibility: hidden;
     }
 
     .game-coach-header {
@@ -293,192 +317,6 @@
             width: 100%;
             text-align: center;
         }
-    }
-
-    .game-content {
-        padding: var(--space-4);
-        min-height: calc(100dvh - 80px);
-        position: relative;
-        isolation: isolate;
-    }
-
-    .game-content>*:not(.game-mascot) {
-        position: relative;
-        z-index: 1;
-    }
-
-    .game-mascot {
-        position: absolute;
-        right: clamp(16px, 4vw, 36px);
-        bottom: clamp(12px, 4vw, 32px);
-        width: clamp(96px, 18vw, 180px);
-        height: auto;
-        aspect-ratio: 1 / 1;
-        opacity: 0.92;
-        pointer-events: none;
-        filter: drop-shadow(0 18px 24px rgba(70, 40, 30, 0.2));
-        z-index: 0;
-    }
-
-    @media (max-width: 700px) {
-        .game-mascot {
-            width: clamp(80px, 24vw, 140px);
-            opacity: 0.85;
-        }
-    }
-
-    #view-game-pitch-quest {
-        --game-bg: radial-gradient(circle at 20% 20%, #ffd9b2 0%, #f9b483 40%, #f07c6b 100%);
-    }
-
-    #view-game-rhythm-dash {
-        --game-bg: radial-gradient(circle at 15% 10%, #fff2d2 0%, #f3d8ff 45%, #8f63e9 100%);
-    }
-
-    #view-game-note-memory {
-        --game-bg: radial-gradient(circle at 20% 15%, #f2e8ff 0%, #d3c2f5 55%, #b69be2 100%);
-    }
-
-    #view-game-ear-trainer {
-        --game-bg: radial-gradient(circle at 20% 10%, #c6f2ea 0%, #9ddfd4 55%, #77c7bd 100%);
-    }
-
-    #view-game-bow-hero {
-        --game-bg: radial-gradient(circle at 20% 15%, #c7f3e5 0%, #9edcd0 50%, #78c3bb 100%);
-    }
-
-    #view-game-string-quest {
-        --game-bg: radial-gradient(circle at 25% 15%, #ffd7a6 0%, #f6a36f 55%, #e07a5f 100%);
-    }
-
-    #view-game-rhythm-painter {
-        --game-bg: radial-gradient(circle at 20% 10%, #f9c7df 0%, #e6b5f2 50%, #d3a7f4 100%);
-    }
-
-    #view-game-story-song {
-        --game-bg: radial-gradient(circle at 20% 10%, #f8c7d6 0%, #e2a8bb 55%, #d18aa2 100%);
-    }
-
-    #view-game-pizzicato {
-        --game-bg: radial-gradient(circle at 20% 15%, #c5f1ef 0%, #9ad9e5 55%, #77bcd2 100%);
-    }
-
-    #view-game-tuning-time {
-        --game-bg: radial-gradient(circle at 20% 10%, #c7f1e7 0%, #9edfd7 55%, #74c7c2 100%);
-    }
-
-    #view-game-melody-maker {
-        --game-bg: radial-gradient(circle at 20% 10%, #ffd6b3 0%, #f7b891 55%, #e79b75 100%);
-    }
-
-    #view-game-scale-practice {
-        --game-bg: radial-gradient(circle at 20% 10%, #e3d4ff 0%, #c5b7f3 55%, #a59ae6 100%);
-    }
-
-    #view-game-duet-challenge {
-        --game-bg: radial-gradient(circle at 20% 10%, #ffe3c9 0%, #f7c7a3 55%, #e8a989 100%);
-    }
-
-    .game-drill {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-4);
-        padding: var(--space-5);
-        border-radius: var(--radius-xl);
-    }
-
-    .game-drill-intro {
-        font-size: var(--text-base);
-        color: var(--color-text);
-        line-height: 1.35;
-    }
-
-    .game-drill-hint {
-        font-size: var(--text-sm);
-        color: var(--color-text-muted);
-        margin: 0;
-        line-height: 1.35;
-    }
-
-    .game-checklist-group {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3);
-        counter-reset: done;
-    }
-
-    .game-progress {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-weight: 700;
-        font-size: var(--text-sm);
-        color: var(--color-text);
-        line-height: 1.2;
-    }
-
-    .game-progress::after {
-        content: counter(done) " / " attr(data-total);
-        font-weight: 700;
-        color: var(--color-primary);
-    }
-
-    .game-checklist {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: grid;
-        gap: var(--space-2);
-    }
-
-    .game-check-item {
-        position: relative;
-    }
-
-    .game-check-item input {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-    }
-
-    .game-check-item label {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--space-3);
-        padding: var(--space-3) var(--space-4);
-        min-height: 54px;
-        border-radius: var(--radius-lg);
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        font-weight: 600;
-        transition: transform 0.2s ease, background 0.2s ease;
-        line-height: 1.35;
-    }
-
-    .game-check-item label .note-chip {
-        margin-top: 2px;
-        flex-shrink: 0;
-    }
-
-    .game-check-item input:checked+label {
-        background: var(--color-primary);
-        color: #fff;
-        border-color: transparent;
-        transform: translateY(-2px);
-        counter-increment: done;
-    }
-
-    .note-chip {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 48px;
-        padding: 4px 10px;
-        border-radius: var(--radius-full);
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        font-weight: 800;
-        line-height: 1;
     }
 
     .game-tip {
@@ -1446,14 +1284,16 @@
         text-align: center;
     }
 
-    /* String Quest */
     .string-quest-stage {
-        display: grid;
-        gap: var(--space-4);
-        padding: var(--space-6);
-        border-radius: var(--radius-xl);
-        background: linear-gradient(160deg, rgba(255, 205, 150, 0.9), rgba(255, 241, 221, 0.95));
-        box-shadow: var(--glass-shadow);
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(16px, 4vw, 32px) clamp(16px, 4vw, 32px) calc(var(--safe-bottom, 80px) + clamp(16px, 4vw, 32px));
+        z-index: 10;
+        overflow: hidden;
     }
 
     .string-quest-hud {
@@ -2258,4 +2098,21 @@
         font-size: var(--text-xs);
     }
 
+    /* Full-Screen Immersion Fix: Ensure all HUDs stack above the absolute Canvases */
+    [class$="-stage"]>*:not(canvas),
+    [class$="-content"]>*:not(canvas),
+    .game-header,
+    .game-coach,
+    .game-drill,
+    .rhythm-controls,
+    .rhythm-hud,
+    .rhythm-level-banner,
+    .painter-canvas,
+    .painter-hud,
+    .painter-status,
+    .tuning-live-panel {
+        position: relative;
+        z-index: 50;
+        pointer-events: auto;
+    }
 }

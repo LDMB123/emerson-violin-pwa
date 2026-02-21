@@ -87,7 +87,7 @@ describe('sequence-game lifecycle guards', () => {
         const game = createSequenceGame(createConfig(fixture));
 
         game.bind();
-        document.querySelector('.unitseqa-btn')?.click();
+        document.querySelector('.unitseqa-btn')?.dispatchEvent(new Event('pointerdown'));
         window.dispatchEvent(new Event('pagehide'));
 
         expect(sharedMocks.stopTonePlayer).toHaveBeenCalledTimes(1);
@@ -104,7 +104,7 @@ describe('sequence-game lifecycle guards', () => {
         const game = createSequenceGame(createConfig(fixture));
 
         game.bind();
-        document.querySelector('.unitseqb-btn')?.click();
+        document.querySelector('.unitseqb-btn')?.dispatchEvent(new Event('pointerdown'));
         const pagehideEvent = typeof PageTransitionEvent === 'function'
             ? new PageTransitionEvent('pagehide', { persisted: true })
             : new Event('pagehide');

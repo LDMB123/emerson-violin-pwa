@@ -1,11 +1,9 @@
-export class StringQuestCanvasEngine {
+import { updateParticles, drawGlowingParticles } from '../utils/canvas-utils.js';
+import { BaseCanvasEngine } from '../utils/canvas-engine.js';
+
+export class StringQuestCanvasEngine extends BaseCanvasEngine {
     constructor(canvas, isHorizontal = true) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false });
-        this.width = canvas.width;
-        this.height = canvas.height;
-        this.isRunning = false;
-        this.lastTime = performance.now();
+        super(canvas);
         this.isHorizontal = isHorizontal;
         this.onStringPluck = null;
 
@@ -17,11 +15,7 @@ export class StringQuestCanvasEngine {
             { id: 'E', color: '#b2ff59', thickness: 2, yPos: 0.8, vibration: 0, targetVibration: 0, highlight: 0 }
         ];
 
-        this.particles = [];
-        this.handleResize = this.handleResize.bind(this);
         this.handlePointerDown = this.handlePointerDown.bind(this);
-
-        window.addEventListener('resize', this.handleResize);
         canvas.addEventListener('pointerdown', this.handlePointerDown);
     }
 
@@ -82,56 +76,6 @@ export class StringQuestCanvasEngine {
         }
     }
 
-    handleResize() {
-        // Handled via CSS scaling
-    }
-
-    handlePointerDown(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        // Scale viewport coordinates to internal canvas resolution
-        const scaleX = this.width / rect.width;
-        const scaleY = this.height / rect.height;
-
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
-
-        // Hit detection
-        const hitZone = this.isHorizontal ? this.height / 4 : this.width / 4;
-
-        this.strings.forEach(str => {
-            const pos = this.isHorizontal ? this.height * str.yPos : this.width * str.yPos;
-            const pointer = this.isHorizontal ? y : x;
-
-            if (Math.abs(pointer - pos) < hitZone * 0.8) {
-                this.pluck(str.id);
-            }
-        });
-    }
-
-    start() {
-        if (this.isRunning) return;
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        this.loop();
-    }
-
-    stop() {
-        this.isRunning = false;
-    }
-
-    loop() {
-        if (!this.isRunning) return;
-
-        const now = performance.now();
-        const dt = Math.min((now - this.lastTime) / 1000, 0.1);
-        this.lastTime = now;
-
-        this.update(dt);
-        this.draw();
-
-        requestAnimationFrame(() => this.loop());
-    }
-
     update(dt) {
         // String Physics
         this.strings.forEach(str => {
@@ -145,11 +89,8 @@ export class StringQuestCanvasEngine {
         });
 
         // Particle Physics
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const p = this.particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            // Add slight gravity drag based on layout
+        // String Quest has a slight directional drag override, so we apply it before standard update
+        this.particles.forEach(p => {
             if (this.isHorizontal) {
                 p.vx *= 0.99;
                 p.vy *= 0.95;
@@ -157,11 +98,8 @@ export class StringQuestCanvasEngine {
                 p.vy *= 0.99;
                 p.vx *= 0.95;
             }
-            p.life -= p.decay;
-            if (p.life <= 0) {
-                this.particles.splice(i, 1);
-            }
-        }
+        });
+        updateParticles(this.particles);
     }
 
     draw() {
@@ -231,21 +169,11 @@ export class StringQuestCanvasEngine {
         });
 
         // Draw Particles
-        this.ctx.save();
-        this.ctx.globalCompositeOperation = 'screen';
-        this.particles.forEach(p => {
-            this.ctx.globalAlpha = p.life;
-            this.ctx.fillStyle = p.color;
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            this.ctx.fill();
-        });
-        this.ctx.restore();
+        drawGlowingParticles(this.ctx, this.particles);
     }
 
     destroy() {
-        this.stop();
-        window.removeEventListener('resize', this.handleResize);
+        super.destroy();
         this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
     }
 }

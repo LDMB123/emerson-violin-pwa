@@ -1,10 +1,9 @@
 import {
-    cachedEl,
-    readLiveNumber,
     markChecklistIf,
     setDifficultyBadge,
     attachTuning,
     getTonePlayer,
+    createStandardGameUpdate,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { RT_STATE } from '../utils/event-names.js';
@@ -30,30 +29,19 @@ import { bindRhythmDashUiControls } from './rhythm-dash/ui-bindings.js';
 import { createRhythmDashBindingState } from './rhythm-dash/binding-state.js';
 import { RhythmCanvasEngine } from './rhythm-dash/rhythm-canvas.js';
 
-const rhythmScoreEl = cachedEl('[data-rhythm="score"]');
-const rhythmComboEl = cachedEl('[data-rhythm="combo"]');
 const rhythmDashLifecycle = createRhythmDashLifecycle();
 const rhythmDashBindingState = createRhythmDashBindingState({
     lifecycle: rhythmDashLifecycle,
 });
 
-const updateRhythmDash = () => {
-    const inputs = Array.from(document.querySelectorAll('#view-game-rhythm-dash input[id^="rd-set-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
-    const scoreEl = rhythmScoreEl();
-    const comboEl = rhythmComboEl();
-    const liveScore = readLiveNumber(scoreEl, 'liveScore');
-    const liveCombo = readLiveNumber(comboEl, 'liveCombo');
-
-    if (scoreEl) {
-        scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : (checked * 25 + (checked === inputs.length ? 20 : 0)));
-    }
-    if (comboEl) {
-        const combo = Number.isFinite(liveCombo) ? liveCombo : checked;
-        comboEl.textContent = `x${combo}`;
-    }
-};
+const updateRhythmDash = createStandardGameUpdate({
+    viewId: '#view-game-rhythm-dash',
+    inputPrefix: 'rd-set-',
+    scoreSelector: '[data-rhythm="score"]',
+    comboSelector: '[data-rhythm="combo"]',
+    scoreMultiplier: 25,
+    bonusScore: 20,
+});
 
 const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
     const stage = document.querySelector('#view-game-rhythm-dash');

@@ -32,5 +32,16 @@ export const createAudioController = () => {
         currentUrl = nextUrl;
     };
 
-    return { audio, stop, setUrl };
+    const playSource = async (source) => {
+        if (!source || !source.url) return;
+        stop();
+        setUrl(source.revoke ? source.url : '');
+        audio.src = source.url;
+        if (source.revoke) {
+            audio.addEventListener('ended', stop, { once: true });
+        }
+        await audio.play().catch(() => { });
+    };
+
+    return { audio, stop, setUrl, playSource };
 };

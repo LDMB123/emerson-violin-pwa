@@ -9,7 +9,6 @@ export const MODULE_LOADERS = {
     installPrompt: () => import('../platform/install-prompt.js'),
     installGuide: () => import('../platform/install-guide.js'),
     installGuideClose: () => import('../platform/install-guide-close.js'),
-    installToast: () => import('../platform/install-toast.js'),
     ipadosCapabilities: () => import('../platform/ipados-capabilities.js'),
     inputCapabilities: () => import('../platform/input-capabilities.js'),
     mlScheduler: () => import('../ml/offline-scheduler.js'),
@@ -33,7 +32,6 @@ export const MODULE_LOADERS = {
     backupExport: () => import('../backup/export.js'),
     gameMetrics: () => import('../games/game-metrics.js'),
     gameEnhancements: () => import('../games/game-enhancements.js'),
-    gameComplete: () => import('../games/game-complete.js'),
     trainerTools: () => import('../trainer/tools.js'),
     recordings: () => import('../recordings/recordings.js'),
     parentPin: () => import('../parent/pin.js'),
@@ -63,7 +61,6 @@ export const EAGER_MODULES = [
 ];
 
 export const IDLE_MODULE_PLAN = [
-    ['installToast', 0],
     ['mlScheduler', 180],
     ['badging', 420],
     ['audioPlayer', 540],
@@ -116,7 +113,7 @@ const MODULE_RULES = [
             'mlAccelerator',
         ],
     },
-    { when: oneOf(equals('view-games'), startsWith('view-game-')), modules: ['gameMetrics', 'gameEnhancements', 'gameComplete'] },
+    { when: oneOf(equals('view-games'), startsWith('view-game-')), modules: ['gameMetrics', 'gameEnhancements'] },
     { when: equals('view-progress'), modules: ['recommendationsUi'] },
 ];
 

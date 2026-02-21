@@ -9,6 +9,12 @@ export class ViewLoader {
     return this.cache.has(viewPath);
   }
 
+  prefetch(viewPath) {
+    if (!this.has(viewPath) && !this.loading.has(viewPath)) {
+      this.load(viewPath).catch(() => { });
+    }
+  }
+
   async load(viewPath) {
     if (this.cache.has(viewPath)) {
       return this.cache.get(viewPath);
@@ -36,14 +42,6 @@ export class ViewLoader {
 
     this.loading.set(viewPath, promise);
     return promise;
-  }
-
-  async prefetch(viewPath) {
-    try {
-      await this.load(viewPath);
-    } catch {
-      // Prefetch failures are non-blocking; normal navigation retries.
-    }
   }
 
   seed(viewPath, html) {

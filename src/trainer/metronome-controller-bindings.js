@@ -1,5 +1,5 @@
 import { calculateMetronomeBpm, shouldClearTapTimes } from './trainer-utils.js';
-import { updateMetronomeSliderFill } from './metronome-controller-view.js';
+import { updateSliderFill } from '../utils/dom-utils.js';
 
 export const bindMetronomeSliderControl = ({
     slider,
@@ -16,7 +16,7 @@ export const bindMetronomeSliderControl = ({
         resetReported();
         markTouched();
         updateBpm(target.value);
-        updateMetronomeSliderFill(target);
+        updateSliderFill(target);
     });
 };
 

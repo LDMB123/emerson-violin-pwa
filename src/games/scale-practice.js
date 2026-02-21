@@ -1,11 +1,11 @@
 import { createGame } from './game-shell.js';
 import {
-    readLiveNumber,
     markChecklist,
     markChecklistIf,
     bindTap,
     playToneNote,
     stopTonePlayer,
+    createStandardGameUpdate,
 } from './shared.js';
 import { RT_STATE } from '../utils/event-names.js';
 import { deviationAccuracy } from '../utils/math.js';
@@ -13,14 +13,12 @@ import { computeScalePracticeTapResult } from './scale-practice-tap.js';
 import { applyScalePracticeTempoUpdate } from './scale-practice-tempo.js';
 import { ScalePracticeCanvasEngine } from './scale-practice-canvas.js';
 
-const updateScalePractice = () => {
-    const inputs = Array.from(document.querySelectorAll('#view-game-scale-practice input[id^="sp-step-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
-    const scoreEl = document.querySelector('[data-scale="score"]');
-    const liveScore = readLiveNumber(scoreEl, 'liveScore');
-    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 28);
-};
+const updateScalePractice = createStandardGameUpdate({
+    viewId: '#view-game-scale-practice',
+    inputPrefix: 'sp-step-',
+    scoreSelector: '[data-scale="score"]',
+    scoreMultiplier: 28,
+});
 
 const { bind } = createGame({
     id: 'scale-practice',

@@ -1,10 +1,9 @@
-export class EarTrainerCanvasEngine {
+import { updateParticles, drawGlowingParticles, emitRadialParticles } from '../utils/canvas-utils.js';
+import { BaseCanvasEngine } from '../utils/canvas-engine.js';
+
+export class EarTrainerCanvasEngine extends BaseCanvasEngine {
     constructor(canvas, audioElements) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false });
-        this.width = canvas.width;
-        this.height = canvas.height;
-        this.isRunning = false;
+        super(canvas);
 
         // Web Audio API Setup
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -41,8 +40,7 @@ export class EarTrainerCanvasEngine {
         this.pulseRing = 0;
         this.lastRMS = 0;
 
-        this.handleResize = this.handleResize.bind(this);
-        window.addEventListener('resize', this.handleResize);
+        this.lastRMS = 0;
 
         // Resume AudioContext on first user interaction if suspended
         const resumeAudio = () => {
@@ -58,47 +56,27 @@ export class EarTrainerCanvasEngine {
         if (intensity < 0.1) return;
 
         const count = Math.floor(intensity * 10);
-        const cx = this.width / 2;
-        const cy = this.height / 2;
-
-        for (let i = 0; i < count; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 2 + Math.random() * (intensity * 15);
-            this.particles.push({
-                x: cx + Math.cos(angle) * 30,
-                y: cy + Math.sin(angle) * 30,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                radius: 2 + Math.random() * 4,
-                life: 1.0,
-                decay: 0.02 + Math.random() * 0.03,
-                color: `hsl(${Math.random() * 60 + 180}, 100%, 70%)` // Cyan/Blue spectrum
-            });
-        }
+        emitRadialParticles({
+            particles: this.particles,
+            count,
+            x: this.width / 2,
+            y: this.height / 2,
+            radiusOffset: 30,
+            speedBase: 2,
+            speedVariance: intensity * 15,
+            sizeBase: 2,
+            sizeVariance: 4,
+            colorResolver: () => `hsl(${Math.random() * 60 + 180}, 100%, 70%)`
+        });
     }
 
-    handleResize() {
-        // Handled via CSS sizing constraints
-    }
+
 
     start() {
-        if (this.isRunning) return;
         if (this.audioCtx.state === 'suspended') {
             this.audioCtx.resume();
         }
-        this.isRunning = true;
-        this.loop();
-    }
-
-    stop() {
-        this.isRunning = false;
-    }
-
-    loop() {
-        if (!this.isRunning) return;
-        this.update();
-        this.draw();
-        requestAnimationFrame(() => this.loop());
+        super.start();
     }
 
     update() {
@@ -126,17 +104,7 @@ export class EarTrainerCanvasEngine {
         this.pulseRing *= 0.95;
 
         // Particle Physics
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const p = this.particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vx *= 0.98; // Friction
-            p.vy *= 0.98;
-            p.life -= p.decay;
-            if (p.life <= 0) {
-                this.particles.splice(i, 1);
-            }
-        }
+        updateParticles(this.particles);
     }
 
     draw() {
@@ -206,21 +174,11 @@ export class EarTrainerCanvasEngine {
         this.ctx.restore();
 
         // Draw Particles
-        this.ctx.save();
-        this.ctx.globalCompositeOperation = 'screen';
-        this.particles.forEach(p => {
-            this.ctx.globalAlpha = p.life;
-            this.ctx.fillStyle = p.color;
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            this.ctx.fill();
-        });
-        this.ctx.restore();
+        drawGlowingParticles(this.ctx, this.particles);
     }
 
     destroy() {
-        this.stop();
-        window.removeEventListener('resize', this.handleResize);
+        super.destroy();
         if (this.audioCtx) {
             this.audioCtx.close();
         }

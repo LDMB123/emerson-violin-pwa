@@ -1,11 +1,4 @@
-const updateSliderFill = (slider) => {
-    const min = Number(slider.min) || 0;
-    const max = Number(slider.max) || 100;
-    const val = Number(slider.value) || 0;
-    const pct = ((val - min) / (max - min)) * 100;
-    slider.style.setProperty('--slider-fill', `${pct}%`);
-};
-
+import { updateSliderFill } from '../utils/dom-utils.js';
 export const bindRangeFillInputs = () => {
     document.querySelectorAll('input[type="range"]').forEach((slider) => {
         updateSliderFill(slider);

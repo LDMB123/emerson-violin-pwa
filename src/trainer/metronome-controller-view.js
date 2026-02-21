@@ -1,3 +1,5 @@
+import { updateSliderFill } from '../utils/dom-utils.js';
+
 export const createEmptyMetronomeElements = () => ({
     slider: null,
     bpmLabel: null,
@@ -8,14 +10,7 @@ export const createEmptyMetronomeElements = () => ({
     visual: null,
 });
 
-export const updateMetronomeSliderFill = (slider) => {
-    if (!slider) return;
-    const min = Number(slider.min) || 0;
-    const max = Number(slider.max) || 100;
-    const val = Number(slider.value) || 0;
-    const pct = ((val - min) / (max - min)) * 100;
-    slider.style.setProperty('--slider-fill', `${pct}%`);
-};
+
 
 export const syncMetronomeRunningState = ({ elements, running }) => {
     if (elements.toggle) {
@@ -34,7 +29,7 @@ export const updateMetronomeDisplay = ({ elements, bpm }) => {
         elements.slider.setAttribute('aria-valuenow', String(bpm));
         elements.slider.setAttribute('aria-valuetext', `${bpm} BPM`);
         elements.slider.value = String(bpm);
-        updateMetronomeSliderFill(elements.slider);
+        updateSliderFill(elements.slider);
     }
     if (elements.visual) {
         const duration = 60 / bpm;

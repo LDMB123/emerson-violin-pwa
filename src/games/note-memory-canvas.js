@@ -1,20 +1,14 @@
-export class NoteMemoryCanvasEngine {
+import { updateParticles, emitRadialParticles } from '../utils/canvas-utils.js';
+import { BaseCanvasEngine } from '../utils/canvas-engine.js';
+
+export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
     constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false });
-        this.width = canvas.width;
-        this.height = canvas.height;
+        super(canvas);
         this.cards = [];
-        this.particles = [];
-        this.isRunning = false;
-        this.lastTime = performance.now();
         this.onCardTapped = null;
 
         this.initCards();
-        this.handleResize = this.handleResize.bind(this);
         this.handlePointerDown = this.handlePointerDown.bind(this);
-
-        window.addEventListener('resize', this.handleResize);
         canvas.addEventListener('pointerdown', this.handlePointerDown);
     }
 
@@ -110,79 +104,17 @@ export class NoteMemoryCanvasEngine {
                     note === 'E' ? ['#69f0ae', '#b9f6ca'] :
                         ['#ffd740', '#ffe57f'];
 
-        for (let i = 0; i < count; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 2 + Math.random() * 8;
-            this.particles.push({
-                x: cx,
-                y: cy,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                radius: 3 + Math.random() * 6,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                life: 1.0,
-                decay: 0.02 + Math.random() * 0.03
-            });
-        }
-    }
-
-    handleResize() {
-        const rect = this.canvas.getBoundingClientRect();
-        // Maintain internal 800x600 resolution for logic, but CSS scales it
-        // If we want sharp text, we could adjust canvas.width = rect.width * dpr
-        // but fixed resolution is easier for consistent layout math right now.
-    }
-
-    handlePointerDown(e) {
-        if (!this.onCardTapped) return;
-
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
-
-        for (const card of this.cards) {
-            if (card.isMatched) continue;
-
-            if (x >= card.x && x <= card.x + card.width &&
-                y >= card.y && y <= card.y + card.height) {
-
-                // Card tapped!
-                card.targetScale = 0.95; // Squish effect
-                setTimeout(() => {
-                    if (!card.isFlipped) card.targetScale = 1;
-                }, 100);
-
-                this.onCardTapped(card);
-                break;
-            }
-        }
-    }
-
-    start() {
-        if (this.isRunning) return;
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        this.loop();
-    }
-
-    stop() {
-        this.isRunning = false;
-    }
-
-    loop() {
-        if (!this.isRunning) return;
-
-        const now = performance.now();
-        const dt = Math.min((now - this.lastTime) / 1000, 0.1);
-        this.lastTime = now;
-
-        this.update(dt);
-        this.draw();
-
-        requestAnimationFrame(() => this.loop());
+        emitRadialParticles({
+            particles: this.particles,
+            count,
+            x: cx,
+            y: cy,
+            speedBase: 2,
+            speedVariance: 8,
+            sizeBase: 3,
+            sizeVariance: 6,
+            colorResolver: () => colors[Math.floor(Math.random() * colors.length)]
+        });
     }
 
     update(dt) {
@@ -195,16 +127,7 @@ export class NoteMemoryCanvasEngine {
         });
 
         // Update particles
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const p = this.particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.2; // Gravity
-            p.life -= p.decay;
-            if (p.life <= 0) {
-                this.particles.splice(i, 1);
-            }
-        }
+        updateParticles(this.particles);
     }
 
     draw() {
@@ -295,8 +218,7 @@ export class NoteMemoryCanvasEngine {
     }
 
     destroy() {
-        this.stop();
-        window.removeEventListener('resize', this.handleResize);
+        super.destroy();
         this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
     }
 }

@@ -67,7 +67,6 @@ describe('app-utils', () => {
             const modules = getModulesForView('view-game-pitch-quest');
             expect(modules).toContain('gameMetrics');
             expect(modules).toContain('gameEnhancements');
-            expect(modules).toContain('gameComplete');
         });
 
         it('returns a frozen module list', () => {

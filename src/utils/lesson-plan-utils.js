@@ -1,8 +1,10 @@
-export const toLessonLink = (id) => {
-    if (!id) return '#view-games';
-    if (id.startsWith('view-')) return `#${id}`;
-    return `#view-game-${id}`;
+export const toViewId = (id) => {
+    if (!id) return 'view-games';
+    if (id.startsWith('view-')) return id;
+    return `view-game-${id}`;
 };
+
+export const toLessonLink = (id) => `#${toViewId(id)}`;
 
 export const computeStepDuration = (minutes) => {
     return Math.max(30, Math.round((minutes || 1) * 60));

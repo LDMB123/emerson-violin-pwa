@@ -152,7 +152,9 @@ test('progress cards remain functional across navigation', async ({ page }) => {
 
     await page.goto('/#view-game-pitch-quest');
     await expect(page.locator('#view-game-pitch-quest')).toBeVisible();
-    await page.locator('#view-game-pitch-quest [data-pitch="listen"]').click({ force: true });
+    const listenButton = page.locator('#view-game-pitch-quest [data-pitch="listen"]');
+    await listenButton.scrollIntoViewIfNeeded();
+    await listenButton.click({ force: true });
 
     await page.goto('/#view-progress');
     await expect(page.locator('#view-progress')).toBeVisible();
