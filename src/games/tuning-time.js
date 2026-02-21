@@ -1,6 +1,6 @@
 import { createGame } from './game-shell.js';
 import { createAudioCueBank } from './game-audio-cues.js';
-import { markChecklist, bindTap, readLiveNumber, bindSoundsChange, attachTuning } from './shared.js';
+import { markChecklist, bindTap, bindSoundsChange, attachTuning, createStandardGameUpdate } from './shared.js';
 import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { RT_STATE } from '../utils/event-names.js';
@@ -11,14 +11,12 @@ import {
     renderTuningProgress,
 } from './tuning-time-view.js';
 
-const updateTuningTime = () => {
-    const inputs = Array.from(document.querySelectorAll('#view-game-tuning-time input[id^="tt-step-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
-    const scoreEl = document.querySelector('[data-tuning="score"]');
-    const liveScore = readLiveNumber(scoreEl, 'liveScore');
-    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 25);
-};
+const updateTuningTime = createStandardGameUpdate({
+    viewId: '#view-game-tuning-time',
+    inputPrefix: 'tt-step-',
+    scoreSelector: '[data-tuning="score"]',
+    scoreMultiplier: 25,
+});
 
 const { bind } = createGame({
     id: 'tuning-time',

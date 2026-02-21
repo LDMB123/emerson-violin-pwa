@@ -20,8 +20,7 @@ const earQuestionEl = cachedEl('[data-ear="question"]');
 
 const updateEarTrainer = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-ear-trainer input[id^="et-step-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
+    const checked = inputs.length ? inputs.filter((input) => input.checked).length : 0;
     const questionEl = earQuestionEl();
     if (questionEl && checked > 0 && !questionEl.dataset.live) {
         questionEl.textContent = `Rounds complete: ${checked}/${inputs.length}`;

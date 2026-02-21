@@ -16,8 +16,7 @@ const painterCreativityEl = cachedEl('[data-painter="creativity"]');
 
 const updateRhythmPainter = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-rhythm-painter input[id^="rp-pattern-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
+    const checked = inputs.length ? inputs.filter((input) => input.checked).length : 0;
     const scoreEl = painterScoreEl();
     const creativityEl = painterCreativityEl();
     const liveScore = readLiveNumber(scoreEl, 'liveScore');

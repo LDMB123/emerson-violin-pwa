@@ -31,15 +31,6 @@ export class RhythmCanvasEngine {
         this.isRunning = false;
     }
 
-    spawnNote(laneIndex) {
-        // Z values start far away (e.g. 1000) and move towards camera (0)
-        this.notes.push({
-            lane: laneIndex,
-            z: 1000,
-            active: true
-        });
-    }
-
     triggerHitExplosion(laneIndex, zPos) {
         const color = this.colors[laneIndex % this.colors.length];
         for (let i = 0; i < 40; i++) {

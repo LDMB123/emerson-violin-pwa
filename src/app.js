@@ -35,7 +35,6 @@ import {
     seedInlineInitialViewCache,
     warmInitialViews,
 } from './app/view-bootstrap.js';
-import './progress/achievement-celebrate.js';
 
 const viewLoader = new ViewLoader();
 const viewRenderGate = createAsyncGate();

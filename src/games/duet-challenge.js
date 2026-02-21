@@ -2,7 +2,6 @@ import { createGame } from './game-shell.js';
 import { createPlaybackRuntime } from './game-interactive-runtime.js';
 import { createAudioCueBank } from './game-audio-cues.js';
 import {
-    readLiveNumber,
     markChecklist,
     bindTap,
     playToneNote,
@@ -10,6 +9,7 @@ import {
     buildNoteSequence,
     updateScoreCombo,
     bindSoundsChange,
+    createStandardGameUpdate,
 } from './shared.js';
 import { RT_STATE } from '../utils/event-names.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
@@ -24,21 +24,15 @@ import {
     ensureDuetChallengeReadyForTap,
 } from './duet-challenge-round.js';
 import { resolveDuetChallengeTapTurn } from './duet-challenge-input.js';
+import { createTuningHitDetector } from '../utils/tuning-utils.js';
 
-const updateDuetChallenge = () => {
-    const inputs = Array.from(document.querySelectorAll('#view-game-duet-challenge input[id^="dc-step-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
-    const scoreEl = document.querySelector('[data-duet="score"]');
-    const comboEl = document.querySelector('[data-duet="combo"]');
-    const liveScore = readLiveNumber(scoreEl, 'liveScore');
-    const liveCombo = readLiveNumber(comboEl, 'liveCombo');
-    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 22);
-    if (comboEl) {
-        const combo = Number.isFinite(liveCombo) ? liveCombo : checked;
-        comboEl.textContent = `x${combo}`;
-    }
-};
+const updateDuetChallenge = createStandardGameUpdate({
+    viewId: '#view-game-duet-challenge',
+    inputPrefix: 'dc-step-',
+    scoreSelector: '[data-duet="score"]',
+    comboSelector: '[data-duet="combo"]',
+    scoreMultiplier: 22,
+});
 
 const { bind } = createGame({
     id: 'duet-challenge',
@@ -227,8 +221,7 @@ const { bind } = createGame({
             });
         });
 
-        let debounceStart = 0;
-        let lastPlayedNote = null;
+        const hitDetector = createTuningHitDetector({ centsMargin: 20, debounceMs: 300 });
 
         const onRealtimeState = (event) => {
             if (window.location.hash !== '#view-game-duet-challenge') return;
@@ -240,38 +233,19 @@ const { bind } = createGame({
                 active,
                 setPrompt: () => { }, // Silent check
             })) {
-                debounceStart = 0;
-                lastPlayedNote = null;
+                hitDetector.reset();
                 return;
             }
 
             const targetNote = sequence[seqIndex];
             if (!targetNote) return;
 
-            const cents = Math.round(tuning.cents || 0);
-            const currentNote = tuning.note ? tuning.note.replace(/\d+$/, '') : null;
-
-            if (!currentNote || Math.abs(cents) >= 20 || currentNote !== targetNote) {
-                debounceStart = 0;
-                if (!currentNote) {
-                    lastPlayedNote = null;
-                }
+            // Use our new abstract detector!
+            if (!hitDetector.detectHit(tuning, targetNote)) {
                 return;
             }
 
-            if (lastPlayedNote === currentNote) {
-                if (debounceStart === 0) {
-                    debounceStart = Date.now();
-                    return;
-                }
-                if (Date.now() - debounceStart < 300) {
-                    return;
-                }
-            }
-
-            lastPlayedNote = currentNote;
-            debounceStart = 0;
-
+            // Hit verified!
             const turnResult = resolveDuetChallengeTapTurn({
                 note: targetNote,
                 sequence,

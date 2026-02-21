@@ -1,12 +1,9 @@
-export class BowHeroCanvasEngine {
+import { updateParticles, drawGlowingParticles } from '../utils/canvas-utils.js';
+import { BaseCanvasEngine } from '../utils/canvas-engine.js';
+
+export class BowHeroCanvasEngine extends BaseCanvasEngine {
     constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false });
-        this.width = canvas.width;
-        this.height = canvas.height;
-        this.isRunning = false;
-        this.lastTime = performance.now();
-        this.particles = [];
+        super(canvas);
         this.onStroke = null;
 
         // Bow state
@@ -16,12 +13,6 @@ export class BowHeroCanvasEngine {
         this.bowLength = 250;
         this.bowVelocity = 0;
         this.glowIntensity = 0;
-
-        this.handleResize = this.handleResize.bind(this);
-        this.handlePointerDown = this.handlePointerDown.bind(this);
-
-        window.addEventListener('resize', this.handleResize);
-        canvas.addEventListener('pointerdown', this.handlePointerDown);
     }
 
     reset() {
@@ -63,39 +54,6 @@ export class BowHeroCanvasEngine {
         }
     }
 
-    handleResize() {
-        // Kept for consistency, CSS scales the canvas automatically
-    }
-
-    handlePointerDown(e) {
-        // Allow tapping the canvas itself to trigger a stroke for massive hit area
-        this.triggerStroke();
-    }
-
-    start() {
-        if (this.isRunning) return;
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        this.loop();
-    }
-
-    stop() {
-        this.isRunning = false;
-    }
-
-    loop() {
-        if (!this.isRunning) return;
-
-        const now = performance.now();
-        const dt = Math.min((now - this.lastTime) / 1000, 0.1);
-        this.lastTime = now;
-
-        this.update(dt);
-        this.draw();
-
-        requestAnimationFrame(() => this.loop());
-    }
-
     update(dt) {
         // Physics for bow movement (spring smoothing)
         const prevPosition = this.bowPosition;
@@ -114,15 +72,7 @@ export class BowHeroCanvasEngine {
         this.glowIntensity = Math.max(0, this.glowIntensity - 2 * dt);
 
         // Update particles
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const p = this.particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.life -= p.decay;
-            if (p.life <= 0) {
-                this.particles.splice(i, 1);
-            }
-        }
+        updateParticles(this.particles);
     }
 
     draw() {
@@ -188,22 +138,10 @@ export class BowHeroCanvasEngine {
         this.ctx.restore();
 
         // Draw Particles
-        this.ctx.save();
-        // Additive blending for magic glowing particles
-        this.ctx.globalCompositeOperation = 'screen';
-        this.particles.forEach(p => {
-            this.ctx.globalAlpha = p.life;
-            this.ctx.fillStyle = p.color;
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            this.ctx.fill();
-        });
-        this.ctx.restore();
+        drawGlowingParticles(this.ctx, this.particles);
     }
 
     destroy() {
-        this.stop();
-        window.removeEventListener('resize', this.handleResize);
-        this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
+        super.destroy();
     }
 }

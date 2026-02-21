@@ -292,3 +292,34 @@ export const attachTuning = (id, onUpdate) => {
     };
     return report;
 };
+
+export const createStandardGameUpdate = ({
+    viewId,
+    inputPrefix,
+    scoreSelector,
+    comboSelector = null,
+    scoreMultiplier = 25,
+    bonusScore = 0
+}) => {
+    const getScoreEl = scoreSelector ? cachedEl(scoreSelector) : () => null;
+    const getComboEl = comboSelector ? cachedEl(comboSelector) : () => null;
+
+    return () => {
+        const inputs = Array.from(document.querySelectorAll(`${viewId} input[id^="${inputPrefix}"]`));
+        const checked = inputs.length ? inputs.filter((input) => input.checked).length : 0;
+
+        const scoreEl = getScoreEl();
+        if (scoreEl) {
+            const liveScore = readLiveNumber(scoreEl, 'liveScore');
+            const scoreVal = checked * scoreMultiplier + (inputs.length && checked === inputs.length ? bonusScore : 0);
+            scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : scoreVal);
+        }
+
+        const comboEl = getComboEl();
+        if (comboEl) {
+            const liveCombo = readLiveNumber(comboEl, 'liveCombo');
+            const comboVal = Number.isFinite(liveCombo) ? liveCombo : checked;
+            comboEl.textContent = `x${comboVal}`;
+        }
+    };
+};

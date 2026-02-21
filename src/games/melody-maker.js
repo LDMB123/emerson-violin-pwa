@@ -1,13 +1,13 @@
 import { createGame } from './game-shell.js';
 import { createPlaybackRuntime } from './game-interactive-runtime.js';
 import {
-    readLiveNumber,
     markChecklist,
     markChecklistIf,
     bindTap,
     getTonePlayer,
     buildNoteSequence,
     bindSoundsChange,
+    createStandardGameUpdate,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { resetMelodyMakerTrackState } from './melody-maker-state.js';
@@ -20,14 +20,12 @@ import {
 } from './melody-maker-view.js';
 import { handleMelodyMakerNoteTap } from './melody-maker-track.js';
 
-const updateMelodyMaker = () => {
-    const inputs = Array.from(document.querySelectorAll('#view-game-melody-maker input[id^="mm-step-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
-    const scoreEl = document.querySelector('[data-melody="score"]');
-    const liveScore = readLiveNumber(scoreEl, 'liveScore');
-    if (scoreEl) scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : checked * 30);
-};
+const updateMelodyMaker = createStandardGameUpdate({
+    viewId: '#view-game-melody-maker',
+    inputPrefix: 'mm-step-',
+    scoreSelector: '[data-melody="score"]',
+    scoreMultiplier: 30,
+});
 
 const { bind } = createGame({
     id: 'melody-maker',
@@ -147,7 +145,7 @@ const { bind } = createGame({
             if (!isSoundEnabled()) return;
             const player = getTonePlayer();
             if (!player) return;
-            player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => {});
+            player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => { });
         };
 
         buttons.forEach((button) => {

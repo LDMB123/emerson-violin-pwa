@@ -27,8 +27,7 @@ const storyTitleEl = cachedEl('#view-game-story-song [data-story="title"]');
 
 const updateStorySong = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-story-song input[id^="ss-step-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
+    const checked = inputs.length ? inputs.filter((input) => input.checked).length : 0;
     const titleEl = storyTitleEl();
     if (titleEl) {
         titleEl.textContent = checked === inputs.length ? 'Story Song Lab · Complete!' : 'Story Song Lab';

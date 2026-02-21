@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
   <meta name="theme-color" content="#F56B49" />
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'" />
@@ -101,8 +102,10 @@
       <section class="view" id="view-home" aria-label="Home">
         <div class="home-kid-hero">
           <picture>
-            <img class="hero-mascot" src="/assets/illustrations/epic_mascot.png" alt="Coach Panda" loading="eager"
-              decoding="sync">
+            <source srcset="./assets/illustrations/epic_mascot.png" type="image/png">
+            <img src="./assets/illustrations/epic_mascot.png" alt="Epic Red Panda coach" class="home-mascot"
+              decoding="async" loading="eager" width="1024" height="1024"
+              style="filter: drop-shadow(0 20px 40px rgba(0,255,255,0.4)); transform: scale(1.1) translateY(10px);">
           </picture>
           <div class="home-kid-welcome">
             <h1 class="home-kid-title">Ready to play?</h1>

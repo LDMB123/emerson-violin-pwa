@@ -6,7 +6,8 @@ import { createAudioController } from '../utils/audio-utils.js';
 import { removeRecordingAtIndex, clearRecordingBlobs, saveRecordings } from './parent-recordings-data.js';
 
 export const createParentRecordingsInteractions = ({ requestRender, setStatus }) => {
-    const { audio: playbackAudio, stop: stopPlayback, setUrl: setPlaybackUrl } = createAudioController();
+    const controller = createAudioController();
+    const { stop: stopPlayback } = controller;
 
     const stop = () => stopPlayback();
 
@@ -16,14 +17,9 @@ export const createParentRecordingsInteractions = ({ requestRender, setStatus })
                 if (!isSoundEnabled() || !hasSource) return;
                 const source = await resolveRecordingSource(recording);
                 if (!source) return;
-                stopPlayback();
-                setPlaybackUrl(source.revoke ? source.url : '');
-                playbackAudio.src = source.url;
+
                 if (!isSoundEnabled()) return;
-                playbackAudio.play().catch(() => {});
-                if (source.revoke) {
-                    playbackAudio.addEventListener('ended', () => stopPlayback(), { once: true });
-                }
+                await controller.playSource(source);
             });
 
             saveBtn.addEventListener('click', async () => {

@@ -1,21 +1,12 @@
-export class ScalePracticeCanvasEngine {
-    constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false });
-        this.width = canvas.width;
-        this.height = canvas.height;
-        this.isRunning = false;
+import { updateParticles, drawGlowingParticles, emitRadialParticles } from '../utils/canvas-utils.js';
+import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 
-        // Scale notes definition specific to G Major two-octave scale
+export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
+    constructor(canvas) {
+        super(canvas);
         this.notes = ['G', 'A', 'B', 'C', 'D', 'E', 'F#', 'G', 'F#', 'E', 'D', 'C', 'B', 'A', 'G'];
         this.activeIndex = 0;
         this.notesState = this.notes.map(() => ({ highlight: 0, scale: 1, particleEmitTime: 0 }));
-
-        this.particles = [];
-        this.lastTime = performance.now();
-
-        this.handleResize = this.handleResize.bind(this);
-        window.addEventListener('resize', this.handleResize);
     }
 
     setActiveIndex(index) {
@@ -28,60 +19,23 @@ export class ScalePracticeCanvasEngine {
         }
     }
 
-    reset() {
-        this.activeIndex = 0;
-        this.particles = [];
-        this.notesState.forEach(state => {
-            state.highlight = 0;
-            state.scale = 1.0;
-            state.particleEmitTime = 0;
-        });
-    }
-
     emitParticles(x, y, color) {
-        const count = 5 + Math.random() * 10;
-        for (let i = 0; i < count; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 1 + Math.random() * 3;
-            this.particles.push({
-                x: x + (Math.random() * 10 - 5),
-                y: y + (Math.random() * 10 - 5),
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed - 1,   // Slight upward bias
-                radius: 1 + Math.random() * 3,
-                life: 1.0,
-                decay: 0.02 + Math.random() * 0.04,
-                color
-            });
-        }
-    }
-
-    handleResize() {
-        // Handled by CSS sizing and aspect ratios
-    }
-
-    start() {
-        if (this.isRunning) return;
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        this.loop();
-    }
-
-    stop() {
-        this.isRunning = false;
-    }
-
-    loop() {
-        if (!this.isRunning) return;
-
-        const now = performance.now();
-        const dt = Math.min((now - this.lastTime) / 1000, 0.1);
-        this.lastTime = now;
-
-        this.update(dt);
-        this.draw();
-
-        requestAnimationFrame(() => this.loop());
+        const count = Math.floor(5 + Math.random() * 10);
+        emitRadialParticles({
+            particles: this.particles,
+            count,
+            x,
+            y,
+            xVariance: 10,
+            yVariance: 10,
+            speedBase: 1,
+            speedVariance: 3,
+            gravityY: -1,
+            sizeBase: 1,
+            sizeVariance: 3,
+            decayVariance: 0.04,
+            colorResolver: () => color
+        });
     }
 
     update(dt) {
@@ -121,17 +75,7 @@ export class ScalePracticeCanvasEngine {
         });
 
         // Particle Physics
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const p = this.particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vx *= 0.98; // Drag
-            p.vy += 0.05; // Gravity
-            p.life -= p.decay;
-            if (p.life <= 0) {
-                this.particles.splice(i, 1);
-            }
-        }
+        updateParticles(this.particles);
     }
 
     draw() {
@@ -235,16 +179,7 @@ export class ScalePracticeCanvasEngine {
         }
 
         // Draw Particles
-        this.ctx.save();
-        this.ctx.globalCompositeOperation = 'screen';
-        this.particles.forEach(p => {
-            this.ctx.globalAlpha = p.life;
-            this.ctx.fillStyle = p.color;
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            this.ctx.fill();
-        });
-        this.ctx.restore();
+        drawGlowingParticles(this.ctx, this.particles);
     }
 
     destroy() {

@@ -1,10 +1,7 @@
 import { SKILL_LABELS } from '../utils/recommendations-utils.js';
+import { toViewId } from '../utils/lesson-plan-utils.js';
 
-const toViewId = (id) => {
-    if (!id) return 'view-games';
-    if (id.startsWith('view-')) return id;
-    return `view-game-${id}`;
-};
+
 
 export const buildMissionContract = (mission) => {
     if (!mission) {

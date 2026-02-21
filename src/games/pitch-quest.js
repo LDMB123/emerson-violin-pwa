@@ -212,8 +212,7 @@ const { bind } = createGame({
 
 const updatePitchQuest = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-pitch-quest input[id^="pq-step-"]'));
-    if (!inputs.length) return;
-    const checked = inputs.filter((input) => input.checked).length;
+    const checked = inputs.length ? inputs.filter((input) => input.checked).length : 0;
     const scoreEl = pitchScoreEl();
     const starsEl = pitchStarsEl();
     if (scoreEl && !Number.isFinite(readLiveNumber(scoreEl, 'liveScore'))) {

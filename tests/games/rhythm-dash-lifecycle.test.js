@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sharedMocks = vi.hoisted(() => ({
+    createStandardGameUpdate: vi.fn(() => vi.fn()),
     cachedEl: vi.fn((selector) => () => document.querySelector(selector)),
     readLiveNumber: vi.fn((el, key) => {
         const value = Number(el?.dataset?.[key]);

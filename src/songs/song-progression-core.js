@@ -1,4 +1,5 @@
 import { clamp } from '../utils/math.js';
+import { dayCounts } from '../utils/mastery-utils.js';
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -46,15 +47,6 @@ const normalizeDays = (entry) => {
         : Math.round((Number.isFinite(entry?.updatedAt) ? entry.updatedAt : Date.now()) / DAY_MS);
     return {
         [String(inferredDay)]: inferredScore,
-    };
-};
-
-export const dayCounts = (days, thresholds = SONG_MASTERY_THRESHOLDS) => {
-    const values = Object.values(days || {}).map((value) => Number(value) || 0);
-    return {
-        bronzeDays: values.filter((score) => score >= thresholds.bronze).length,
-        silverDays: values.filter((score) => score >= thresholds.silver).length,
-        goldDays: values.filter((score) => score >= thresholds.gold).length,
     };
 };
 
