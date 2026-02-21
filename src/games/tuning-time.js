@@ -1,8 +1,9 @@
 import { createGame } from './game-shell.js';
 import { createAudioCueBank } from './game-audio-cues.js';
-import { markChecklist, bindTap, readLiveNumber, bindSoundsChange } from './shared.js';
+import { markChecklist, bindTap, readLiveNumber, bindSoundsChange, attachTuning } from './shared.js';
 import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { RT_STATE } from '../utils/event-names.js';
 import {
     formatTuningProgressMessage,
     setTuningStatusText,
@@ -77,35 +78,130 @@ const { bind } = createGame({
             targetStrings,
         });
 
+        // Initialize mic state
+        gameState.activeTarget = null;
+        gameState.holdStart = 0;
+
+        let tuningActive = null;
+
         gameState._onDeactivate = () => {
             cueBank.stopAll();
+            if (tuningActive) tuningActive.dispose();
+            tuningActive = null;
+            gameState.activeTarget = null;
         };
+
+        const checkWinState = () => {
+            renderTuningProgress({
+                progressEl,
+                progressBar,
+                tunedCount: gameState.tunedNotes.size,
+                targetStrings,
+            });
+            if (gameState.tunedNotes.size >= targetStrings) {
+                setTuningStatusText(statusEl, 'All strings tuned! Great job.');
+                if (tuningActive) tuningActive.dispose();
+                tuningActive = null;
+                reportSession();
+            }
+        };
+
+        tuningActive = attachTuning('tuning-time', () => { });
+
+        const onRealtimeState = (event) => {
+            if (window.location.hash !== '#view-game-tuning-time') return;
+            const tuning = event.detail?.lastFeature;
+            if (!tuning || event.detail?.paused) return;
+
+            if (!gameState.activeTarget || gameState.tunedNotes.has(gameState.activeTarget)) return;
+
+            const target = gameState.activeTarget;
+            const cents = Math.round(tuning.cents || 0);
+
+            // Allow octaves or exact note matches
+            if (tuning.note && tuning.note.replace(/\d+$/, '') === target.replace(/\d+$/, '')) {
+                if (Math.abs(cents) < 15) {
+                    if (gameState.holdStart === 0) {
+                        gameState.holdStart = Date.now();
+                    } else if (Date.now() - gameState.holdStart > 1500) {
+                        // Success! Tuned for 1.5 seconds continuously within 15 cents
+                        gameState.tunedNotes.add(target);
+                        gameState.activeTarget = null;
+                        gameState.holdStart = 0;
+                        setTuningStatusText(statusEl, `Perfect! ${target} is tuned.`);
+                        markChecklist(checklistMap[target]);
+
+                        buttons.forEach((b) => {
+                            if (b.dataset.tuningNote === target) {
+                                b.classList.remove('is-active');
+                                b.classList.add('is-tuned');
+                                b.style.backgroundColor = 'var(--color-primary)';
+                                b.style.color = '#fff';
+                            }
+                        });
+
+                        cueBank.stopAll();
+                        checkWinState();
+                    } else {
+                        setTuningStatusText(statusEl, `Hold it... (${Math.abs(cents)} cents)`);
+                        buttons.forEach((b) => {
+                            if (b.dataset.tuningNote === target) {
+                                b.style.transform = 'scale(1.1)';
+                            }
+                        });
+                    }
+                } else {
+                    // Wrong pitch deviation but right note
+                    gameState.holdStart = 0;
+                    const direction = cents > 0 ? 'Too sharp' : 'Too flat';
+                    setTuningStatusText(statusEl, `${direction} (${cents} cents). Adjust your peg.`);
+                    buttons.forEach((b) => {
+                        if (b.dataset.tuningNote === target) {
+                            b.style.transform = 'scale(1.0)';
+                        }
+                    });
+                }
+            } else if (tuning.note) {
+                gameState.holdStart = 0;
+                setTuningStatusText(statusEl, `Hearing ${tuning.note}. Play ${target} loudly!`);
+                buttons.forEach((b) => {
+                    if (b.dataset.tuningNote === target) {
+                        b.style.transform = 'scale(1.0)';
+                    }
+                });
+            }
+        };
+
+        document.addEventListener(RT_STATE, onRealtimeState);
+        registerCleanup(() => {
+            document.removeEventListener(RT_STATE, onRealtimeState);
+        });
 
         buttons.forEach((button) => {
             bindTap(button, () => {
                 const note = button.dataset.tuningNote;
-                if (!note) return;
+                if (!note || gameState.tunedNotes.has(note)) return;
+
                 if (!isSoundEnabled()) {
                     setTuningStatusText(statusEl, 'Sounds are off. Enable Sounds to hear the tone.');
                     return;
                 }
+
+                gameState.activeTarget = note;
+                gameState.holdStart = 0;
+
+                buttons.forEach(b => {
+                    b.classList.remove('is-active');
+                    b.style.transform = 'scale(1.0)';
+                });
+                button.classList.add('is-active');
+
                 cueBank.play(note);
-                gameState.tunedNotes.add(note);
                 setTuningStatusText(statusEl, formatTuningProgressMessage({
                     note,
                     tunedCount: gameState.tunedNotes.size,
                     targetStrings,
-                }));
-                renderTuningProgress({
-                    progressEl,
-                    progressBar,
-                    tunedCount: gameState.tunedNotes.size,
-                    targetStrings,
-                });
-                markChecklist(checklistMap[note]);
-                if (gameState.tunedNotes.size >= targetStrings) {
-                    reportSession();
-                }
+                }) + ` (Listening...)`);
             });
         });
 

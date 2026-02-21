@@ -32,9 +32,7 @@ export const createRhythmDashLifecycle = () => {
 
     const bind = ({
         runToggle,
-        resetRun,
         reportSession,
-        pauseRun,
         setStatus,
         getPausedByVisibility,
         setPausedByVisibility,
@@ -45,7 +43,10 @@ export const createRhythmDashLifecycle = () => {
 
         hashChangeHandler = () => {
             if (window.location.hash === '#view-game-rhythm-dash') {
-                resetRun();
+                if (runToggle) {
+                    runToggle.checked = false;
+                    runToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                }
                 return;
             }
             if (runToggle?.checked) {
@@ -61,7 +62,10 @@ export const createRhythmDashLifecycle = () => {
             const requestedViewId = event?.detail?.viewId;
             if (requestedViewId && requestedViewId !== 'view-game-rhythm-dash') return;
             if (window.location.hash !== '#view-game-rhythm-dash') return;
-            resetRun();
+            if (runToggle) {
+                runToggle.checked = false;
+                runToggle.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         };
         document.addEventListener(GAME_PLAY_AGAIN, resetRequestHandler);
 
@@ -69,7 +73,9 @@ export const createRhythmDashLifecycle = () => {
             if (document.hidden) {
                 if (runToggle?.checked) {
                     setPausedByVisibility(true);
-                    pauseRun('Paused while app is in the background.');
+                    runToggle.checked = false;
+                    runToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                    setStatus('Paused while app is in the background.');
                 }
             } else if (getPausedByVisibility()) {
                 setPausedByVisibility(false);

@@ -6042,6 +6042,11 @@
     animation-delay: var(--note-start, 0s);
 }
 
+.song-play-toggle:checked~.song-sheet.is-waiting .song-playhead,
+.song-play-toggle:checked~.song-sheet.is-waiting .song-note {
+    animation-play-state: paused;
+}
+
 @keyframes song-playhead {
     from {
         transform: translateX(0);

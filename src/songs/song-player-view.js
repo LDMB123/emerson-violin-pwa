@@ -29,6 +29,10 @@ export const createControls = ({ song, checkpoint }) => {
         </div>
         <div class="song-advanced-row">
             <label class="song-loop-toggle">
+                <input type="checkbox" data-song-wait-for-me>
+                <span>Wait for me (Mic)</span>
+            </label>
+            <label class="song-loop-toggle">
                 <input type="checkbox" data-song-loop>
                 <span>Loop section</span>
             </label>

@@ -25,8 +25,6 @@ import {
     createRhythmDashRuntimeState,
     applyRhythmDashBeatRuntimeState,
 } from './rhythm-dash/runtime-state.js';
-import { createRhythmDashTargetRuntime } from './rhythm-dash/target-runtime.js';
-import { createRhythmDashControlRuntime } from './rhythm-dash/control-runtime.js';
 import { createRhythmDashViewState } from './rhythm-dash/view-state.js';
 import { bindRhythmDashUiControls } from './rhythm-dash/ui-bindings.js';
 import { createRhythmDashBindingState } from './rhythm-dash/binding-state.js';
@@ -75,7 +73,6 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         meterFill,
         meterTrack,
         levelDisplay,
-        bpmDisplay,
         energyBar,
     } = resolveRhythmDashElements(stage);
     const viewState = createRhythmDashViewState({
@@ -136,35 +133,6 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
 
     const startMetronome = () => metronome.start();
 
-    const targetRuntime = createRhythmDashTargetRuntime({
-        stage,
-        targetSlider,
-        targetValue,
-        setStatus,
-        runToggle,
-        startMetronome,
-        runtime,
-    });
-    const { updateTargetBpm } = targetRuntime;
-
-    const {
-        updateRunningState,
-        pauseRun,
-        bindPauseButton,
-        resetRun,
-    } = createRhythmDashControlRuntime({
-        stage,
-        runToggle,
-        setStatus,
-        setRating,
-        startMetronome,
-        stopMetronome,
-        reportSession,
-        runtime,
-        ...viewState,
-        meterTrack,
-    });
-
     const processBeat = createRhythmDashBeatProcessor({
         getRuntimeState: () => ({
             combo: runtime.combo,
@@ -188,18 +156,11 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         levelDisplay,
         setStatus,
         markChecklistIf,
-        pauseRun,
     });
 
     bindRhythmDashUiControls({
         runToggle,
-        updateRunningState,
-        targetSlider,
-        updateTargetBpm,
-        bindTargetControls: targetRuntime.bindTargetControls,
-        settingsReset,
         getCoachTarget: () => coachTarget,
-        bindPauseButton,
         pauseButton,
         settingsButton,
         setStatus,
@@ -228,9 +189,7 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
 
     rhythmDashLifecycle.bind({
         runToggle,
-        resetRun,
         reportSession,
-        pauseRun,
         setStatus,
         getPausedByVisibility: () => runtime.pausedByVisibility,
         setPausedByVisibility: (value) => {
