@@ -5953,10 +5953,15 @@
     padding: var(--space-4);
     overflow-x: auto;
     overscroll-behavior-x: contain;
+    scrollbar-width: none;
     border-radius: var(--radius-xl);
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow: 0 16px 28px rgba(120, 60, 40, 0.12);
+}
+
+.song-sheet::-webkit-scrollbar {
+    display: none;
 }
 
 .song-staff {

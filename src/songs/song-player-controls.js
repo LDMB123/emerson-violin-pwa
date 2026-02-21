@@ -108,6 +108,25 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             songSheet.style.setProperty('--song-playhead-paused-time', `${playbackElapsed}s`);
         }
 
+        // Auto-scroll the song sheet to keep up with the playhead
+        if (songSheet) {
+            const playheadEl = songSheet.querySelector('.song-playhead');
+            if (playheadEl) {
+                // Read the actual computed X position from the CSS animation
+                const rect = playheadEl.getBoundingClientRect();
+                const containerRect = songSheet.getBoundingClientRect();
+                const relativeX = rect.left - containerRect.left + songSheet.scrollLeft;
+                const viewWidth = songSheet.clientWidth;
+
+                // If the playhead pushes past 50% of the viewport, scroll to keep it centered
+                if (relativeX > viewWidth * 0.5) {
+                    songSheet.scrollLeft = relativeX - (viewWidth * 0.5);
+                } else {
+                    songSheet.scrollLeft = 0;
+                }
+            }
+        }
+
         // Check if we hit the end
         if (playbackElapsed >= effectiveDuration) {
             triggerSectionComplete(sectionId, tempo, effectiveDuration);
