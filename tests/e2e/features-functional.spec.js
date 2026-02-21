@@ -221,6 +221,7 @@ test('parent PIN gate remains functional after re-render', async ({ page }) => {
     });
 
     await page.goto('/#view-parent');
+    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
     const dialog = page.locator('[data-pin-dialog]');
     await expect.poll(async () => page.locator('[data-pin-dialog]').count(), { timeout: 10000 }).toBe(1);
     await expect(dialog).toBeVisible();
@@ -237,6 +238,7 @@ test('parent PIN gate remains functional after re-render', async ({ page }) => {
     });
 
     await page.goto('/#view-parent');
+    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
     await expect.poll(async () => page.locator('[data-pin-dialog]').count(), { timeout: 10000 }).toBe(1);
     await expect(dialog).toBeVisible();
 

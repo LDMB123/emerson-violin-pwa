@@ -2,7 +2,7 @@
 
 Local-first violin practice app for iPad-focused use, with an onboarding flow, practice tools, games, coach guidance, and offline behavior.
 
-## Current Status (February 20, 2026)
+## Current Status (February 21, 2026)
 
 - `npm run lint:all`: passing
 - `npm run test:coverage`: passing (64 files, 595 tests)
@@ -38,6 +38,7 @@ npm run build
 npm run preview
 npm run audit:deadcode
 npm run audit:deps
+npm run audit:secrets
 npm run audit:perf:config
 npm run audit:view-sync
 npm run audit:modules
@@ -81,8 +82,9 @@ If either command hangs or intermittently times out, step down by one worker.
 
 - Dead code and unused exports are checked by `knip` using `knip.json`.
 - Duplicate dependency versions are checked by `scripts/audit-dependency-duplicates.mjs`.
+- Secret/credential pattern leakage is checked by `scripts/audit-secrets.mjs`.
 - Performance budget config drift is checked by `scripts/audit-performance-budget-config.mjs`.
-- CI runs `lint:all`, dead-code/dependency/config audits, unit tests, build, performance budget checks, and Playwright E2E on PRs and pushes to `main`.
+- CI runs `lint:all`, dead-code/dependency/security audits, production dependency vulnerability audit, unit tests, build, performance budget checks, and Playwright E2E on PRs and pushes to `main`.
 - Detailed handoff/debug report: `docs/plans/2026-02-18-debug-optimization-report.md`.
 - Operator runbook for zero-context pickup: `docs/HANDOFF.md`.
 

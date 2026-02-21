@@ -31,6 +31,12 @@ jobs:
       - name: Dependency duplicate audit
         run: npm run audit:deps
 
+      - name: Secrets audit
+        run: npm run audit:secrets
+
+      - name: Dependency vulnerability audit (prod)
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Performance budget config audit
         run: npm run audit:perf:config
 

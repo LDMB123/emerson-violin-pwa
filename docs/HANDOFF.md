@@ -198,6 +198,23 @@ If both pass, you are at a known-good baseline.
     - `CLAUDE.md`
   - Refreshed current status/test counts and added perf-config audit visibility in command lists.
   - Updated caveat text to reflect retired extraction flow and current `audit:view-sync` check.
+- Completed production hardening pass (2026-02-21, phase 50):
+  - Added deterministic tracked-file secret scanner and wired it into the local quality gate:
+    - `scripts/audit-secrets.mjs`
+    - `package.json` (`audit:secrets`, included in `audit:full`)
+  - Added regression coverage for secret scanner behavior:
+    - `tests/scripts/audit-secrets.test.js`
+  - Added CI security checks:
+    - `.github/workflows/quality.yml`
+    - `npm run audit:secrets`
+    - `npm audit --omit=dev --audit-level=high`
+  - Tightened document-level browser security policy:
+    - `index.html`
+    - CSP now adds `form-action 'self'` and `manifest-src 'self'`
+    - Added `referrer` and `Permissions-Policy` metas
+  - Updated docs to surface security gate additions:
+    - `README.md`
+    - `CLAUDE.md`
 - Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
   - Centralized realtime E2E flag guards with localhost-only enforcement:
     - `src/realtime/session-test-flags.js`
