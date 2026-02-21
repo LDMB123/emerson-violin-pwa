@@ -63,7 +63,7 @@ export const createSessionAudioGraph = ({
             const data = event.data || {};
             if (data.ready) return;
             if (data.error) {
-                onFallbackReason('system').catch(() => {});
+                onFallbackReason('system').catch(() => { });
                 return;
             }
             onFeatureFrame(data);
@@ -101,6 +101,7 @@ export const createSessionAudioGraph = ({
 
     const clear = async () => {
         workletNode = disconnectNode(workletNode, (node) => {
+            node.port.postMessage({ type: 'shutdown' });
             node.port.onmessage = null;
         });
         sourceNode = disconnectNode(sourceNode);

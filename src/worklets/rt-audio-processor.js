@@ -55,6 +55,12 @@ class RealtimeAudioProcessor extends AudioWorkletProcessor {
                     this.detector.set_volume_threshold(this.noiseFloor);
                 }
             }
+            if (type === 'shutdown') {
+                if (this.detector && typeof this.detector.free === 'function') {
+                    this.detector.free();
+                    this.detector = null;
+                }
+            }
         };
     }
 
