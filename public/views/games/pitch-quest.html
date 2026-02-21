@@ -1,26 +1,33 @@
 <section class="view game-view game-pitch-quest" id="view-game-pitch-quest" aria-label="Game: Pitch Quest">
   <div class="game-header">
-    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Exit</a>
-    <h2>Pitch Quest</h2>
+    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>Exit</a>
+    <h2>Catch the Bamboo!</h2>
     <div class="game-score">Realtime Coach</div>
   </div>
   <div class="game-content" id="pitch-quest-content">
     <fieldset class="pitch-targets-group">
-      <legend class="sr-only">Target Note</legend>
-      <input type="radio" name="pitch-target" id="pitch-target-g" class="state-checkbox pitch-target-toggle" data-persist="false">
-      <input type="radio" name="pitch-target" id="pitch-target-d" class="state-checkbox pitch-target-toggle" data-persist="false">
-      <input type="radio" name="pitch-target" id="pitch-target-a" class="state-checkbox pitch-target-toggle" data-persist="false" checked="">
-      <input type="radio" name="pitch-target" id="pitch-target-e" class="state-checkbox pitch-target-toggle" data-persist="false">
+      <legend class="sr-only">Select Level</legend>
+      <input type="radio" name="pitch-target" id="pitch-target-g" class="state-checkbox pitch-target-toggle"
+        data-persist="false">
+      <input type="radio" name="pitch-target" id="pitch-target-d" class="state-checkbox pitch-target-toggle"
+        data-persist="false">
+      <input type="radio" name="pitch-target" id="pitch-target-a" class="state-checkbox pitch-target-toggle"
+        data-persist="false" checked="">
+      <input type="radio" name="pitch-target" id="pitch-target-e" class="state-checkbox pitch-target-toggle"
+        data-persist="false">
 
       <div class="pitch-targets">
-        <span class="pitch-target-label">Target Note</span>
+        <span class="pitch-target-label">Select Level</span>
         <div class="pitch-target-options">
-          <label class="note-btn" for="pitch-target-g">G</label>
-          <label class="note-btn" for="pitch-target-d">D</label>
-          <label class="note-btn" for="pitch-target-a">A</label>
-          <label class="note-btn" for="pitch-target-e">E</label>
+          <label class="note-btn btn-level" for="pitch-target-g">Lvl 1 (G)</label>
+          <label class="note-btn btn-level" for="pitch-target-d">Lvl 2 (D)</label>
+          <label class="note-btn btn-level" for="pitch-target-a">Lvl 3 (A)</label>
+          <label class="note-btn btn-level" for="pitch-target-e">Lvl 4 (E)</label>
         </div>
-        <div class="pitch-target-status" data-pitch="status" aria-live="polite">Target: A · Start Listening.</div>
+        <div class="pitch-target-status" data-pitch="status" aria-live="polite">Level 3 (A) · Start Listening.</div>
       </div>
     </fieldset>
 
@@ -30,6 +37,11 @@
         <div class="pitch-stars" data-pitch="stars">☆☆☆</div>
         <div class="pitch-stability">Streak <span data-pitch="stability">0x</span></div>
       </div>
+
+      <div class="bamboo-container">
+        <div class="bamboo-stalk" data-pitch="bamboo-fill"></div>
+      </div>
+
       <div class="pitch-gauge">
         <div class="pitch-arc"></div>
         <div class="pitch-note" data-pitch="target">
@@ -49,70 +61,40 @@
       </div>
       <div class="pitch-actions">
         <button class="btn btn-primary" type="button" data-rt-toggle data-pitch="listen">Start Listening</button>
-        <button class="btn btn-secondary" type="button" data-pitch="check">Lock Note</button>
       </div>
       <div class="pitch-feedback" data-pitch="feedback" aria-live="polite">Listening is off. Tap Start Listening.</div>
     </div>
 
-    <details class="pitch-audio glass">
-      <summary class="btn btn-secondary">Reference tones</summary>
-      <div class="audio-grid">
-        <div class="audio-card">
-          <span class="audio-label" id="pitch-g-label">G</span>
-          <audio controls="" preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="pitch-g-label"></audio>
-        </div>
-        <div class="audio-card">
-          <span class="audio-label" id="pitch-d-label">D</span>
-          <audio controls="" preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="pitch-d-label"></audio>
-        </div>
-        <div class="audio-card">
-          <span class="audio-label" id="pitch-a-label">A</span>
-          <audio controls="" preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="pitch-a-label"></audio>
-        </div>
-        <div class="audio-card">
-          <span class="audio-label" id="pitch-e-label">E</span>
-          <audio controls="" preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="pitch-e-label"></audio>
-        </div>
-      </div>
-    </details>
-
     <div class="game-drill glass">
-      <p class="game-drill-intro">Match each target note with realtime listening.</p>
-      <div class="game-checklist-group" data-total="6">
-        <div class="game-progress" data-total="6">
-          <span class="game-progress-label">Targets matched</span>
+      <p class="game-drill-intro">Help Panda catch the bamboo by playing in tune!</p>
+      <div class="game-checklist-group" data-total="4">
+        <div class="game-progress" data-total="4">
+          <span class="game-progress-label">Levels beaten</span>
         </div>
         <ol class="game-checklist">
           <li class="game-check-item">
             <input type="checkbox" id="pq-step-1">
-            <label for="pq-step-1"><span class="note-chip">G</span> Match the G pitch.</label>
+            <label for="pq-step-1"><span class="note-chip">Lvl 1</span> Catch G Bamboo</label>
           </li>
           <li class="game-check-item">
             <input type="checkbox" id="pq-step-2">
-            <label for="pq-step-2"><span class="note-chip">D</span> Match the D pitch.</label>
+            <label for="pq-step-2"><span class="note-chip">Lvl 2</span> Catch D Bamboo</label>
           </li>
           <li class="game-check-item">
             <input type="checkbox" id="pq-step-3">
-            <label for="pq-step-3"><span class="note-chip">A</span> Match the A pitch.</label>
+            <label for="pq-step-3"><span class="note-chip">Lvl 3</span> Catch A Bamboo</label>
           </li>
           <li class="game-check-item">
             <input type="checkbox" id="pq-step-4">
-            <label for="pq-step-4"><span class="note-chip">E</span> Match the E pitch.</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="pq-step-5">
-            <label for="pq-step-5"><span class="note-chip">Hold</span> Hold a steady note for 3 seconds.</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="pq-step-6">
-            <label for="pq-step-6"><span class="note-chip">Combo</span> Match two notes in a row.</label>
+            <label for="pq-step-4"><span class="note-chip">Lvl 4</span> Catch E Bamboo</label>
           </li>
         </ol>
       </div>
     </div>
     <picture>
       <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
-      <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-pitch" loading="lazy" decoding="async">
+      <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-pitch" loading="lazy"
+        decoding="async">
     </picture>
   </div>
 </section>

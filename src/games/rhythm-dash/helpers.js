@@ -24,9 +24,9 @@ export const resolveRhythmDashElements = (stage) => ({
     ratingEl: stage.querySelector('[data-rhythm="rating"]'),
     meterFill: stage.querySelector('[data-rhythm="meter"]'),
     meterTrack: stage.querySelector('.rhythm-meter'),
-    targetSlider: stage.querySelector('[data-rhythm="target-slider"]'),
-    targetValue: stage.querySelector('[data-rhythm="target-value"]'),
-    settingsReset: stage.querySelector('[data-rhythm="settings-reset"]'),
+    levelDisplay: stage.querySelector('[data-rhythm="level-display"]'),
+    bpmDisplay: stage.querySelector('[data-rhythm="bpm-display"]'),
+    energyBar: stage.querySelector('[data-rhythm="energy-bar"]'),
 });
 
 const resolveObjectiveTier = (stage, difficulty) => stage.dataset.gameObjectiveTier
