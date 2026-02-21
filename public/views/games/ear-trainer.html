@@ -8,104 +8,93 @@
     <div class="game-score">Guided Drill</div>
   </div>
   <div class="game-content" id="ear-trainer-content">
+    <!-- Full Bleed Background Canvas -->
+    <canvas id="ear-trainer-canvas"></canvas>
+
     <div class="ear-trainer-stage">
-      <div class="ear-stats-bar">
-        <span class="ear-level" data-ear="level">Level 1</span>
-        <span class="ear-lives" data-ear="lives">❤️❤️❤️</span>
+      <!-- HUD Top Layer -->
+      <div class="game-header">
+        <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>Exit</a>
+        <h2>Note Detective</h2>
+        <div class="game-score">Guided Drill</div>
       </div>
-      <div class="ear-progress" data-ear="progress">
-        <span class="ear-dot" data-step="1"></span>
-        <span class="ear-dot" data-step="2"></span>
-        <span class="ear-dot" data-step="3"></span>
-        <span class="ear-dot" data-step="4"></span>
-        <span class="ear-dot" data-step="5"></span>
-        <span class="ear-dot" data-step="6"></span>
-        <span class="ear-dot" data-step="7"></span>
-        <span class="ear-dot" data-step="8"></span>
-        <span class="ear-dot" data-step="9"></span>
-        <span class="ear-dot" data-step="10"></span>
-      </div>
-      <div class="ear-question" data-ear="question" aria-live="polite">Question 1 of 10</div>
-      <div class="ear-streak">Streak <span data-ear="streak">0</span></div>
-      <div class="ear-panel">
-        <div class="ear-icon">👂</div>
-        <button class="btn btn-secondary ear-play" type="button" data-ear="play">Play</button>
-      </div>
-      <fieldset class="ear-options">
-        <legend class="sr-only">Choose the string you heard</legend>
-        <input type="radio" id="ear-choice-g" name="ear-choice" class="ear-choice" data-ear-note="G"
-          data-persist="false">
-        <label class="ear-option" for="ear-choice-g">G</label>
-        <input type="radio" id="ear-choice-d" name="ear-choice" class="ear-choice" data-ear-note="D"
-          data-persist="false">
-        <label class="ear-option" for="ear-choice-d">D</label>
-        <input type="radio" id="ear-choice-a" name="ear-choice" class="ear-choice" data-ear-note="A"
-          data-persist="false">
-        <label class="ear-option" for="ear-choice-a">A</label>
-        <input type="radio" id="ear-choice-e" name="ear-choice" class="ear-choice" data-ear-note="E"
-          data-persist="false">
-        <label class="ear-option" for="ear-choice-e">E</label>
-      </fieldset>
-      <details class="pitch-audio glass">
-        <summary class="btn btn-secondary">Reference tones</summary>
-        <div class="audio-grid">
-          <div class="audio-card">
-            <span class="audio-label" id="ear-g-label">G</span>
-            <audio controls="" preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="ear-g-label"></audio>
-          </div>
-          <div class="audio-card">
-            <span class="audio-label" id="ear-d-label">D</span>
-            <audio controls="" preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="ear-d-label"></audio>
-          </div>
-          <div class="audio-card">
-            <span class="audio-label" id="ear-a-label">A</span>
-            <audio controls="" preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="ear-a-label"></audio>
-          </div>
-          <div class="audio-card">
-            <span class="audio-label" id="ear-e-label">E</span>
-            <audio controls="" preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="ear-e-label"></audio>
-          </div>
+
+      <!-- Mascot Anchored -->
+      <picture>
+        <source srcset="./assets/illustrations/epic_mascot_listening.png" type="image/png">
+        <img src="./assets/illustrations/epic_mascot_listening.png" alt="" class="game-mascot mascot-ear" loading="lazy"
+          decoding="async">
+      </picture>
+
+      <!-- Floating Interaction Panel -->
+      <div class="glass-panel"
+        style="width: min(100%, 400px); text-align: center; display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="ear-stats-bar"
+          style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2rem;">
+          <span class="ear-level" data-ear="level" style="color: var(--color-primary);">Level 1</span>
+          <span class="ear-lives" data-ear="lives">❤️❤️❤️</span>
         </div>
-      </details>
-    </div>
-    <div class="game-drill glass">
-      <p class="game-drill-intro">Log each listening set you complete.</p>
-      <div class="game-checklist-group" data-total="6">
-        <div class="game-progress" data-total="6">
-          <span class="game-progress-label">Rounds complete</span>
+
+        <div class="ear-progress" data-ear="progress"
+          style="display: flex; gap: 4px; justify-content: center; margin: var(--space-2) 0;">
+          <span class="ear-dot" data-step="1"></span><span class="ear-dot" data-step="2"></span><span class="ear-dot"
+            data-step="3"></span><span class="ear-dot" data-step="4"></span><span class="ear-dot" data-step="5"></span>
+          <span class="ear-dot" data-step="6"></span><span class="ear-dot" data-step="7"></span><span class="ear-dot"
+            data-step="8"></span><span class="ear-dot" data-step="9"></span><span class="ear-dot" data-step="10"></span>
         </div>
-        <ol class="game-checklist">
-          <li class="game-check-item">
-            <input type="checkbox" id="et-step-1">
-            <label for="et-step-1"><span class="note-chip">G</span> Identify the G tone.</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="et-step-2">
-            <label for="et-step-2"><span class="note-chip">D</span> Identify the D tone.</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="et-step-3">
-            <label for="et-step-3"><span class="note-chip">A</span> Identify the A tone.</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="et-step-4">
-            <label for="et-step-4"><span class="note-chip">E</span> Identify the E tone.</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="et-step-5">
-            <label for="et-step-5"><span class="note-chip">3x</span> Get three correct in a row.</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="et-step-6">
-            <label for="et-step-6"><span class="note-chip">Finish</span> Complete all 10 questions.</label>
-          </li>
-        </ol>
+
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; color: var(--color-text-muted);">
+          <div class="ear-question" data-ear="question" aria-live="polite" style="font-weight: 700;">Question 1 of 10
+          </div>
+          <div class="ear-streak" style="font-weight: 700;">Streak <span data-ear="streak">0</span></div>
+        </div>
+
+        <div class="ear-panel"
+          style="display: none; justify-content: center; gap: var(--space-2); align-items: center; margin: var(--space-4) 0;">
+          <div class="ear-icon" style="font-size: 2rem;">👂</div>
+          <button class="btn btn-secondary ear-play" type="button" data-ear="play" style="flex: 1;">Play Sound</button>
+        </div>
+
+        <fieldset class="ear-options"
+          style="display: flex; gap: var(--space-2); justify-content: center; border: none; padding: 0;">
+          <legend class="sr-only">Choose the string you heard</legend>
+          <input type="radio" id="ear-choice-g" name="ear-choice" class="ear-choice" data-ear-note="G"
+            data-persist="false">
+          <label class="ear-option" for="ear-choice-g"
+            style="flex: 1; padding: var(--space-3) 0; font-weight: 800; font-size: 1.2rem;">G</label>
+          <input type="radio" id="ear-choice-d" name="ear-choice" class="ear-choice" data-ear-note="D"
+            data-persist="false">
+          <label class="ear-option" for="ear-choice-d"
+            style="flex: 1; padding: var(--space-3) 0; font-weight: 800; font-size: 1.2rem;">D</label>
+          <input type="radio" id="ear-choice-a" name="ear-choice" class="ear-choice" data-ear-note="A"
+            data-persist="false">
+          <label class="ear-option" for="ear-choice-a"
+            style="flex: 1; padding: var(--space-3) 0; font-weight: 800; font-size: 1.2rem;">A</label>
+          <input type="radio" id="ear-choice-e" name="ear-choice" class="ear-choice" data-ear-note="E"
+            data-persist="false">
+          <label class="ear-option" for="ear-choice-e"
+            style="flex: 1; padding: var(--space-3) 0; font-weight: 800; font-size: 1.2rem;">E</label>
+        </fieldset>
+
+        <details class="pitch-audio glass" style="margin-top: var(--space-4); text-align: left;">
+          <summary class="btn btn-secondary" style="width: 100%;">Reference tones</summary>
+          <div class="audio-grid"
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); padding: var(--space-3);">
+            <div class="audio-card"><span class="audio-label" id="ear-g-label">G</span><audio controls="" preload="none"
+                src="./assets/audio/violin-g3.wav" aria-labelledby="ear-g-label"></audio></div>
+            <div class="audio-card"><span class="audio-label" id="ear-d-label">D</span><audio controls="" preload="none"
+                src="./assets/audio/violin-d4.wav" aria-labelledby="ear-d-label"></audio></div>
+            <div class="audio-card"><span class="audio-label" id="ear-a-label">A</span><audio controls="" preload="none"
+                src="./assets/audio/violin-a4.wav" aria-labelledby="ear-a-label"></audio></div>
+            <div class="audio-card"><span class="audio-label" id="ear-e-label">E</span><audio controls="" preload="none"
+                src="./assets/audio/violin-e5.wav" aria-labelledby="ear-e-label"></audio></div>
+          </div>
+        </details>
       </div>
     </div>
-    <picture>
-      <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
-      <img src="./assets/illustrations/mascot-focus.png" alt="" class="game-mascot mascot-ear" loading="lazy"
-        decoding="async">
-    </picture>
   </div>
 </section>

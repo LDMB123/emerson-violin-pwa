@@ -11,6 +11,7 @@ import { RT_STATE } from '../utils/event-names.js';
 import { deviationAccuracy } from '../utils/math.js';
 import { computeScalePracticeTapResult } from './scale-practice-tap.js';
 import { applyScalePracticeTempoUpdate } from './scale-practice-tempo.js';
+import { ScalePracticeCanvasEngine } from './scale-practice-canvas.js';
 
 const updateScalePractice = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-scale-practice input[id^="sp-step-"]'));
@@ -60,15 +61,43 @@ const { bind } = createGame({
         gameState.scaleIndex = 0;
         gameState.timingScores = [];
 
+        // Initialize Canvas Engine
+        let canvasEngine = null;
+        const canvasEl = stage.querySelector('#scale-practice-canvas');
+        if (canvasEl) {
+            canvasEngine = new ScalePracticeCanvasEngine(canvasEl);
+            canvasEngine.start();
+        }
+
         gameState._updateHighlight = () => {
             const index = gameState.scaleIndex % scaleNotes.length;
             noteEls.forEach((el, i) => {
                 el.classList.toggle('is-active', i === index);
             });
+            if (canvasEngine) {
+                canvasEngine.setActiveIndex(index);
+            }
+
+            // Phase 14: Scale Practice Live Progress Climber
+            const mascot = stage.querySelector('.mascot-scale');
+            if (mascot) {
+                // The scale peaks at index 7 (High G) 
+                const distanceFromStart = index <= 7 ? index : 14 - index;
+                const elevationRatio = distanceFromStart / 7; // 0.0 to 1.0
+
+                mascot.style.transform = `translateY(-${elevationRatio * 180}px) scale(${1 + elevationRatio * 0.3})`;
+
+                if (index === 14 && gameState.score > 0) {
+                    mascot.style.filter = 'drop-shadow(0 0 50px rgba(0,255,255,0.9)) brightness(1.3)';
+                } else {
+                    mascot.style.filter = '';
+                }
+            }
         };
 
         gameState._onDeactivate = () => {
             stopTonePlayer();
+            if (canvasEngine) canvasEngine.stop();
         };
 
         const updateTempo = () => {
@@ -174,6 +203,10 @@ const { bind } = createGame({
 
         updateTempo();
         gameState._updateHighlight();
+
+        registerCleanup(() => {
+            if (canvasEngine) canvasEngine.destroy();
+        });
     },
 });
 

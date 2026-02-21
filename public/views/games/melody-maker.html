@@ -1,59 +1,66 @@
 <section class="view game-view game-melody-maker" id="view-game-melody-maker" aria-label="Game: Melody Maker">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Exit</a>
-          <h2>Melody Maker</h2>
-          <div class="game-score">Guided Drill</div>
+  <div class="game-header">
+    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>Exit</a>
+    <h2>Melody Maker</h2>
+    <div class="game-score">Guided Drill</div>
+  </div>
+  <div class="game-content" id="melody-maker-content">
+    <picture>
+      <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
+      <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-melody" loading="lazy"
+        decoding="async">
+    </picture>
+    <div class="game-right-col" style="display: flex; flex-direction: column; gap: var(--space-4);">
+      <div class="melody-maker-stage">
+        <div class="melody-hud">
+          <div class="melody-score">Score <span data-melody="score">0</span></div>
+          <div class="melody-track" data-melody="track">Tap notes to build a melody.</div>
+          <div class="melody-target" data-melody="target">Target: G · A · B · C</div>
         </div>
-        <div class="game-content" id="melody-maker-content">
-          <div class="melody-maker-stage">
-            <div class="melody-hud">
-              <div class="melody-score">Score <span data-melody="score">0</span></div>
-              <div class="melody-track" data-melody="track">Tap notes to build a melody.</div>
-              <div class="melody-target" data-melody="target">Target: G · A · B · C</div>
-            </div>
-            <div class="melody-buttons">
-              <button class="btn btn-secondary melody-btn" data-melody-note="G" type="button">G</button>
-              <button class="btn btn-secondary melody-btn" data-melody-note="A" type="button">A</button>
-              <button class="btn btn-secondary melody-btn" data-melody-note="B" type="button">B</button>
-              <button class="btn btn-secondary melody-btn" data-melody-note="C" type="button">C</button>
-              <button class="btn btn-secondary melody-btn" data-melody-note="D" type="button">D</button>
-            </div>
-            <div class="melody-actions">
-              <button class="btn btn-secondary" type="button" data-melody="play">Play melody</button>
-              <button class="btn btn-secondary" type="button" data-melody="play-target">Play target</button>
-              <button class="btn btn-ghost" type="button" data-melody="clear">Clear melody</button>
-            </div>
-            <div class="melody-status" data-melody="status" aria-live="polite">Build a melody, then press Play.</div>
-          </div>
-          <div class="game-drill glass">
-            <p class="game-drill-intro">Create a short melody and check off each goal.</p>
-            <div class="game-checklist-group" data-total="4">
-              <div class="game-progress" data-total="4">
-                <span class="game-progress-label">Melody goals</span>
-              </div>
-              <ol class="game-checklist">
-                <li class="game-check-item">
-                  <input type="checkbox" id="mm-step-1">
-                  <label for="mm-step-1"><span class="note-chip">Start</span> Tap four notes in a row.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="mm-step-2">
-                  <label for="mm-step-2"><span class="note-chip">Repeat</span> Repeat your melody once.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="mm-step-3">
-                  <label for="mm-step-3"><span class="note-chip">Mix</span> Add one new note.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="mm-step-4">
-                  <label for="mm-step-4"><span class="note-chip">Finish</span> Play it with a steady bow.</label>
-                </li>
-              </ol>
-            </div>
-          </div>
-          <picture>
-            <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
-            <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-melody" loading="lazy" decoding="async">
-          </picture>
+        <div class="melody-buttons" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-2);">
+          <button class="btn btn-giant btn-secondary melody-btn" data-melody-note="G" type="button">G</button>
+          <button class="btn btn-giant btn-secondary melody-btn" data-melody-note="A" type="button">A</button>
+          <button class="btn btn-giant btn-secondary melody-btn" data-melody-note="B" type="button">B</button>
+          <button class="btn btn-giant btn-secondary melody-btn" data-melody-note="C" type="button">C</button>
+          <button class="btn btn-giant btn-secondary melody-btn" data-melody-note="D" type="button">D</button>
         </div>
-      </section>
+        <div class="melody-actions"
+          style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4);">
+          <button class="btn btn-primary" type="button" data-melody="play">Play melody</button>
+          <button class="btn btn-secondary" type="button" data-melody="play-target">Play target</button>
+          <button class="btn btn-ghost" type="button" data-melody="clear">Clear melody</button>
+        </div>
+        <div class="melody-status" data-melody="status" aria-live="polite">Build a melody, then press Play.</div>
+      </div>
+      <div class="game-drill glass">
+        <p class="game-drill-intro">Create a short melody and check off each goal.</p>
+        <div class="game-checklist-group" data-total="4">
+          <div class="game-progress" data-total="4">
+            <span class="game-progress-label">Melody goals</span>
+          </div>
+          <ol class="game-checklist">
+            <li class="game-check-item">
+              <input type="checkbox" id="mm-step-1">
+              <label for="mm-step-1"><span class="note-chip">Start</span> Tap four notes in a row.</label>
+            </li>
+            <li class="game-check-item">
+              <input type="checkbox" id="mm-step-2">
+              <label for="mm-step-2"><span class="note-chip">Repeat</span> Repeat your melody once.</label>
+            </li>
+            <li class="game-check-item">
+              <input type="checkbox" id="mm-step-3">
+              <label for="mm-step-3"><span class="note-chip">Mix</span> Add one new note.</label>
+            </li>
+            <li class="game-check-item">
+              <input type="checkbox" id="mm-step-4">
+              <label for="mm-step-4"><span class="note-chip">Finish</span> Play it with a steady bow.</label>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

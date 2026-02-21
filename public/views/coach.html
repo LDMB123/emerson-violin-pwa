@@ -4,138 +4,35 @@
         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M15 18l-6-6 6-6" />
       </svg>Back</a>
-    <h2>Practice</h2>
+    <h2>Daily Mission</h2>
   </div>
 
-  <div class="coach-layout">
-    <div class="coach-card glass">
-      <div class="coach-card-header">
-        <span class="coach-title-pill">Mission Coach</span>
-      </div>
-      <div class="coach-hero">
-        <picture>
-          <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
-          <img src="./assets/illustrations/mascot-focus.png" alt="Coach panda" class="coach-mascot" loading="lazy"
-            decoding="async" width="1024" height="1024">
-        </picture>
-        <div class="coach-bubble" data-progress="coach-speech" aria-live="polite">
-          <span class="coach-bubble-text">Start your mission, then follow Now, Next, and Wins.</span>
-        </div>
-      </div>
-      <div class="coach-listening-card glass">
-        <p class="coach-listening-title">Realtime Coach</p>
-        <p class="coach-listening-status" data-rt-status>Mic off</p>
-        <div class="coach-listening-actions">
-          <button class="btn btn-primary" type="button" data-rt-toggle>Start Listening</button>
-          <button class="btn btn-secondary" type="button" data-rt-stop>Stop</button>
-        </div>
-      </div>
-      <div class="coach-actions">
-        <button class="btn btn-secondary" type="button" data-coach-action="retry">Say It Again</button>
-        <button class="btn btn-primary" type="button" data-coach-action="next">Next Tip</button>
-      </div>
-    </div>
-
-    <div class="coach-stepper" data-coach-stepper>
-      <button class="coach-step-tab is-active" type="button" data-coach-step-target="tune">Now</button>
-      <button class="coach-step-tab" type="button" data-coach-step-target="warmup">Next</button>
-      <button class="coach-step-tab" type="button" data-coach-step-target="play">Wins</button>
-    </div>
-
-    <section class="coach-step-card glass is-active" data-coach-step-card="tune">
-      <h3>Now</h3>
-      <p>Make your strings match before you play.</p>
-      <a class="btn btn-primary" href="#view-tuner">Open Tuner</a>
-      <details class="coach-tips">
-        <summary>Show tips</summary>
-        <p>Play each open string slowly and listen for a clean ring.</p>
-      </details>
-    </section>
-
-    <section class="coach-step-card glass" data-coach-step-card="warmup" hidden>
-      <h3>Next</h3>
-      <p>Start your 10-minute focus timer!</p>
-
-      <picture class="timer-mascot-container" style="display: flex; justify-content: center; margin: 1rem 0;">
-        <img src="./assets/illustrations/mascot-timer.png" alt="Panda holding stopwatch" class="timer-mascot"
-          style="width: 150px; height: auto;" loading="lazy" decoding="async">
+  <div class="coach-kid-layout">
+    <div class="coach-hero-mascot">
+      <picture class="timer-mascot-container">
+        <img src="./assets/illustrations/epic_mascot_focus.png" alt="3D Zen Red Panda holding a stopwatch"
+          class="timer-mascot" loading="lazy" decoding="async"
+          style="filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3)); object-fit: contain;">
       </picture>
+      <div class="coach-speech-bubble glass">
+        <p>10 minutes of focus! You can do it!</p>
+      </div>
+    </div>
 
-      <div class="practice-focus glass">
-        <input type="checkbox" id="focus-timer" class="state-checkbox focus-toggle" aria-label="Toggle focus timer">
-        <!-- Default hidden log state for 10 min -->
-        <input type="checkbox" id="goal-step-focus-10" class="state-checkbox focus-log" data-minutes="10"
-          data-persist="true" aria-hidden="true" tabindex="-1" checked hidden>
+    <div class="practice-focus glass">
+      <input type="checkbox" id="focus-timer" class="state-checkbox focus-toggle" aria-label="Toggle focus timer">
+      <input type="checkbox" id="goal-step-focus-10" class="state-checkbox focus-log" data-minutes="10"
+        data-persist="true" aria-hidden="true" tabindex="-1" checked hidden>
 
-        <div class="focus-ring" style="margin-top: 0;">
-          <div class="focus-meta" aria-hidden="false">
-            <span class="focus-status" aria-live="polite">Tap Start</span>
-          </div>
-        </div>
-        <div class="focus-controls">
-          <label for="focus-timer" class="btn btn-primary btn-start">Start Timer</label>
-          <label for="focus-timer" class="btn btn-secondary btn-stop">Stop</label>
+      <div class="focus-ring">
+        <div class="focus-meta" aria-hidden="false">
+          <span class="focus-status" aria-live="polite">Ready!</span>
         </div>
       </div>
-    </section>
-
-    <section class="coach-step-card glass" data-coach-step-card="play" hidden>
-      <h3>Wins</h3>
-      <p>Celebrate progress first, then hand off to a grown-up review.</p>
-      <div class="lesson-plan" data-lesson-plan="coach">
-        <h3>Today&apos;s Steps</h3>
-        <div class="lesson-grid">
-          <div class="lesson-item">
-            <span class="lesson-label">Focus</span>
-            <strong data-lesson="skill">Pitch</strong>
-          </div>
-          <div class="lesson-item">
-            <span class="lesson-label">Game</span>
-            <strong data-lesson="game">Pitch Quest</strong>
-          </div>
-          <div class="lesson-item">
-            <span class="lesson-label">Beat</span>
-            <strong data-lesson="bpm">90 BPM</strong>
-          </div>
-          <div class="lesson-item">
-            <span class="lesson-label">Time</span>
-            <strong data-lesson="total">15 min</strong>
-          </div>
-        </div>
-        <ul class="lesson-steps" data-lesson-steps aria-label="Lesson steps" aria-live="polite"></ul>
-        <a class="btn btn-primary" data-lesson="cta" href="#view-games">Start plan</a>
-        <ol class="mission-timeline" data-coach-mission-timeline aria-label="Mission timeline"></ol>
+      <div class="focus-controls">
+        <label for="focus-timer" class="btn btn-primary btn-giant btn-start">START TIMER</label>
+        <label for="focus-timer" class="btn btn-secondary btn-giant btn-stop">Stop</label>
       </div>
-
-      <div class="session-goals glass">
-        <h3>Checklist</h3>
-        <ol class="game-checklist goal-checklist" data-goal-list>
-          <li class="game-check-item" data-goal-item="warmup">
-            <input type="checkbox" id="goal-warmup">
-            <label for="goal-warmup"><span data-goal-label>Play open strings</span></label>
-          </li>
-          <li class="game-check-item" data-goal-item="scale">
-            <input type="checkbox" id="goal-scale">
-            <label for="goal-scale"><span data-goal-label>Play one slow scale</span></label>
-          </li>
-          <li class="game-check-item" data-goal-item="rhythm">
-            <input type="checkbox" id="goal-rhythm">
-            <label for="goal-rhythm"><span data-goal-label>Listen to the steady beat</span></label>
-          </li>
-          <li class="game-check-item" data-goal-item="ear">
-            <input type="checkbox" id="goal-ear">
-            <label for="goal-ear"><span data-goal-label>Match notes by ear</span></label>
-          </li>
-          <li class="game-check-item" data-goal-item="song">
-            <input type="checkbox" id="goal-song">
-            <label for="goal-song"><span data-goal-label>Perform a song</span></label>
-          </li>
-        </ol>
-      </div>
-      <div class="coach-handoff">
-        <a class="btn btn-secondary" href="#view-progress">See Wins</a>
-        <a class="btn btn-primary" href="#view-parent">For Grown-Ups Review</a>
-      </div>
-    </section>
+    </div>
   </div>
 </section>

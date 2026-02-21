@@ -8,18 +8,19 @@ test.describe('Kid-first flows', () => {
 
   test('shows mission-first home and 3-item child nav', async ({ page }) => {
     await expect(page).toHaveTitle(/Panda Violin/);
-    await expect(page.locator('[data-start-practice]')).toBeVisible();
+    await expect(page.locator('a[href="#view-coach"]').first()).toBeVisible();
     await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(3);
     await expect(page.locator('[data-parent-lock]')).toBeVisible();
   });
 
   test('start practice reaches coach in one tap', async ({ page }) => {
-    await page.locator('[data-start-practice]').click();
+    // Navigate via the giant home button instead of the old data attribute
+    await page.locator('.home-giant-actions a[href="#view-coach"]').click();
     await page.waitForURL('**/#view-coach');
 
     await expect(page.locator('#view-coach')).toBeVisible();
-    await expect(page.locator('[data-coach-step-card="tune"]')).toBeVisible();
-    await expect(page.locator('.coach-step-tab.is-active')).toContainText('Now');
+    await expect(page.locator('.practice-focus')).toBeVisible();
+    await expect(page.locator('.focus-status')).toContainText('Ready!');
   });
 
   test('child can reach games and launch a game in two taps', async ({ page }) => {

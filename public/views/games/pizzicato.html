@@ -1,67 +1,54 @@
 <section class="view game-view game-pizzicato" id="view-game-pizzicato" aria-label="Game: Pizzicato Pop">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Exit</a>
-          <h2>Panda Pizzicato</h2>
-          <div class="game-score">Guided Drill</div>
-        </div>
-        <div class="game-content" id="pizzicato-content">
-          <div class="pizzicato-stage">
-            <div class="pizzicato-hud">
-              <div class="pizzicato-score">Score <span data-pizzicato="score">0</span></div>
-              <div class="pizzicato-combo">Combo <span data-pizzicato="combo">x0</span></div>
-            </div>
-            <div class="pizzicato-strings">
-              <div class="pizzicato-string" data-string="G">
-                <span class="pizzicato-label">G</span>
-                <span class="pizzicato-note" data-pizzicato-target="G"></span>
-              </div>
-              <div class="pizzicato-string" data-string="D">
-                <span class="pizzicato-label">D</span>
-                <span class="pizzicato-note" data-pizzicato-target="D"></span>
-              </div>
-              <div class="pizzicato-string" data-string="A">
-                <span class="pizzicato-label">A</span>
-                <span class="pizzicato-note" data-pizzicato-target="A"></span>
-              </div>
-              <div class="pizzicato-string" data-string="E">
-                <span class="pizzicato-label">E</span>
-                <span class="pizzicato-note" data-pizzicato-target="E"></span>
-              </div>
-            </div>
-            <div class="pizzicato-controls">
-              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="G" type="button">G</button>
-              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="D" type="button">D</button>
-              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="A" type="button">A</button>
-              <button class="btn btn-primary pizzicato-btn" data-pizzicato-btn="E" type="button">E</button>
-            </div>
-            <div class="pizzicato-status" data-pizzicato="status" aria-live="polite">Match the glowing string to keep your combo.</div>
-            <div class="pizzicato-sequence" data-pizzicato="sequence">Sequence: G · D · A · E</div>
+  <div class="game-header">
+    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>Exit</a>
+    <h2>Panda Pizzicato</h2>
+    <div class="game-score">Guided Drill</div>
+  </div>
+  <div class="game-content" id="pizzicato-content">
+    <!-- Full Bleed Background Canvas -->
+    <canvas id="pizzicato-canvas"></canvas>
+
+    <div class="pizzicato-stage">
+      <!-- HUD Top Layer -->
+      <div class="game-header">
+        <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>Exit</a>
+        <h2>Panda Pizzicato</h2>
+        <div class="game-score">Guided Drill</div>
+      </div>
+
+      <!-- Mascot Anchored -->
+      <picture>
+        <source srcset="./assets/illustrations/mascot-encourage.webp" type="image/webp">
+        <img src="./assets/illustrations/mascot-encourage.png" alt="" class="game-mascot mascot-pizzicato"
+          loading="lazy" decoding="async">
+      </picture>
+
+      <!-- Floating Interaction Panel -->
+      <div class="glass-panel"
+        style="width: min(100%, 400px); text-align: center; display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="pizzicato-hud"
+          style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2rem;">
+          <div class="pizzicato-score">Score <span data-pizzicato="score" style="color: var(--color-primary);">0</span>
           </div>
-          <div class="game-drill glass">
-            <p class="game-drill-intro">Pluck through each string and track your combo streak.</p>
-            <div class="game-checklist-group" data-total="3">
-              <div class="game-progress" data-total="3">
-                <span class="game-progress-label">Rounds complete</span>
-              </div>
-              <ol class="game-checklist">
-                <li class="game-check-item">
-                  <input type="checkbox" id="pz-step-1">
-                  <label for="pz-step-1"><span class="note-chip">Warm-up</span> Pluck all four strings once.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="pz-step-2">
-                  <label for="pz-step-2"><span class="note-chip">Run</span> Match a 4-note sequence.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="pz-step-3">
-                  <label for="pz-step-3"><span class="note-chip">Combo</span> Hold a 6-hit combo.</label>
-                </li>
-              </ol>
-            </div>
-          </div>
-          <picture>
-            <source srcset="./assets/illustrations/mascot-encourage.webp" type="image/webp">
-            <img src="./assets/illustrations/mascot-encourage.png" alt="" class="game-mascot mascot-pizzicato" loading="lazy" decoding="async">
-          </picture>
+          <div class="pizzicato-combo">Combo <span data-pizzicato="combo"
+              style="color: var(--color-secondary);">x0</span></div>
         </div>
-      </section>
+
+        <div class="pizzicato-status" data-pizzicato="status" aria-live="polite"
+          style="font-size: 1.2rem; font-weight: 800; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Match the
+          glowing string to keep your combo.</div>
+        <div class="pizzicato-sequence" data-pizzicato="sequence"
+          style="font-size: var(--text-sm); color: rgba(255,255,255,0.8);">Sequence: G · D · A · E</div>
+
+        <div class="pizzicato-strings" style="display: none;"></div>
+        <div class="pizzicato-controls" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+</section>

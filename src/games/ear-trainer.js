@@ -14,6 +14,7 @@ import {
     setEarTrainerQuestion,
     clearEarTrainerChoices,
 } from './ear-trainer-view.js';
+import { EarTrainerCanvasEngine } from './ear-trainer-canvas.js';
 
 const earQuestionEl = cachedEl('[data-ear="question"]');
 
@@ -71,6 +72,13 @@ const { bind } = createGame({
             A: audioA,
             E: audioE,
         });
+
+        // Initialize Canvas Visualizer
+        let canvasEngine = null;
+        const canvasEl = stage.querySelector('#ear-trainer-canvas');
+        if (canvasEl) {
+            canvasEngine = new EarTrainerCanvasEngine(canvasEl, { G: audioG, D: audioD, A: audioA, E: audioE });
+        }
 
         const checklistMap = {
             G: 'et-step-1',
@@ -145,6 +153,29 @@ const { bind } = createGame({
         gameState._onDeactivate = () => {
             gameState.currentTone = null;
             cueBank.stopAll();
+            if (canvasEngine) canvasEngine.stop();
+        };
+
+        const executePlayAction = () => {
+            if (!isSoundEnabled()) {
+                setQuestion('Sounds are off. Turn on Sounds to play.');
+                return;
+            }
+            if (gameState.lives <= 0 || gameState.currentIndex >= rounds) {
+                resetSession();
+                gameState.lives = 3;
+                updateStatsUI();
+                setQuestion('New round! Listen and tap the matching note.');
+            }
+            // Ensure audio context is running when play starts
+            if (canvasEngine) canvasEngine.start();
+
+            const currentLevel = getLevelForRound(gameState.currentIndex);
+            const tonePool = getTonePoolForLevel(currentLevel);
+            gameState.currentTone = tonePool[Math.floor(Math.random() * tonePool.length)];
+            cueBank.play(gameState.currentTone);
+            const total = rounds || 10;
+            setQuestion(`Question ${Math.min(gameState.currentIndex + 1, total)} of ${total} · Tap the matching note.`);
         };
 
         updateSoundState();
@@ -158,24 +189,10 @@ const { bind } = createGame({
         };
         bindSoundsChange(soundsHandler, registerCleanup);
 
-        bindTap(playButton, () => {
-            if (!isSoundEnabled()) {
-                setQuestion('Sounds are off. Turn on Sounds to play.');
-                return;
-            }
-            if (gameState.lives <= 0 || gameState.currentIndex >= rounds) {
-                resetSession();
-                gameState.lives = 3;
-                updateStatsUI();
-                setQuestion('New round! Listen and tap the matching note.');
-            }
-            const currentLevel = getLevelForRound(gameState.currentIndex);
-            const tonePool = getTonePoolForLevel(currentLevel);
-            gameState.currentTone = tonePool[Math.floor(Math.random() * tonePool.length)];
-            cueBank.play(gameState.currentTone);
-            const total = rounds || 10;
-            setQuestion(`Question ${Math.min(gameState.currentIndex + 1, total)} of ${total} · Tap the matching note.`);
-        });
+        bindTap(playButton, executePlayAction);
+        if (canvasEl) {
+            bindTap(canvasEl, executePlayAction);
+        }
 
         choices.forEach((choice) => {
             choice.addEventListener('change', () => {
@@ -247,6 +264,10 @@ const { bind } = createGame({
                 }
                 updateStreak();
             });
+        });
+
+        registerCleanup(() => {
+            if (canvasEngine) canvasEngine.destroy();
         });
 
     },

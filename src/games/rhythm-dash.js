@@ -28,6 +28,7 @@ import {
 import { createRhythmDashViewState } from './rhythm-dash/view-state.js';
 import { bindRhythmDashUiControls } from './rhythm-dash/ui-bindings.js';
 import { createRhythmDashBindingState } from './rhythm-dash/binding-state.js';
+import { RhythmCanvasEngine } from './rhythm-dash/rhythm-canvas.js';
 
 const rhythmScoreEl = cachedEl('[data-rhythm="score"]');
 const rhythmComboEl = cachedEl('[data-rhythm="combo"]');
@@ -93,6 +94,13 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         getBeatInterval: () => runtime.beatInterval,
     });
 
+    const canvasEl = stage.querySelector('#rhythm-canvas');
+    let engine = null;
+    if (canvasEl) {
+        engine = new RhythmCanvasEngine(canvasEl);
+        engine.setBpm(initialTargetBpm);
+    }
+
     if (!tapButton) return;
 
     const setStatus = (message) => updateStatusText(statusEl, message);
@@ -129,9 +137,15 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         runtime.reported = result.reported;
     };
 
-    const stopMetronome = () => metronome.stop();
+    const stopMetronome = () => {
+        metronome.stop();
+        if (engine) engine.stop();
+    };
 
-    const startMetronome = () => metronome.start();
+    const startMetronome = () => {
+        metronome.start();
+        if (engine) engine.start();
+    };
 
     const processBeat = createRhythmDashBeatProcessor({
         getRuntimeState: () => ({
@@ -147,6 +161,10 @@ const bindRhythmDash = (difficulty = { speed: 1.0, complexity: 1 }) => {
         }),
         applyRuntimeState: (nextState) => {
             applyRhythmDashBeatRuntimeState(runtime, nextState);
+            if (engine) engine.setBpm(nextState.targetBpm);
+            if (engine && nextState.boundedScore >= 0.45) {
+                engine.triggerHitExplosion(Math.floor(Math.random() * 4), 0);
+            }
         },
         setLiveScore: viewState.setLiveScore,
         setLiveCombo: viewState.setLiveCombo,

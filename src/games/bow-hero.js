@@ -20,10 +20,15 @@ import {
     handleBowHeroRunToggleChange,
 } from './bow-hero-state.js';
 import { createBowHeroTimerLifecycle } from './bow-hero-timer.js';
+import { BowHeroCanvasEngine } from './bow-hero-canvas.js';
 
 const bowStarsEl = cachedEl('[data-bow="stars"]');
 
 const updateBowHero = () => {
+    // Canvas fallback
+    const canvas = document.getElementById('bow-hero-canvas');
+    if (!canvas) return;
+
     const inputs = Array.from(document.querySelectorAll('#view-game-bow-hero input[id^="bh-step-"]'));
     if (!inputs.length) return;
     const checked = inputs.filter((input) => input.checked).length;
@@ -38,7 +43,6 @@ const { bind } = createGame({
         ? (state.starCount / state._stars.length) * 100
         : 0,
     onReset: (gameState) => {
-        // Only fully reset if timer isn't running (tuning change mid-run should not reset)
         if (gameState._timerId) return;
         gameState.starCount = 0;
         gameState.strokeCount = 0;
@@ -49,6 +53,8 @@ const { bind } = createGame({
         if (gameState._timerEl) gameState._timerEl.textContent = formatCountdown(gameState._timeLimit || 0);
         if (gameState._statusEl) gameState._statusEl.textContent = 'Press Start to begin the timer.';
         if (gameState._runToggle) gameState._runToggle.checked = false;
+
+        if (gameState._engine) gameState._engine.reset();
     },
     onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const strokeButton = stage.querySelector('.bow-stroke');
@@ -58,23 +64,26 @@ const { bind } = createGame({
         const starsEl = stage.querySelector('[data-bow="stars"]');
         const statusEl = stage.querySelector('[data-bow="status"]');
 
+        const canvasEl = stage.querySelector('#bow-hero-canvas');
+        if (!canvasEl) return;
+
         let starCount = 0;
         let strokeCount = 0;
-        // difficulty.speed: scales targetTempo and timeLimit; speed=1.0 keeps targetTempo=72, timeLimit=105 (current behavior)
-        // difficulty.complexity: visual feedback only for this game (star/stroke milestones are fixed)
         const targetTempo = Math.round(72 * difficulty.speed);
         const timeLimit = Math.round(105 * difficulty.speed);
         let lastStrokeAt = 0;
         let smoothStreak = 0;
 
-        // Store on gameState for computeAccuracy and onReset
         gameState._stars = stars;
         gameState._starsEl = starsEl;
         gameState._timerEl = timerEl;
         gameState._statusEl = statusEl;
         gameState._runToggle = runToggle;
         gameState._timeLimit = timeLimit;
-        gameState._timerId = null; // track for onReset guard
+        gameState._timerId = null;
+
+        const engine = new BowHeroCanvasEngine(canvasEl);
+        gameState._engine = engine;
 
         const setStatus = (message) => {
             if (statusEl) statusEl.textContent = message;
@@ -91,6 +100,7 @@ const { bind } = createGame({
             gameState.strokeCount = 0;
             renderBowHeroStars({ stars, starCount });
             setLiveNumber(starsEl, 'liveStars', starCount);
+            engine.reset();
         };
 
         const finalizeRun = () => {
@@ -113,6 +123,7 @@ const { bind } = createGame({
             onTimeElapsed: () => {
                 markChecklist('bh-step-5');
                 finalizeRun();
+                engine.stop();
             },
             setTimerHandle: (timerId) => {
                 gameState._timerId = timerId;
@@ -127,9 +138,14 @@ const { bind } = createGame({
         gameState._onDeactivate = () => {
             timerLifecycle.pauseTimer();
             stopTonePlayer();
+            engine.stop();
         };
 
-        bindTap(strokeButton, () => {
+        registerCleanup(() => {
+            engine.destroy();
+        });
+
+        const performBowStroke = () => {
             starCount = Math.min(stars.length, starCount + 1);
             strokeCount += 1;
             renderBowHeroStars({ stars, starCount });
@@ -149,7 +165,18 @@ const { bind } = createGame({
             markChecklistIf(strokeCount >= 8, 'bh-step-1');
             markChecklistIf(strokeCount >= 16, 'bh-step-2');
             markChecklistIf(strokeCount >= 24, 'bh-step-3');
+        };
+
+        bindTap(strokeButton, () => {
+            performBowStroke();
+            engine.triggerStroke();
         });
+
+        engine.onStroke = () => {
+            if (timerLifecycle.isRunning()) {
+                performBowStroke();
+            }
+        };
 
         runToggle?.addEventListener('change', () => {
             handleBowHeroRunToggleChange({
@@ -161,11 +188,23 @@ const { bind } = createGame({
                 strokeCount,
                 finalizeRun,
             });
+
+            if (runToggle.checked) {
+                engine.start();
+            } else {
+                engine.stop();
+            }
         });
 
         bindVisibilityLifecycle({
-            onHidden: timerLifecycle.pauseTimer,
-            onVisible: timerLifecycle.resumeTimer,
+            onHidden: () => {
+                timerLifecycle.pauseTimer();
+                engine.stop();
+            },
+            onVisible: () => {
+                timerLifecycle.resumeTimer();
+                if (runToggle?.checked) engine.start();
+            },
             registerCleanup,
         });
 

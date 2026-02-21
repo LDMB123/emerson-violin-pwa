@@ -73,7 +73,7 @@ export const createTonePlayer = () => {
         return true;
     };
 
-    const scheduleTone = async (frequency, { duration = 0.45, volume = 0.22, type = DEFAULT_TIMBRE } = {}) => {
+    const scheduleTone = async (frequency, { duration = 0.45, volume = 0.22, type = DEFAULT_TIMBRE, startTime } = {}) => {
         if (!state.playbackEnabled) {
             return false;
         }
@@ -85,7 +85,7 @@ export const createTonePlayer = () => {
                 state,
                 ctx,
                 frequency,
-                options: { duration, volume, type },
+                options: { duration, volume, type, startTime },
                 ensureOutputNode: ensurePlayerOutputNode,
             });
             if (sampleVoice) {
@@ -97,7 +97,7 @@ export const createTonePlayer = () => {
             state,
             ctx,
             frequency,
-            options: { duration, volume, type },
+            options: { duration, volume, type, startTime },
             ensureOutputNode: ensurePlayerOutputNode,
         });
         return playVoice(synthVoice);
@@ -129,20 +129,34 @@ export const createTonePlayer = () => {
             duration = 0.45,
             volume = 0.18,
             type = 'violin',
+            delay = 0,
         } = options;
         if (!Array.isArray(notes) || !notes.length) return false;
+
+        const ctx = await ensurePlayerContext(state);
+        if (!ctx) return false;
+
         const token = ++state.sequenceToken;
         const beatMs = 60000 / Math.max(tempo, 1);
+        const beatSecs = beatMs / 1000;
+
+        let currentStartTime = ctx.currentTime + Math.max(0, delay) + 0.05;
+        const playPromises = [];
+
         for (const note of notes) {
-            if (!state.playbackEnabled) {
-                stopAll();
+            if (!state.playbackEnabled || token !== state.sequenceToken) {
                 return false;
             }
-            if (token !== state.sequenceToken) return false;
-            await playNote(note, { duration, volume, type });
-            await wait(Math.max(0, beatMs * gap));
+            // Schedule the note
+            const promise = playNote(note, { duration, volume, type, startTime: currentStartTime });
+            playPromises.push(promise);
+
+            // Increment the time cursor exactly without JS drift
+            currentStartTime += (duration + 0.08) + (beatSecs * gap);
         }
-        return true;
+
+        const results = await Promise.all(playPromises);
+        return results.every(Boolean);
     };
 
     const syncSoundState = () => {

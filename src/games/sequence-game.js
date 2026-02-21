@@ -67,6 +67,7 @@ import { createSequenceGameViewRuntime } from './sequence-game-view-runtime.js';
 import { cleanupSequenceGameBinding } from './sequence-game-lifecycle.js';
 import { bindSequenceGameButtons, bindSequenceGameMicrophone } from './sequence-game-button-bindings.js';
 import { attachSequenceGameTuning } from './sequence-game-tuning.js';
+import { StringQuestCanvasEngine } from './string-quest-canvas.js';
 
 const NOTE_POOL = ['G', 'D', 'A', 'E'];
 const COMPLEXITY_SEQ_LENGTHS = [3, 4, 5];
@@ -141,6 +142,16 @@ export function createSequenceGame(config) {
         });
         const { runtime, buildSequence } = runtimeApi;
 
+        // Auto-Initialize Canvas Engine if DOM hook exists
+        let canvasEngine = null;
+        const canvasEl = stage.querySelector(`#${id}-canvas`);
+        if (canvasEl) {
+            // pizzicato is vertical, string-quest is horizontal
+            const isHorizontal = id === 'string-quest';
+            canvasEngine = new StringQuestCanvasEngine(canvasEl, isHorizontal);
+            canvasEngine.start();
+        }
+
         const {
             buttons,
             updateTargets,
@@ -158,11 +169,21 @@ export function createSequenceGame(config) {
             getCombo: () => runtime.combo,
         });
 
+        // Patch updateTargets to also send prompt to the Canvas
+        const originalUpdateTargets = updateTargets;
+        const patchedUpdateTargets = () => {
+            originalUpdateTargets();
+            if (canvasEngine && runtime.sequence.length) {
+                const targetNote = runtime.sequence[runtime.seqIndex];
+                if (targetNote) canvasEngine.setPromptTarget(targetNote);
+            }
+        };
+
         reportResult = attachSequenceGameTuning({
             id,
             stage,
             buildSequence,
-            updateTargets,
+            updateTargets: patchedUpdateTargets,
         });
 
         const { reportSession, callbackState, resetSession } = createSequenceGameSessionHandlers({
@@ -173,48 +194,82 @@ export function createSequenceGame(config) {
             difficulty,
             runtime,
             runtimeApi,
-            onReset,
+            onReset: (state) => {
+                if (canvasEngine) canvasEngine.reset();
+                if (onReset) onReset(state);
+            },
             markChecklist,
             markChecklistIf,
             stopTonePlayer,
             buildSequence,
-            updateTargets,
+            updateTargets: patchedUpdateTargets,
             updateScoreboard,
         });
 
-        updateTargets();
+        patchedUpdateTargets();
 
-        bindSequenceGameButtons({
-            buttons,
-            btnDataAttr,
-            noteOptions,
-            playToneNote,
-            getRuntimeState: () => ({
-                sequence: runtime.sequence,
-                seqIndex: runtime.seqIndex,
-                combo: runtime.combo,
-                score: runtime.score,
-                misses: runtime.misses,
-            }),
-            baseScore,
-            comboMult,
-            missPenalty,
-            onCorrectHit,
-            callbackState,
-            completionChecklistId,
-            comboChecklistId,
-            comboTarget,
-            markChecklist,
-            markChecklistIf,
-            reportSession,
-            buildSequence,
-            playToneSequence,
-            seqOptions,
-            updateTargets,
-            updateScoreboard,
-            applyTapResult: (nextState) => {
-                runtimeApi.applyTapResult(nextState);
-            },
+        const applyButtonTap = (note) => {
+            // Manually evaluate the current target before runtime modifies it
+            const targetNote = runtime.sequence[runtime.seqIndex];
+            const isHit = note === targetNote;
+
+            // Trigger the physical pluck animation and particles immediately regardless of hit/miss
+            if (canvasEngine) {
+                canvasEngine.pluck(note);
+            }
+
+            // Normal game logic routing
+            playToneNote(note, noteOptions);
+            const nextState = { hit: isHit, note };
+            runtimeApi.applyTapResult(nextState);
+
+            // Existing sequence button binding logic copy-pasted inline from bindSequenceGameButtons
+            const { seqIndex, score, combo } = runtime;
+
+            if (isHit) {
+                if (onCorrectHit) onCorrectHit(note, callbackState);
+                if (seqIndex === 0) {
+                    markChecklist(completionChecklistId);
+                    markChecklistIf(combo >= comboTarget, comboChecklistId);
+
+                    reportSession(Math.max(0, score), Math.max(0, combo));
+                    buildSequence();
+                    // Play triumph seq
+                    playToneSequence([...runtime.sequence].slice(-4), seqOptions);
+                }
+            } else {
+                markChecklistIf(combo >= comboTarget, comboChecklistId);
+            }
+
+            patchedUpdateTargets();
+            updateScoreboard();
+        };
+
+        // If we are using the Canvas, wire it up for taps directly
+        if (canvasEngine) {
+            canvasEngine.onStringPluck = (stringId) => {
+                applyButtonTap(stringId);
+            };
+        }
+
+        // Keep DOM buttons for legacy/accessibility
+        buttons.forEach((btn) => {
+            btn.addEventListener('pointerdown', (e) => {
+                // Prevent double firing if canvas is tapped through absolute positioning, etc.
+                if (canvasEngine) return;
+                const note = btn.dataset[btnDataAttr];
+                if (!note) return;
+                applyButtonTap(note);
+            });
+            // Handle spacebar/enter
+            btn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (canvasEngine) return; // Ignore if canvas handles it (unlikely for kb, but safe)
+                    const note = btn.dataset[btnDataAttr];
+                    if (note) applyButtonTap(note);
+                }
+            });
         });
 
         const cleanupMic = bindSequenceGameMicrophone({
@@ -242,9 +297,13 @@ export function createSequenceGame(config) {
             buildSequence,
             playToneSequence,
             seqOptions,
-            updateTargets,
+            updateTargets: patchedUpdateTargets,
             updateScoreboard,
             applyTapResult: (nextState) => {
+                // Visualize mic hits in canvas
+                if (canvasEngine) {
+                    canvasEngine.pluck(nextState.note);
+                }
                 runtimeApi.applyTapResult(nextState);
             },
         });
@@ -254,6 +313,7 @@ export function createSequenceGame(config) {
             onReset: resetSession,
             onDeactivate: () => {
                 stopTonePlayer();
+                if (canvasEngine) canvasEngine.stop();
             },
             onReport: reportSession,
         });
@@ -261,6 +321,7 @@ export function createSequenceGame(config) {
         lifecycleCleanup = () => {
             cleanupMic();
             baseSessionCleanup();
+            if (canvasEngine) canvasEngine.destroy();
         };
     };
 

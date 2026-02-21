@@ -8,22 +8,40 @@
     <div class="game-score">Guided Drill</div>
   </div>
   <div class="game-content" id="tuning-time-content">
+
+    <!-- Full Bleed Background Canvas -->
+    <canvas id="pitch-quest-canvas" class="tuning-gpu-canvas"></canvas>
+
+    <!-- Floating HUD HUD -->
     <div class="tuning-time-stage">
-      <div class="tuning-hud">
-        <div class="tuning-score">Score <span data-tuning="score">0</span></div>
-        <div class="tuning-status" data-tuning="status" aria-live="polite">Pick a string and tune to its ring.</div>
+
+      <div class="glass-panel" style="width: min(100%, 400px); text-align: center;">
+        <div class="tuning-hud" style="margin-bottom: var(--space-4);">
+          <div class="tuning-score">Score <span data-tuning="score"
+              style="color: var(--color-primary); font-weight: 800; font-size: 1.5em;">0</span></div>
+          <div class="tuning-status" data-tuning="status" aria-live="polite"
+            style="font-weight: 700; color: var(--color-text-muted);">Pick a string and tune.</div>
+        </div>
+
+        <div class="tuning-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+          aria-label="Tuning accuracy" style="display: none;">
+          <span class="tuning-progress-fill" data-tuning="progress" style="width: 0%"></span>
+        </div>
+
+        <div class="tuning-strings"
+          style="display: flex; gap: var(--space-2); justify-content: center; margin-bottom: var(--space-4);">
+          <button class="btn btn-primary tuning-btn" data-tuning-note="G" type="button"
+            style="min-width: 60px;">G</button>
+          <button class="btn btn-primary tuning-btn" data-tuning-note="D" type="button"
+            style="min-width: 60px;">D</button>
+          <button class="btn btn-primary tuning-btn" data-tuning-note="A" type="button"
+            style="min-width: 60px;">A</button>
+          <button class="btn btn-primary tuning-btn" data-tuning-note="E" type="button"
+            style="min-width: 60px;">E</button>
+        </div>
+
+        <a class="btn btn-secondary" href="#view-tuner" style="width: 100%;">Open Live Tuner</a>
       </div>
-      <div class="tuning-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
-        aria-label="Tuning accuracy">
-        <span class="tuning-progress-fill" data-tuning="progress" style="width: 0%"></span>
-      </div>
-      <div class="tuning-strings">
-        <button class="btn btn-primary tuning-btn" data-tuning-note="G" type="button">G</button>
-        <button class="btn btn-primary tuning-btn" data-tuning-note="D" type="button">D</button>
-        <button class="btn btn-primary tuning-btn" data-tuning-note="A" type="button">A</button>
-        <button class="btn btn-primary tuning-btn" data-tuning-note="E" type="button">E</button>
-      </div>
-      <a class="btn btn-secondary" href="#view-tuner">Open Live Tuner</a>
     </div>
     <details class="pitch-audio glass">
       <summary class="btn btn-secondary">Reference tones</summary>
@@ -73,9 +91,9 @@
       </div>
     </div>
     <picture>
-      <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
-      <img src="./assets/illustrations/mascot-focus.png" alt="" class="game-mascot mascot-tuning" loading="lazy"
-        decoding="async">
+      <source srcset="./assets/illustrations/epic_mascot_listening.png" type="image/png">
+      <img src="./assets/illustrations/epic_mascot_listening.png" alt="" class="game-mascot mascot-tuning"
+        loading="lazy" decoding="async">
     </picture>
   </div>
 </section>

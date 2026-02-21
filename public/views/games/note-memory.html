@@ -1,108 +1,49 @@
 <section class="view game-view game-note-memory" id="view-game-note-memory" aria-label="Game: Note Memory">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Exit</a>
-          <h2>Note Memory</h2>
-          <div class="game-score">Guided Drill</div>
+  <div class="game-header">
+    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>Exit</a>
+    <h2>Note Memory</h2>
+    <div class="game-score">Guided Drill</div>
+  </div>
+  <div class="game-content" id="note-memory-content"
+    style="position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; pointer-events: none;">
+    <!-- Full Bleed Background Canvas -->
+    <canvas id="note-memory-canvas"
+      style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto;"></canvas>
+
+    <!-- Top layer HUD -->
+    <div
+      style="position: relative; z-index: 10; padding: var(--space-4); display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto;">
+      <div class="game-header" style="flex: 1; margin: 0; background: none; box-shadow: none; padding: 0;">
+        <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>Exit</a>
+        <h2>Note Memory</h2>
+        <div class="game-score">Guided Drill</div>
+      </div>
+      <picture>
+        <source srcset="./assets/illustrations/epic_mascot_thinking.png" type="image/png">
+        <img src="./assets/illustrations/epic_mascot_thinking.png" alt="" class="game-mascot mascot-memory"
+          loading="lazy" decoding="async"
+          style="width: 140px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); transform: none;">
+      </picture>
+    </div>
+
+    <!-- Floating Interaction Panel anchored bottom -->
+    <div class="glass-panel" style="pointer-events: auto; display: flex; flex-direction: column; gap: var(--space-4);">
+      <div class="memory-stats"
+        style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2rem;">
+        <div class="memory-score">Score <span data-memory="score" style="color: var(--color-primary);">0</span></div>
+        <div class="memory-matches">Pairs <span data-memory="matches" style="color: var(--color-secondary);">0/6</span>
         </div>
-        <div class="game-content" id="note-memory-content">
-          <div class="note-memory-stage">
-            <div class="memory-hud">
-              <div class="memory-timer" data-memory="timer">00:45</div>
-              <div class="memory-meta">Matches: <span data-memory="matches">0/6</span></div>
-              <div class="memory-meta">Score: <span data-memory="score">0</span></div>
-              <div class="memory-meta">Streak: <span data-memory="streak">0</span></div>
-              <button class="btn btn-secondary memory-reset" type="button" data-memory="reset">Reset</button>
-            </div>
-            <div class="memory-grid" data-memory="grid">
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-1" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-1">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">G</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-2" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-2">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">D</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-3" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-3">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">A</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-4" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-4">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">E</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-5" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-5">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">C</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-6" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-6">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">B</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-7" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-7">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">G</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-8" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-8">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">D</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-9" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-9">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">A</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-10" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-10">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">E</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-11" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-11">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">C</span>
-                </label>
-              </div>
-              <div class="memory-card">
-                <input type="checkbox" id="nm-card-12" data-persist="false" data-progress-ignore="true">
-                <label for="nm-card-12">
-                  <span class="memory-front">?</span>
-                  <span class="memory-back">B</span>
-                </label>
-              </div>
-            </div>
-          </div>
-          <picture>
-            <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
-            <img src="./assets/illustrations/mascot-focus.png" alt="" class="game-mascot mascot-memory" loading="lazy" decoding="async">
-          </picture>
-        </div>
-      </section>
+      </div>
+      <div class="memory-status" data-memory="status" aria-live="polite"
+        style="font-weight: 700; color: white; text-align: center;">Find the matching note pairs.</div>
+      <button class="btn btn-secondary memory-reset" type="button" data-memory="reset" style="width: 100%;">Reset
+        Board</button>
+    </div>
+  </div>
+</section>

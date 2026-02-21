@@ -1,95 +1,41 @@
 <section class="view" id="view-home" aria-label="Home">
-  <div class="home-mission glass">
-    <div class="home-mission-head">
-      <picture>
-        <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
-        <img src="./assets/illustrations/mascot-happy.png" alt="Happy panda coach" class="home-mascot" decoding="async"
-          loading="eager" fetchpriority="high" width="1024" height="1024" data-coach-action="hint" role="button"
-          tabindex="0">
-      </picture>
-      <div>
-        <p class="home-kicker">Let's Play!</p>
-        <h2 class="home-title">Ready to play, Emerson?</h2>
-        <p class="home-subtitle">Follow Panda Coach and earn stars!</p>
-      </div>
-    </div>
-
-    <div class="mission-stats">
-      <div class="mission-stat mission-stat-streak">
-        <span class="mission-stat-label">Streak</span>
-        <strong class="mission-stat-value"><span data-progress="home-streak">0</span> days</strong>
-      </div>
-      <div class="mission-stat mission-stat-goal">
-        <span class="mission-stat-label">Daily goal</span>
-        <strong class="mission-stat-value"><span data-progress="daily-goal-value">15</span> min</strong>
-        <div class="goal-progress" data-progress="daily-goal-track" role="progressbar" aria-label="Daily goal progress"
-          aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <div class="goal-fill" data-progress="daily-goal-fill"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="mission-actions">
-      <a class="btn btn-secondary" href="#view-coach" data-continue-practice="">Resume</a>
-      <button class="btn btn-primary" type="button" data-start-practice="">Start My Mission!</button>
-    </div>
-
-    <div class="mission-meta">
-      <span class="mission-chip">Week: <strong data-progress="week-minutes">0</strong> min</span>
-      <span class="mission-chip" data-progress="level-label">Level 1</span>
+  <div class="home-kid-hero">
+    <picture>
+      <source srcset="./assets/illustrations/epic_mascot.png" type="image/png">
+      <img src="./assets/illustrations/epic_mascot.png" alt="Epic Red Panda coach" class="home-mascot" decoding="async"
+        loading="eager" width="1024" height="1024"
+        style="filter: drop-shadow(0 20px 40px rgba(0,255,255,0.4)); transform: scale(1.1) translateY(10px);">
+    </picture>
+    <div class="home-kid-welcome">
+      <h1 class="home-kid-title">Ready to play?</h1>
+      <p class="home-kid-streak">🔥 <span data-progress="home-streak">0</span> day streak!</p>
     </div>
   </div>
 
-  <div class="practice-flow-grid">
-    <section class="practice-flow-card glass">
-      <h3>Now</h3>
-      <div class="practice-flow-actions">
-        <button class="btn btn-primary" type="button" data-rt-start="">Start Listening</button>
-        <a class="btn btn-secondary" href="#view-tuner">Open Tuner</a>
-      </div>
-      <p class="practice-flow-status" data-rt-status="">Mic off</p>
-    </section>
-
-    <section class="practice-flow-card glass">
-      <h3>Next</h3>
-      <div class="practice-flow-actions">
-        <a class="btn btn-primary" href="#view-games">Open Games</a>
-        <a class="btn btn-secondary" href="#view-songs">Open Songs</a>
-      </div>
-    </section>
-
-    <section class="practice-flow-card glass">
-      <h3>Wins</h3>
-      <div class="practice-flow-actions">
-        <a class="btn btn-secondary" href="#view-progress">See Wins</a>
-      </div>
-    </section>
-  </div>
-
-  <div class="home-secondary-grid">
-    <a href="#view-games" class="feature-card feature-primary">
-      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path
-            d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z">
-          </path>
-        </svg></div>
-      <div class="feature-title">Quick Game</div>
-      <p class="feature-copy">One tap and play.</p>
+  <div class="home-giant-actions">
+    <a href="#view-coach" class="btn btn-primary btn-giant">
+      <span class="btn-giant-icon">🐼</span>
+      <span class="btn-giant-text">Practice Coach</span>
     </a>
 
-    <a href="#view-songs" class="feature-card feature-primary">
-      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"></path>
-        </svg></div>
-      <div class="feature-title">Song Time</div>
-      <p class="feature-copy">Continue your song.</p>
+    <a href="#view-games" class="btn btn-giant btn-game">
+      <span class="btn-giant-icon">🎮</span>
+      <span class="btn-giant-text">Play Games</span>
+    </a>
+
+    <a href="#view-songs" class="btn btn-giant btn-song">
+      <span class="btn-giant-icon">🎵</span>
+      <span class="btn-giant-text">Play Songs</span>
+    </a>
+
+    <a href="#view-tuner" class="btn btn-giant btn-tool">
+      <span class="btn-giant-icon">🎸</span>
+      <span class="btn-giant-text">Panda Tuner</span>
     </a>
   </div>
 
   <div class="home-utility-links glass" aria-label="App links">
     <a class="btn btn-ghost" href="#view-settings" data-home-utility="settings">Settings</a>
-    <a class="btn btn-ghost" href="#view-help" data-home-utility="help">Help</a>
-    <a class="btn btn-ghost" href="#view-privacy" data-home-utility="privacy">Privacy</a>
-    <a class="btn btn-ghost" href="#view-about" data-home-utility="about">About</a>
+    <a class="btn btn-ghost" href="#view-progress" data-home-utility="progress">Wins</a>
   </div>
 </section>

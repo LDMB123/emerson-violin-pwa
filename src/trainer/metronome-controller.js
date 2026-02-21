@@ -51,7 +51,17 @@ export const createMetronomeController = () => {
         return metronomePlayer;
     };
 
+    const playVisualMetronome = () => {
+        const mascot = document.querySelector('.trainer-mascot');
+        if (!mascot) return;
+        // Retrigger CSS animation
+        mascot.classList.remove('metronome-tick');
+        void mascot.offsetWidth; // trigger reflow
+        mascot.classList.add('metronome-tick');
+    };
+
     const playClick = () => {
+        playVisualMetronome();
         if (!isSoundEnabled()) return;
         getPlayer().scheduleTone(880, { duration: 0.08, volume: 0.18 });
     };
@@ -61,7 +71,7 @@ export const createMetronomeController = () => {
         metronomeReported = true;
         metronomeTouched = false;
         const accuracy = calculateMetronomeAccuracy(metronomeBpm, targetBpm);
-        updateGameResult('trainer-metronome', { accuracy, score: metronomeBpm }).catch(() => {});
+        updateGameResult('trainer-metronome', { accuracy, score: metronomeBpm }).catch(() => { });
     };
 
     const stop = ({ silent = false } = {}) => {

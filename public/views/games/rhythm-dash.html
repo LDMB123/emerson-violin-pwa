@@ -8,91 +8,78 @@
     <div class="game-score">Realtime Coach</div>
   </div>
   <div class="game-content" id="rhythm-dash-content">
-    <input type="checkbox" id="rhythm-run" class="state-checkbox rhythm-run-toggle" data-persist="false"
-      aria-label="Start Beat Runner">
-    <div class="rhythm-dash-stage">
-
-      <div class="rhythm-level-banner glass">
-        <h3 data-rhythm="level-display">Level 1</h3>
-        <span class="rhythm-bpm-display" data-rhythm="bpm-display">60 BPM</span>
-      </div>
-
-      <div class="rhythm-energy-container" aria-label="Energy Bar">
-        <div class="rhythm-energy-bar" data-rhythm="energy-bar" style="width: 100%;"></div>
-      </div>
-
-      <div class="rhythm-hud">
-        <div class="rhythm-scoreboard">
-          <div class="rhythm-score-block">
-            <span class="rhythm-score-label">Score</span>
-            <span class="rhythm-score-value" data-rhythm="score">0</span>
-          </div>
-          <div class="rhythm-score-block">
-            <span class="rhythm-score-label">Combo</span>
-            <span class="rhythm-score-value" data-rhythm="combo">x0</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="rhythm-lanes">
-        <div class="rhythm-lane lane-blue">
-          <span class="rhythm-note note-blue" style="--note-delay: 0s;"></span>
-          <span class="rhythm-note note-blue" style="--note-delay: 2s;"></span>
-        </div>
-        <div class="rhythm-lane lane-green">
-          <span class="rhythm-note note-green" style="--note-delay: 1s;"></span>
-          <span class="rhythm-note note-green" style="--note-delay: 3s;"></span>
-        </div>
-        <div class="rhythm-lane lane-yellow">
-          <span class="rhythm-note note-yellow" style="--note-delay: 1.5s;"></span>
-          <span class="rhythm-note note-yellow" style="--note-delay: 3.5s;"></span>
-        </div>
-        <div class="rhythm-lane lane-red">
-          <span class="rhythm-note note-red" style="--note-delay: 0.5s;"></span>
-          <span class="rhythm-note note-red" style="--note-delay: 2.5s;"></span>
-        </div>
-      </div>
-
-      <div class="rhythm-hit-zone">Hit Zone</div>
-
-      <div class="rhythm-controls">
-        <div class="toggle-ui">
-          <label for="rhythm-run" class="btn btn-primary btn-start">Start Run</label>
-          <label for="rhythm-run" class="btn btn-secondary btn-stop">Pause</label>
-        </div>
-        <div class="rhythm-live-actions">
-          <button class="btn btn-primary" type="button" data-rt-toggle data-rhythm="listen">Start Mic</button>
-        </div>
-        <div class="rhythm-rating" data-rhythm="rating">Timing: --</div>
-        <div class="rhythm-status" data-rhythm="status" aria-live="polite">Tap Start Run to begin the course.</div>
-      </div>
-    </div>
-    <div class="game-drill glass">
-      <p class="game-drill-intro">Survive the rhythm course! Energy drops if you miss.</p>
-      <div class="game-checklist-group" data-total="3">
-        <div class="game-progress" data-total="3">
-          <span class="game-progress-label">Levels Beaten</span>
-        </div>
-        <ol class="game-checklist">
-          <li class="game-check-item">
-            <input type="checkbox" id="rd-set-1">
-            <label for="rd-set-1"><span class="note-chip">Lvl 1</span> Survive Level 1 (60 BPM).</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="rd-set-2">
-            <label for="rd-set-2"><span class="note-chip">Lvl 2</span> Survive Level 2 (70 BPM).</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="rd-set-3">
-            <label for="rd-set-3"><span class="note-chip">Lvl 3</span> Survive Level 3 (80 BPM).</label>
-          </li>
-        </ol>
-      </div>
-    </div>
     <picture>
       <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
       <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-rhythm" loading="lazy"
         decoding="async">
     </picture>
+    <div class="game-right-col" style="display: flex; flex-direction: column; gap: var(--space-4);">
+      <input type="checkbox" id="rhythm-run" class="state-checkbox rhythm-run-toggle" data-persist="false"
+        aria-label="Start Beat Runner">
+      <div class="rhythm-dash-stage">
+
+        <div class="rhythm-level-banner glass">
+          <h3 data-rhythm="level-display">Level 1</h3>
+          <span class="rhythm-bpm-display" data-rhythm="bpm-display">60 BPM</span>
+        </div>
+
+        <div class="rhythm-energy-container" aria-label="Energy Bar">
+          <div class="rhythm-energy-bar" data-rhythm="energy-bar" style="width: 100%;"></div>
+        </div>
+
+        <div class="rhythm-hud">
+          <div class="rhythm-scoreboard">
+            <div class="rhythm-score-block">
+              <span class="rhythm-score-label">Score</span>
+              <span class="rhythm-score-value" data-rhythm="score">0</span>
+            </div>
+            <div class="rhythm-score-block">
+              <span class="rhythm-score-label">Combo</span>
+              <span class="rhythm-score-value" data-rhythm="combo">x0</span>
+            </div>
+          </div>
+        </div>
+
+        <canvas id="rhythm-canvas" width="800" height="600" class="rhythm-gpu-canvas"
+          aria-label="Rhythm Dash Canvas"></canvas>
+
+        <div class="rhythm-controls">
+          <div class="toggle-ui">
+            <label for="rhythm-run" class="btn btn-giant btn-primary btn-start"
+              style="flex: 1; align-items: center; justify-content: center;">START RUN</label>
+            <label for="rhythm-run" class="btn btn-giant btn-secondary btn-stop"
+              style="flex: 1; align-items: center; justify-content: center;">PAUSE</label>
+          </div>
+          <div class="rhythm-live-actions" style="margin-top: var(--space-2);">
+            <button class="btn btn-secondary" type="button" data-rt-toggle data-rhythm="listen"
+              style="width: 100%;">Toggle Mic</button>
+          </div>
+          <div class="rhythm-rating" data-rhythm="rating">Timing: --</div>
+          <div class="rhythm-status" data-rhythm="status" aria-live="polite">Tap Start Run to begin the course.</div>
+        </div>
+      </div>
+      <div class="game-drill glass">
+        <p class="game-drill-intro">Survive the rhythm course! Energy drops if you miss.</p>
+        <div class="game-checklist-group" data-total="3">
+          <div class="game-progress" data-total="3">
+            <span class="game-progress-label">Levels Beaten</span>
+          </div>
+          <ol class="game-checklist">
+            <li class="game-check-item">
+              <input type="checkbox" id="rd-set-1">
+              <label for="rd-set-1"><span class="note-chip">Lvl 1</span> Survive Level 1 (60 BPM).</label>
+            </li>
+            <li class="game-check-item">
+              <input type="checkbox" id="rd-set-2">
+              <label for="rd-set-2"><span class="note-chip">Lvl 2</span> Survive Level 2 (70 BPM).</label>
+            </li>
+            <li class="game-check-item">
+              <input type="checkbox" id="rd-set-3">
+              <label for="rd-set-3"><span class="note-chip">Lvl 3</span> Survive Level 3 (80 BPM).</label>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
