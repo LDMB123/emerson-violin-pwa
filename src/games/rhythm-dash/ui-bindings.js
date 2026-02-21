@@ -3,14 +3,6 @@ import { handleRhythmTapInput } from './helpers.js';
 
 export const bindRhythmDashUiControls = ({
     runToggle,
-    updateRunningState,
-    targetSlider,
-    updateTargetBpm,
-    bindTargetControls,
-    settingsReset,
-    getCoachTarget,
-    bindPauseButton,
-    pauseButton,
     settingsButton,
     setStatus,
     tapButton,
@@ -18,19 +10,6 @@ export const bindRhythmDashUiControls = ({
     suggestedEl,
     processBeat,
 }) => {
-    runToggle?.addEventListener('change', updateRunningState);
-    updateRunningState();
-    if (targetSlider) {
-        updateTargetBpm(targetSlider.value);
-    }
-
-    bindTargetControls({
-        settingsReset,
-        getCoachTarget,
-    });
-
-    bindPauseButton(pauseButton);
-
     settingsButton?.addEventListener('click', () => {
         setStatus('Tip: keep bows even and steady for cleaner rhythm.');
     });

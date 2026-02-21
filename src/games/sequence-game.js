@@ -65,7 +65,7 @@ import { createSequenceGameRuntime } from './sequence-game-runtime.js';
 import { createSequenceGameSessionHandlers } from './sequence-game-session.js';
 import { createSequenceGameViewRuntime } from './sequence-game-view-runtime.js';
 import { cleanupSequenceGameBinding } from './sequence-game-lifecycle.js';
-import { bindSequenceGameButtons } from './sequence-game-button-bindings.js';
+import { bindSequenceGameButtons, bindSequenceGameMicrophone } from './sequence-game-button-bindings.js';
 import { attachSequenceGameTuning } from './sequence-game-tuning.js';
 
 const NOTE_POOL = ['G', 'D', 'A', 'E'];
@@ -217,7 +217,39 @@ export function createSequenceGame(config) {
             },
         });
 
-        lifecycleCleanup = bindGameSessionLifecycle({
+        const cleanupMic = bindSequenceGameMicrophone({
+            hashId,
+            noteOptions,
+            playToneNote,
+            getRuntimeState: () => ({
+                sequence: runtime.sequence,
+                seqIndex: runtime.seqIndex,
+                combo: runtime.combo,
+                score: runtime.score,
+                misses: runtime.misses,
+            }),
+            baseScore,
+            comboMult,
+            missPenalty,
+            onCorrectHit,
+            callbackState,
+            completionChecklistId,
+            comboChecklistId,
+            comboTarget,
+            markChecklist,
+            markChecklistIf,
+            reportSession,
+            buildSequence,
+            playToneSequence,
+            seqOptions,
+            updateTargets,
+            updateScoreboard,
+            applyTapResult: (nextState) => {
+                runtimeApi.applyTapResult(nextState);
+            },
+        });
+
+        const baseSessionCleanup = bindGameSessionLifecycle({
             hashId,
             onReset: resetSession,
             onDeactivate: () => {
@@ -225,6 +257,11 @@ export function createSequenceGame(config) {
             },
             onReport: reportSession,
         });
+
+        lifecycleCleanup = () => {
+            cleanupMic();
+            baseSessionCleanup();
+        };
     };
 
     return { update, bind };

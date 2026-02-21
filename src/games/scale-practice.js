@@ -7,6 +7,7 @@ import {
     playToneNote,
     stopTonePlayer,
 } from './shared.js';
+import { RT_STATE } from '../utils/event-names.js';
 import { deviationAccuracy } from '../utils/math.js';
 import { computeScalePracticeTapResult } from './scale-practice-tap.js';
 import { applyScalePracticeTempoUpdate } from './scale-practice-tempo.js';
@@ -34,7 +35,7 @@ const { bind } = createGame({
         if (scoreEl) scoreEl.textContent = '0';
         if (ratingEl) ratingEl.textContent = 'Timing: --';
     },
-    onBind: (stage, difficulty, { reportSession, gameState }) => {
+    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const slider = stage.querySelector('[data-scale="slider"]');
         const tempoEl = stage.querySelector('[data-scale="tempo"]');
         const statusEl = stage.querySelector('[data-scale="status"]');
@@ -85,7 +86,7 @@ const { bind } = createGame({
             reportSession();
         });
 
-        bindTap(tapButton, () => {
+        const triggerTap = () => {
             const now = performance.now();
             if (gameState.lastTap) {
                 const interval = now - gameState.lastTap;
@@ -106,15 +107,60 @@ const { bind } = createGame({
                 if (tapResult.markStep2) markChecklist('sp-step-2');
                 if (tapResult.markStep1) markChecklist('sp-step-1');
                 if (tapResult.markStep4) markChecklist('sp-step-4');
-                if (tapResult.noteAction) {
-                    playToneNote(tapResult.noteAction.note, tapResult.noteAction.options);
-                }
+                // Don't play synthesized note if triggered by mic
+                // Let the trigger determine if it should play sound
+
                 if (tapResult.shouldReport) {
                     reportSession();
                 }
             }
             gameState.lastTap = now;
+        };
+
+        bindTap(tapButton, () => {
+            // For manual taps, we do want to hear the synthesized note
+            const prevIndex = gameState.scaleIndex;
+            triggerTap();
+            if (gameState.scaleIndex !== prevIndex) {
+                const noteToPlay = scaleNotes[gameState.scaleIndex === 0 ? scaleNotes.length - 1 : gameState.scaleIndex - 1];
+                playToneNote(noteToPlay, { duration: 0.28, volume: 0.2, type: 'triangle' });
+            }
         });
+
+        let lastPlayedNote = null;
+
+        const onRealtimeState = (event) => {
+            if (window.location.hash !== '#view-game-scale-practice') return;
+            const tuning = event.detail?.lastFeature;
+            if (!tuning || event.detail?.paused) return;
+
+            const targetNote = scaleNotes[gameState.scaleIndex];
+            if (!targetNote) return;
+
+            const cents = Math.round(tuning.cents || 0);
+            const currentNote = tuning.note ? tuning.note.replace(/\d+$/, '') : null;
+
+            if (!currentNote || Math.abs(cents) >= 20 || currentNote !== targetNote) {
+                if (!currentNote) {
+                    lastPlayedNote = null;
+                }
+                return;
+            }
+
+            if (lastPlayedNote === currentNote) {
+                return; // Require them to stop playing before triggering the same note again (or if the target note changes to something else, it will reset because it won't match)
+            }
+
+            lastPlayedNote = currentNote;
+
+            triggerTap(); // They played the correct note on the violin!
+        };
+
+        document.addEventListener(RT_STATE, onRealtimeState);
+        registerCleanup(() => {
+            document.removeEventListener(RT_STATE, onRealtimeState);
+        });
+
         updateTempo();
     },
 });

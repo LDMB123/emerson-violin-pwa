@@ -54,6 +54,8 @@ const { bind } = createGame({
         if (gameState._updateStreak) gameState._updateStreak();
     },
     onBind: (stage, difficulty, { reportSession, resetSession, gameState, registerCleanup }) => {
+        const levelEl = stage.querySelector('[data-ear="level"]');
+        const livesEl = stage.querySelector('[data-ear="lives"]');
         const playButton = stage.querySelector('[data-ear="play"]');
         const questionEl = stage.querySelector('[data-ear="question"]');
         const streakEl = stage.querySelector('[data-ear="streak"]');
@@ -70,14 +72,6 @@ const { bind } = createGame({
             E: audioE,
         });
 
-        // difficulty.speed: visual feedback only for this game (audio files play at fixed speed)
-        // difficulty.complexity: narrows the note pool; complexity=1 (medium) = all 4 strings (current behavior)
-        const allTones = ['G', 'D', 'A', 'E'];
-        const tonePool = difficulty.complexity === 0
-            ? ['G', 'D']
-            : difficulty.complexity === 2
-                ? ['G', 'D', 'A', 'E']
-                : allTones;
         const checklistMap = {
             G: 'et-step-1',
             D: 'et-step-2',
@@ -92,9 +86,22 @@ const { bind } = createGame({
         gameState.correctStreak = 0;
         gameState.correctCount = 0;
         gameState.totalAnswered = 0;
+        gameState.lives = 3;
         gameState._rounds = rounds;
         gameState._dots = dots;
         gameState._choices = choices;
+
+        const getLevelForRound = (index) => {
+            if (index < 3) return 1; // Rounds 1-3: G, D
+            if (index < 6) return 2; // Rounds 4-6: G, D, A
+            return 3; // Rounds 7-10: G, D, A, E
+        };
+
+        const getTonePoolForLevel = (level) => {
+            if (level === 1) return ['G', 'D'];
+            if (level === 2) return ['G', 'D', 'A'];
+            return ['G', 'D', 'A', 'E'];
+        };
 
         const setActiveDot = () => {
             renderEarTrainerDots({
@@ -112,12 +119,19 @@ const { bind } = createGame({
             if (streakEl) streakEl.textContent = String(gameState.correctStreak);
         };
 
+        const updateStatsUI = () => {
+            if (levelEl) levelEl.textContent = `Level ${getLevelForRound(gameState.currentIndex)}`;
+            if (livesEl) livesEl.textContent = '❤️'.repeat(gameState.lives) + '🖤'.repeat(3 - gameState.lives);
+        };
+
         // Store helpers on gameState for onReset
         gameState._setActiveDot = setActiveDot;
         gameState._setQuestion = setQuestion;
         gameState._updateStreak = updateStreak;
+        gameState._updateStatsUI = updateStatsUI; // Needed if reset called externally
 
         setActiveDot();
+        updateStatsUI();
         setQuestion(`Question 1 of ${rounds}`);
 
         const updateSoundState = () => {
@@ -149,10 +163,14 @@ const { bind } = createGame({
                 setQuestion('Sounds are off. Turn on Sounds to play.');
                 return;
             }
-            if (gameState.currentIndex >= rounds) {
+            if (gameState.lives <= 0 || gameState.currentIndex >= rounds) {
                 resetSession();
+                gameState.lives = 3;
+                updateStatsUI();
                 setQuestion('New round! Listen and tap the matching note.');
             }
+            const currentLevel = getLevelForRound(gameState.currentIndex);
+            const tonePool = getTonePoolForLevel(currentLevel);
             gameState.currentTone = tonePool[Math.floor(Math.random() * tonePool.length)];
             cueBank.play(gameState.currentTone);
             const total = rounds || 10;
@@ -182,15 +200,26 @@ const { bind } = createGame({
                     playToneNote(selected, { duration: 0.22, volume: 0.18, type: 'triangle' });
                 } else {
                     gameState.correctStreak = 0;
+                    gameState.lives -= 1;
                     playToneNote('F', { duration: 0.18, volume: 0.14, type: 'sawtooth' });
                 }
                 gameState.currentTone = null;
+
+                if (gameState.lives <= 0) {
+                    setQuestion(`Game Over! Out of lives. Tap Play to try again.`);
+                    updateStatsUI();
+                    reportSession();
+                    return;
+                }
+
                 gameState.currentIndex = Math.min(gameState.currentIndex + 1, rounds);
                 clearEarTrainerChoices(choices);
                 setActiveDot();
+                updateStatsUI();
+
                 if (gameState.currentIndex >= rounds) {
                     markChecklist('et-step-6');
-                    setQuestion(`Great job! All ${rounds} rounds complete. Tap Play to restart.`);
+                    setQuestion(`Great job! All ${rounds} questions complete. Tap Play to restart.`);
                     reportSession();
                 } else {
                     setQuestion(`Question ${gameState.currentIndex + 1} of ${rounds}`);

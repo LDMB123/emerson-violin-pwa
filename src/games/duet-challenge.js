@@ -11,6 +11,7 @@ import {
     updateScoreCombo,
     bindSoundsChange,
 } from './shared.js';
+import { RT_STATE } from '../utils/event-names.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { playDuetPartnerSequence } from './duet-challenge-partner.js';
 import {
@@ -224,6 +225,87 @@ const { bind } = createGame({
                 }
                 updateScoreboard();
             });
+        });
+
+        let debounceStart = 0;
+        let lastPlayedNote = null;
+
+        const onRealtimeState = (event) => {
+            if (window.location.hash !== '#view-game-duet-challenge') return;
+            const tuning = event.detail?.lastFeature;
+            if (!tuning || event.detail?.paused) return;
+
+            if (!ensureDuetChallengeReadyForTap({
+                isPartnerPlaying: partnerPlayback.playing,
+                active,
+                setPrompt: () => { }, // Silent check
+            })) {
+                debounceStart = 0;
+                lastPlayedNote = null;
+                return;
+            }
+
+            const targetNote = sequence[seqIndex];
+            if (!targetNote) return;
+
+            const cents = Math.round(tuning.cents || 0);
+            const currentNote = tuning.note ? tuning.note.replace(/\d+$/, '') : null;
+
+            if (!currentNote || Math.abs(cents) >= 20 || currentNote !== targetNote) {
+                debounceStart = 0;
+                if (!currentNote) {
+                    lastPlayedNote = null;
+                }
+                return;
+            }
+
+            if (lastPlayedNote === currentNote) {
+                if (debounceStart === 0) {
+                    debounceStart = Date.now();
+                    return;
+                }
+                if (Date.now() - debounceStart < 300) {
+                    return;
+                }
+            }
+
+            lastPlayedNote = currentNote;
+            debounceStart = 0;
+
+            const turnResult = resolveDuetChallengeTapTurn({
+                note: targetNote,
+                sequence,
+                seqIndex,
+                combo,
+                score,
+                comboTarget,
+                round,
+                mistakes,
+            });
+            combo = turnResult.combo;
+            seqIndex = turnResult.seqIndex;
+            setPrompt(turnResult.prompt);
+            if (turnResult.matched) {
+                score = turnResult.score;
+                round = turnResult.round;
+                gameState.score = score;
+                if (turnResult.markStep2) markChecklist('dc-step-2');
+                if (turnResult.markStep3) markChecklist('dc-step-3');
+                if (turnResult.completedRound) {
+                    active = false;
+                    if (turnResult.markStep4) markChecklist('dc-step-4');
+                    playToneSequence(sequence, { tempo: 160, gap: 0.1, duration: 0.18, volume: 0.16, type: 'violin' });
+                    reportSession();
+                } else {
+                    playToneNote(targetNote, { duration: 0.2, volume: 0.18, type: 'triangle' });
+                }
+            }
+            updateScoreboard();
+        };
+
+        document.addEventListener(RT_STATE, onRealtimeState);
+        registerCleanup(() => {
+            document.removeEventListener(RT_STATE, onRealtimeState);
         });
 
         const soundsHandler = (event) => {
