@@ -40,6 +40,7 @@ npm run lint     # Run linter
 npm run lint:all # Lint src + scripts + tests
 npm run audit:deadcode # Unused file/export/dependency scan
 npm run audit:deps # Duplicate dependency scan with allowlist
+npm run audit:secrets # Secret/credential leak pattern scan across tracked files
 npm run audit:perf:config # Validate perf budget/workflow env consistency
 npm run audit:full # Full pre-handoff/pre-merge quality gate
 npm run handoff:status # Print branch/commit/env snapshot
@@ -75,6 +76,7 @@ npx playwright test tests/e2e
 - Idle module imports are staggered with `requestIdleCallback` fallback to reduce startup contention.
 - Sharing fallback logic is centralized via `tryShareFile()` in `src/utils/recording-export.js`.
 - Known transitive duplicate versions are intentionally allowlisted in `scripts/audit-dependency-duplicates.mjs`.
+- Secret leak pattern scanning is enforced by `scripts/audit-secrets.mjs`.
 - Perf budget workflow consistency is validated by `scripts/audit-performance-budget-config.mjs`.
 - CI quality guard is defined in `.github/workflows/quality.yml`.
 - Zero-context pickup runbook is in `docs/HANDOFF.md`.
