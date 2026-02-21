@@ -11,7 +11,7 @@ export const computeScalePracticeTapResult = ({
     const ideal = 60000 / targetTempo;
     const deviation = Math.abs(interval - ideal);
     const timingScore = clamp(1 - deviation / ideal, 0, 1);
-    const nextTimingScores = timingScores.concat(timingScore).slice(-8);
+    const nextTimingScores = timingScores.concat(timingScore).slice(-15);
 
     let label = 'Off';
     if (timingScore >= 0.9) label = 'Perfect';
@@ -51,6 +51,6 @@ export const computeScalePracticeTapResult = ({
         markStep1: timingScore >= 0.6,
         markStep2: timingScore >= 0.75,
         markStep4: timingScore >= 0.9,
-        shouldReport: nextTimingScores.length >= 4,
+        shouldReport: nextTimingScores.length >= 8,
     };
 };

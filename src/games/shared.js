@@ -140,7 +140,7 @@ const speakReaction = (message) => {
     }
 };
 
-const triggerMiniConfetti = (el) => {
+export const triggerMiniConfetti = (el) => {
     if (!el || document.hidden) return;
     if (document.documentElement.hasAttribute('data-reduced-motion')) return;
 

@@ -1,7 +1,7 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { PERSIST_APPLIED, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
-import { setDifficultyBadge } from '../games/shared.js';
+import { setDifficultyBadge, triggerMiniConfetti } from '../games/shared.js';
 import { shouldStopFocusTimer } from './focus-timer-utils.js';
 
 let focusToggle = null;
@@ -100,9 +100,17 @@ const finishSession = () => {
     logFocusMinutes(activeMinutes);
     if (recommendedMinutes) {
         const accuracy = Math.min(100, (activeMinutes / recommendedMinutes) * 100);
-        updateGameResult('coach-focus', { accuracy, score: activeMinutes }).catch(() => {});
+        updateGameResult('coach-focus', { accuracy, score: activeMinutes }).catch(() => { });
     }
     if (focusToggle) focusToggle.checked = false;
+
+    // Feature: Auto-Advance & Celebrate
+    const winsTab = document.querySelector('[data-coach-step-target="play"]');
+    if (winsTab) {
+        winsTab.click(); // Switch to the Wins tab
+    }
+    triggerMiniConfetti(); // Celebrate focus completion
+
     window.setTimeout(() => {
         isCompleting = false;
     }, 0);
