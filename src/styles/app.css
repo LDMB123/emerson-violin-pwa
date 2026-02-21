@@ -162,13 +162,20 @@
         --font-main: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
         --font-display: 'Fraunces', 'Nunito', serif;
 
-        --text-xs: clamp(0.75rem, 2vw, 0.875rem);
-        --text-sm: clamp(0.875rem, 2.5vw, 1rem);
-        --text-base: clamp(1rem, 3vw, 1.125rem);
-        --text-lg: clamp(1.125rem, 3.5vw, 1.25rem);
-        --text-xl: clamp(1.25rem, 4vw, 1.5rem);
-        --text-2xl: clamp(1.5rem, 5vw, 2rem);
-        --text-3xl: clamp(2rem, 6vw, 2.5rem);
+        --text-xs: clamp(0.875rem, 2vw, 1rem);
+        /* 14px -> 16px */
+        --text-sm: clamp(1rem, 2.5vw, 1.125rem);
+        /* 16px -> 18px */
+        --text-base: clamp(1.125rem, 3vw, 1.25rem);
+        /* 18px -> 20px */
+        --text-lg: clamp(1.25rem, 3.5vw, 1.5rem);
+        /* 20px -> 24px */
+        --text-xl: clamp(1.5rem, 4vw, 1.75rem);
+        /* 24px -> 28px */
+        --text-2xl: clamp(1.75rem, 5vw, 2.25rem);
+        /* 28px -> 36px */
+        --text-3xl: clamp(2.25rem, 6vw, 3rem);
+        /* 36px -> 48px */
 
         /* Typographic Rhythm */
         --leading-tight: 1.1;

@@ -1,6 +1,9 @@
 <section class="view" id="view-coach" aria-label="Practice Coach">
   <div class="view-header">
-    <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
+    <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>Back</a>
     <h2>Practice</h2>
   </div>
 
@@ -12,7 +15,8 @@
       <div class="coach-hero">
         <picture>
           <source srcset="./assets/illustrations/mascot-focus.webp" type="image/webp">
-          <img src="./assets/illustrations/mascot-focus.png" alt="Coach panda" class="coach-mascot" loading="lazy" decoding="async" width="1024" height="1024">
+          <img src="./assets/illustrations/mascot-focus.png" alt="Coach panda" class="coach-mascot" loading="lazy"
+            decoding="async" width="1024" height="1024">
         </picture>
         <div class="coach-bubble" data-progress="coach-speech" aria-live="polite">
           <span class="coach-bubble-text">Start your mission, then follow Now, Next, and Wins.</span>
@@ -50,44 +54,29 @@
 
     <section class="coach-step-card glass" data-coach-step-card="warmup" hidden>
       <h3>Next</h3>
-      <p>Pick your warm-up and move into one game.</p>
+      <p>Start your 10-minute focus timer!</p>
+
+      <picture class="timer-mascot-container" style="display: flex; justify-content: center; margin: 1rem 0;">
+        <img src="./assets/illustrations/mascot-timer.png" alt="Panda holding stopwatch" class="timer-mascot"
+          style="width: 150px; height: auto;" loading="lazy" decoding="async">
+      </picture>
+
       <div class="practice-focus glass">
         <input type="checkbox" id="focus-timer" class="state-checkbox focus-toggle" aria-label="Toggle focus timer">
-        <input type="checkbox" id="goal-step-focus-5" class="state-checkbox focus-log" data-minutes="5" data-persist="false" aria-hidden="true" tabindex="-1" hidden>
-        <input type="checkbox" id="goal-step-focus-10" class="state-checkbox focus-log" data-minutes="10" data-persist="false" aria-hidden="true" tabindex="-1" hidden>
-        <input type="checkbox" id="goal-step-focus-15" class="state-checkbox focus-log" data-minutes="15" data-persist="false" aria-hidden="true" tabindex="-1" hidden>
+        <!-- Default hidden log state for 10 min -->
+        <input type="checkbox" id="goal-step-focus-10" class="state-checkbox focus-log" data-minutes="10"
+          data-persist="true" aria-hidden="true" tabindex="-1" checked hidden>
 
-        <fieldset class="focus-presets">
-          <legend class="sr-only">Focus duration</legend>
-          <label class="focus-chip">
-            <input type="radio" name="focus-duration" id="focus-5" checked>
-            <span>5 min</span>
-          </label>
-          <label class="focus-chip">
-            <input type="radio" name="focus-duration" id="focus-10">
-            <span>10 min</span>
-          </label>
-          <label class="focus-chip">
-            <input type="radio" name="focus-duration" id="focus-15">
-            <span>15 min</span>
-          </label>
-        </fieldset>
-
-        <div class="focus-ring">
+        <div class="focus-ring" style="margin-top: 0;">
           <div class="focus-meta" aria-hidden="false">
-            <span class="focus-duration">Choose a timer and tap Start.</span>
-            <span class="focus-status" aria-live="polite">Tap Start to begin</span>
+            <span class="focus-status" aria-live="polite">Tap Start</span>
           </div>
         </div>
         <div class="focus-controls">
-          <label for="focus-timer" class="btn btn-primary btn-start">Start</label>
+          <label for="focus-timer" class="btn btn-primary btn-start">Start Timer</label>
           <label for="focus-timer" class="btn btn-secondary btn-stop">Stop</label>
         </div>
       </div>
-      <details class="coach-tips">
-        <summary>Show tips</summary>
-        <p>Keep your shoulders soft and let the bow move in a straight lane.</p>
-      </details>
     </section>
 
     <section class="coach-step-card glass" data-coach-step-card="play" hidden>
@@ -122,24 +111,24 @@
         <h3>Checklist</h3>
         <ol class="game-checklist goal-checklist" data-goal-list>
           <li class="game-check-item" data-goal-item="warmup">
-            <input type="checkbox" id="goal-warmup" data-minutes="3">
-            <label for="goal-warmup"><span class="note-chip" data-goal-chip>3 min</span> <span data-goal-label>Warm-up open strings</span></label>
+            <input type="checkbox" id="goal-warmup">
+            <label for="goal-warmup"><span data-goal-label>Play open strings</span></label>
           </li>
           <li class="game-check-item" data-goal-item="scale">
-            <input type="checkbox" id="goal-scale" data-minutes="4">
-            <label for="goal-scale"><span class="note-chip" data-goal-chip>4 min</span> <span data-goal-label>Slow scale focus</span></label>
+            <input type="checkbox" id="goal-scale">
+            <label for="goal-scale"><span data-goal-label>Play one slow scale</span></label>
           </li>
           <li class="game-check-item" data-goal-item="rhythm">
-            <input type="checkbox" id="goal-rhythm" data-minutes="3">
-            <label for="goal-rhythm"><span class="note-chip" data-goal-chip>3 min</span> <span data-goal-label>Metronome rhythm drill</span></label>
+            <input type="checkbox" id="goal-rhythm">
+            <label for="goal-rhythm"><span data-goal-label>Listen to the steady beat</span></label>
           </li>
           <li class="game-check-item" data-goal-item="ear">
-            <input type="checkbox" id="goal-ear" data-minutes="2">
-            <label for="goal-ear"><span class="note-chip" data-goal-chip>2 min</span> <span data-goal-label>Match pitches by ear</span></label>
+            <input type="checkbox" id="goal-ear">
+            <label for="goal-ear"><span data-goal-label>Match notes by ear</span></label>
           </li>
           <li class="game-check-item" data-goal-item="song">
-            <input type="checkbox" id="goal-song" data-minutes="3">
-            <label for="goal-song"><span class="note-chip" data-goal-chip>3 min</span> <span data-goal-label>Play one song slowly</span></label>
+            <input type="checkbox" id="goal-song">
+            <label for="goal-song"><span data-goal-label>Perform a song</span></label>
           </li>
         </ol>
       </div>
