@@ -163,7 +163,7 @@ const loadSampleBufferForRoot = async (state, ctx, root) => {
 export const isSamplerType = (type = DEFAULT_TIMBRE) => !['square', 'sawtooth'].includes(type);
 
 export const createSynthVoice = ({ state, ctx, frequency, options = {}, ensureOutputNode }) => {
-    const now = ctx.currentTime;
+    const now = options.startTime !== undefined ? options.startTime : ctx.currentTime;
     const safeDuration = Math.max(0.1, options.duration ?? 0.45);
     const safeVolume = clamp(options.volume ?? 0.18, 0.04, 0.55);
     const timbreKey = TIMBRE_PARTIALS[options.type] ? options.type : DEFAULT_TIMBRE;
@@ -236,8 +236,10 @@ export const createSynthVoice = ({ state, ctx, frequency, options = {}, ensureOu
         cleanup();
     };
 
+    const startDelayMs = Math.max(0, (now - ctx.currentTime) * 1000);
+
     return {
-        waitMs: (safeDuration + 0.08) * 1000,
+        waitMs: startDelayMs + (safeDuration + 0.08) * 1000,
         stop,
         cleanup,
     };
@@ -249,7 +251,7 @@ export const createSampleVoice = async ({ state, ctx, frequency, options = {}, e
     const buffer = await loadSampleBufferForRoot(state, ctx, root);
     if (!buffer) return null;
 
-    const now = ctx.currentTime;
+    const now = options.startTime !== undefined ? options.startTime : ctx.currentTime;
     const safeDuration = Math.max(0.1, options.duration ?? 0.45);
     const safeVolume = clamp(options.volume ?? 0.22, 0.04, 0.6);
     const {
@@ -295,8 +297,9 @@ export const createSampleVoice = async ({ state, ctx, frequency, options = {}, e
     };
     source.onended = cleanup;
 
+    const startDelayMs = Math.max(0, (now - ctx.currentTime) * 1000);
     return {
-        waitMs: (safeDuration + 0.08) * 1000,
+        waitMs: startDelayMs + (safeDuration + 0.08) * 1000,
         stop: () => {
             safeStop(source);
             cleanup();

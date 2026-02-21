@@ -6,7 +6,12 @@
     .game-view {
         min-height: 100dvh;
         background: var(--game-bg, var(--color-bg));
-        position: relative;
+        position: fixed !important;
+        inset: 0;
+        z-index: 9999 !important;
+        /* Force true full screen */
+        transform: translateZ(1000px);
+        /* Hardware acceleration over Safari shell layers */
         overflow: hidden;
     }
 
@@ -954,6 +959,29 @@
         display: block;
         font-size: var(--text-lg);
         color: #ff7b7b;
+    }
+
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.05);
+        /* very subtle white */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-2xl);
+        padding: var(--space-4);
+        position: absolute;
+        /* float over canvas */
+        bottom: max(var(--space-6), env(safe-area-inset-bottom, var(--space-4)));
+        /* dynamic safe area inset */
+        left: 50%;
+        transform: translateX(-50%);
+        /* perfectly centered */
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        color: var(--color-text);
+        z-index: 100;
+        width: min(calc(100vw - var(--space-6)), 400px) !important;
+        pointer-events: auto;
+        /* Ensure controls are clickable */
     }
 
     .bamboo-container {

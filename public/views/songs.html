@@ -1,23 +1,20 @@
 <section class="view" id="view-songs" aria-label="Song Library">
-  <div class="view-header">
+  <div class="view-header" style="position: relative; overflow: visible;">
     <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M15 18l-6-6 6-6" />
       </svg>Back</a>
-    <h2>Songs</h2>
+    <h2 style="flex: 1; text-align: left; padding-left: 1rem;">Songs</h2>
+    <img
+      src="file:///Users/louisherman/.gemini/antigravity/brain/a4f6c440-ff1f-4ed5-a876-fa400d270f49/song_player_mascot_1771648448513.png"
+      alt="Maestro Panda Mascot"
+      style="position: absolute; right: 0; top: -20px; width: 120px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); z-index: 10;">
   </div>
 
-  <a class="songs-continue-card glass" href="#view-song-twinkle" data-continue-last-song>
-    <span class="songs-continue-label">Continue last song</span>
-    <strong class="songs-continue-title" data-continue-last-song-title>Twinkle Twinkle Little Star</strong>
+  <a class="songs-continue-card glass btn btn-primary btn-giant" href="#view-song-twinkle" data-continue-last-song>
+    <span class="btn-giant-icon">▶️</span>
+    <span class="btn-giant-text">PLAY LAST SONG</span>
   </a>
-
-  <div class="songs-search glass">
-    <label class="sr-only" for="songs-search-input">Search songs</label>
-    <input id="songs-search-input" type="search" class="songs-search-input" placeholder="Search song name"
-      aria-label="Search songs" data-song-search inputmode="search" enterkeyhint="search" autocapitalize="off"
-      autocorrect="off" autocomplete="off" spellcheck="false">
-  </div>
 
   <div class="songs-filters glass" role="group" aria-label="Filter songs">
     <label class="filter-label">
@@ -39,57 +36,48 @@
     <a class="song-card glass" href="#view-song-open_strings" data-song="open_strings" data-level="easy">
       <div class="song-art">🎻</div>
       <div class="song-title">Open String Song</div>
-      <div class="song-subtitle">Start here</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <a class="song-card glass" href="#view-song-twinkle" data-song="twinkle" data-level="easy">
       <div class="song-art">⭐</div>
       <div class="song-title">Twinkle Twinkle Little Star</div>
-      <div class="song-subtitle">Best for warm-up</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <a class="song-card glass" href="#view-song-mary" data-song="mary" data-level="easy">
       <div class="song-art">🐑</div>
       <div class="song-title">Mary Had a Little Lamb</div>
-      <div class="song-subtitle">Easy notes</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <a class="song-card glass" href="#view-song-lightly_row" data-song="lightly_row" data-level="easy">
       <div class="song-art">🚣</div>
       <div class="song-title">Lightly Row</div>
-      <div class="song-subtitle">Smooth bows</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <a class="song-card glass" href="#view-song-go_tell_aunt_rhody" data-song="go_tell_aunt_rhody" data-level="easy">
       <div class="song-art">🎀</div>
       <div class="song-title">Go Tell Aunt Rhody</div>
-      <div class="song-subtitle">Easy rhythm</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <a class="song-card glass" href="#view-song-ode_to_joy" data-song="ode_to_joy" data-level="practice">
       <div class="song-art">🎉</div>
       <div class="song-title">Ode to Joy</div>
-      <div class="song-subtitle">Practice control</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <a class="song-card glass" href="#view-song-minuet_1" data-song="minuet_1" data-level="practice">
       <div class="song-art">🎼</div>
       <div class="song-title">Minuet 1</div>
-      <div class="song-subtitle">Steady beat</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <a class="song-card glass" href="#view-song-gavotte" data-song="gavotte" data-level="practice">
       <div class="song-art">🎻</div>
       <div class="song-title">Gavotte</div>
-      <div class="song-subtitle">Bow control</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <a class="song-card glass song-soft-lock" href="#view-song-perpetual_motion" data-song="perpetual_motion"
       data-level="challenge" aria-describedby="song-lock-perpetual">
       <div class="song-art">⚡</div>
       <div class="song-title">Perpetual Motion</div>
-      <div class="song-subtitle">Fast challenge</div>
-      <div class="song-lock-hint" id="song-lock-perpetual">Goal hint: 3 clean Practice songs first.</div>
+      <div class="song-lock-hint" id="song-lock-perpetual">Goal: 3 clean songs.</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <!-- SONGS_GRID_END -->

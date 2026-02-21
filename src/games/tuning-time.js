@@ -4,6 +4,7 @@ import { markChecklist, bindTap, readLiveNumber, bindSoundsChange, attachTuning 
 import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { RT_STATE } from '../utils/event-names.js';
+import { TuningCanvasEngine } from './tuning-canvas.js';
 import {
     formatTuningProgressMessage,
     setTuningStatusText,
@@ -61,12 +62,21 @@ const { bind } = createGame({
         const complexityTargets = [2, 3, 4];
         gameState.targetStrings = complexityTargets[difficulty.complexity] ?? 3;
         gameState.tunedNotes = new Set();
+        gameState.tuningEnergy = 0.0;
+
         // Store DOM refs so onReset can access them
         gameState._statusEl = statusEl;
-        gameState._progressEl = progressEl;
-        gameState._progressBar = progressBar;
+        gameState._progressEl = null; // Removed CSS bar
+        gameState._progressBar = null;
 
         const { targetStrings } = gameState;
+
+        const canvasEl = stage.querySelector('#pitch-quest-canvas');
+        let tuningEngine = null;
+        if (canvasEl) {
+            tuningEngine = new TuningCanvasEngine(canvasEl);
+            tuningEngine.start();
+        }
 
         if (statusEl && gameState.tunedNotes.size === 0) {
             setTuningStatusText(statusEl, `Tune ${targetStrings} strings to warm up.`);
@@ -89,6 +99,7 @@ const { bind } = createGame({
             if (tuningActive) tuningActive.dispose();
             tuningActive = null;
             gameState.activeTarget = null;
+            if (tuningEngine) tuningEngine.stop();
         };
 
         const checkWinState = () => {
@@ -120,71 +131,86 @@ const { bind } = createGame({
             const target = gameState.activeTarget;
             const cents = Math.round(tuning.cents || 0);
 
-            // Allow octaves or exact note matches
+            // Build continuous tuning physics
+            let matchesTarget = false;
             if (tuning.note && tuning.note.replace(/\d+$/, '') === target.replace(/\d+$/, '')) {
-                if (Math.abs(cents) < 15) {
-                    if (gameState.holdStart === 0) {
-                        gameState.holdStart = Date.now();
-                    } else if (Date.now() - gameState.holdStart > 1500) {
-                        // Success! Tuned for 1.5 seconds continuously within 15 cents
-                        gameState.tunedNotes.add(target);
-                        gameState.activeTarget = null;
-                        gameState.holdStart = 0;
-                        setTuningStatusText(statusEl, `Perfect! ${target} is tuned.`);
-                        markChecklist(checklistMap[target]);
+                matchesTarget = true;
+            }
 
-                        buttons.forEach((b) => {
-                            if (b.dataset.tuningNote === target) {
-                                b.classList.remove('is-active');
-                                b.classList.add('is-tuned');
-                                b.style.backgroundColor = 'var(--color-primary)';
-                                b.style.color = '#fff';
-                                b.style.transform = 'scale(1.0)';
-                            }
-                        });
+            if (tuningEngine) {
+                tuningEngine.updatePitch(cents, matchesTarget);
+            }
 
-                        cueBank.stopAll();
+            if (matchesTarget && Math.abs(cents) < 18) {
+                gameState.tuningEnergy += 0.012; // fill up fluidly
+                if (Math.abs(cents) < 5) gameState.tuningEnergy += 0.008; // fill faster near center
+            } else if (tuning.hasSignal) {
+                gameState.tuningEnergy -= 0.015; // Drain slowly
+            }
 
-                        if (!checkWinState()) {
-                            // Find the next untuned string in standard order (G, D, A, E)
-                            const order = ['G', 'D', 'A', 'E'];
-                            const nextTarget = order.find(n => !gameState.tunedNotes.has(n));
-                            if (nextTarget) {
-                                setTimeout(() => {
-                                    const nextBtn = buttons.find(b => b.dataset.tuningNote === nextTarget);
-                                    if (nextBtn) {
-                                        nextBtn.dispatchEvent(new Event('click'));
-                                    }
-                                }, 1000); // 1-second pause to celebrate before auto-advancing
-                            }
-                        }
-                    } else {
-                        setTuningStatusText(statusEl, `Hold it... (${Math.abs(cents)} cents)`);
-                        buttons.forEach((b) => {
-                            if (b.dataset.tuningNote === target) {
-                                b.style.transform = 'scale(1.1)';
-                            }
-                        });
-                    }
+            // Phase 14: Toggle Bioluminescent Mascot Class
+            const container = document.getElementById('view-game-tuning-time');
+            if (container) {
+                if (gameState.tuningEnergy > 0.8) {
+                    container.classList.add('in-tune');
                 } else {
-                    // Wrong pitch deviation but right note
-                    gameState.holdStart = 0;
-                    const direction = cents > 0 ? 'Too sharp' : 'Too flat';
-                    setTuningStatusText(statusEl, `${direction} (${cents} cents). Adjust your peg.`);
-                    buttons.forEach((b) => {
-                        if (b.dataset.tuningNote === target) {
-                            b.style.transform = 'scale(1.0)';
-                        }
-                    });
+                    container.classList.remove('in-tune');
                 }
-            } else if (tuning.note) {
-                gameState.holdStart = 0;
-                setTuningStatusText(statusEl, `Hearing ${tuning.note}. Play ${target} loudly!`);
+            }
+
+            // Clamp and render
+            gameState.tuningEnergy = clamp(gameState.tuningEnergy, 0, 1.0);
+            if (tuningEngine) tuningEngine.setEnergy(gameState.tuningEnergy);
+
+            if (gameState.tuningEnergy >= 0.99) {
+                // Success!
+                tuningEngine.spawnSparkles(100);
+                gameState.tunedNotes.add(target);
+                gameState.activeTarget = null;
+                gameState.tuningEnergy = 0;
+                if (tuningEngine) {
+                    tuningEngine.setTarget(null);
+                    tuningEngine.setEnergy(0);
+                }
+
+                setTuningStatusText(statusEl, `Perfect! ${target} is tuned.`);
+                markChecklist(checklistMap[target]);
+
                 buttons.forEach((b) => {
                     if (b.dataset.tuningNote === target) {
+                        b.classList.remove('is-active');
+                        b.classList.add('is-tuned');
+                        b.style.backgroundColor = 'var(--color-primary)';
+                        b.style.color = '#fff';
                         b.style.transform = 'scale(1.0)';
                     }
                 });
+
+                cueBank.stopAll();
+
+                if (!checkWinState()) {
+                    // Find the next untuned string in standard order (G, D, A, E)
+                    const order = ['G', 'D', 'A', 'E'];
+                    const nextTarget = order.find(n => !gameState.tunedNotes.has(n));
+                    if (nextTarget) {
+                        setTimeout(() => {
+                            const nextBtn = buttons.find(b => b.dataset.tuningNote === nextTarget);
+                            if (nextBtn) {
+                                nextBtn.dispatchEvent(new Event('click'));
+                            }
+                        }, 1000); // 1-second pause to celebrate before auto-advancing
+                    }
+                }
+            } else if (matchesTarget) {
+                // Not done, but close
+                const direction = cents > 0 ? 'Too sharp' : 'Too flat';
+                if (Math.abs(cents) > 18) {
+                    setTuningStatusText(statusEl, `${direction} (${cents} cents). Adjust peg.`);
+                } else {
+                    setTuningStatusText(statusEl, `Hold it...`);
+                }
+            } else if (tuning.note && tuning.hasSignal) {
+                setTuningStatusText(statusEl, `Hearing ${tuning.note}. Play ${target} loudly!`);
             }
         };
 
@@ -205,6 +231,11 @@ const { bind } = createGame({
 
                 gameState.activeTarget = note;
                 gameState.holdStart = 0;
+
+                if (tuningEngine) {
+                    tuningEngine.setTarget(note);
+                    tuningEngine.setEnergy(0);
+                }
 
                 buttons.forEach(b => {
                     b.classList.remove('is-active');

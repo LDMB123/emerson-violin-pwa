@@ -1,89 +1,128 @@
-<section class="view" id="view-tuner" aria-label="Tuner">
-        <div class="view-header">
-          <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
-          <h2>Tuner</h2>
-        </div>
+<section class="view game-view" id="view-tuner" aria-label="Tuner">
+  <div class="view-header">
+    <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>Back</a>
+    <h2>Tuner</h2>
+  </div>
 
-        <div class="tuner-layout">
-          <div class="tuner-card glass" id="tuner-live">
-            <picture>
-              <source srcset="./assets/illustrations/mascot-encourage.webp" type="image/webp">
-              <img src="./assets/illustrations/mascot-encourage.png" alt="Panda tuning" class="tuner-card-mascot" loading="lazy" decoding="async" width="1024" height="1024">
-            </picture>
-            <div class="tuner-card-header">
-              <div class="tuner-note-pill">
-                <div class="tuner-note" id="tuner-note">--</div>
-                <div class="tuner-frequency" id="tuner-frequency">0 Hz</div>
-              </div>
-              <span class="rt-listening-chip" data-rt-indicator>Mic off</span>
-            </div>
-            <div class="tuner-meter" aria-hidden="true">
-              <svg class="tuner-arc" viewBox="0 0 200 120" width="200" height="120">
-                <!-- Color-coded zone arcs: red → yellow → green → yellow → red -->
-                <path class="tuner-zone tuner-zone--red-l" d="M20,110 A90,90 0 0,1 47,37" fill="none" stroke-width="12" stroke-linecap="round"/>
-                <path class="tuner-zone tuner-zone--yellow-l" d="M47,37 A90,90 0 0,1 80,16" fill="none" stroke-width="12" stroke-linecap="round"/>
-                <path class="tuner-zone tuner-zone--green" d="M80,16 A90,90 0 0,1 120,16" fill="none" stroke-width="12" stroke-linecap="round"/>
-                <path class="tuner-zone tuner-zone--yellow-r" d="M120,16 A90,90 0 0,1 153,37" fill="none" stroke-width="12" stroke-linecap="round"/>
-                <path class="tuner-zone tuner-zone--red-r" d="M153,37 A90,90 0 0,1 180,110" fill="none" stroke-width="12" stroke-linecap="round"/>
-                <!-- Center tick mark -->
-                <line x1="100" y1="8" x2="100" y2="18" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round"/>
-                <!-- Needle -->
-                <line class="tuner-needle" x1="100" y1="110" x2="100" y2="22" stroke-width="3" stroke-linecap="round"/>
-                <!-- Center pivot -->
-                <circle cx="100" cy="110" r="6" class="tuner-pivot"/>
-              </svg>
-            </div>
-            <div class="tuner-cents" id="tuner-cents">±0 cents</div>
-            <div class="tuner-live-status" id="tuner-status" aria-live="polite">Tap Start Listening.</div>
-            <div class="tuner-note-buttons">
-              <button class="tuner-note-btn" type="button" data-tone="G">G</button>
-              <button class="tuner-note-btn" type="button" data-tone="D">D</button>
-              <button class="tuner-note-btn" type="button" data-tone="A">A</button>
-              <button class="tuner-note-btn" type="button" data-tone="E">E</button>
-            </div>
-            <div class="tuner-controls">
-              <button class="btn btn-primary tuner-start-big" id="tuner-start" data-rt-toggle type="button">Start Listening</button>
-              <button class="btn btn-secondary" id="tuner-stop" data-rt-stop type="button" disabled="">Stop</button>
-            </div>
-          </div>
-
-          <details class="tuner-reference glass">
-            <summary>Reference Tones</summary>
-            <p>Tap to hear each open string. Stop listening before playing a reference tone.</p>
-            <div class="reference-grid">
-              <div class="audio-card" data-string="G">
-                <span class="audio-label" id="ref-g3-label">G3</span>
-                <button class="tone-play-btn" type="button" aria-label="Play G3 reference tone" data-ref-tone="G">
-                  <svg class="tone-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                  <svg class="tone-stop-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-                </button>
-                <audio preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="ref-g3-label" data-tone-audio="G" hidden></audio>
-              </div>
-              <div class="audio-card" data-string="D">
-                <span class="audio-label" id="ref-d4-label">D4</span>
-                <button class="tone-play-btn" type="button" aria-label="Play D4 reference tone" data-ref-tone="D">
-                  <svg class="tone-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                  <svg class="tone-stop-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-                </button>
-                <audio preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="ref-d4-label" data-tone-audio="D" hidden></audio>
-              </div>
-              <div class="audio-card" data-string="A">
-                <span class="audio-label" id="ref-a4-label">A4</span>
-                <button class="tone-play-btn" type="button" aria-label="Play A4 reference tone" data-ref-tone="A">
-                  <svg class="tone-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                  <svg class="tone-stop-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-                </button>
-                <audio preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="ref-a4-label" data-tone-audio="A" hidden></audio>
-              </div>
-              <div class="audio-card" data-string="E">
-                <span class="audio-label" id="ref-e5-label">E5</span>
-                <button class="tone-play-btn" type="button" aria-label="Play E5 reference tone" data-ref-tone="E">
-                  <svg class="tone-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                  <svg class="tone-stop-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-                </button>
-                <audio preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="ref-e5-label" data-tone-audio="E" hidden></audio>
-              </div>
-            </div>
-          </details>
+  <div class="tuner-layout">
+    <div class="tuner-card glass" id="tuner-live">
+      <picture>
+        <source srcset="./assets/illustrations/epic_mascot_listening.png" type="image/png">
+        <img src="./assets/illustrations/epic_mascot_listening.png" alt="Panda tuning" class="tuner-card-mascot"
+          loading="lazy" decoding="async" width="1024" height="1024">
+      </picture>
+      <div class="tuner-card-header">
+        <div class="tuner-note-pill">
+          <div class="tuner-note" id="tuner-note">--</div>
+          <div class="tuner-frequency" id="tuner-frequency">0 Hz</div>
         </div>
-      </section>
+        <span class="rt-listening-chip" data-rt-indicator>Mic off</span>
+      </div>
+      <div class="tuner-meter" aria-hidden="true">
+        <svg class="tuner-arc" viewBox="0 0 200 120" width="200" height="120">
+          <!-- Color-coded zone arcs: red → yellow → green → yellow → red -->
+          <path class="tuner-zone tuner-zone--red-l" d="M20,110 A90,90 0 0,1 47,37" fill="none" stroke-width="12"
+            stroke-linecap="round" />
+          <path class="tuner-zone tuner-zone--yellow-l" d="M47,37 A90,90 0 0,1 80,16" fill="none" stroke-width="12"
+            stroke-linecap="round" />
+          <path class="tuner-zone tuner-zone--green" d="M80,16 A90,90 0 0,1 120,16" fill="none" stroke-width="12"
+            stroke-linecap="round" />
+          <path class="tuner-zone tuner-zone--yellow-r" d="M120,16 A90,90 0 0,1 153,37" fill="none" stroke-width="12"
+            stroke-linecap="round" />
+          <path class="tuner-zone tuner-zone--red-r" d="M153,37 A90,90 0 0,1 180,110" fill="none" stroke-width="12"
+            stroke-linecap="round" />
+          <!-- Center tick mark -->
+          <line x1="100" y1="8" x2="100" y2="18" stroke="rgba(255,255,255,0.5)" stroke-width="2"
+            stroke-linecap="round" />
+          <!-- Needle -->
+          <line class="tuner-needle" x1="100" y1="110" x2="100" y2="22" stroke-width="3" stroke-linecap="round" />
+          <!-- Center pivot -->
+          <circle cx="100" cy="110" r="6" class="tuner-pivot" />
+        </svg>
+      </div>
+      <div class="tuner-cents" id="tuner-cents">±0 cents</div>
+      <div class="tuner-live-status" id="tuner-status" aria-live="polite">Tap Start Listening.</div>
+      <div class="tuner-note-buttons">
+        <button class="tuner-note-btn" type="button" data-tone="G">G</button>
+        <button class="tuner-note-btn" type="button" data-tone="D">D</button>
+        <button class="tuner-note-btn" type="button" data-tone="A">A</button>
+        <button class="tuner-note-btn" type="button" data-tone="E">E</button>
+      </div>
+      <div class="tuner-controls">
+        <button class="btn btn-primary tuner-start-big" id="tuner-start" data-rt-toggle type="button">Start
+          Listening</button>
+        <button class="btn btn-secondary" id="tuner-stop" data-rt-stop type="button" disabled="">Stop</button>
+      </div>
+    </div>
+
+    <details class="tuner-reference glass">
+      <summary>Reference Tones</summary>
+      <p>Tap to hear each open string. Stop listening before playing a reference tone.</p>
+      <div class="reference-grid">
+        <div class="audio-card" data-string="G">
+          <span class="audio-label" id="ref-g3-label">G3</span>
+          <button class="tone-play-btn" type="button" aria-label="Play G3 reference tone" data-ref-tone="G">
+            <svg class="tone-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"
+              aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <svg class="tone-stop-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"
+              aria-hidden="true">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+          <audio preload="none" src="./assets/audio/violin-g3.wav" aria-labelledby="ref-g3-label" data-tone-audio="G"
+            hidden></audio>
+        </div>
+        <div class="audio-card" data-string="D">
+          <span class="audio-label" id="ref-d4-label">D4</span>
+          <button class="tone-play-btn" type="button" aria-label="Play D4 reference tone" data-ref-tone="D">
+            <svg class="tone-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"
+              aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <svg class="tone-stop-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"
+              aria-hidden="true">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+          <audio preload="none" src="./assets/audio/violin-d4.wav" aria-labelledby="ref-d4-label" data-tone-audio="D"
+            hidden></audio>
+        </div>
+        <div class="audio-card" data-string="A">
+          <span class="audio-label" id="ref-a4-label">A4</span>
+          <button class="tone-play-btn" type="button" aria-label="Play A4 reference tone" data-ref-tone="A">
+            <svg class="tone-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"
+              aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <svg class="tone-stop-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"
+              aria-hidden="true">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+          <audio preload="none" src="./assets/audio/violin-a4.wav" aria-labelledby="ref-a4-label" data-tone-audio="A"
+            hidden></audio>
+        </div>
+        <div class="audio-card" data-string="E">
+          <span class="audio-label" id="ref-e5-label">E5</span>
+          <button class="tone-play-btn" type="button" aria-label="Play E5 reference tone" data-ref-tone="E">
+            <svg class="tone-play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"
+              aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <svg class="tone-stop-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"
+              aria-hidden="true">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+          <audio preload="none" src="./assets/audio/violin-e5.wav" aria-labelledby="ref-e5-label" data-tone-audio="E"
+            hidden></audio>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>

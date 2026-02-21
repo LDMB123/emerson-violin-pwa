@@ -8,93 +8,92 @@
     <div class="game-score">Realtime Coach</div>
   </div>
   <div class="game-content" id="pitch-quest-content">
-    <fieldset class="pitch-targets-group">
-      <legend class="sr-only">Select Level</legend>
-      <input type="radio" name="pitch-target" id="pitch-target-g" class="state-checkbox pitch-target-toggle"
-        data-persist="false">
-      <input type="radio" name="pitch-target" id="pitch-target-d" class="state-checkbox pitch-target-toggle"
-        data-persist="false">
-      <input type="radio" name="pitch-target" id="pitch-target-a" class="state-checkbox pitch-target-toggle"
-        data-persist="false" checked="">
-      <input type="radio" name="pitch-target" id="pitch-target-e" class="state-checkbox pitch-target-toggle"
-        data-persist="false">
-
-      <div class="pitch-targets">
-        <span class="pitch-target-label">Select Level</span>
-        <div class="pitch-target-options">
-          <label class="note-btn btn-level" for="pitch-target-g">Lvl 1 (G)</label>
-          <label class="note-btn btn-level" for="pitch-target-d">Lvl 2 (D)</label>
-          <label class="note-btn btn-level" for="pitch-target-a">Lvl 3 (A)</label>
-          <label class="note-btn btn-level" for="pitch-target-e">Lvl 4 (E)</label>
-        </div>
-        <div class="pitch-target-status" data-pitch="status" aria-live="polite">Level 3 (A) · Start Listening.</div>
-      </div>
-    </fieldset>
-
     <div class="pitch-quest-stage">
-      <div class="pitch-scoreboard">
-        <div class="pitch-score">Score <span data-pitch="score">0</span></div>
-        <div class="pitch-stars" data-pitch="stars">☆☆☆</div>
-        <div class="pitch-stability">Streak <span data-pitch="stability">0x</span></div>
+
+      <!-- HUD Top Layer -->
+      <div class="game-header">
+        <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>Exit</a>
+        <h2>Catch the Bamboo!</h2>
+        <div class="game-score">Realtime Coach</div>
       </div>
 
-      <div class="bamboo-container">
-        <div class="bamboo-stalk" data-pitch="bamboo-fill"></div>
-      </div>
+      <!-- Mascot Anchored -->
+      <picture>
+        <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
+        <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-pitch" loading="lazy"
+          decoding="async">
+      </picture>
 
-      <div class="pitch-gauge">
-        <div class="pitch-arc"></div>
-        <div class="pitch-note" data-pitch="target">
-          <span class="pitch-target pitch-target--g">G</span>
-          <span class="pitch-target pitch-target--d">D</span>
-          <span class="pitch-target pitch-target--a">A</span>
-          <span class="pitch-target pitch-target--e">E</span>
+      <!-- Full-Bleed Animated Bamboo Canvas -->
+      <div class="bamboo-container"
+        style="position: absolute; inset: 0; width: 100vw; height: 100dvh; display: flex; align-items: flex-end; justify-content: center; z-index: 0; pointer-events: none;">
+        <div class="bamboo-stalk" data-pitch="bamboo-fill"
+          style="width: min(8vw, 60px); max-height: 100%; border-radius: 40px 40px 0 0; box-shadow: 0 0 40px rgba(0,0,0,0.5);">
         </div>
-        <div class="pitch-needle" data-pitch="needle"></div>
       </div>
-    </div>
 
-    <div class="pitch-controls glass">
-      <div class="pitch-live-row">
-        <span class="pitch-readout" data-pitch="offset">0 cents</span>
-        <span class="pitch-readout" data-pitch="live-note">--</span>
-      </div>
-      <div class="pitch-actions">
-        <button class="btn btn-primary" type="button" data-rt-toggle data-pitch="listen">Start Listening</button>
-      </div>
-      <div class="pitch-feedback" data-pitch="feedback" aria-live="polite">Listening is off. Tap Start Listening.</div>
-    </div>
+      <!-- Floating Interaction Panel -->
+      <div class="glass-panel"
+        style="width: min(100%, 400px); text-align: center; display: flex; flex-direction: column; gap: var(--space-4);">
 
-    <div class="game-drill glass">
-      <p class="game-drill-intro">Help Panda catch the bamboo by playing in tune!</p>
-      <div class="game-checklist-group" data-total="4">
-        <div class="game-progress" data-total="4">
-          <span class="game-progress-label">Levels beaten</span>
+        <div class="pitch-scoreboard"
+          style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.2em; color: var(--color-text);">
+          <div class="pitch-score">Score <span data-pitch="score" style="color: var(--color-primary);">0</span></div>
+          <div class="pitch-stars" data-pitch="stars">☆☆☆</div>
+          <div class="pitch-stability">Streak <span data-pitch="stability">0x</span></div>
         </div>
-        <ol class="game-checklist">
-          <li class="game-check-item">
-            <input type="checkbox" id="pq-step-1">
-            <label for="pq-step-1"><span class="note-chip">Lvl 1</span> Catch G Bamboo</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="pq-step-2">
-            <label for="pq-step-2"><span class="note-chip">Lvl 2</span> Catch D Bamboo</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="pq-step-3">
-            <label for="pq-step-3"><span class="note-chip">Lvl 3</span> Catch A Bamboo</label>
-          </li>
-          <li class="game-check-item">
-            <input type="checkbox" id="pq-step-4">
-            <label for="pq-step-4"><span class="note-chip">Lvl 4</span> Catch E Bamboo</label>
-          </li>
-        </ol>
+
+        <fieldset class="pitch-targets-group"
+          style="padding: var(--space-2); border-radius: var(--radius-lg); background: rgba(0,0,0,0.05);">
+          <legend class="sr-only">Select Level</legend>
+          <input type="radio" name="pitch-target" id="pitch-target-g" class="state-checkbox pitch-target-toggle"
+            data-persist="false">
+          <input type="radio" name="pitch-target" id="pitch-target-d" class="state-checkbox pitch-target-toggle"
+            data-persist="false">
+          <input type="radio" name="pitch-target" id="pitch-target-a" class="state-checkbox pitch-target-toggle"
+            data-persist="false" checked="">
+          <input type="radio" name="pitch-target" id="pitch-target-e" class="state-checkbox pitch-target-toggle"
+            data-persist="false">
+
+          <div class="pitch-targets">
+            <span class="pitch-target-label">Select Level</span>
+            <div class="pitch-target-options" style="margin-top: 8px;">
+              <label class="note-btn btn-level" for="pitch-target-g">Lvl 1 (G)</label>
+              <label class="note-btn btn-level" for="pitch-target-d">Lvl 2 (D)</label>
+              <label class="note-btn btn-level" for="pitch-target-a">Lvl 3 (A)</label>
+              <label class="note-btn btn-level" for="pitch-target-e">Lvl 4 (E)</label>
+            </div>
+            <div class="pitch-target-status" data-pitch="status" aria-live="polite" style="margin-top: 8px;">Level 3 (A)
+              · Start Listening.</div>
+          </div>
+        </fieldset>
+
+        <div class="pitch-gauge" style="margin: 0 auto; transform: scale(0.9);">
+          <div class="pitch-arc"></div>
+          <div class="pitch-note" data-pitch="target">
+            <span class="pitch-target pitch-target--g">G</span>
+            <span class="pitch-target pitch-target--d">D</span>
+            <span class="pitch-target pitch-target--a">A</span>
+            <span class="pitch-target pitch-target--e">E</span>
+          </div>
+          <div class="pitch-needle" data-pitch="needle"></div>
+        </div>
+
+        <div class="pitch-actions">
+          <button class="btn btn-giant btn-primary" type="button" data-rt-toggle data-pitch="listen"
+            style="width: 100%;">START LISTENING</button>
+        </div>
+        <div class="pitch-live-row"
+          style="display: flex; justify-content: center; gap: var(--space-4); font-weight: 700; color: var(--color-text-muted);">
+          <span class="pitch-readout" data-pitch="live-note">--</span>
+          <span class="pitch-readout" data-pitch="offset">0 cents</span>
+        </div>
+        <div class="pitch-feedback" data-pitch="feedback" aria-live="polite" style="font-size: var(--text-sm);">
+          Listening is off. Tap Start Listening.</div>
       </div>
     </div>
-    <picture>
-      <source srcset="./assets/illustrations/mascot-happy.webp" type="image/webp">
-      <img src="./assets/illustrations/mascot-happy.png" alt="" class="game-mascot mascot-pitch" loading="lazy"
-        decoding="async">
-    </picture>
   </div>
 </section>
