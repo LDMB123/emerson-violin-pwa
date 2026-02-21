@@ -41,6 +41,7 @@ self.__ASSETS__ = [
   "./assets/illustrations/mascot-focus.webp",
   "./assets/illustrations/mascot-happy.png",
   "./assets/illustrations/mascot-happy.webp",
+  "./assets/illustrations/mascot-timer.png",
   "./index.html",
   "./manifest.webmanifest",
   "./offline.html",
