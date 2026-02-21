@@ -1,10 +1,14 @@
 <section class="view" id="view-games" aria-label="Games">
   <div class="view-header">
-    <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</a>
+    <a href="#view-home" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>Back</a>
     <h2>Games</h2>
     <div class="games-level">
       <span class="level-star" aria-hidden="true">★</span>
-      <div class="level-track" data-progress="games-level-track" role="progressbar" aria-label="Games level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="level-track" data-progress="games-level-track" role="progressbar" aria-label="Games level progress"
+        aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="level-fill" data-progress="games-level-fill" style="width: 20%"></div>
       </div>
       <span class="level-text" data-progress="games-level-label">Level 1</span>
@@ -35,19 +39,22 @@
   </div>
 
   <div class="games-grid">
-    <a href="#view-game-pitch-quest" class="game-card glass game-card-curated" data-game-id="pitch-quest" data-sort-tags="quick,favorites">
+    <a href="#view-game-pitch-quest" class="game-card glass game-card-curated" data-game-id="pitch-quest"
+      data-sort-tags="quick,favorites">
       <span class="game-badge">Panda Pick</span>
       <div class="game-title">Pitch Quest</div>
       <p class="game-subtitle">Match one note cleanly.</p>
       <span class="game-play-cta">Play</span>
     </a>
-    <a href="#view-game-rhythm-dash" class="game-card glass game-card-curated" data-game-id="rhythm-dash" data-sort-tags="quick,favorites">
+    <a href="#view-game-rhythm-dash" class="game-card glass game-card-curated" data-game-id="rhythm-dash"
+      data-sort-tags="quick,favorites">
       <span class="game-badge">Panda Pick</span>
       <div class="game-title">Rhythm Dash</div>
       <p class="game-subtitle">Lock in a steady beat.</p>
       <span class="game-play-cta">Play</span>
     </a>
-    <a href="#view-game-note-memory" class="game-card glass game-card-curated" data-game-id="note-memory" data-sort-tags="quick,new">
+    <a href="#view-game-note-memory" class="game-card glass game-card-curated" data-game-id="note-memory"
+      data-sort-tags="quick,new">
       <span class="game-badge">Panda Pick</span>
       <div class="game-title">Note Memory</div>
       <p class="game-subtitle">Remember the pattern.</p>
@@ -64,7 +71,8 @@
       <p class="game-subtitle">Tune all strings once.</p>
       <span class="game-play-cta">Play</span>
     </a>
-    <a href="#view-game-scale-practice" class="game-card glass" data-game-id="scale-practice" data-sort-tags="quick,new">
+    <a href="#view-game-scale-practice" class="game-card glass" data-game-id="scale-practice"
+      data-sort-tags="quick,new">
       <div class="game-title">Scale Practice</div>
       <p class="game-subtitle">Play clean scale steps.</p>
       <span class="game-play-cta">Play</span>
@@ -94,21 +102,31 @@
       <p class="game-subtitle">Pluck in steady rhythm.</p>
       <span class="game-play-cta">Play</span>
     </a>
-    <a href="#view-game-melody-maker" class="game-card glass" data-game-id="melody-maker" data-sort-tags="favorites,new">
+    <a href="#view-game-melody-maker" class="game-card glass" data-game-id="melody-maker"
+      data-sort-tags="favorites,new">
       <div class="game-title">Melody Maker</div>
       <p class="game-subtitle">Compose and replay melodies.</p>
       <span class="game-play-cta">Play</span>
     </a>
-    <a href="#view-game-duet-challenge" class="game-card glass" data-game-id="duet-challenge" data-sort-tags="favorites,new">
+    <a href="#view-game-duet-challenge" class="game-card glass" data-game-id="duet-challenge"
+      data-sort-tags="favorites,new">
       <div class="game-title">Duet Challenge</div>
       <p class="game-subtitle">Stay in sync with a partner line.</p>
       <span class="game-play-cta">Play</span>
     </a>
   </div>
 
-  <p class="games-empty" data-games-empty role="status" aria-live="polite" hidden>
-    No games available yet.
-  </p>
+  <div class="games-empty glass" data-games-empty role="status" aria-live="polite" hidden>
+    <picture>
+      <source srcset="./assets/illustrations/mascot-sad.webp" type="image/webp">
+      <img src="./assets/illustrations/mascot-sad.png" alt="Sad panda coach" class="empty-state-mascot" loading="lazy"
+        decoding="async">
+    </picture>
+    <div class="empty-state-content">
+      <h3>Oh no, no games found!</h3>
+      <p>Try picking a different category above.</p>
+    </div>
+  </div>
 
   <picture>
     <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">

@@ -214,7 +214,7 @@ const { bind } = createGame({
                     if (turnResult.completedRound) {
                         active = false;
                         if (turnResult.markStep4) markChecklist('dc-step-4');
-                        playToneSequence(sequence, { tempo: 160, gap: 0.1, duration: 0.18, volume: 0.16, type: 'sine' });
+                        playToneSequence(sequence, { tempo: 160, gap: 0.1, duration: 0.18, volume: 0.16, type: 'violin' });
                         reportSession();
                     }
                 } else {

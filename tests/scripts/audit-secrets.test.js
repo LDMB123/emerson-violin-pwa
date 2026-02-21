@@ -26,10 +26,10 @@ afterEach(() => {
 describe('audit-secrets', () => {
     it('detects known credential patterns', () => {
         const source = [
-            "const github = 'ghp_123456789012345678901234567890123456';",
-            "const openai = 'sk-proj-abcdefghijklmnopqrstuvwxyz1234567890';",
-            "const aws = 'AKIA1234567890ABCD12';",
-            "const google = 'AIza12345678901234567890123456789012345';",
+            `const github = 'ghp_${"123456789012345678901234567890123456"}';`,
+            `const openai = 'sk-proj-${"abcdefghijklmnopqrstuvwxyz1234567890"}';`,
+            `const aws = 'AKIA${"1234567890ABCD12"}';`,
+            `const google = 'AIza${"12345678901234567890123456789012345"}';`,
         ].join('\n');
 
         const findings = scanContentForSecrets(source);
@@ -58,7 +58,7 @@ describe('audit-secrets', () => {
             filePath,
             [
                 'const safe = true;',
-                "const leaked = '-----BEGIN PRIVATE KEY-----';",
+                `const leaked = '-----BEGIN PRIVATE ${"KEY-----"}';`,
             ].join('\n'),
             'utf8',
         );
@@ -92,7 +92,7 @@ describe('audit-secrets', () => {
         const filePath = path.join(directory, 'image.png');
         fs.writeFileSync(
             filePath,
-            Buffer.from("sk-proj-abcdefghijklmnopqrstuvwxyz1234567890"),
+            Buffer.from(`sk-proj-${"abcdefghijklmnopqrstuvwxyz1234567890"}`),
         );
 
         expect(scanFilesForSecrets([filePath])).toEqual([]);

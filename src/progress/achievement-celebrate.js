@@ -11,15 +11,15 @@ const yayBtn = document.getElementById('achievement-yay');
 if (!dialog) throw new Error('[achievement-celebrate] dialog element not found');
 
 const FALLBACK_EMOJI = {
-    first_note:    '♪',
-    streak_7:      '🔥',
-    level_5:       '★',
-    practice_100:  '⏱',
+    first_note: '♪',
+    streak_7: '🔥',
+    level_5: '★',
+    practice_100: '⏱',
     pitch_perfect: '🎵',
     rhythm_master: '🥁',
-    bow_hero:      '🎻',
-    ear_training:  '👂',
-    all_games:     '🎮',
+    bow_hero: '🎻',
+    ear_training: '👂',
+    all_games: '🎮',
 };
 
 const canSpeak = () => isVoiceCoachEnabled();
@@ -57,6 +57,25 @@ const populate = ({ id, name, artSrc }) => {
         if (badgeFallback) {
             badgeFallback.textContent = emoji;
             badgeFallback.hidden = false;
+        }
+    }
+
+    // Dynamic Confetti
+    const confettiContainer = dialog.querySelector('.achievement-confetti');
+    if (confettiContainer) {
+        confettiContainer.innerHTML = '';
+        const colors = ['#E95639', '#F9A93F', '#4FB69E', '#FFF9F3', '#FFD166'];
+        const shapes = ['', 'circle', 'large', 'small'];
+        for (let i = 0; i < 45; i++) {
+            const span = document.createElement('span');
+            const shapeClass = shapes[Math.floor(Math.random() * shapes.length)];
+            span.className = `confetti-piece ${shapeClass}`;
+            span.style.left = `${Math.random() * 100}%`;
+            span.style.setProperty('--fall-delay', `${Math.random() * 0.4}s`);
+            span.style.setProperty('--fall-dur', `${0.8 + Math.random() * 1.5}s`);
+            span.style.setProperty('--fall-drift', `${(Math.random() - 0.5) * 100}px`);
+            span.style.background = colors[Math.floor(Math.random() * colors.length)];
+            confettiContainer.appendChild(span);
         }
     }
 };

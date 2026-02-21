@@ -13,7 +13,7 @@ const { update, bind } = createSequenceGame({
     comboMult: 3,
     missPenalty: 5,
     noteOptions: { duration: 0.28, volume: 0.22, type: 'triangle' },
-    seqOptions: { tempo: 140, gap: 0.1, duration: 0.2, volume: 0.14, type: 'sine' },
+    seqOptions: { tempo: 140, gap: 0.1, duration: 0.2, volume: 0.14, type: 'violin' },
     completionChecklistId: 'sq-step-3',
     comboChecklistId: 'sq-step-4',
     stepPrefix: 'sq',

@@ -128,7 +128,7 @@ export const createTonePlayer = () => {
             gap = 0.08,
             duration = 0.45,
             volume = 0.18,
-            type = 'sine',
+            type = 'violin',
         } = options;
         if (!Array.isArray(notes) || !notes.length) return false;
         const token = ++state.sequenceToken;

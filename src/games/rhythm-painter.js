@@ -125,7 +125,7 @@ const { bind } = createGame({
                 if (gameState.creativity >= gameState.creativityTarget) {
                     if (!gameState.flourishPlayed) {
                         gameState.flourishPlayed = true;
-                        playToneSequence(['G', 'D', 'A', 'E'], { tempo: flourishTempo, gap: 0.08, duration: 0.16, volume: 0.18, type: 'sine' });
+                        playToneSequence(['G', 'D', 'A', 'E'], { tempo: flourishTempo, gap: 0.08, duration: 0.16, volume: 0.18, type: 'violin' });
                     }
                     reportSession();
                 }

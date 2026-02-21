@@ -14,8 +14,24 @@
       "bpm": 60,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        },
+        {
+          "id": "full",
+          "label": "Full Song",
+          "start": 0,
+          "end": 16
+        }
       ],
       "prerequisites": []
     },
@@ -26,8 +42,24 @@
       "bpm": 80,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        },
+        {
+          "id": "full",
+          "label": "Full Song",
+          "start": 0,
+          "end": 12
+        }
       ],
       "prerequisites": []
     },
@@ -38,8 +70,24 @@
       "bpm": 74,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 5 },
-        { "id": "section-b", "label": "B", "start": 5, "end": 10 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 5
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 5,
+          "end": 10
+        },
+        {
+          "id": "full",
+          "label": "Full Song",
+          "start": 0,
+          "end": 10
+        }
       ],
       "prerequisites": []
     },
@@ -50,7 +98,18 @@
       "bpm": 78,
       "time": "4/4",
       "sections": [
-        { "id": "section-main", "label": "Main", "start": 0, "end": 12 }
+        {
+          "id": "section-main",
+          "label": "Main",
+          "start": 0,
+          "end": 12
+        },
+        {
+          "id": "full",
+          "label": "Full Song",
+          "start": 0,
+          "end": 12
+        }
       ],
       "prerequisites": []
     },
@@ -61,8 +120,24 @@
       "bpm": 76,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        },
+        {
+          "id": "full",
+          "label": "Full Song",
+          "start": 0,
+          "end": 12
+        }
       ],
       "prerequisites": []
     },
@@ -73,8 +148,18 @@
       "bpm": 72,
       "time": "3/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
       "prerequisites": []
     },
@@ -85,8 +170,18 @@
       "bpm": 82,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 7 },
-        { "id": "section-b", "label": "B", "start": 7, "end": 14 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 7
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 7,
+          "end": 14
+        }
       ],
       "prerequisites": []
     },
@@ -97,8 +192,18 @@
       "bpm": 84,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        }
       ],
       "prerequisites": []
     },
@@ -109,8 +214,18 @@
       "bpm": 70,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        }
       ],
       "prerequisites": []
     },
@@ -121,8 +236,18 @@
       "bpm": 68,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 5 },
-        { "id": "section-b", "label": "B", "start": 5, "end": 10 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 5
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 5,
+          "end": 10
+        }
       ],
       "prerequisites": []
     },
@@ -133,8 +258,18 @@
       "bpm": 66,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
       "prerequisites": []
     },
@@ -145,8 +280,18 @@
       "bpm": 88,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
       "prerequisites": []
     },
@@ -157,10 +302,22 @@
       "bpm": 92,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
-      "prerequisites": ["u-beg-03"]
+      "prerequisites": [
+        "u-beg-03"
+      ]
     },
     {
       "id": "minuet_1",
@@ -169,10 +326,22 @@
       "bpm": 96,
       "time": "3/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
-      "prerequisites": ["u-beg-04"]
+      "prerequisites": [
+        "u-beg-04"
+      ]
     },
     {
       "id": "gavotte",
@@ -181,10 +350,22 @@
       "bpm": 112,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        }
       ],
-      "prerequisites": ["u-int-01"]
+      "prerequisites": [
+        "u-int-01"
+      ]
     },
     {
       "id": "allegretto_lane",
@@ -193,10 +374,22 @@
       "bpm": 104,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
-      "prerequisites": ["u-int-01"]
+      "prerequisites": [
+        "u-int-01"
+      ]
     },
     {
       "id": "string_crossing_etude",
@@ -205,10 +398,22 @@
       "bpm": 102,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
-      "prerequisites": ["u-int-01"]
+      "prerequisites": [
+        "u-int-01"
+      ]
     },
     {
       "id": "rhythm_bridge",
@@ -217,10 +422,22 @@
       "bpm": 110,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 7 },
-        { "id": "section-b", "label": "B", "start": 7, "end": 14 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 7
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 7,
+          "end": 14
+        }
       ],
-      "prerequisites": ["u-int-01"]
+      "prerequisites": [
+        "u-int-01"
+      ]
     },
     {
       "id": "lyric_bowing",
@@ -229,10 +446,22 @@
       "bpm": 90,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
-      "prerequisites": ["u-int-02"]
+      "prerequisites": [
+        "u-int-02"
+      ]
     },
     {
       "id": "syncopation_study",
@@ -241,10 +470,22 @@
       "bpm": 116,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        }
       ],
-      "prerequisites": ["u-int-02"]
+      "prerequisites": [
+        "u-int-02"
+      ]
     },
     {
       "id": "scale_rondo",
@@ -253,10 +494,22 @@
       "bpm": 108,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
-      "prerequisites": ["u-int-02"]
+      "prerequisites": [
+        "u-int-02"
+      ]
     },
     {
       "id": "duet_line",
@@ -265,10 +518,22 @@
       "bpm": 114,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
-      "prerequisites": ["u-int-02"]
+      "prerequisites": [
+        "u-int-02"
+      ]
     },
     {
       "id": "clarity_etude",
@@ -277,10 +542,22 @@
       "bpm": 106,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
-      "prerequisites": ["u-int-03"]
+      "prerequisites": [
+        "u-int-03"
+      ]
     },
     {
       "id": "balanced_bows",
@@ -289,10 +566,22 @@
       "bpm": 98,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 8 },
-        { "id": "section-b", "label": "B", "start": 8, "end": 16 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
       ],
-      "prerequisites": ["u-int-03"]
+      "prerequisites": [
+        "u-int-03"
+      ]
     },
     {
       "id": "perpetual_motion",
@@ -301,11 +590,29 @@
       "bpm": 120,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 4 },
-        { "id": "section-b", "label": "B", "start": 4, "end": 8 },
-        { "id": "full", "label": "Full", "start": 0, "end": 8 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 4
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 4,
+          "end": 8
+        },
+        {
+          "id": "full",
+          "label": "Full",
+          "start": 0,
+          "end": 8
+        }
       ],
-      "prerequisites": ["u-int-03", "u-int-04"]
+      "prerequisites": [
+        "u-int-03",
+        "u-int-04"
+      ]
     },
     {
       "id": "spiccato_run",
@@ -314,10 +621,22 @@
       "bpm": 126,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        }
       ],
-      "prerequisites": ["u-int-04"]
+      "prerequisites": [
+        "u-int-04"
+      ]
     },
     {
       "id": "double_stop_sprint",
@@ -326,10 +645,22 @@
       "bpm": 122,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        }
       ],
-      "prerequisites": ["u-int-04"]
+      "prerequisites": [
+        "u-int-04"
+      ]
     },
     {
       "id": "flying_shift",
@@ -338,10 +669,22 @@
       "bpm": 128,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        }
       ],
-      "prerequisites": ["u-int-04"]
+      "prerequisites": [
+        "u-int-04"
+      ]
     },
     {
       "id": "festival_reel",
@@ -350,10 +693,22 @@
       "bpm": 132,
       "time": "2/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        }
       ],
-      "prerequisites": ["u-int-04"]
+      "prerequisites": [
+        "u-int-04"
+      ]
     },
     {
       "id": "virtuoso_loop",
@@ -362,10 +717,22 @@
       "bpm": 136,
       "time": "4/4",
       "sections": [
-        { "id": "section-a", "label": "A", "start": 0, "end": 6 },
-        { "id": "section-b", "label": "B", "start": 6, "end": 12 }
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 6
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 6,
+          "end": 12
+        }
       ],
-      "prerequisites": ["u-int-04"]
+      "prerequisites": [
+        "u-int-04"
+      ]
     }
   ]
 }
