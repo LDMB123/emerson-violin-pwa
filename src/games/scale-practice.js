@@ -34,6 +34,7 @@ const { bind } = createGame({
         const ratingEl = gameState._ratingEl;
         if (scoreEl) scoreEl.textContent = '0';
         if (ratingEl) ratingEl.textContent = 'Timing: --';
+        if (gameState._updateHighlight) gameState._updateHighlight();
     },
     onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const slider = stage.querySelector('[data-scale="slider"]');
@@ -42,8 +43,9 @@ const { bind } = createGame({
         const scoreEl = stage.querySelector('[data-scale="score"]');
         const tapButton = stage.querySelector('[data-scale="tap"]');
         const ratingEl = stage.querySelector('[data-scale="rating"]');
+        const noteEls = Array.from(stage.querySelectorAll('.scale-note'));
         const tempoTags = new Set();
-        const scaleNotes = ['G', 'A', 'B', 'C', 'D', 'E', 'F#', 'G'];
+        const scaleNotes = ['G', 'A', 'B', 'C', 'D', 'E', 'F#', 'G', 'F#', 'E', 'D', 'C', 'B', 'A', 'G'];
 
         // difficulty.speed: scales targetTempo; speed=1.0 keeps targetTempo=85 (current behavior)
         // difficulty.complexity: visual feedback only for this game (single scale, no content pool to select)
@@ -57,6 +59,13 @@ const { bind } = createGame({
         gameState.lastTap = 0;
         gameState.scaleIndex = 0;
         gameState.timingScores = [];
+
+        gameState._updateHighlight = () => {
+            const index = gameState.scaleIndex % scaleNotes.length;
+            noteEls.forEach((el, i) => {
+                el.classList.toggle('is-active', i === index);
+            });
+        };
 
         gameState._onDeactivate = () => {
             stopTonePlayer();
@@ -77,6 +86,7 @@ const { bind } = createGame({
         slider?.addEventListener('input', () => {
             if (slider) slider.dataset.userSet = 'true';
             gameState.scaleIndex = 0;
+            gameState._updateHighlight();
             updateTempo();
         });
         slider?.addEventListener('change', () => {
@@ -115,6 +125,7 @@ const { bind } = createGame({
                 }
             }
             gameState.lastTap = now;
+            gameState._updateHighlight();
         };
 
         bindTap(tapButton, () => {
@@ -162,6 +173,7 @@ const { bind } = createGame({
         });
 
         updateTempo();
+        gameState._updateHighlight();
     },
 });
 

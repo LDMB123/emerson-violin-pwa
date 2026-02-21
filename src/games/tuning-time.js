@@ -103,7 +103,9 @@ const { bind } = createGame({
                 if (tuningActive) tuningActive.dispose();
                 tuningActive = null;
                 reportSession();
+                return true;
             }
+            return false;
         };
 
         tuningActive = attachTuning('tuning-time', () => { });
@@ -137,11 +139,25 @@ const { bind } = createGame({
                                 b.classList.add('is-tuned');
                                 b.style.backgroundColor = 'var(--color-primary)';
                                 b.style.color = '#fff';
+                                b.style.transform = 'scale(1.0)';
                             }
                         });
 
                         cueBank.stopAll();
-                        checkWinState();
+
+                        if (!checkWinState()) {
+                            // Find the next untuned string in standard order (G, D, A, E)
+                            const order = ['G', 'D', 'A', 'E'];
+                            const nextTarget = order.find(n => !gameState.tunedNotes.has(n));
+                            if (nextTarget) {
+                                setTimeout(() => {
+                                    const nextBtn = buttons.find(b => b.dataset.tuningNote === nextTarget);
+                                    if (nextBtn) {
+                                        nextBtn.dispatchEvent(new Event('click'));
+                                    }
+                                }, 1000); // 1-second pause to celebrate before auto-advancing
+                            }
+                        }
                     } else {
                         setTuningStatusText(statusEl, `Hold it... (${Math.abs(cents)} cents)`);
                         buttons.forEach((b) => {

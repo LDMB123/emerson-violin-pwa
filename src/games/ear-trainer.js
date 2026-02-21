@@ -192,6 +192,7 @@ const { bind } = createGame({
                 }
                 gameState.totalAnswered += 1;
                 if (isCorrect) {
+                    gameState.incorrectGuesses = 0;
                     gameState.correctStreak += 1;
                     gameState.correctCount += 1;
                     const checklistId = checklistMap[selected];
@@ -200,9 +201,29 @@ const { bind } = createGame({
                     playToneNote(selected, { duration: 0.22, volume: 0.18, type: 'triangle' });
                 } else {
                     gameState.correctStreak = 0;
+                    gameState.incorrectGuesses = (gameState.incorrectGuesses || 0) + 1;
                     gameState.lives -= 1;
                     playToneNote('F', { duration: 0.18, volume: 0.14, type: 'sawtooth' });
                 }
+
+                if (!isCorrect && gameState.incorrectGuesses >= 2 && gameState.lives > 0) {
+                    // Feature: Note Detective Hints
+                    const correctChoice = choices.find(c => c.dataset.earNote === gameState.currentTone);
+                    if (correctChoice && correctChoice.nextElementSibling) {
+                        correctChoice.nextElementSibling.animate([
+                            { transform: 'scale(1)', backgroundColor: 'var(--color-surface)' },
+                            { transform: 'scale(1.1)', backgroundColor: 'var(--color-primary)' },
+                            { transform: 'scale(1)', backgroundColor: 'var(--color-surface)' }
+                        ], { duration: 800, iterations: 3 });
+                    }
+                    cueBank.play(gameState.currentTone);
+                    setQuestion(`Hint: It's the ${gameState.currentTone} string! Try again.`);
+                    clearEarTrainerChoices(choices);
+                    updateStatsUI();
+                    reportSession();
+                    return; // Do not clear currentTone or advance the round
+                }
+
                 gameState.currentTone = null;
 
                 if (gameState.lives <= 0) {

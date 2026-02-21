@@ -1,64 +1,75 @@
 <section class="view game-view game-scale-practice" id="view-game-scale-practice" aria-label="Game: Scale Practice">
-        <div class="game-header">
-          <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Exit</a>
-          <h2>Scale Practice</h2>
-          <div class="game-score">Guided Drill</div>
+  <div class="game-header">
+    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>Exit</a>
+    <h2>Scale Practice</h2>
+    <div class="game-score">Guided Drill</div>
+  </div>
+  <div class="game-content" id="scale-practice-content">
+    <div class="scale-practice-stage">
+      <div class="scale-hud">
+        <div class="scale-score">Score <span data-scale="score">0</span></div>
+        <div class="scale-tempo">Tempo <span data-scale="tempo">80 BPM</span></div>
+      </div>
+      <label class="scale-tempo-control">
+        <span>Set tempo</span>
+        <input type="range" min="60" max="120" value="80" data-scale="slider">
+      </label>
+      <div class="scale-status" data-scale="status" aria-live="polite">Set a tempo and play the scale.</div>
+      <div class="scale-tap-row">
+        <button class="btn btn-secondary scale-tap" type="button" data-scale="tap">Tap Beat</button>
+        <div class="scale-rating" data-scale="rating">Timing: --</div>
+      </div>
+      <div class="scale-notes">
+        <span class="scale-note">G</span>
+        <span class="scale-note">A</span>
+        <span class="scale-note">B</span>
+        <span class="scale-note">C</span>
+        <span class="scale-note">D</span>
+        <span class="scale-note">E</span>
+        <span class="scale-note">F#</span>
+        <span class="scale-note">G</span>
+        <span class="scale-note">F#</span>
+        <span class="scale-note">E</span>
+        <span class="scale-note">D</span>
+        <span class="scale-note">C</span>
+        <span class="scale-note">B</span>
+        <span class="scale-note">A</span>
+        <span class="scale-note">G</span>
+      </div>
+    </div>
+    <div class="game-drill glass">
+      <p class="game-drill-intro">Run the G major scale and track your focus.</p>
+      <div class="game-checklist-group" data-total="4">
+        <div class="game-progress" data-total="4">
+          <span class="game-progress-label">Scale sets</span>
         </div>
-        <div class="game-content" id="scale-practice-content">
-          <div class="scale-practice-stage">
-            <div class="scale-hud">
-              <div class="scale-score">Score <span data-scale="score">0</span></div>
-              <div class="scale-tempo">Tempo <span data-scale="tempo">80 BPM</span></div>
-            </div>
-            <label class="scale-tempo-control">
-              <span>Set tempo</span>
-              <input type="range" min="60" max="120" value="80" data-scale="slider">
-            </label>
-            <div class="scale-status" data-scale="status" aria-live="polite">Set a tempo and play the scale.</div>
-            <div class="scale-tap-row">
-              <button class="btn btn-secondary scale-tap" type="button" data-scale="tap">Tap Beat</button>
-              <div class="scale-rating" data-scale="rating">Timing: --</div>
-            </div>
-            <div class="scale-notes">
-              <span class="scale-note">G</span>
-              <span class="scale-note">A</span>
-              <span class="scale-note">B</span>
-              <span class="scale-note">C</span>
-              <span class="scale-note">D</span>
-              <span class="scale-note">E</span>
-              <span class="scale-note">F#</span>
-              <span class="scale-note">G</span>
-            </div>
-          </div>
-          <div class="game-drill glass">
-            <p class="game-drill-intro">Run the G major scale and track your focus.</p>
-            <div class="game-checklist-group" data-total="4">
-              <div class="game-progress" data-total="4">
-                <span class="game-progress-label">Scale sets</span>
-              </div>
-              <ol class="game-checklist">
-                <li class="game-check-item">
-                  <input type="checkbox" id="sp-step-1">
-                  <label for="sp-step-1"><span class="note-chip">Slow</span> Play the scale slowly.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="sp-step-2">
-                  <label for="sp-step-2"><span class="note-chip">Middle</span> Play at your target tempo.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="sp-step-3">
-                  <label for="sp-step-3"><span class="note-chip">Smooth</span> Keep bow changes smooth.</label>
-                </li>
-                <li class="game-check-item">
-                  <input type="checkbox" id="sp-step-4">
-                  <label for="sp-step-4"><span class="note-chip">Finish</span> Hold the final G with confidence.</label>
-                </li>
-              </ol>
-            </div>
-          </div>
-          <picture>
-            <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
-            <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-scale" loading="lazy" decoding="async">
-          </picture>
-        </div>
-      </section>
+        <ol class="game-checklist">
+          <li class="game-check-item">
+            <input type="checkbox" id="sp-step-1">
+            <label for="sp-step-1"><span class="note-chip">Slow</span> Play the scale slowly.</label>
+          </li>
+          <li class="game-check-item">
+            <input type="checkbox" id="sp-step-2">
+            <label for="sp-step-2"><span class="note-chip">Middle</span> Play at your target tempo.</label>
+          </li>
+          <li class="game-check-item">
+            <input type="checkbox" id="sp-step-3">
+            <label for="sp-step-3"><span class="note-chip">Smooth</span> Keep bow changes smooth.</label>
+          </li>
+          <li class="game-check-item">
+            <input type="checkbox" id="sp-step-4">
+            <label for="sp-step-4"><span class="note-chip">Finish</span> Hold the final G with confidence.</label>
+          </li>
+        </ol>
+      </div>
+    </div>
+    <picture>
+      <source srcset="./assets/illustrations/mascot-celebrate.webp" type="image/webp">
+      <img src="./assets/illustrations/mascot-celebrate.png" alt="" class="game-mascot mascot-scale" loading="lazy"
+        decoding="async">
+    </picture>
+  </div>
+</section>
