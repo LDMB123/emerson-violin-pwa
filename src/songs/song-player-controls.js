@@ -1,7 +1,7 @@
 import { SONG_SECTION_COMPLETED } from '../utils/event-names.js';
 import { getSongCheckpoint, saveSongCheckpoint } from './song-progression.js';
 import { parseViewSongId, sectionDuration, setStatus } from './song-player-view.js';
-import { attachTuning } from '../games/shared.js';
+import { attachTuning, playToneNote } from '../games/shared.js';
 import { RT_STATE } from '../utils/event-names.js';
 
 export const applyControlsToView = ({ view, controls, song, sections }) => {
@@ -10,6 +10,8 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     const tempoLabel = controls.querySelector('[data-song-tempo-label]');
     const loopToggle = controls.querySelector('[data-song-loop]');
     const waitToggle = controls.querySelector('[data-song-wait-for-me]');
+    const playMelodyToggle = controls.querySelector('[data-song-play-melody]');
+    const metronomeToggle = controls.querySelector('[data-song-metronome]');
     const saveButton = controls.querySelector('[data-song-save-checkpoint]');
     const resumeButton = controls.querySelector('[data-song-resume-checkpoint]');
     const playToggle = view.querySelector('.song-play-toggle');
@@ -24,7 +26,9 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     let currentNotePitch = null;
     let notesElements = [];
     let completedNotes = new Set();
+    let audioTriggers = new Set();
     let isWaiting = false;
+    let lastMetronomeBeat = -1;
 
     const parseNotes = () => {
         notesElements = Array.from(view.querySelectorAll('.song-note')).map((el) => {
@@ -110,6 +114,23 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             return;
         }
 
+        // Audio Trigger: Metronome
+        if (metronomeToggle?.checked) {
+            const beatInterval = 60 / tempo; // seconds per beat at the current playback tempo
+            // Find which beat we are currently in based on playbackElapsed
+            const currentBeat = Math.floor(playbackElapsed / beatInterval);
+            if (currentBeat > lastMetronomeBeat) {
+                lastMetronomeBeat = currentBeat;
+                // Play a woodblock/click sound. If it's the downbeat of a measure (beat 0), make it slightly different.
+                const isDownbeat = currentBeat % 4 === 0; // Assuming 4/4 for now
+                playToneNote(isDownbeat ? 'C6' : 'G5', {
+                    duration: 0.05,
+                    volume: isDownbeat ? 0.3 : 0.15,
+                    type: 'square'
+                });
+            }
+        }
+
         // Feature: Wait For Me Mode
         if (waitToggle?.checked) {
             // Find the current note we are on based on internal elapsed time
@@ -133,6 +154,26 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
                 isWaiting = false;
                 if (songSheet) songSheet.classList.remove('is-waiting');
             }
+        } else if (playMelodyToggle?.checked) {
+            // Feature: Play Melody (Audio Synchronization without waiting)
+            const unscaledElapsed = playbackElapsed / scale;
+
+            // Find notes that should be playing RIGHT NOW but haven't been triggered yet
+            const activeNotesToPlay = notesElements.filter((n) =>
+                !audioTriggers.has(n.el) && unscaledElapsed >= n.start && unscaledElapsed <= (n.start + n.duration)
+            );
+
+            activeNotesToPlay.forEach(n => {
+                audioTriggers.add(n.el);
+                if (n.pitch && n.pitch !== 'REST') {
+                    // Play the note for its specified duration, scaled by the tempo
+                    playToneNote(n.pitch, {
+                        duration: n.duration * scale,
+                        volume: 0.4,
+                        type: 'violin'
+                    });
+                }
+            });
         }
 
         raqId = requestAnimationFrame(updateLoop);
@@ -145,7 +186,9 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         lastAnimFrame = performance.now();
         playbackStartRealTime = Date.now();
         completedNotes.clear();
+        audioTriggers.clear();
         isWaiting = false;
+        lastMetronomeBeat = -1;
 
         if (songSheet) songSheet.classList.remove('is-waiting');
         parseNotes();

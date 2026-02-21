@@ -19,11 +19,20 @@ const songLibraryMocks = vi.hoisted(() => ({
 
 const progressionMocks = vi.hoisted(() => ({
     getSongCheckpoint: vi.fn(async () => null),
-    saveSongCheckpoint: vi.fn(async () => {}),
+    saveSongCheckpoint: vi.fn(async () => { }),
+}));
+
+const tonePlayerMocks = vi.hoisted(() => ({
+    createTonePlayer: vi.fn(() => ({
+        playNote: vi.fn(async () => true),
+        playSequence: vi.fn(async () => true),
+        stopAll: vi.fn(),
+    })),
 }));
 
 vi.mock('../../src/songs/song-library.js', () => songLibraryMocks);
 vi.mock('../../src/songs/song-progression.js', () => progressionMocks);
+vi.mock('../../src/audio/tone-player.js', () => tonePlayerMocks);
 
 import { initSongPlayer } from '../../src/songs/song-player.js';
 

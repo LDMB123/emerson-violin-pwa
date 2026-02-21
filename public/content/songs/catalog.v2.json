@@ -44,21 +44,27 @@
       "sections": [
         {
           "id": "section-a",
-          "label": "A",
+          "label": "A Section",
           "start": 0,
-          "end": 6
+          "end": 12
         },
         {
           "id": "section-b",
-          "label": "B",
-          "start": 6,
-          "end": 12
+          "label": "B Section",
+          "start": 12,
+          "end": 24
+        },
+        {
+          "id": "section-a2",
+          "label": "A (Return)",
+          "start": 24,
+          "end": 36
         },
         {
           "id": "full",
           "label": "Full Song",
           "start": 0,
-          "end": 12
+          "end": 36
         }
       ],
       "prerequisites": []
@@ -72,21 +78,21 @@
       "sections": [
         {
           "id": "section-a",
-          "label": "A",
+          "label": "A Section",
           "start": 0,
-          "end": 5
+          "end": 8
         },
         {
           "id": "section-b",
-          "label": "B",
-          "start": 5,
-          "end": 10
+          "label": "B Section",
+          "start": 8,
+          "end": 16
         },
         {
           "id": "full",
           "label": "Full Song",
           "start": 0,
-          "end": 10
+          "end": 16
         }
       ],
       "prerequisites": []
@@ -99,16 +105,28 @@
       "time": "4/4",
       "sections": [
         {
-          "id": "section-main",
-          "label": "Main",
+          "id": "section-a",
+          "label": "A Section",
           "start": 0,
-          "end": 12
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B Section",
+          "start": 8,
+          "end": 16
+        },
+        {
+          "id": "section-a2",
+          "label": "A (Return)",
+          "start": 16,
+          "end": 24
         },
         {
           "id": "full",
           "label": "Full Song",
           "start": 0,
-          "end": 12
+          "end": 24
         }
       ],
       "prerequisites": []
