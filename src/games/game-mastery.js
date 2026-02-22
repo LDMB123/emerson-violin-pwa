@@ -35,6 +35,13 @@ const tierFromDays = (entry, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
     return 'foundation';
 };
 
+export const getTierDays = (entry, tier) => {
+    if (!entry) return 0;
+    if (tier === 'gold' || tier === 'mastery') return entry.goldDays || 0;
+    if (tier === 'silver' || tier === 'core') return entry.silverDays || 0;
+    return entry.bronzeDays || 0;
+};
+
 export const loadGameMasteryState = async () => {
     const stored = await getJSON(GAME_MASTERY_KEY);
     return normalizeState(stored);

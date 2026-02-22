@@ -650,13 +650,11 @@
         from {
             opacity: 1;
             transform: perspective(800px) translateZ(0) rotateY(0deg) scale(1);
-            filter: blur(0);
         }
 
         to {
             opacity: 0;
             transform: perspective(800px) translateZ(-200px) rotateY(-15deg) scale(0.8);
-            filter: blur(10px);
         }
     }
 
@@ -664,13 +662,11 @@
         from {
             opacity: 0;
             transform: perspective(800px) translateZ(300px) rotateY(20deg) scale(1.5);
-            filter: blur(20px);
         }
 
         to {
             opacity: 1;
             transform: perspective(800px) translateZ(0) rotateY(0deg) scale(1);
-            filter: blur(0);
         }
     }
 
@@ -678,13 +674,11 @@
         from {
             opacity: 1;
             transform: perspective(800px) translateZ(0) rotateY(0deg) scale(1);
-            filter: blur(0);
         }
 
         to {
             opacity: 0;
             transform: perspective(800px) translateZ(-200px) rotateY(15deg) scale(0.8);
-            filter: blur(10px);
         }
     }
 
@@ -692,13 +686,11 @@
         from {
             opacity: 0;
             transform: perspective(800px) translateZ(300px) rotateY(-20deg) scale(1.5);
-            filter: blur(20px);
         }
 
         to {
             opacity: 1;
             transform: perspective(800px) translateZ(0) rotateY(0deg) scale(1);
-            filter: blur(0);
         }
     }
 
@@ -2038,13 +2030,15 @@
 /* Coach View */
 .coach-kid-layout {
     display: grid;
-    /* Phase 15: Edge-to-edge cinematic layout */
-    grid-template-columns: 1fr 1fr;
+    /* Phase 15: Responsive cinematic layout */
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     gap: var(--space-6);
     align-items: center;
-    width: 100vw;
-    margin-left: calc(-50vw + 50%);
-    padding: 0 var(--safe-max);
+    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-4);
 }
 
 .coach-hero-mascot {
@@ -2065,6 +2059,22 @@
     height: auto;
     object-fit: contain;
     filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
+}
+
+.coach-speech-bubble {
+    position: absolute;
+    bottom: -20px;
+    left: 10%;
+    right: 10%;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-xl);
+    text-align: center;
+    font-weight: 800;
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    color: var(--color-brand-brown);
+    box-shadow: 0 10px 20px rgba(88, 45, 28, 0.15);
+    z-index: 2;
+    animation: float 4s ease-in-out infinite;
 }
 
 .practice-focus {
@@ -2443,6 +2453,33 @@
     .coach-bubble {
         max-width: 260px;
     }
+}
+
+.song-card {
+    padding: var(--space-4);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    text-align: center;
+    color: var(--color-text);
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform var(--duration-normal) var(--ease-bounce),
+        box-shadow var(--duration-normal) var(--ease-out);
+    /* Phase 11 PhilharMagic Setup */
+    will-change: transform, box-shadow;
+    /* Hardware acceleration for Safari */
+    transform: translateZ(0);
 }
 
 @media (min-width: 560px) {
@@ -6724,20 +6761,21 @@
 
     /* Phase 9: Pediatric Home View */
     .home-kid-hero {
-        margin-top: calc(var(--safe-top) + 80px);
-        /* Phase 18 Fix: push down past fixed header */
+        margin-top: calc(var(--safe-top) + 20px);
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
-        gap: var(--space-4);
-        margin-bottom: var(--space-6);
+        gap: var(--space-2);
+        margin-bottom: var(--space-4);
         animation: slide-in-bottom 0.5s var(--ease-bounce) both;
     }
 
     .home-mascot {
-        width: 180px;
+        width: clamp(140px, 35vw, 200px);
         height: auto;
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
         filter: drop-shadow(0 12px 24px rgba(120, 60, 40, 0.25));
         animation: float-slow 4s ease-in-out infinite;
     }

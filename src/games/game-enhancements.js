@@ -1,5 +1,5 @@
 import { GAME_META, GAME_OBJECTIVE_TIERS } from './game-config.js';
-import { loadGameMasteryState } from './game-mastery.js';
+import { loadGameMasteryState, getTierDays } from './game-mastery.js';
 import { renderDifficultyPickers } from './difficulty-picker.js';
 import { GAME_MASTERY_UPDATED } from '../utils/event-names.js';
 import {
@@ -69,11 +69,7 @@ const applyMasteryPanelState = (view, gameId) => {
 
     const status = panel.querySelector('[data-game-mastery-status]');
     if (status) {
-        const days = masteryTier === 'gold'
-            ? entry?.goldDays || 0
-            : masteryTier === 'silver'
-                ? entry?.silverDays || 0
-                : entry?.bronzeDays || 0;
+        const days = getTierDays(entry, masteryTier);
         status.textContent = `Mastery tier: ${OBJECTIVE_LABELS[objectiveTier]} (${Math.min(3, days)}/3 days validated)`;
     }
 
@@ -128,6 +124,13 @@ const bindGameEnhancements = async () => {
             });
         }
 
+        const dismissButton = panel?.querySelector('[data-game-coach-dismiss]');
+        if (dismissButton) {
+            dismissButton.addEventListener('click', () => {
+                view.dataset.session = 'dismissed';
+            });
+        }
+
         resetButtons.forEach((button) => {
             button.addEventListener('click', () => {
                 session.reset();
@@ -176,7 +179,7 @@ const bindMasteryListener = () => {
 };
 
 const initGameEnhancements = () => {
-    const enhancePromise = bindGameEnhancements().catch(() => {});
+    const enhancePromise = bindGameEnhancements().catch(() => { });
     renderDifficultyPickers();
     bindMasteryListener();
     return enhancePromise;

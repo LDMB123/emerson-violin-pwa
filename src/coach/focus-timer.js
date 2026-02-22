@@ -66,7 +66,7 @@ const applyTuning = async () => {
     if (!focusArea.dataset.userSet) {
         selectMinutes(recommendedMinutes);
         setFocusDuration(recommendedMinutes);
-        if (statusEl) statusEl.textContent = `Suggested focus sprint: ${recommendedMinutes} minutes.`;
+        if (statusEl) statusEl.textContent = `Ready!`;
     }
 };
 

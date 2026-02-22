@@ -8,7 +8,7 @@ import {
 } from '../utils/event-names.js';
 import { getDifficulty } from './difficulty.js';
 import { DEFAULT_MASTERY_THRESHOLDS, GAME_META } from './game-config.js';
-import { loadGameMasteryState } from './game-mastery.js';
+import { loadGameMasteryState, getTierDays } from './game-mastery.js';
 
 const gameModules = {
     'view-game-pitch-quest': () => import('./pitch-quest.js'),
@@ -73,10 +73,7 @@ const objectiveProgressLabel = ({ entry, level, objectiveTotal }) => {
     }
 
     const distinctDays = DEFAULT_MASTERY_THRESHOLDS.distinctDays;
-    let dayProgress = 0;
-    if (level.objectiveTier === 'mastery') dayProgress = entry.goldDays || 0;
-    else if (level.objectiveTier === 'core') dayProgress = entry.silverDays || 0;
-    else dayProgress = entry.bronzeDays || 0;
+    const dayProgress = getTierDays(entry, level.objectiveTier);
 
     const objectiveProgress = Math.min(objectiveTotal, dayProgress);
     return `Objectives: ${objectiveProgress}/${objectiveTotal} • Validation: ${dayProgress}/${distinctDays} days`;
@@ -116,11 +113,7 @@ const renderGameMasteryCards = () => {
 
         if (badge) badge.textContent = level.badge;
 
-        const daysDone = tier === 'gold'
-            ? (entry?.goldDays || 0)
-            : tier === 'silver'
-                ? (entry?.silverDays || 0)
-                : (entry?.bronzeDays || 0);
+        const daysDone = getTierDays(entry, tier);
         if (days) {
             days.textContent = `${Math.min(DEFAULT_MASTERY_THRESHOLDS.distinctDays, daysDone)}/${DEFAULT_MASTERY_THRESHOLDS.distinctDays} days`;
         }
@@ -197,7 +190,7 @@ const handleChange = (event) => {
 const initMetrics = () => {
     const hash = window.location.hash.slice(1);
     loadGamesForView(hash);
-    refreshGameMastery().catch(() => {});
+    refreshGameMastery().catch(() => { });
 
     if (!initialized) {
         initialized = true;
@@ -215,18 +208,18 @@ export const init = initMetrics;
 
 document.addEventListener(PERSIST_APPLIED, () => {
     scheduleUpdateAll();
-    refreshGameMastery().catch(() => {});
+    refreshGameMastery().catch(() => { });
 });
 
 document.addEventListener(GAME_RECORDED, () => {
-    refreshGameMastery().catch(() => {});
+    refreshGameMastery().catch(() => { });
 });
 
 document.addEventListener(GAME_MASTERY_UPDATED, (event) => {
     const id = event?.detail?.id;
     const game = event?.detail?.mastery;
     if (!id || !game) {
-        refreshGameMastery().catch(() => {});
+        refreshGameMastery().catch(() => { });
         return;
     }
     const nextGames = {
