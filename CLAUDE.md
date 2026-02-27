@@ -69,7 +69,7 @@ npx playwright test tests/e2e
 - View visibility is controlled with `.view.is-active` (JS-applied on render)
 - Persistence is IndexedDB-first (`src/persistence/storage.js`) with localStorage fallback
 
-## Worktree Notes (2026-02-20)
+## Worktree Notes (2026-02-27)
 
 - E2E runs should account for onboarding-first behavior on fresh contexts.
 - Audio source rewriting now occurs after each view render in `showView()`.
@@ -80,6 +80,10 @@ npx playwright test tests/e2e
 - Perf budget workflow consistency is validated by `scripts/audit-performance-budget-config.mjs`.
 - CI quality guard is defined in `.github/workflows/quality.yml`.
 - Zero-context pickup runbook is in `docs/HANDOFF.md`.
+- Games use `src/games/canvas-engine-base.js` as shared base for canvas-driven games (Dynamic Dojo, Echo, Stir Soup, Wipers).
+- Song library expanded: 21 playable song sheets under `public/views/songs/`.
+- CSS dead code pass removed unused variables/classes; remaining CSS is auditable via `scripts/find-dead-css-vars.mjs`.
+- All game views use full-bleed immersive layout (no bottom-nav overlap).
 
 ## Report Writing Standards
 

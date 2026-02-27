@@ -13,472 +13,29 @@ npm run handoff:verify
 
 If both pass, you are at a known-good baseline.
 
-## What This Phase Completed
+## What Has Been Done
 
-- Stabilized lazy-view routing and onboarding-aware E2E behavior.
-- Added IndexedDB fallback to localStorage for JSON persistence paths.
-- Consolidated duplicated file share/download logic via `tryShareFile()` in `src/utils/recording-export.js`.
-- Completed bfcache restore blocker pass (2026-02-20, phase 30):
-  - Added shared persisted-pagehide helper in:
-    - `src/utils/lifecycle-utils.js`
-  - Applied bfcache-safe `pagehide` guards across non-game teardown paths in:
-    - `src/analysis/session-review.js`
-    - `src/coach/focus-timer.js`
-    - `src/parent/recordings.js`
-    - `src/platform/media-sound-controller.js`
-    - `src/realtime/session-lifecycle.js`
-    - `src/recordings/recordings.js`
-    - `src/songs/song-progress.js`
-    - `src/trainer/trainer-utils.js`
-  - Hardened parent adaptive controls listener binding against recycled DOM attributes:
-    - `src/ml/adaptive-ui.js`
-  - Added regression coverage for lifecycle helper and realtime pagehide behavior:
-    - `tests/lifecycle-utils.test.js`
-    - `tests/realtime/session-controller.test.js`
-- Completed extractor-flow decision pass (2026-02-20, phase 31):
-  - Retired `scripts/extract-views.js` from `predev` and `prebuild`.
-  - Added explicit home-view parity audit:
-    - `scripts/audit-view-sync.mjs`
-    - `tests/scripts/audit-view-sync.test.js`
-    - `package.json` (`audit:view-sync`)
-  - `audit:full` now enforces inline/route home view sync (`index.html#view-home` vs `public/views/home.html`).
-- Completed CI performance budget gate pass (2026-02-20, phase 32):
-  - Added production-preview performance budget audit:
-    - `scripts/audit-performance-budgets.mjs`
-    - `package.json` (`audit:perf`)
-    - emits run summary JSON: `artifacts/perf-budget-summary.json`
-  - Updated CI quality workflow to install Chromium + WebKit and run LCP/FCP budget checks:
-    - `.github/workflows/quality.yml`
-    - uploads `perf-budget-summary` artifact for threshold calibration history
-  - Budgets currently enforced in CI:
-    - FCP median <= `2500ms`
-    - LCP median <= `3500ms`
-  - Stabilized story-song interaction in group-C game E2E flow:
-    - `tests/e2e/games-all-functional.spec.js`
-- Completed non-game bfcache E2E coverage pass (2026-02-20, phase 33):
-  - Added persisted/unload pagehide behavior coverage for non-game recording surfaces:
-    - `tests/e2e/non-game-bfcache.spec.js`
-      - session review recordings
-      - parent recordings
-- Completed realtime bfcache WebKit E2E stabilization pass (2026-02-20, phase 34):
-  - Added persisted/unload pagehide behavior coverage for realtime session lifecycle:
-    - `tests/e2e/realtime-bfcache.spec.js`
-  - Added guarded E2E controller hooks (only when `window.__PANDA_E2E_HOOKS__ === true`):
-    - `src/realtime/session-ui.js`
-  - Added guarded E2E realtime-start simulation flag to bypass audio bootstrap in browser tests:
-    - `src/realtime/session-lifecycle.js`
-  - Realtime pagehide persisted/non-persisted behavior remains covered by unit tests:
-    - `tests/realtime/session-controller.test.js`
-- Completed perf-threshold calibration helper pass (2026-02-20, phase 35):
-  - Added summary aggregation + budget recommendation utility:
-    - `scripts/recommend-performance-budgets.mjs`
-    - `package.json` (`audit:perf:recommend`)
-  - Added regression coverage:
-    - `tests/scripts/recommend-performance-budgets.test.js`
-- Completed perf budget mode-toggle pass (2026-02-20, phase 36):
-  - Added report-only toggle support to performance budget audit:
-    - `scripts/audit-performance-budgets.mjs` (`PERF_BUDGET_REPORT_ONLY`)
-  - Set CI budget mode by event type:
-    - `.github/workflows/quality.yml`
-    - pull_request: `PERF_BUDGET_REPORT_ONLY=true` (non-blocking, baseline collection)
-    - push/main: `PERF_BUDGET_REPORT_ONLY=false` (blocking gate)
-  - Added helper regression coverage:
-    - `tests/scripts/audit-performance-budgets.test.js`
-- Completed CI perf recommendation artifact pass (2026-02-20, phase 38):
-  - Added per-run recommendation generation in CI:
-    - `.github/workflows/quality.yml`
-    - `Recommend performance budgets (informational)`
-    - outputs `artifacts/perf-budget-recommendation.json`
-  - Added artifact upload for recommendation output:
-    - artifact name: `perf-budget-recommendation`
-- Completed perf recommendation confidence pass (2026-02-20, phase 39):
-  - Added recommendation confidence metadata and low-sample warnings:
-    - `scripts/recommend-performance-budgets.mjs`
-  - Added coverage for confidence behavior:
-    - `tests/scripts/recommend-performance-budgets.test.js`
-- Completed perf rolling-baseline selection pass (2026-02-20, phase 40):
-  - Added recommendation input filtering for recent baseline windows:
-    - `scripts/recommend-performance-budgets.mjs`
-    - supports `PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS` and `PERF_BUDGET_RECOMMENDATION_MAX_RUNS`
-  - Recommendation output now includes selection metadata:
-    - loaded runs vs selected runs
-    - dropped run counts (out-of-window / missing timestamp)
-  - Added regression coverage for selection behavior:
-    - `tests/scripts/recommend-performance-budgets.test.js`
-- Completed perf threshold-health analytics pass (2026-02-20, phase 41):
-  - Added threshold pass/fail rate analysis to recommendation output:
-    - `scripts/recommend-performance-budgets.mjs`
-    - `thresholdHealth.current` and `thresholdHealth.recommended`
-  - Added current-threshold override support:
-    - `PERF_BUDGET_CURRENT_FCP_MS`
-    - `PERF_BUDGET_CURRENT_LCP_MS`
-    - wired in `.github/workflows/quality.yml` recommendation step for stable CI comparisons
-  - Added fallback inference of current thresholds from summary metadata when overrides are not provided.
-  - Added regression coverage for threshold inference + pass/fail rate computation:
-    - `tests/scripts/recommend-performance-budgets.test.js`
-- Completed perf PR gate recommendation pass (2026-02-20, phase 42):
-  - Added PR gate mode recommendation heuristic to recommendation output:
-    - `scripts/recommend-performance-budgets.mjs`
-    - `prGateRecommendation` with mode/reason/target failure rate
-  - Added recommendation target override:
-    - `PERF_BUDGET_RECOMMENDATION_PR_TARGET_FAILURE_PCT`
-  - Wired PR target failure rate env in CI recommendation step:
-    - `.github/workflows/quality.yml`
-  - Added regression coverage for PR gate recommendation behavior:
-    - `tests/scripts/recommend-performance-budgets.test.js`
-- Completed perf recommendation summary publishing pass (2026-02-20, phase 43):
-  - Added markdown recommendation summary renderer:
-    - `scripts/render-performance-recommendation-summary.mjs`
-    - npm script: `audit:perf:summary`
-  - CI now publishes recommendation summary to workflow job summary and artifact output:
-    - `.github/workflows/quality.yml`
-    - `artifacts/perf-budget-recommendation.md`
-  - Added regression coverage for summary rendering:
-    - `tests/scripts/render-performance-recommendation-summary.test.js`
-- Completed perf recommendation apply automation pass (2026-02-20, phase 44):
-  - Added workflow threshold apply helper:
-    - `scripts/apply-performance-recommendation.mjs`
-    - npm script: `audit:perf:apply`
-  - Added safety gate: low-confidence recommendations are blocked by default when applying.
-  - Supports dry runs with:
-    - `PERF_BUDGET_APPLY_DRY_RUN=true`
-  - Low-confidence override (use intentionally):
-    - `PERF_BUDGET_APPLY_ALLOW_LOW_CONFIDENCE=true`
-  - Added regression coverage for workflow budget replacement:
-    - `tests/scripts/apply-performance-recommendation.test.js`
-- Completed perf guardrail propagation pass (2026-02-20, phase 45):
-  - Added recommendation guardrails and suggested thresholds:
-    - `scripts/recommend-performance-budgets.mjs`
-    - emits `suggestedBudgets` + `guardrails` metadata
-    - supports `PERF_BUDGET_RECOMMENDATION_MAX_TIGHTEN_PCT` / `PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT`
-  - Apply helper now prefers `suggestedBudgets` (falls back to `recommendedBudgets`):
-    - `scripts/apply-performance-recommendation.mjs`
-  - Recommendation summary now renders guardrailed suggestion values and raw pre-guardrail values when adjusted:
-    - `scripts/render-performance-recommendation-summary.mjs`
-  - Wired guardrail env defaults in CI recommendation step:
-    - `.github/workflows/quality.yml`
-  - Added regression coverage for guardrails and suggested-budget propagation:
-    - `tests/scripts/recommend-performance-budgets.test.js`
-    - `tests/scripts/apply-performance-recommendation.test.js`
-    - `tests/scripts/render-performance-recommendation-summary.test.js`
-- Completed perf current-threshold sync pass (2026-02-20, phase 46):
-  - Apply helper now also updates recommendation baseline env keys when present:
-    - `PERF_BUDGET_CURRENT_FCP_MS`
-    - `PERF_BUDGET_CURRENT_LCP_MS`
-    - `scripts/apply-performance-recommendation.mjs`
-  - Added guard against partial current-threshold key drift:
-    - apply fails when only one `PERF_BUDGET_CURRENT_*` key exists.
-  - Added regression coverage:
-    - `tests/scripts/apply-performance-recommendation.test.js`
-- Completed perf budget-config audit pass (2026-02-20, phase 47):
-  - Added workflow config validator to catch threshold drift and invalid recommendation bounds:
-    - `scripts/audit-performance-budget-config.mjs`
-    - npm script: `audit:perf:config`
-  - `audit:full` now includes `audit:perf:config`, so `handoff:verify` blocks on config drift.
-  - Added regression coverage:
-    - `tests/scripts/audit-performance-budget-config.test.js`
-- Completed perf config strictness + CI gate pass (2026-02-20, phase 48):
-  - Apply helper now fails on ambiguous duplicate threshold keys:
-    - `scripts/apply-performance-recommendation.mjs`
-    - enforces exactly one `PERF_BUDGET_FCP_MS` / `PERF_BUDGET_LCP_MS`
-    - enforces at most one `PERF_BUDGET_CURRENT_*` pair
-  - Perf config audit now validates key occurrence counts and ordering constraints:
-    - `scripts/audit-performance-budget-config.mjs`
-    - detects missing/duplicate perf budget env keys
-    - validates `LCP >= FCP` for both current and enforced thresholds
-    - validates guardrail ordering (`MAX_LOOSEN_PCT >= MAX_TIGHTEN_PCT`)
-  - CI quality workflow now runs perf config audit explicitly:
-    - `.github/workflows/quality.yml`
-  - Added regression coverage:
-    - `tests/scripts/apply-performance-recommendation.test.js`
-    - `tests/scripts/audit-performance-budget-config.test.js`
-- Completed docs alignment pass (2026-02-20, phase 49):
-  - Updated repository-facing docs to match current quality gates and toolchain:
-    - `README.md`
-    - `CLAUDE.md`
-  - Refreshed current status/test counts and added perf-config audit visibility in command lists.
-  - Updated caveat text to reflect retired extraction flow and current `audit:view-sync` check.
-- Completed production hardening pass (2026-02-21, phase 50):
-  - Added deterministic tracked-file secret scanner and wired it into the local quality gate:
-    - `scripts/audit-secrets.mjs`
-    - `package.json` (`audit:secrets`, included in `audit:full`)
-  - Added regression coverage for secret scanner behavior:
-    - `tests/scripts/audit-secrets.test.js`
-  - Added CI security checks:
-    - `.github/workflows/quality.yml`
-    - `npm run audit:secrets`
-    - `npm audit --omit=dev --audit-level=high`
-  - Tightened document-level browser security policy:
-    - `index.html`
-    - CSP now adds `form-action 'self'` and `manifest-src 'self'`
-    - Added `referrer` and `Permissions-Policy` metas
-  - Updated docs to surface security gate additions:
-    - `README.md`
-    - `CLAUDE.md`
-- Completed realtime E2E flag hardening pass (2026-02-20, phase 37):
-  - Centralized realtime E2E flag guards with localhost-only enforcement:
-    - `src/realtime/session-test-flags.js`
-    - `src/realtime/session-ui.js`
-    - `src/realtime/session-lifecycle.js`
-  - Added guard regression coverage:
-    - `tests/realtime/session-test-flags.test.js`
-- Completed feature module completeness + song play-along pass (2026-02-19, phase 27):
-  - Added sharp-note support for song playback tones in:
-    - `src/audio/tone-player.js`
-  - Upgraded song play mode to play real note sequences with lifecycle-safe cleanup and auto-stop behavior in:
-    - `src/songs/song-progress.js`
-  - Expanded regression coverage for:
-    - `tests/tone-player.test.js`
-    - `tests/e2e/utility-and-song-details.spec.js`
-    - `tests/views/view-loader.test.js`
-    - `tests/e2e/runtime-health.spec.js`
-  - Added explicit feature module completeness gate:
-    - `scripts/audit-feature-modules.mjs`
-    - `package.json` (`audit:modules`)
-    - `audit:full` now includes `audit:modules`
-- Completed feature module completeness deeper pass (2026-02-19, phase 28):
-  - Added runtime smoke import coverage across all runtime + game modules:
-    - `tests/app/module-smoke-imports.test.js`
-  - Deepened feature module audit assertions in:
-    - `scripts/audit-feature-modules.mjs`
-    - validates real view-template inventory (`public/views/**`)
-    - validates runtime module reachability (view rules or eager/idle plan)
-    - validates no-`init` module activation contract via explicit allowlist + self-start signal
-    - validates game view/module/template consistency
-  - Removed prior smoke-test warning noise by providing required modal fixture for game-complete import path:
-    - `tests/app/module-smoke-imports.test.js`
-- Completed feature module completeness strict pass (2026-02-19, phase 29):
-  - Added per-module behavior contract coverage across runtime + game modules:
-    - `tests/app/module-behavior-contracts.test.js`
-  - Tightened module completeness audit with blocking zero-branch-signal checks:
-    - `scripts/audit-feature-modules.mjs`
-    - runtime/game modules with branch logic now fail audit if covered branches are `0`
-  - Stabilized story-song E2E status assertion against valid status variants:
-    - `tests/e2e/games-all-functional.spec.js`
-- Completed 10x simplification/optimization pass (2026-02-18, phase 2):
-  - Refactored app bootstrap module scheduling to declarative plans (`EAGER_MODULES`, `IDLE_MODULE_PLAN`) in `src/app.js`.
-  - Added retry-safe dynamic import handling (`loadModule` now clears failed cache entries so later attempts can recover).
-  - Added idle HTML prefetch for likely next views via `ViewLoader.prefetch()` to reduce route switch latency.
-  - Replaced branch-heavy `getModulesForView` with declarative rules + deduped/memoized output in `src/utils/app-utils.js`.
-  - Hardened sequence game lifecycle by removing stale `hashchange` listeners before rebind in `src/games/sequence-game.js`.
-  - Expanded tests for module rule behavior and view prefetch error handling.
-- Completed deeper architecture pass (2026-02-18, phase 3):
-  - Added shared module registry: `src/app/module-registry.js` now owns loader map, eager/idle plans, prefetch view IDs, and view→module resolution.
-  - `src/app.js` and `src/utils/app-utils.js` now consume the same registry source (eliminates drift between module keys and routing rules).
-  - Hardened `src/games/game-metrics.js` loading pipeline:
-    - promise-based game load cache
-    - retry on loader failure (failed load is removed from cache)
-    - deduped update handlers via `Set`
-    - generic game-view checkbox detection (removed brittle hardcoded ID-prefix regex)
-  - Added registry test coverage in `tests/app/module-registry.test.js`.
-  - Preserved static per-game import map in `game-metrics` intentionally so `knip` dead-code audit remains accurate (current toolchain does not reliably resolve `import.meta.glob` for this case).
-- Completed QA + effectiveness deep pass (2026-02-18, phase 4):
-  - Added critical coverage gate script: `scripts/assert-critical-coverage.mjs`.
-  - Added `qa:effectiveness` script (`npm run test:coverage` + critical threshold assertions).
-  - `audit:full` now enforces QA effectiveness gate before build.
-  - Expanded recommendations tests from a single smoke case to branch-heavy cache/refresh/fallback coverage:
-    - `tests/recommendations.test.js`
-  - Added onboarding coverage:
-    - `tests/onboarding/onboarding-check.test.js`
-    - `tests/onboarding/onboarding.test.js`
-  - Coverage reporters now include `json-summary` to support machine-validated thresholds.
-- Completed QA + effectiveness deeper pass (2026-02-18, phase 5):
-  - Added persistence edge-case coverage:
-    - `tests/persistence/storage.test.js`
-    - `tests/persistence/loaders.test.js`
-  - Added runtime health E2E guard for critical views:
-    - `tests/e2e/runtime-health.spec.js`
-  - Tightened critical coverage thresholds for:
-    - `src/ml/recommendations.js`
-    - `src/onboarding/onboarding.js`
-    - `src/persistence/loaders.js`
-    - `src/persistence/storage.js`
-    - `src/app/module-registry.js`
-  - Optimized runtime-health navigation checks to use in-app hash routing (faster and less reload churn than full `page.goto` per view).
-- Completed runtime resilience + dedupe pass (2026-02-18, phase 6):
-  - Hardened IndexedDB lifecycle in `src/persistence/storage.js`:
-    - retries DB open after transient `open` failure/block instead of permanently caching `null`
-    - clears cached DB handle on `onversionchange`
-    - added stronger transaction/request error handling in `idbOp`
-  - Eliminated duplicate recommendation recompute/write work in `src/ml/recommendations.js`:
-    - concurrent `refreshRecommendationsCache()` calls now share one in-flight promise
-  - Added/expanded tests:
-    - `tests/persistence/storage.test.js` now covers IndexedDB success-path + transient-open retry behavior
-    - `tests/recommendations.test.js` now verifies concurrent refresh deduplication
-- Completed navigation race-condition simplification pass (2026-02-18, phase 7):
-  - Added lightweight async render gate:
-    - `src/app/async-gate.js`
-  - Updated `src/app.js` view rendering flow:
-    - each `showView()` call gets a gate token
-    - stale async loads are ignored instead of overwriting newer navigation state
-    - stale load errors no longer surface spurious error UI
-  - Added unit coverage:
-    - `tests/app/async-gate.test.js`
-  - Regenerated service worker asset manifest:
-    - `public/sw-assets.js`
-- Completed game replay reset simplification pass (2026-02-18, phase 8):
-  - Removed timing-based history navigation hack from game completion flow:
-    - `src/games/game-complete.js`
-  - Added deterministic custom event for replay reset:
-    - `src/utils/event-names.js` (`GAME_PLAY_AGAIN`)
-  - Wired game engines to handle replay reset directly (no hash/history trick needed):
-    - `src/games/game-shell.js`
-    - `src/games/sequence-game.js`
-    - `src/games/rhythm-dash.js`
-  - Added focused unit coverage:
-    - `tests/games/game-complete.test.js`
-    - `tests/games/game-shell.test.js`
-- Completed tuning-listener lifecycle hardening pass (2026-02-18, phase 9):
-  - Added explicit disposal for tuning subscriptions:
-    - `src/games/shared.js` (`attachTuning().dispose()`)
-  - Prevented stale ML-reset listeners across potential rebind paths:
-    - `src/games/game-shell.js`
-    - `src/games/sequence-game.js`
-    - `src/games/rhythm-dash.js`
-  - Added regression coverage:
-    - `tests/games/shared.test.js`
-    - `tests/games/game-shell.test.js` (rebind disposal assertion)
-- Completed audio URL lifecycle hardening pass (2026-02-18, phase 10):
-  - Eliminated superseded blob URL leak risk in audio playback controller:
-    - `src/utils/audio-utils.js`
-  - `setUrl()` now revokes prior blob URLs when replaced, and `stop()` only revokes blob URLs.
-  - Expanded coverage for overwrite and non-blob behavior:
-    - `tests/audio-utils.test.js`
-- Completed bfcache-aware trainer lifecycle guard pass (2026-02-18, phase 11):
-  - Added reusable bfcache pagehide helper:
-    - `src/trainer/trainer-utils.js` (`isBfcachePagehide`)
-  - Prevented destructive posture cleanup/reporting on persisted pagehide snapshots:
-    - `src/trainer/tools.js`
-  - Expanded utility coverage:
-    - `tests/trainer-utils.test.js`
-- Completed bfcache-safe metronome lifecycle pass (2026-02-18, phase 12):
-  - Prevented metronome reporting/stop side effects on persisted pagehide snapshots:
-    - `src/trainer/tools.js`
-  - Reused existing bfcache helper:
-    - `src/trainer/trainer-utils.js` (`isBfcachePagehide`)
-- Completed focus timer hidden-state lifecycle fix (2026-02-18, phase 13):
-  - Added explicit decision helper for timer stop rules:
-    - `src/coach/focus-timer-utils.js` (`shouldStopFocusTimer`)
-  - Forced stop path on hidden/pagehide lifecycle events:
-    - `src/coach/focus-timer.js`
-  - Added focused utility coverage:
-    - `tests/focus-timer-utils.test.js`
-- Completed game deactivation lifecycle hook pass (2026-02-18, phase 14):
-  - Added generic per-game deactivation hook support in shell:
-    - `src/games/game-shell.js` (`gameState._onDeactivate`)
-  - Paused active timers on hash-navigation deactivation for:
-    - `src/games/note-memory.js`
-    - `src/games/bow-hero.js`
-  - Added regression coverage for deactivation hook execution:
-    - `tests/games/game-shell.test.js`
-- Completed story-song deactivation lifecycle pass (2026-02-18, phase 15):
-  - Wired play-along stop behavior into the shell deactivation hook:
-    - `src/games/story-song.js`
-  - Ensures hash-navigation away pauses play-along before leave reporting.
-- Completed melody-maker deactivation lifecycle pass (2026-02-18, phase 16):
-  - Wired melody playback stop behavior into the shell deactivation hook:
-    - `src/games/melody-maker.js`
-  - Ensures hash-navigation away stops active melody playback before leave reporting.
-- Completed duet-challenge deactivation lifecycle pass (2026-02-18, phase 17):
-  - Wired partner playback stop behavior into the shell deactivation hook:
-    - `src/games/duet-challenge.js`
-  - Ensures hash-navigation away stops partner audio and deactivates round controls.
-- Completed sample-audio deactivation lifecycle pass (2026-02-18, phase 18):
-  - Wired sample audio cleanup into shell deactivation hook for:
-    - `src/games/ear-trainer.js`
-    - `src/games/tuning-time.js`
-  - Ensures hash-navigation away pauses active sample playback in these games.
-- Completed tone-player deactivation lifecycle pass (2026-02-18, phase 19):
-  - Wired synthesized tone cleanup into shell deactivation hook for:
-    - `src/games/scale-practice.js`
-    - `src/games/pitch-quest.js`
-    - `src/games/rhythm-painter.js`
-    - `src/games/duet-challenge.js`
-  - Ensures hash-navigation away stops active tone-player output in these games.
-- Completed sequence/timer tone deactivation lifecycle pass (2026-02-18, phase 20):
-  - Added synthesized tone stop-on-deactivate for sequence factory games:
-    - `src/games/sequence-game.js` (covers `pizzicato` and `string-quest`)
-  - Extended existing deactivation hooks to stop active tones for:
-    - `src/games/note-memory.js`
-    - `src/games/bow-hero.js`
-  - Ensures hash-navigation away and session reset paths stop active synthesized tone output.
-- Completed shell pagehide lifecycle reporting pass (2026-02-18, phase 21):
-  - Added non-bfcache `pagehide` handling in:
-    - `src/games/game-shell.js`
-  - Deactivation hooks and reporting now trigger when the active game view is hidden via real page unload, not just hash navigation.
-  - Added regression coverage for persisted/non-persisted pagehide behavior:
-    - `tests/games/game-shell.test.js`
-- Completed non-shell pagehide lifecycle pass (2026-02-18, phase 22):
-  - Added non-bfcache `pagehide` handling to sequence factory flow:
-    - `src/games/sequence-game.js` (covers `pizzicato` + `string-quest`)
-  - Added non-bfcache `pagehide` handling and listener rebind cleanup for:
-    - `src/games/rhythm-dash.js`
-  - Ensures non-shell games now align with shell lifecycle reporting/deactivation behavior on real page unload.
-- Completed game-enhancements bfcache lifecycle guard pass (2026-02-18, phase 23):
-  - Added persisted-pagehide guard for lifecycle stop behavior in:
-    - `src/games/game-enhancements.js`
-  - Prevents destructive session stop side effects during bfcache snapshot transitions.
-- Completed sequence-game pagehide regression coverage pass (2026-02-18, phase 24):
-  - Added focused lifecycle tests for:
-    - `tests/games/sequence-game.test.js`
-  - Covers non-persisted pagehide reporting, persisted-pagehide ignore behavior, and rebind listener cleanup.
-- Completed rhythm-dash pagehide regression coverage pass (2026-02-18, phase 25):
-  - Added focused lifecycle tests for:
-    - `tests/games/rhythm-dash-lifecycle.test.js`
-  - Covers non-persisted pagehide active-run stop behavior and persisted-pagehide bfcache preservation behavior.
-- Completed service-worker support hardening pass (2026-02-18, phase 26):
-  - Added shared service-worker capability helpers:
-    - `src/platform/sw-support.js`
-  - Guarded registration and SW-dependent runtime paths for unsupported/insecure contexts in:
-    - `src/app.js`
-    - `src/platform/offline-recovery.js`
-    - `src/platform/offline-mode.js`
-    - `src/platform/offline-integrity.js`
-    - `src/platform/sw-updates.js`
-  - Added focused regression coverage for support/registration rules:
-    - `tests/sw-support.test.js`
-- Added dead code and duplicate dependency audits:
-  - `knip.json`
-  - `scripts/audit-dependency-duplicates.mjs`
-- Added CI quality workflow:
-  - `.github/workflows/quality.yml`
-  - Includes lint/audit/unit/build plus Playwright E2E (`iPad Safari`)
-- Added phase report:
-  - `docs/plans/2026-02-18-debug-optimization-report.md`
-  - `docs/plans/2026-02-18-10x-simplification-optimization.md`
-  - `docs/plans/2026-02-18-10x-deeper-pass.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deep-pass.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-2.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-3.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-4.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-5.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-6.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-7.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-8.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-9.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-10.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-11.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-12.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-13.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-14.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-15.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-16.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-17.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-18.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-19.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-20.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-21.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-22.md`
-  - `docs/plans/2026-02-18-qa-effectiveness-deeper-pass-23.md`
-  - `docs/plans/2026-02-19-feature-module-completeness-audit.md`
-  - `docs/plans/2026-02-19-feature-module-completeness-deeper-pass.md`
-  - `docs/plans/2026-02-19-feature-module-completeness-strict-pass.md`
+Major development phases (Feb 17–27, 2026):
+
+- **Architecture** — Declarative module registry (`src/app/module-registry.js`), async render gate, idle prefetch, `requestIdleCallback` staggering
+- **Persistence** — IndexedDB-first with localStorage fallback, retry-safe DB open, concurrent refresh dedup
+- **Lifecycle hardening** — bfcache-safe `pagehide` guards across all games and non-game surfaces, per-game deactivation hooks in shell, tone/audio/sample cleanup on navigation
+- **Games** — 4 new canvas-based games (Dynamic Dojo, Echo, Stir Soup, Wipers) with shared `canvas-engine-base.js`, full-bleed immersive layouts, mastery progression system
+- **Song library** — 21 playable song sheets under `public/views/songs/`
+- **QA tooling** — Critical coverage gate, feature module completeness audit, dead code audit (knip), dependency dupe audit, secret scanner, view-sync audit, a11y audit, learning audit
+- **CI** — Quality workflow with lint, audits, unit tests, build, perf budgets, Playwright E2E on iPad Safari
+- **Performance budgets** — FCP/LCP enforcement with calibration/recommendation/guardrail pipeline
+- **UI polish** — Dialog centering, onboarding dot centering, bottom-nav clearance, game empty states, CSS dead code removal
+- **Security** — CSP hardening, referrer/permissions-policy metas, secret leak scanning
+
+Historical phase-by-phase details are available in git history and archived plan docs under `_archived/plans/`.
 
 ## Verification Gates
 
 - `npm run lint:all`
 - `npm run audit:deadcode`
 - `npm run audit:deps`
+- `npm run audit:secrets`
 - `npm run audit:perf:config`
 - `npm run audit:view-sync`
 - `npm run qa:effectiveness`
@@ -490,7 +47,7 @@ If both pass, you are at a known-good baseline.
 
 ## Playwright Worker Profiles
 
-Playwright worker defaults are now:
+Playwright worker defaults:
 
 - CI: `workers=1`
 - local development: `workers=2`
@@ -501,8 +58,6 @@ Override with `PW_WORKERS` when needed:
 PW_WORKERS=2 npm run test:e2e
 PW_WORKERS=3 npx playwright test
 ```
-
-Recommended values by machine profile:
 
 | Machine profile | Recommended `PW_WORKERS` | Notes |
 | --- | --- | --- |
@@ -517,65 +72,38 @@ PW_WORKERS=3 npx playwright test tests/e2e/games-all-functional.spec.js --grep "
 PW_WORKERS=3 npm run test:e2e
 ```
 
-Perf budget calibration flow (after downloading prior `perf-budget-summary` artifacts into a local folder):
-
-```bash
-npm run audit:perf:recommend -- ./artifacts/perf-history
-```
-
-The command writes `artifacts/perf-budget-recommendation.json` and prints suggested `PERF_BUDGET_FCP_MS` / `PERF_BUDGET_LCP_MS` values.
-Recommendations include a confidence level (`high` when at least 5 runs are aggregated by default).
-
 If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Intentional/Expected Caveats
 
-- `audit:perf` enforces LCP via native LCP entries when available, and falls back to Chromium `FirstMeaningfulPaint` delta when LCP entries are unavailable in runtime.
-- `audit:perf` supports mode toggling via `PERF_BUDGET_REPORT_ONLY`:
-  - `false` (default): blocking on budget threshold violations
-  - `true`: report-only (still writes summary artifact, does not fail on budget overages)
-- Realtime E2E hooks are inert in production unless both test globals are set:
-- Realtime E2E hooks/simulation flags are localhost-only and inert in production unless both test globals are set:
-  - `window.__PANDA_E2E_HOOKS__ === true`
-  - `window.__PANDA_E2E_RT_SIMULATE_START__ === true`
-- Duplicate dependency audit allowlists known transitive duplicates:
-  - `entities`
-  - `fsevents`
-  - `whatwg-mimetype`
-- `depcheck` may report `@vitest/coverage-v8` unused; coverage is invoked by CLI config (`vitest --coverage`), so this is expected.
+- `audit:perf` enforces LCP via native LCP entries when available, falls back to Chromium `FirstMeaningfulPaint` delta when unavailable.
+- `audit:perf` supports mode toggling via `PERF_BUDGET_REPORT_ONLY` (`false` = blocking, `true` = report-only).
+- Realtime E2E hooks are localhost-only and inert unless both `window.__PANDA_E2E_HOOKS__` and `window.__PANDA_E2E_RT_SIMULATE_START__` are set to `true`.
+- Duplicate dependency audit allowlists known transitive duplicates: `entities`, `fsevents`, `whatwg-mimetype`.
+- `depcheck` may report `@vitest/coverage-v8` unused; coverage is invoked by CLI config, so this is expected.
 
 ## Files to Read Before Editing
 
 1. `docs/HANDOFF.md` (this file)
-2. `docs/plans/2026-02-19-feature-module-completeness-strict-pass.md`
-3. `docs/plans/2026-02-19-feature-module-completeness-deeper-pass.md`
-4. `docs/plans/2026-02-19-feature-module-completeness-audit.md`
-5. `docs/plans/2026-02-18-qa-effectiveness-deep-pass.md`
-6. `docs/plans/2026-02-18-10x-deeper-pass.md`
-7. `docs/plans/2026-02-18-10x-simplification-optimization.md`
-8. `docs/plans/2026-02-18-debug-optimization-report.md`
-9. `CLAUDE.md`
-10. `README.md`
+2. `CLAUDE.md`
+3. `README.md`
 
 ## Recommended Next Work (Ordered)
 
-1. Calibrate CI LCP/FCP thresholds from downloaded workflow artifacts using a rolling window, e.g.:
-   - `PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS=30 PERF_BUDGET_RECOMMENDATION_MAX_RUNS=20 npm run audit:perf:recommend -- <artifact-folder>`
-2. Use `prGateRecommendation` + `thresholdHealth` from `artifacts/perf-budget-recommendation.json` to decide whether PR mode should remain report-only or switch to blocking.
-3. Apply calibrated values with:
-   - `npm run audit:perf:apply -- artifacts/perf-budget-recommendation.json .github/workflows/quality.yml`
-   - apply now uses guardrailed `suggestedBudgets` when present
-   - when present, `PERF_BUDGET_CURRENT_FCP_MS` / `PERF_BUDGET_CURRENT_LCP_MS` are synced to avoid stale baseline comparisons
-   - optional dry run: `PERF_BUDGET_APPLY_DRY_RUN=true npm run audit:perf:apply -- ...`
-   - low-confidence override (only when intentionally accepting sparse data): `PERF_BUDGET_APPLY_ALLOW_LOW_CONFIDENCE=true ...`
-   - then monitor PR noise for 1-2 weeks.
-4. Tune guardrail limits if recommendation drift is too aggressive/conservative:
-   - `PERF_BUDGET_RECOMMENDATION_MAX_TIGHTEN_PCT`
-   - `PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT`
-5. Decide whether to retain the guarded realtime E2E start-simulation seam long-term or replace it with a dedicated test harness module.
+1. Calibrate CI LCP/FCP thresholds from downloaded workflow artifacts:
+   ```bash
+   PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS=30 npm run audit:perf:recommend -- <artifact-folder>
+   ```
+2. Apply calibrated values:
+   ```bash
+   npm run audit:perf:apply -- artifacts/perf-budget-recommendation.json .github/workflows/quality.yml
+   ```
+3. Monitor PR noise for 1-2 weeks after threshold update.
+4. Consider replacing guarded realtime E2E start-simulation seam with a dedicated test harness.
+5. Add more song content to the library.
 
-## Definition of “Ready to Hand Off”
+## Definition of "Ready to Hand Off"
 
 - `npm run handoff:verify` passes with no manual patching.
 - CI quality workflow passes on PR/main.
-- This runbook and phase report match current repo behavior.
+- This runbook matches current repo behavior.
