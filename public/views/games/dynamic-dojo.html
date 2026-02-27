@@ -1,0 +1,99 @@
+<section class="view game-view game-dynamic-dojo" id="view-game-dynamic-dojo" aria-label="Game: Dynamic Dojo">
+    <div class="game-content" id="dynamic-dojo-content"
+        style="position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);">
+        <!-- Full Bleed Background Canvas -->
+        <canvas id="dynamic-dojo-canvas"
+            style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></canvas>
+
+        <div class="dynamic-dojo-stage"
+            style="position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column;">
+            <!-- Top layer HUD -->
+            <div
+                style="padding: var(--space-4); display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto;">
+                <div class="game-header" style="flex: 1; margin: 0; background: none; box-shadow: none; padding: 0;">
+                    <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M15 18l-6-6 6-6" />
+                        </svg>Exit</a>
+                    <h2 style="color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.5);">Dynamic Dojo</h2>
+                    <div class="game-score" style="color: rgba(255,255,255,0.8);">Volume Control</div>
+                </div>
+                <picture>
+                    <!-- Using standard ninja/mascot image for now -->
+                    <source srcset="./assets/illustrations/epic_mascot_listening.png" type="image/png">
+                    <img src="./assets/illustrations/epic_mascot_listening.png" alt="" class="game-mascot mascot-dojo"
+                        loading="lazy" decoding="async"
+                        style="filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); transform: scaleX(-1);">
+                </picture>
+            </div>
+
+            <!-- Main Game Area -->
+            <div
+                style="flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-4); gap: var(--space-6);">
+
+                <!-- Massive Power Gauge -->
+                <div class="power-gauge-container glass-panel"
+                    style="height: 60vh; width: 120px; border-radius: 60px; padding: var(--space-3); display: flex; flex-direction: column-reverse; position: relative;">
+                    <!-- Gauge Fill -->
+                    <div class="power-gauge-fill" data-dojo="volume-fill"
+                        style="width: 100%; height: 5%; background: linear-gradient(to top, #4facfe 0%, #00f2fe 50%, #f093fb 100%); border-radius: 40px; transition: height 0.1s linear, filter 0.2s; box-shadow: 0 0 20px rgba(0, 242, 254, 0.5);">
+                    </div>
+
+                    <!-- Target Zones -->
+                    <div class="zone zone-piano"
+                        style="position: absolute; bottom: 10%; left: 0; right: 0; height: 30%; border-left: 6px solid #4facfe; border-right: 6px solid #4facfe; opacity: 0.5;">
+                    </div>
+                    <div class="zone zone-forte"
+                        style="position: absolute; top: 10%; left: 0; right: 0; height: 30%; border-left: 6px solid #f093fb; border-right: 6px solid #f093fb; opacity: 0.5;">
+                    </div>
+
+                    <!-- Indicators -->
+                    <div
+                        style="position: absolute; bottom: 25%; left: -60px; color: white; font-weight: 800; font-size: var(--text-xl); text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                        Piano</div>
+                    <div
+                        style="position: absolute; top: 25%; left: -60px; color: white; font-weight: 800; font-size: var(--text-xl); text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+                        Forte</div>
+                </div>
+
+                <!-- Target Interaction Area -->
+                <div class="dojo-target-area"
+                    style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-4);">
+                    <div class="dojo-instruction" data-dojo="prompt"
+                        style="font-size: var(--text-3xl); font-weight: 900; color: white; text-align: center; text-shadow: 0 4px 12px rgba(0,0,0,0.5); min-height: 80px;">
+                        Tap Start to Train!
+                    </div>
+
+                    <div class="dojo-interactive-wrapper"
+                        style="position: relative; width: 300px; height: 300px; display: grid; place-items: center;">
+                        <!-- Wooden Board (Forte Target) -->
+                        <div class="dojo-board dojo-hidden" data-dojo="board"
+                            style="width: 250px; height: 80px; background: #8B4513; border: 4px solid #5C2E0B; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.2); position: relative; overflow: hidden;">
+                            <!-- Wood grain texture lines -->
+                            <div
+                                style="position: absolute; top: 20%; left: 0; right: 0; height: 2px; background: rgba(0,0,0,0.2);">
+                            </div>
+                            <div
+                                style="position: absolute; top: 60%; left: 0; right: 0; height: 2px; background: rgba(0,0,0,0.2);">
+                            </div>
+                        </div>
+
+                        <!-- Sleeping Tiger (Piano Target) -->
+                        <div class="dojo-tiger dojo-hidden" data-dojo="tiger"
+                            style="font-size: 140px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); transition: transform 0.3s;">
+                            🐯💤
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom Controls -->
+            <div style="padding: var(--space-4); display: flex; justify-content: center; pointer-events: auto;">
+                <button class="btn btn-giant btn-primary" type="button" data-rt-toggle data-dojo="listen"
+                    style="width: min(400px, 100%);">START TRAINING</button>
+            </div>
+
+        </div>
+    </div>
+</section>

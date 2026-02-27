@@ -1,3 +1,5 @@
+import { readStringArrayFromStorage, writeStringArrayToStorage } from '../utils/storage-utils.js';
+
 const AUTO_GOALS_KEY = 'panda-violin:coach-auto-goals:v1';
 
 const GOAL_BY_GAME = Object.freeze({
@@ -26,27 +28,9 @@ export const GOAL_SLOT_DEFAULTS = Object.freeze({
     'goal-song': { minutes: 3, label: 'Play one song slowly' },
 });
 
-export const readQueuedGoals = (storage = window.localStorage) => {
-    try {
-        const stored = JSON.parse(storage.getItem(AUTO_GOALS_KEY) || '[]');
-        if (!Array.isArray(stored)) return [];
-        return stored.filter((value, index, list) => (
-            typeof value === 'string'
-            && value.trim()
-            && list.indexOf(value) === index
-        ));
-    } catch {
-        return [];
-    }
-};
+export const readQueuedGoals = (storage = window.localStorage) => readStringArrayFromStorage(AUTO_GOALS_KEY, storage);
 
-export const writeQueuedGoals = (goals, storage = window.localStorage) => {
-    try {
-        storage.setItem(AUTO_GOALS_KEY, JSON.stringify(goals));
-    } catch {
-        // Ignore local storage write failures.
-    }
-};
+export const writeQueuedGoals = (goals, storage = window.localStorage) => writeStringArrayToStorage(AUTO_GOALS_KEY, goals, storage);
 
 export const queueGoal = (goalId, storage = window.localStorage) => {
     if (!goalId) return;

@@ -1,0 +1,60 @@
+import { WipersCanvasEngine } from './wipers-canvas.js';
+import { recordGameEvent } from './shared.js';
+
+const GAME_ID_WIPERS = 'windshield_wipers';
+
+let engine = null;
+let bound = false;
+
+const WIPES_WIN = 20;
+
+export const init = () => {
+    const view = document.getElementById('view-game-wipers');
+    if (!view) return;
+
+    const canvas = document.getElementById('wipers-canvas');
+    if (!canvas) return;
+
+    const scoreEl = document.getElementById('wipers-score');
+    const startBtn = document.getElementById('wipers-start-btn');
+
+    if (!engine) {
+        engine = new WipersCanvasEngine(canvas, (score, wipes) => {
+            if (scoreEl) scoreEl.textContent = `${wipes} / ${WIPES_WIN}`;
+
+            // Win condition:
+            if (wipes >= WIPES_WIN) {
+                engine.stop();
+                recordGameEvent(GAME_ID_WIPERS, {
+                    score,
+                    accuracy: Math.floor((wipes / WIPES_WIN) * 100)
+                });
+            }
+        });
+    }
+
+    if (!bound) {
+        startBtn?.addEventListener('click', () => {
+            if (engine.isRunning) {
+                engine.stop();
+                startBtn.textContent = 'Start Engine';
+            } else {
+                if (scoreEl) scoreEl.textContent = `0 / ${WIPES_WIN}`;
+                engine.start();
+                startBtn.textContent = 'Stop Engine';
+            }
+        });
+        bound = true;
+    }
+
+    // Auto-pause if navigating away
+    const onHashChange = () => {
+        if (window.location.hash !== '#view-game-wipers') {
+            if (engine?.isRunning) {
+                engine.stop();
+                if (startBtn) startBtn.textContent = 'Start Engine';
+            }
+        }
+    };
+    window.addEventListener('hashchange', onHashChange);
+};

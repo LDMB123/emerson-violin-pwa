@@ -15,7 +15,6 @@ vi.mock('../../src/persistence/storage.js', () => storageMocks);
 
 import {
     loadGameMasteryState,
-    summarizeGameMastery,
     updateGameMastery,
 } from '../../src/games/game-mastery.js';
 
@@ -47,16 +46,4 @@ describe('games/mastery-progression', () => {
         expect(result.game.tier).toBe('gold');
     });
 
-    it('summarizes mastery tiers across games', async () => {
-        await updateGameMastery({ gameId: 'pitch-quest', score: 65, day: 1 });
-        await updateGameMastery({ gameId: 'pitch-quest', score: 66, day: 2 });
-        await updateGameMastery({ gameId: 'pitch-quest', score: 67, day: 3 });
-
-        await updateGameMastery({ gameId: 'rhythm-dash', score: 40, day: 1 });
-
-        const state = await loadGameMasteryState();
-        const summary = summarizeGameMastery(state);
-        expect(summary.bronze).toBe(1);
-        expect(summary.foundation).toBe(1);
-    });
 });

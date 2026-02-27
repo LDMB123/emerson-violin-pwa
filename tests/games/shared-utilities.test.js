@@ -13,7 +13,7 @@ const sharedDeps = vi.hoisted(() => {
         updateGameResult: vi.fn(async () => ({ difficulty: 'hard', speed: 1.1, complexity: 2 })),
         createTonePlayer: vi.fn(() => player),
         getJSON: vi.fn(async () => []),
-        setJSON: vi.fn(async () => {}),
+        setJSON: vi.fn(async () => { }),
         isSoundEnabled: vi.fn(() => true),
         todayDay: vi.fn(() => 42),
         formatDifficulty: vi.fn((value) => String(value)),
@@ -52,8 +52,6 @@ vi.mock('../../src/games/game-mastery.js', () => ({
 import {
     bindTap,
     buildNoteSequence,
-    cachedEl,
-    createSoundsChangeBinding,
     formatCountdown,
     formatStars,
     getTonePlayer,
@@ -83,17 +81,7 @@ describe('games/shared utilities', () => {
         expect(formatCountdown(-3)).toBe('00:00');
     });
 
-    it('caches DOM lookups until the node is disconnected', () => {
-        document.body.innerHTML = '<div id="probe">A</div>';
-        const getProbe = cachedEl('#probe');
 
-        const first = getProbe();
-        expect(first?.textContent).toBe('A');
-
-        first?.remove();
-        document.body.insertAdjacentHTML('beforeend', '<div id="probe">B</div>');
-        expect(getProbe()?.textContent).toBe('B');
-    });
 
     it('plays tones only when sound is enabled and a tone player exists', () => {
         sharedDeps.isSoundEnabled.mockReturnValue(false);
@@ -232,17 +220,4 @@ describe('games/shared utilities', () => {
         expect(sharedDeps.setJSON).toHaveBeenCalledTimes(1);
     });
 
-    it('replaces SOUNDS_CHANGE listeners when binding is reused', () => {
-        const bind = createSoundsChangeBinding();
-        const first = vi.fn();
-        const second = vi.fn();
-
-        bind(first);
-        document.dispatchEvent(new Event(SOUNDS_CHANGE));
-        bind(second);
-        document.dispatchEvent(new Event(SOUNDS_CHANGE));
-
-        expect(first).toHaveBeenCalledTimes(1);
-        expect(second).toHaveBeenCalledTimes(1);
-    });
 });

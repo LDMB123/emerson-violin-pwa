@@ -39,6 +39,7 @@ export const MODULE_LOADERS = {
     parentGoals: () => import('../parent/goals.js'),
     parentDataControls: () => import('../parent/data-controls.js'),
     parentPerformanceReview: () => import('../parent/performance-review.js'),
+    parentHomeTeacher: () => import('../parent/home-teacher.js'),
     swUpdates: () => import('../platform/sw-updates.js'),
     adaptiveUi: () => import('../ml/adaptive-ui.js'),
     recommendationsUi: () => import('../ml/recommendations-ui.js'),
@@ -48,6 +49,10 @@ export const MODULE_LOADERS = {
     realtimeReview: () => import('../parent/realtime-review.js'),
     audioPlayer: () => import('../audio/audio-player.js'),
     onboarding: () => import('../onboarding/onboarding.js'),
+    dynamicDojo: () => import('../games/dynamic-dojo.js'),
+    stirSoup: () => import('../games/stir-soup.js'),
+    windshieldWipers: () => import('../games/wipers.js'),
+    echo: () => import('../games/echo.js'),
 };
 
 export const EAGER_MODULES = [
@@ -94,6 +99,7 @@ const MODULE_RULES = [
     {
         when: equals('view-parent'),
         modules: [
+            'parentHomeTeacher',
             'parentPin',
             'parentGoals',
             'parentRecordings',
@@ -113,6 +119,10 @@ const MODULE_RULES = [
             'mlAccelerator',
         ],
     },
+    { when: equals('view-game-dynamic-dojo'), modules: ['dynamicDojo', 'gameMetrics', 'gameEnhancements'] },
+    { when: equals('view-game-stir-soup'), modules: ['stirSoup', 'gameMetrics', 'gameEnhancements'] },
+    { when: equals('view-game-wipers'), modules: ['windshieldWipers', 'gameMetrics', 'gameEnhancements'] },
+    { when: equals('view-game-echo'), modules: ['echo', 'gameMetrics', 'gameEnhancements'] },
     { when: oneOf(equals('view-games'), startsWith('view-game-')), modules: ['gameMetrics', 'gameEnhancements'] },
     { when: equals('view-progress'), modules: ['recommendationsUi'] },
 ];

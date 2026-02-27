@@ -70,6 +70,11 @@ export const createSessionAudioGraph = ({
         };
     };
 
+    const postWorkletMessage = (msg) => {
+        if (!workletNode) return;
+        workletNode.port.postMessage(msg);
+    };
+
     const initialize = async () => {
         await ensureMicrophoneSupport();
         micStream = await navigator.mediaDevices.getUserMedia({
@@ -114,5 +119,6 @@ export const createSessionAudioGraph = ({
         initialize,
         clear,
         transition,
+        postWorkletMessage,
     };
 };

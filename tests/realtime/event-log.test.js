@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const storageMocks = vi.hoisted(() => ({
     getJSON: vi.fn(async () => null),
-    setJSON: vi.fn(async () => {}),
+    setJSON: vi.fn(async () => { }),
 }));
 
 vi.mock('../../src/persistence/storage.js', () => storageMocks);
@@ -59,10 +59,7 @@ describe('realtime event log', () => {
         expect(events[1499]).toMatchObject({ type: 'rt:cue', detail: { id: 'overflow' } });
     });
 
-    it('clears persisted realtime events', async () => {
-        await clearRealtimeEvents();
-        expect(storageMocks.setJSON).toHaveBeenCalledWith('rt-events', []);
-    });
+
 
     it('loads and saves realtime quality snapshots', async () => {
         storageMocks.getJSON.mockResolvedValueOnce({ p95CueLatencyMs: 120 });

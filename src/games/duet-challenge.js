@@ -174,6 +174,42 @@ const { bind } = createGame({
             });
         });
 
+        const handleTurn = (targetNote) => {
+            const turnResult = resolveDuetChallengeTapTurn({
+                note: targetNote,
+                sequence,
+                seqIndex,
+                combo,
+                score,
+                comboTarget,
+                round,
+                mistakes,
+            });
+            combo = turnResult.combo;
+            seqIndex = turnResult.seqIndex;
+            setPrompt(turnResult.prompt);
+            if (turnResult.matched) {
+                score = turnResult.score;
+                round = turnResult.round;
+                gameState.score = score;
+                if (turnResult.markStep2) markChecklist('dc-step-2');
+                if (turnResult.markStep3) markChecklist('dc-step-3');
+                if (turnResult.completedRound) {
+                    active = false;
+                    if (turnResult.markStep4) markChecklist('dc-step-4');
+                    playToneSequence(sequence, { tempo: 160, gap: 0.1, duration: 0.18, volume: 0.16, type: 'violin' });
+                    reportSession();
+                } else {
+                    playToneNote(targetNote, { duration: 0.2, volume: 0.18, type: 'triangle' });
+                }
+            } else {
+                mistakes = turnResult.mistakes;
+                gameState._mistakes = mistakes;
+                playToneNote('F', { duration: 0.16, volume: 0.12, type: 'sawtooth' });
+            }
+            updateScoreboard();
+        };
+
         buttons.forEach((button) => {
             bindTap(button, () => {
                 if (!ensureDuetChallengeReadyForTap({
@@ -184,40 +220,7 @@ const { bind } = createGame({
                     return;
                 }
                 const note = button.dataset.duetNote;
-                if (note) {
-                    playToneNote(note, { duration: 0.2, volume: 0.18, type: 'triangle' });
-                }
-                const turnResult = resolveDuetChallengeTapTurn({
-                    note,
-                    sequence,
-                    seqIndex,
-                    combo,
-                    score,
-                    comboTarget,
-                    round,
-                    mistakes,
-                });
-                combo = turnResult.combo;
-                seqIndex = turnResult.seqIndex;
-                setPrompt(turnResult.prompt);
-                if (turnResult.matched) {
-                    score = turnResult.score;
-                    round = turnResult.round;
-                    gameState.score = score;
-                    if (turnResult.markStep2) markChecklist('dc-step-2');
-                    if (turnResult.markStep3) markChecklist('dc-step-3');
-                    if (turnResult.completedRound) {
-                        active = false;
-                        if (turnResult.markStep4) markChecklist('dc-step-4');
-                        playToneSequence(sequence, { tempo: 160, gap: 0.1, duration: 0.18, volume: 0.16, type: 'violin' });
-                        reportSession();
-                    }
-                } else {
-                    mistakes = turnResult.mistakes;
-                    gameState._mistakes = mistakes;
-                    playToneNote('F', { duration: 0.16, volume: 0.12, type: 'sawtooth' });
-                }
-                updateScoreboard();
+                if (note) handleTurn(note);
             });
         });
 
@@ -246,35 +249,7 @@ const { bind } = createGame({
             }
 
             // Hit verified!
-            const turnResult = resolveDuetChallengeTapTurn({
-                note: targetNote,
-                sequence,
-                seqIndex,
-                combo,
-                score,
-                comboTarget,
-                round,
-                mistakes,
-            });
-            combo = turnResult.combo;
-            seqIndex = turnResult.seqIndex;
-            setPrompt(turnResult.prompt);
-            if (turnResult.matched) {
-                score = turnResult.score;
-                round = turnResult.round;
-                gameState.score = score;
-                if (turnResult.markStep2) markChecklist('dc-step-2');
-                if (turnResult.markStep3) markChecklist('dc-step-3');
-                if (turnResult.completedRound) {
-                    active = false;
-                    if (turnResult.markStep4) markChecklist('dc-step-4');
-                    playToneSequence(sequence, { tempo: 160, gap: 0.1, duration: 0.18, volume: 0.16, type: 'violin' });
-                    reportSession();
-                } else {
-                    playToneNote(targetNote, { duration: 0.2, volume: 0.18, type: 'triangle' });
-                }
-            }
-            updateScoreboard();
+            handleTurn(targetNote);
         };
 
         document.addEventListener(RT_STATE, onRealtimeState);

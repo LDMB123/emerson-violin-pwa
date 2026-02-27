@@ -1,0 +1,30 @@
+<section class="view game-view" id="view-game-wipers" aria-label="Game: Windshield Wipers">
+    <div class="view-header">
+        <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>Back</a>
+        <h2>Windshield Wipers</h2>
+        <span class="game-badge">Pre-Twinkle</span>
+    </div>
+
+    <div class="game-layout">
+        <div class="game-stage">
+            <div class="canvas-container wipers-game-container">
+                <canvas id="wipers-canvas" class="wipers-canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="game-hud">
+            <h3>Pinky Balance</h3>
+            <p>Balance a cheerio (or coin) on the back of your hand. Rotate your arm side to side like a windshield
+                wiper to the beat without dropping it!</p>
+            <div class="game-actions">
+                <button class="btn btn-primary btn-large" type="button" id="wipers-start-btn">Start Engine</button>
+            </div>
+            <div class="game-metrics">
+                <div class="metric-chip">Wipes <strong id="wipers-score">0</strong></div>
+            </div>
+        </div>
+    </div>
+</section>

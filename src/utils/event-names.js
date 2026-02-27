@@ -46,3 +46,4 @@ export const RT_STATE = 'panda:rt-state';
 export const RT_FALLBACK = 'panda:rt-fallback';
 export const RT_PARENT_OVERRIDE = 'panda:rt-parent-override';
 export const RT_QUALITY = 'panda:rt-quality';
+export const RT_FEATURE = 'panda:rt-feature';

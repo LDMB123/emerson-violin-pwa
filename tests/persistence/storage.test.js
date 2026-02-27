@@ -61,7 +61,7 @@ describe('persistence/storage fallback behavior', () => {
     });
 
     it('retries IndexedDB open after a transient open failure', async () => {
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
         const open = vi.fn(() => {
             const request = {
                 result: null,
@@ -165,18 +165,4 @@ describe('persistence/storage fallback behavior', () => {
         await expect(getBlob('blob-key')).resolves.toBeNull();
     });
 
-    it('getJSONFromAnyKey migrates legacy values into primary key', async () => {
-        const { setJSON, getJSONFromAnyKey, getJSON } = await import('../../src/persistence/storage.js');
-        await setJSON('legacy-key', { v: 1 });
-        const value = await getJSONFromAnyKey('primary-key', ['legacy-key']);
-        expect(value).toEqual({ v: 1 });
-        await expect(getJSON('primary-key')).resolves.toEqual({ v: 1 });
-    });
-
-    it('migrateJSON persists only when migration changes value', async () => {
-        const { setJSON, migrateJSON, getJSON } = await import('../../src/persistence/storage.js');
-        await setJSON('migrate-key', { score: 10 });
-        await migrateJSON('migrate-key', (current) => ({ ...current, score: 20 }));
-        await expect(getJSON('migrate-key')).resolves.toEqual({ score: 20 });
-    });
 });

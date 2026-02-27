@@ -1,4 +1,4 @@
-import initWasm, { PitchDetector } from '../wasm/panda_audio.js';
+import initWasm, { PitchDetector, EchoBuffer } from '../wasm/panda_audio.js';
 
 const wasmReady = initWasm();
 
@@ -28,11 +28,20 @@ class RealtimeAudioProcessor extends AudioWorkletProcessor {
         this.lastTempoBpm = 0;
         this.noiseFloor = 0.0035;
 
+        // Echo Feature State
+        this.echoBuffer = null;
+        this.echoRecording = false;
+
         this.ready = wasmReady
             .then(() => {
                 this.detector = new PitchDetector(sampleRate, this.bufferSize);
                 this.detector.set_tune_tolerance(this.tolerance);
                 this.detector.set_volume_threshold(this.noiseFloor);
+
+                // Allocate 3 seconds at 48kHz (roughly 144,000 samples)
+                const echoCapacity = Math.floor(sampleRate * 3.0);
+                this.echoBuffer = new EchoBuffer(echoCapacity);
+
                 this.port.postMessage({ ready: true });
             })
             .catch((error) => {
@@ -59,6 +68,26 @@ class RealtimeAudioProcessor extends AudioWorkletProcessor {
                 if (this.detector && typeof this.detector.free === 'function') {
                     this.detector.free();
                     this.detector = null;
+                }
+                if (this.echoBuffer && typeof this.echoBuffer.free === 'function') {
+                    this.echoBuffer.free();
+                    this.echoBuffer = null;
+                }
+            }
+            if (type === 'echo_record') {
+                if (this.echoBuffer) {
+                    this.echoBuffer.reset();
+                    this.echoBuffer.set_recording(true);
+                    this.echoRecording = true;
+                }
+            }
+            if (type === 'echo_extract') {
+                if (this.echoBuffer) {
+                    this.echoBuffer.set_recording(false);
+                    this.echoRecording = false;
+                    // Extract 400 slices to match the Canvas UI width
+                    const envelope = this.echoBuffer.extract_envelope(400);
+                    this.port.postMessage({ type: 'echo_envelope', payload: Array.from(envelope) });
                 }
             }
         };
@@ -123,7 +152,20 @@ class RealtimeAudioProcessor extends AudioWorkletProcessor {
 
             if (this.bufferIndex < this.bufferSize) continue;
 
+            // Route audio to Pitch Detector
             const result = this.detector.detect(this.buffer);
+
+            // Route audio to Echo Buffer if active
+            if (this.echoRecording && this.echoBuffer) {
+                const hitCapacity = this.echoBuffer.push_chunk(this.buffer);
+                if (hitCapacity) {
+                    // Auto-stop recording if full
+                    this.echoRecording = false;
+                    this.echoBuffer.set_recording(false);
+                    const envelope = this.echoBuffer.extract_envelope(400);
+                    this.port.postMessage({ type: 'echo_envelope', payload: Array.from(envelope) });
+                }
+            }
             const nowMs = currentTime * 1000;
             const onset = this.detectOnset(result.volume, nowMs);
             const tempoBpm = this.lastTempoBpm ? Math.round(this.lastTempoBpm * 10) / 10 : 0;

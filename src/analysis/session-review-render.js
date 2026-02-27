@@ -1,4 +1,5 @@
 import { starString, buildChart, chartCaptionFor } from '../utils/session-review-utils.js';
+import { renderNextActionsList } from '../utils/render-utils.js';
 
 export const createSessionReviewRenderer = () => {
     let chartLine = null;
@@ -101,30 +102,13 @@ export const createSessionReviewRenderer = () => {
 
     const renderNextActions = (recommendations) => {
         if (!nextActionsEl) return;
-        nextActionsEl.replaceChildren();
-        const actions = Array.isArray(recommendations?.nextActions) ? recommendations.nextActions.slice(0, 3) : [];
-        if (!actions.length) {
-            const item = document.createElement('li');
-            item.textContent = 'Complete one mission step to unlock tailored next actions.';
-            nextActionsEl.appendChild(item);
-            return;
-        }
-
-        actions.forEach((action) => {
-            const item = document.createElement('li');
-            if (action?.href) {
-                const link = document.createElement('a');
-                link.href = action.href;
-                link.textContent = action.label || 'Next action';
-                item.appendChild(link);
-            } else {
-                item.textContent = action?.label || 'Next action';
-            }
-            if (action?.rationale) {
-                item.append(` — ${action.rationale}`);
-            }
-            nextActionsEl.appendChild(item);
-        });
+        const actions = Array.isArray(recommendations?.nextActions) ? recommendations.nextActions : [];
+        renderNextActionsList(
+            nextActionsEl,
+            actions,
+            'Next action',
+            'Complete one mission step to unlock tailored next actions.'
+        );
     };
 
     const setCoachMessage = (message) => {

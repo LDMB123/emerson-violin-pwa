@@ -159,7 +159,10 @@ const tapPainterUntilScoreIncreases = async (page, scoreLocator) => {
     const startScore = await readNumericValue(scoreLocator);
 
     for (let attempt = 0; attempt < 8; attempt += 1) {
-        await page.locator('#view-game-rhythm-painter .paint-dot.dot-blue').click();
+        const dot = page.locator('#view-game-rhythm-painter .paint-dot.dot-blue');
+        await dot.scrollIntoViewIfNeeded();
+        await dot.click({ force: true });
+
         await page.waitForTimeout(120);
         if ((await readNumericValue(scoreLocator)) > startScore) {
             return;
@@ -395,5 +398,27 @@ test.describe('all games core interactions', () => {
         await dispatchGameRecordedEvent(page, 'pizzicato', 200);
         await page.waitForTimeout(300);
         await returnToGames(page, 'pizzicato');
+    });
+
+    test('group D: dojo/stir-soup/wipers/echo', async ({ page }) => {
+        test.setTimeout(90000);
+        await openHome(page);
+        await openGamesHub(page);
+
+        await openGame(page, 'dynamic-dojo');
+        await expect(page.locator('#view-game-dynamic-dojo')).toBeVisible();
+        await returnToGames(page, 'dynamic-dojo');
+
+        await openGame(page, 'stir-soup');
+        await expect(page.locator('#view-game-stir-soup #stir-start-btn')).toBeVisible({ timeout: 10000 });
+        await returnToGames(page, 'stir-soup');
+
+        await openGame(page, 'wipers');
+        await expect(page.locator('#view-game-wipers #wipers-start-btn')).toBeVisible({ timeout: 10000 });
+        await returnToGames(page, 'wipers');
+
+        await openGame(page, 'echo');
+        await expect(page.locator('#view-game-echo')).toBeVisible();
+        await returnToGames(page, 'echo');
     });
 });

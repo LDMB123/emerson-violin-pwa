@@ -7,6 +7,21 @@ import {
 } from './state.js';
 import { saveMissionState } from './engine-mission-persistence.js';
 
+const persistMissionUpdate = async ({ mission, state, unit, reason }) => {
+    const persistedState = await saveMissionState({
+        state: state || (await loadCurriculumState()),
+        mission,
+        unit: unit || { id: mission.unitId },
+    });
+    if (reason) {
+        await appendMissionHistory({ mission, reason });
+    }
+    return {
+        mission,
+        state: persistedState,
+    };
+};
+
 export const completeMissionStep = async ({
     stepId,
     mission,
@@ -42,17 +57,7 @@ export const completeMissionStep = async ({
         completedAt: completionPercent >= 100 ? Date.now() : null,
     });
 
-    const persistedState = await saveMissionState({
-        state: state || (await loadCurriculumState()),
-        mission: updated,
-        unit: unit || { id: updated.unitId },
-    });
-
-    await appendMissionHistory({ mission: updated, reason });
-    return {
-        mission: updated,
-        state: persistedState,
-    };
+    return persistMissionUpdate({ mission: updated, state, unit, reason });
 };
 
 export const startMissionStep = async ({
@@ -83,17 +88,7 @@ export const startMissionStep = async ({
         currentStepId: stepId,
     });
 
-    const persistedState = await saveMissionState({
-        state: state || (await loadCurriculumState()),
-        mission: updated,
-        unit: unit || { id: updated.unitId },
-    });
-    await appendMissionHistory({ mission: updated, reason: 'step-start' });
-
-    return {
-        mission: updated,
-        state: persistedState,
-    };
+    return persistMissionUpdate({ mission: updated, state, unit, reason: 'step-start' });
 };
 
 export const insertRemediationForSkill = async ({
@@ -148,15 +143,5 @@ export const insertRemediationForSkill = async ({
         remediationStepIds,
     });
 
-    const persistedState = await saveMissionState({
-        state: state || (await loadCurriculumState()),
-        mission: updated,
-        unit,
-    });
-    await appendMissionHistory({ mission: updated, reason: `remediation:${skill}` });
-
-    return {
-        mission: updated,
-        state: persistedState,
-    };
+    return persistMissionUpdate({ mission: updated, state, unit, reason: `remediation:${skill}` });
 };

@@ -1,6 +1,83 @@
 /* @ts-self-types="./panda_audio.d.ts" */
 
 /**
+ * Echo recording and evaluation buffer
+ */
+export class EchoBuffer {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        EchoBufferFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_echobuffer_free(ptr, 0);
+    }
+    /**
+     * Simplified envelope extractor.
+     * Condenses 48kHz audio into `target_bins` (e.g., 400 slices) based on RMS amplitude.
+     * @param {number} target_bins
+     * @returns {Float32Array}
+     */
+    extract_envelope(target_bins) {
+        const ret = wasm.echobuffer_extract_envelope(this.__wbg_ptr, target_bins);
+        var v1 = getArrayF32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+    /**
+     * Get a pointer to the linear memory array for JS to read
+     * @returns {number}
+     */
+    get_buffer_ptr() {
+        const ret = wasm.echobuffer_get_buffer_ptr(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @returns {number}
+     */
+    get_size() {
+        const ret = wasm.echobuffer_get_size(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
+     * @param {number} capacity
+     */
+    constructor(capacity) {
+        const ret = wasm.echobuffer_new(capacity);
+        this.__wbg_ptr = ret >>> 0;
+        EchoBufferFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * Push an array of audio samples into the linear buffer.
+     * Returns true if the buffer hit capacity during this write.
+     * @param {Float32Array} samples
+     * @returns {boolean}
+     */
+    push_chunk(samples) {
+        const ptr0 = passArrayF32ToWasm0(samples, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.echobuffer_push_chunk(this.__wbg_ptr, ptr0, len0);
+        return ret !== 0;
+    }
+    /**
+     * Reset internal state, ready for a new recording
+     */
+    reset() {
+        wasm.echobuffer_reset(this.__wbg_ptr);
+    }
+    /**
+     * @param {boolean} state
+     */
+    set_recording(state) {
+        wasm.echobuffer_set_recording(this.__wbg_ptr, state);
+    }
+}
+if (Symbol.dispose) EchoBuffer.prototype[Symbol.dispose] = EchoBuffer.prototype.free;
+
+/**
  * Pitch detector using autocorrelation algorithm
  */
 export class PitchDetector {
@@ -154,6 +231,118 @@ export class PitchResult {
 }
 if (Symbol.dispose) PitchResult.prototype[Symbol.dispose] = PitchResult.prototype.free;
 
+/**
+ * Rhythm analysis result for realtime coaching
+ */
+export class RhythmResult {
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(RhythmResult.prototype);
+        obj.__wbg_ptr = ptr;
+        RhythmResultFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        RhythmResultFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_rhythmresult_free(ptr, 0);
+    }
+    /**
+     * @returns {number}
+     */
+    get confidence() {
+        const ret = wasm.rhythmresult_confidence(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {boolean}
+     */
+    get onset_detected() {
+        const ret = wasm.rhythmresult_onset_detected(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
+     * @returns {number}
+     */
+    get onset_strength() {
+        const ret = wasm.rhythmresult_onset_strength(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get rhythm_offset_ms() {
+        const ret = wasm.pitchresult_frequency(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @returns {number}
+     */
+    get tempo_bpm() {
+        const ret = wasm.rhythmresult_tempo_bpm(this.__wbg_ptr);
+        return ret;
+    }
+}
+if (Symbol.dispose) RhythmResult.prototype[Symbol.dispose] = RhythmResult.prototype.free;
+
+/**
+ * Estimate onset strength from RMS novelty against a baseline.
+ * @param {Float32Array} buffer
+ * @param {number} baseline_rms
+ * @returns {number}
+ */
+export function analyze_onset(buffer, baseline_rms) {
+    const ptr0 = passArrayF32ToWasm0(buffer, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.analyze_onset(ptr0, len0, baseline_rms);
+    return ret;
+}
+
+/**
+ * Analyze a rhythm frame and return onset/tempo confidence primitives.
+ * @param {Float32Array} buffer
+ * @param {number} baseline_rms
+ * @param {number} now_ms
+ * @param {number} last_onset_ms
+ * @param {number} tempo_bpm
+ * @returns {RhythmResult}
+ */
+export function analyze_rhythm_frame(buffer, baseline_rms, now_ms, last_onset_ms, tempo_bpm) {
+    const ptr0 = passArrayF32ToWasm0(buffer, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.analyze_rhythm_frame(ptr0, len0, baseline_rms, now_ms, last_onset_ms, tempo_bpm);
+    return RhythmResult.__wrap(ret);
+}
+
+/**
+ * Compute the nearest-beat rhythm offset (ms) for a running tempo.
+ * @param {number} last_onset_ms
+ * @param {number} now_ms
+ * @param {number} tempo_bpm
+ * @returns {number}
+ */
+export function compute_rhythm_offset_ms(last_onset_ms, now_ms, tempo_bpm) {
+    const ret = wasm.compute_rhythm_offset_ms(last_onset_ms, now_ms, tempo_bpm);
+    return ret;
+}
+
+/**
+ * Estimate tempo (BPM) from onset intervals in milliseconds.
+ * @param {Float32Array} intervals_ms
+ * @returns {number}
+ */
+export function estimate_tempo_bpm(intervals_ms) {
+    const ptr0 = passArrayF32ToWasm0(intervals_ms, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.estimate_tempo_bpm(ptr0, len0);
+    return ret;
+}
+
 export function init() {
     wasm.init();
 }
@@ -202,8 +391,23 @@ function __wbg_get_imports() {
     };
 }
 
-const PitchDetectorFinalization = new FinalizationRegistry(ptr => wasm.__wbg_pitchdetector_free(ptr >>> 0, 1));
-const PitchResultFinalization = new FinalizationRegistry(ptr => wasm.__wbg_pitchresult_free(ptr >>> 0, 1));
+const EchoBufferFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_echobuffer_free(ptr >>> 0, 1));
+const PitchDetectorFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_pitchdetector_free(ptr >>> 0, 1));
+const PitchResultFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_pitchresult_free(ptr >>> 0, 1));
+const RhythmResultFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_rhythmresult_free(ptr >>> 0, 1));
+
+function getArrayF32FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getFloat32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
 
 let cachedDataViewMemory0 = null;
 function getDataViewMemory0() {
@@ -278,13 +482,32 @@ function passStringToWasm0(arg, malloc, realloc) {
     return ptr;
 }
 
-const cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
 cachedTextDecoder.decode();
+const MAX_SAFARI_DECODE_BYTES = 2146435072;
+let numBytesDecoded = 0;
 function decodeText(ptr, len) {
+    numBytesDecoded += len;
+    if (numBytesDecoded >= MAX_SAFARI_DECODE_BYTES) {
+        cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+        cachedTextDecoder.decode();
+        numBytesDecoded = len;
+    }
     return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
 }
 
 const cachedTextEncoder = new TextEncoder();
+
+if (!('encodeInto' in cachedTextEncoder)) {
+    cachedTextEncoder.encodeInto = function (arg, view) {
+        const buf = cachedTextEncoder.encode(arg);
+        view.set(buf);
+        return {
+            read: arg.length,
+            written: buf.length
+        };
+    };
+}
 
 let WASM_VECTOR_LEN = 0;
 

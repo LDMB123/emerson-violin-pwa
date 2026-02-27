@@ -46,7 +46,7 @@ const emitRealtimeEvent = async (eventName, payload, { log = true } = {}) => {
     }
     document.dispatchEvent(new CustomEvent(eventName, { detail: payload }));
     if (log) {
-        appendRealtimeEvent(eventName, payload).catch(() => {});
+        appendRealtimeEvent(eventName, payload).catch(() => { });
     }
 };
 
@@ -108,6 +108,7 @@ export const pauseSession = (...args) => lifecycle.pauseSession(...args);
 export const resumeSession = (...args) => lifecycle.resumeSession(...args);
 export const setParentPreset = (...args) => runtimeEngine.setParentPreset(...args);
 export const getSessionState = () => runtimeEngine.getSessionState();
+export const postAudioMessage = (msg) => audioGraph.postWorkletMessage(msg);
 export const init = () => lifecycle.init();
 
 export default {
@@ -117,4 +118,5 @@ export default {
     resumeSession,
     getSessionState,
     setParentPreset,
+    postAudioMessage,
 };

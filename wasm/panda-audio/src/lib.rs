@@ -573,3 +573,113 @@ mod tests {
         assert!(offset.abs() < 20.0);
     }
 }
+
+/// Echo recording and evaluation buffer
+#[wasm_bindgen]
+pub struct EchoBuffer {
+    /// Ring buffer holding raw audio samples
+    buffer: Vec<f32>,
+    /// Write head pointer
+    write_idx: usize,
+    /// Absolute capacity (e.g., sample_rate * max_seconds)
+    capacity: usize,
+    /// Number of items currently stored
+    size: usize,
+    /// Indicates if we are actively recording
+    is_recording: bool,
+}
+
+#[wasm_bindgen]
+impl EchoBuffer {
+    #[wasm_bindgen(constructor)]
+    pub fn new(capacity: usize) -> EchoBuffer {
+        EchoBuffer {
+            buffer: vec![0.0; capacity],
+            write_idx: 0,
+            capacity,
+            size: 0,
+            is_recording: false,
+        }
+    }
+
+    /// Reset internal state, ready for a new recording
+    #[wasm_bindgen]
+    pub fn reset(&mut self) {
+        self.write_idx = 0;
+        self.size = 0;
+        self.is_recording = false;
+        // Optimization: No need to zero the vector memory, we just overwrite it
+    }
+
+    #[wasm_bindgen]
+    pub fn set_recording(&mut self, state: bool) {
+        self.is_recording = state;
+    }
+
+    /// Push an array of audio samples into the linear buffer.
+    /// Returns true if the buffer hit capacity during this write.
+    #[wasm_bindgen]
+    pub fn push_chunk(&mut self, samples: &[f32]) -> bool {
+        if !self.is_recording || self.size >= self.capacity {
+            return false;
+        }
+
+        let mut hit_capacity = false;
+        
+        for &sample in samples {
+            if self.size < self.capacity {
+                self.buffer[self.write_idx] = sample;
+                self.write_idx += 1;
+                self.size += 1;
+            } else {
+                hit_capacity = true;
+                break;
+            }
+        }
+        
+        hit_capacity
+    }
+
+    /// Get a pointer to the linear memory array for JS to read
+    #[wasm_bindgen]
+    pub fn get_buffer_ptr(&self) -> *const f32 {
+        self.buffer.as_ptr()
+    }
+
+    #[wasm_bindgen]
+    pub fn get_size(&self) -> usize {
+        self.size
+    }
+
+    /// Simplified envelope extractor. 
+    /// Condenses 48kHz audio into `target_bins` (e.g., 400 slices) based on RMS amplitude.
+    #[wasm_bindgen]
+    pub fn extract_envelope(&self, target_bins: usize) -> Vec<f32> {
+        let mut envelope = vec![0.0; target_bins];
+        if self.size == 0 || target_bins == 0 {
+            return envelope;
+        }
+
+        let samples_per_bin = self.size / target_bins;
+        if samples_per_bin == 0 {
+            return envelope; // Too small
+        }
+
+        for i in 0..target_bins {
+            let start = i * samples_per_bin;
+            let end = (start + samples_per_bin).min(self.size);
+            
+            // Calculate RMS for this bin
+            let mut sum_sq = 0.0;
+            for j in start..end {
+                sum_sq += self.buffer[j] * self.buffer[j];
+            }
+            let rms = (sum_sq / (end - start) as f32).sqrt();
+            
+            // Normalize slightly (magic constant for standard mic input)
+            envelope[i] = (rms * 10.0).clamp(0.0, 1.0);
+        }
+
+        envelope
+    }
+}

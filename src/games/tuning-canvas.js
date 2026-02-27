@@ -1,33 +1,14 @@
-export class TuningCanvasEngine {
-    constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
-        this.width = canvas.width;
-        this.height = canvas.height;
+import { BaseCanvasEngine } from './canvas-engine-base.js';
 
-        this.isRunning = false;
-        this.lastTime = 0;
+export class TuningCanvasEngine extends BaseCanvasEngine {
+    constructor(canvas) {
+        super(canvas);
 
         // State
         this.targetString = null;
         this.currentCents = 0;
         this.energy = 0; // 0.0 to 1.0 continuously
-
-        this.particles = [];
         this.wavePhase = 0;
-
-        this.render = this.render.bind(this);
-    }
-
-    start() {
-        if (this.isRunning) return;
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        requestAnimationFrame(this.render);
-    }
-
-    stop() {
-        this.isRunning = false;
     }
 
     setTarget(target) {

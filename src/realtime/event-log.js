@@ -23,9 +23,7 @@ export const appendRealtimeEvent = async (type, detail) => {
     return trimmed;
 };
 
-export const clearRealtimeEvents = async () => {
-    await setJSON(RT_EVENT_LOG_KEY, []);
-};
+
 
 export const loadRealtimeQuality = async () => {
     const stored = await getJSON(RT_QUALITY_KEY);

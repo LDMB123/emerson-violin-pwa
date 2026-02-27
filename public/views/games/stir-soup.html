@@ -1,0 +1,31 @@
+<section class="view game-view" id="view-game-stir-soup" aria-label="Game: Stir the Soup">
+    <div class="view-header">
+        <a href="#view-games" class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>Back</a>
+        <h2>Stir the Soup</h2>
+        <span class="game-badge">Pre-Twinkle</span>
+    </div>
+
+    <div class="game-layout">
+        <div class="game-stage">
+            <div class="canvas-container stir-game-container">
+                <canvas id="stir-canvas" class="stir-canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="game-hud">
+            <h3>Smooth Circles</h3>
+            <p>Hold your bow in the air. Use your arm (or your finger on the screen) to stir the giant pot of soup
+                without splashing!</p>
+            <div class="game-actions">
+                <button class="btn btn-primary btn-large" type="button" id="stir-start-btn">Start Stirring</button>
+            </div>
+            <div class="game-metrics">
+                <div class="metric-chip">Score <strong id="stir-score">0</strong></div>
+                <div class="metric-chip">Smoothness <strong id="stir-smoothness">100%</strong></div>
+            </div>
+        </div>
+    </div>
+</section>

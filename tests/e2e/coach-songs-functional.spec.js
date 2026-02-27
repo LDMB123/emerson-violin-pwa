@@ -98,9 +98,10 @@ test('games hub surfaces the full implemented game catalog', async ({ page }) =>
             .filter(Boolean);
     });
 
-    expect(gameIds.length).toBe(13);
-    expect(new Set(gameIds).size).toBe(13);
+    expect(gameIds.length).toBe(17);
+    expect(new Set(gameIds).size).toBe(17);
     expect(gameIds).toEqual(expect.arrayContaining([
+        'dynamic-dojo',
         'pitch-quest',
         'rhythm-dash',
         'note-memory',
@@ -114,6 +115,9 @@ test('games hub surfaces the full implemented game catalog', async ({ page }) =>
         'melody-maker',
         'scale-practice',
         'duet-challenge',
+        'stir-soup',
+        'wipers',
+        'echo',
     ]));
 });
 

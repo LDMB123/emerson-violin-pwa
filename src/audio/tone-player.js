@@ -16,7 +16,7 @@ import {
     isSamplerType,
 } from './tone-player/voice-factories.js';
 
-export const NOTE_FREQUENCIES = {
+const NOTE_FREQUENCIES = {
     G3: 196.00,
     A3: 220.00,
     B3: 246.94,
@@ -36,7 +36,7 @@ export const NOTE_FREQUENCIES = {
     'G#5': 830.61,
 };
 
-export const DEFAULT_MAP = {
+const DEFAULT_MAP = {
     G: 'G3',
     D: 'D4',
     A: 'A4',
@@ -49,7 +49,7 @@ export const DEFAULT_MAP = {
 
 const supportsSampler = () => typeof fetch === 'function' && typeof window !== 'undefined';
 
-export const normalizeNote = (note) => {
+const normalizeNote = (note) => {
     if (!note) return null;
     if (NOTE_FREQUENCIES[note]) return note;
     const trimmed = String(note).trim().toUpperCase();

@@ -1,34 +1,15 @@
-export class RhythmCanvasEngine {
+import { BaseCanvasEngine } from '../canvas-engine-base.js';
+
+export class RhythmCanvasEngine extends BaseCanvasEngine {
     constructor(canvas, { colors = ['#00e5ff', '#39ff14', '#ffea00', '#ff0055'] } = {}) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
-        this.width = canvas.width;
-        this.height = canvas.height;
+        super(canvas);
         this.colors = colors;
-
         this.notes = [];
-        this.particles = [];
-
-        this.isRunning = false;
-        this.lastTime = 0;
 
         this.speed = 2.0;
         this.horizonY = this.height * 0.25;
         this.hitY = this.height * 0.85;
         this.laneWidth = 100;
-
-        this.render = this.render.bind(this);
-    }
-
-    start() {
-        if (this.isRunning) return;
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        requestAnimationFrame(this.render);
-    }
-
-    stop() {
-        this.isRunning = false;
     }
 
     triggerHitExplosion(laneIndex, zPos) {

@@ -42,7 +42,6 @@ export const PARENT_UNLOCK_KEY = 'panda-violin:parent-unlocked';
 
 // Platform / install
 export const INSTALL_GUIDE_KEY = 'panda-violin:install-guide:v1';
-export const INSTALL_TOAST_KEY = 'panda-violin:install-toast:v1';
 export const PERSIST_REQUEST_KEY = 'panda-violin:persist-request-v1';
 
 // Offline

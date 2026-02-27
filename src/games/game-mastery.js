@@ -99,22 +99,3 @@ export const updateGameMastery = async ({
     };
 };
 
-export const summarizeGameMastery = (state) => {
-    const normalized = normalizeState(state);
-    const games = Object.values(normalized.games);
-    const summary = {
-        bronze: 0,
-        silver: 0,
-        gold: 0,
-        foundation: 0,
-    };
-
-    games.forEach((game) => {
-        if (game.tier === 'gold') summary.gold += 1;
-        else if (game.tier === 'silver') summary.silver += 1;
-        else if (game.tier === 'bronze') summary.bronze += 1;
-        else summary.foundation += 1;
-    });
-
-    return summary;
-};

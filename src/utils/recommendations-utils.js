@@ -12,6 +12,8 @@ export const SKILL_BY_GAME = {
     'duet-challenge': 'rhythm',
     'bow-hero': 'bow_control',
     'string-quest': 'bow_control',
+    'stir_soup': 'bow_control',
+    'windshield_wipers': 'bow_control',
     'note-memory': 'reading',
     'melody-maker': 'reading',
     'story-song': 'reading',
@@ -43,6 +45,8 @@ export const GAME_LABELS = {
     'melody-maker': 'Melody Maker',
     'scale-practice': 'Scale Practice',
     'duet-challenge': 'Duet Challenge',
+    'stir_soup': 'Stir the Soup',
+    'windshield_wipers': 'Windshield Wipers',
     'view-posture': 'Posture Mirror',
 };
 

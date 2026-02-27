@@ -55,6 +55,7 @@ const buildBaseRecommendations = ({ events, adaptiveLog, metronomeTuning }) => {
 
     const lessonPlan = buildLessonSteps({
         weakestSkill,
+        skillScores,
         recommendedGameId,
         metronomeTarget,
         songLevel,

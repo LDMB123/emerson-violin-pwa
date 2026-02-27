@@ -138,9 +138,9 @@ const EVENT_VALIDATORS = Object.freeze({
 });
 
 export const isRealtimeEventName = (eventName) => REALTIME_EVENTS.includes(eventName);
-export const isConfidenceBand = (value) => inEnum(value, CONFIDENCE_BANDS);
-export const isCueState = (value) => inEnum(value, CUE_STATES);
-export const isParentPreset = (value) => inEnum(value, PARENT_PRESETS);
+export const isParentPreset = (preset) => PARENT_PRESETS.includes(preset);
+export const isConfidenceBand = (band) => CONFIDENCE_BANDS.includes(band);
+export const isCueState = (state) => CUE_STATES.includes(state);
 
 export const confidenceBandFrom = (value) => {
     const score = isFiniteNumber(value) ? value : 0;

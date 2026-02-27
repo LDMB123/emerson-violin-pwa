@@ -1,3 +1,5 @@
+import { renderNextActionsList } from '../utils/render-utils.js';
+
 const renderChipGrid = (container, chips, emptyText) => {
     if (!container) return;
     container.replaceChildren();
@@ -37,31 +39,7 @@ const songTier = (score) => {
     return 'foundation';
 };
 
-const renderNextActionsList = (target, actions) => {
-    if (!target) return;
-    target.replaceChildren();
-    if (!actions.length) {
-        const fallback = document.createElement('li');
-        fallback.textContent = 'Complete one mission step to get next teaching actions.';
-        target.appendChild(fallback);
-        return;
-    }
-    actions.slice(0, 3).forEach((action) => {
-        const item = document.createElement('li');
-        if (action?.href) {
-            const link = document.createElement('a');
-            link.href = action.href;
-            link.textContent = action.label || 'Next step';
-            item.appendChild(link);
-        } else {
-            item.textContent = action?.label || 'Next step';
-        }
-        if (action?.rationale) {
-            item.append(` — ${action.rationale}`);
-        }
-        target.appendChild(item);
-    });
-};
+
 
 export const renderCurriculumMap = ({ curriculumContent, curriculumState, recommendations, progressEl, parentEl }) => {
     const units = Array.isArray(curriculumContent?.units) ? curriculumContent.units : [];

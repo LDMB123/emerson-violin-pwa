@@ -20,7 +20,7 @@ test.describe('Kid-first flows', () => {
 
     await expect(page.locator('#view-coach')).toBeVisible();
     await expect(page.locator('.practice-focus')).toBeVisible();
-    await expect(page.locator('.focus-status')).toContainText(/Suggested focus sprint/);
+    await expect(page.locator('.focus-status')).toContainText(/Ready!/);
   });
 
   test('child can reach games and launch a game in two taps', async ({ page }) => {

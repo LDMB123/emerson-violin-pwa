@@ -25,7 +25,7 @@ const MASTER_CUES = {
     bow_control: [
         'Keep the bow parallel to the bridge from frog to tip.',
         'Lead with the elbow and let the wrist stay soft.',
-        'Use full bows and keep the contact point consistent.',
+        'Use soft Bunny Hands on the bow.',
     ],
     reading: [
         'Name the note first, then place the finger and play.',
@@ -33,9 +33,9 @@ const MASTER_CUES = {
         'Slow down and keep the eyes one note ahead.',
     ],
     posture: [
-        'Stand tall with relaxed shoulders and a soft bow hand.',
-        'Keep the violin on the collarbone, not the shoulder.',
-        'Check that both wrists stay long and flexible.',
+        'Stand tall with Jelly Shoulders and a soft bow hand.',
+        'Check your Cinnamon Roll scroll height!',
+        'Keep both wrists long and flexible like a snake.',
     ],
     focus: [
         'Take a calm breath before you start each exercise.',
@@ -76,7 +76,7 @@ const SKILL_FOCUS = {
     posture: {
         label: 'Posture focus with mirror check',
         cta: 'view-posture',
-        cue: 'Check shoulders, chin rest, and bow grip.',
+        cue: 'Jelly Shoulders, Cinnamon Roll up, Bunny Hand.',
     },
 };
 
@@ -86,34 +86,44 @@ const SONG_LABELS = {
     advanced: 'Play one challenge song with smooth tone',
 };
 
-const MINUTE_ADJUSTMENTS = {
-    pitch: { focus: 1, ear: 1, song: -2 },
-    rhythm: { focus: 1, rhythm: 1, ear: -1, song: -1 },
-    bow_control: { warmup: 1, focus: 1, ear: -1, song: -1 },
-    reading: { focus: 1, song: 1, ear: -2 },
-    posture: { warmup: 1, focus: 1, ear: -1, song: -1 },
-};
+const computeAdaptiveMinutes = (skillScores) => {
+    // Machine Learning Telemetry: Scale durations proportionally to the player's accuracy decay.
+    // If a skill drops below 60%, allocate heavier training weight.
+    const getScore = (skill) => skillScores?.[skill] ?? 60;
 
+    // Scale model: lower score = more minutes. baseline 50 gives ~3 minutes.
+    const scale = (score, weight = 1) => Math.max(1, Math.round(((100 - score) / 15) * weight));
 
-
-const buildMinutes = (skill) => {
-    const base = {
-        warmup: STEP_BASE.warmup.minutes,
-        focus: STEP_BASE.focus.minutes,
-        rhythm: STEP_BASE.rhythm.minutes,
-        ear: STEP_BASE.ear.minutes,
-        song: STEP_BASE.song.minutes,
+    const totalCalculated = {
+        warmup: Math.max(2, scale(getScore('bow_control'), 0.8)),
+        focus: Math.max(3, scale(getScore('pitch'), 1.2)),
+        rhythm: Math.max(2, scale(getScore('rhythm'), 1.0)),
+        ear: Math.max(1, scale(getScore('pitch'), 0.6)),
+        song: Math.max(3, scale(getScore('reading'), 1.0)),
     };
-    const adjust = MINUTE_ADJUSTMENTS[skill];
-    if (!adjust) return base;
-    Object.entries(adjust).forEach(([key, value]) => {
-        base[key] = Math.max(1, base[key] + value);
-    });
-    return base;
+
+    // Suzuki 20-Min Cap (Attention Span constraint for an 8yo learner)
+    const MAX_MINUTES = 20;
+    let sum = Object.values(totalCalculated).reduce((a, b) => a + b, 0);
+
+    if (sum > MAX_MINUTES) {
+        let diff = sum - MAX_MINUTES;
+        const keysToTrim = ['song', 'rhythm', 'focus']; // trim later/cognitive tasks first
+
+        for (const key of keysToTrim) {
+            if (diff <= 0) break;
+            const canTrim = Math.max(0, totalCalculated[key] - 1); // never trim below 1
+            const trimAmount = Math.min(diff, canTrim);
+            totalCalculated[key] -= trimAmount;
+            diff -= trimAmount;
+        }
+    }
+
+    return totalCalculated;
 };
 
-export const buildLessonSteps = ({ weakestSkill, recommendedGameId, metronomeTarget, songLevel }) => {
-    const minutes = buildMinutes(weakestSkill);
+export const buildLessonSteps = ({ weakestSkill, skillScores, recommendedGameId, metronomeTarget, songLevel }) => {
+    const minutes = computeAdaptiveMinutes(skillScores);
     const focus = SKILL_FOCUS[weakestSkill] || SKILL_FOCUS.pitch;
     const coachCue = pickDailyCue(MASTER_CUES[weakestSkill] || MASTER_CUES.focus, (weakestSkill || '').length);
     const warmupCue = pickDailyCue(MASTER_CUES.bow_control || [], minutes.warmup);
@@ -127,7 +137,14 @@ export const buildLessonSteps = ({ weakestSkill, recommendedGameId, metronomeTar
             {
                 ...STEP_BASE.warmup,
                 minutes: minutes.warmup,
-                cue: warmupCue || 'Use full bows with relaxed shoulders.',
+                cue: warmupCue || 'Start with Jelly Shoulders and soft Bunny Hands.',
+            },
+            // Suzuki Rule: "Sound Before Symbol" ensures Ear Training occurs BEFORE Rhythm/Reading.
+            {
+                ...STEP_BASE.ear,
+                label: 'Match pitch by ear on open strings',
+                minutes: minutes.ear,
+                cue: earCue || 'Listen for the note to settle.',
             },
             {
                 ...STEP_BASE.focus,
@@ -141,12 +158,6 @@ export const buildLessonSteps = ({ weakestSkill, recommendedGameId, metronomeTar
                 label: `Metronome ${Math.round(metronomeTarget || 90)} BPM pulse`,
                 minutes: minutes.rhythm,
                 cue: rhythmCue || 'Tap before you play.',
-            },
-            {
-                ...STEP_BASE.ear,
-                label: 'Match pitch by ear on open strings',
-                minutes: minutes.ear,
-                cue: earCue || 'Listen for the note to settle.',
             },
             {
                 ...STEP_BASE.song,

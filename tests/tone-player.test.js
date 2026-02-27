@@ -1,71 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { normalizeNote, NOTE_FREQUENCIES, DEFAULT_MAP, createTonePlayer } from '../src/audio/tone-player.js';
-
-describe('NOTE_FREQUENCIES', () => {
-    it('contains A4 at 440 Hz', () => {
-        expect(NOTE_FREQUENCIES.A4).toBe(440.00);
-    });
-
-    it('contains the extended song-play-along range', () => {
-        expect(Object.keys(NOTE_FREQUENCIES)).toHaveLength(17);
-    });
-
-    it('includes high sharp notes used by song sheets', () => {
-        expect(NOTE_FREQUENCIES.G3).toBe(196.00);
-        expect(NOTE_FREQUENCIES.E5).toBe(659.25);
-        expect(NOTE_FREQUENCIES['C#5']).toBe(554.37);
-        expect(NOTE_FREQUENCIES['F#5']).toBe(739.99);
-        expect(NOTE_FREQUENCIES['G#5']).toBe(830.61);
-    });
-});
-
-describe('DEFAULT_MAP', () => {
-    it('maps bare G to G3 (violin open string)', () => {
-        expect(DEFAULT_MAP.G).toBe('G3');
-    });
-
-    it('maps bare A to A4 (concert pitch)', () => {
-        expect(DEFAULT_MAP.A).toBe('A4');
-    });
-
-    it('maps F# to F#4', () => {
-        expect(DEFAULT_MAP['F#']).toBe('F#4');
-    });
-});
-
-describe('normalizeNote', () => {
-    it('returns exact match for known note', () => {
-        expect(normalizeNote('A4')).toBe('A4');
-        expect(normalizeNote('C#5')).toBe('C#5');
-    });
-
-    it('normalizes lowercase to uppercase', () => {
-        expect(normalizeNote('a4')).toBe('A4');
-    });
-
-    it('trims whitespace', () => {
-        expect(normalizeNote('  G3  ')).toBe('G3');
-    });
-
-    it('maps bare string name via DEFAULT_MAP', () => {
-        expect(normalizeNote('D')).toBe('D4');
-        expect(normalizeNote('e')).toBe('E5');
-    });
-
-    it('returns null for unknown note', () => {
-        expect(normalizeNote('Z9')).toBeNull();
-    });
-
-    it('returns null for empty/falsy input', () => {
-        expect(normalizeNote('')).toBeNull();
-        expect(normalizeNote(null)).toBeNull();
-        expect(normalizeNote(undefined)).toBeNull();
-    });
-
-    it('handles F# case-insensitively', () => {
-        expect(normalizeNote('f#')).toBe('F#4');
-    });
-});
+import { createTonePlayer } from '../src/audio/tone-player.js';
 
 describe('createTonePlayer', () => {
     let mockOscillator;
@@ -102,8 +36,8 @@ describe('createTonePlayer', () => {
             destination: {},
             createOscillator: vi.fn(() => mockOscillator),
             createGain: vi.fn(() => mockGain),
-            resume: vi.fn(async () => {}),
-            close: vi.fn(async () => {}),
+            resume: vi.fn(async () => { }),
+            close: vi.fn(async () => { }),
         };
 
         globalThis.AudioContext = function () { return mockContext; };
@@ -159,7 +93,7 @@ describe('createTonePlayer', () => {
         player.stopAll();
         expect(mockOscillator.stop).toHaveBeenCalled();
         await vi.runAllTimersAsync();
-        await promise.catch(() => {});
+        await promise.catch(() => { });
         vi.useRealTimers();
     });
 

@@ -1,3 +1,5 @@
+import { readStringArrayFromStorage, writeStringArrayToStorage } from '../utils/storage-utils.js';
+
 const GAME_FAVORITES_KEY = 'panda-violin:game-favorites:v1';
 const GAME_QUICK_TARGET = 6;
 
@@ -10,27 +12,9 @@ const toGameId = (value) => {
     return trimmed;
 };
 
-export const readFavoriteIds = () => {
-    try {
-        const stored = JSON.parse(window.localStorage.getItem(GAME_FAVORITES_KEY) || '[]');
-        if (!Array.isArray(stored)) return [];
-        return stored.filter((value, index, list) => (
-            typeof value === 'string'
-            && value.trim()
-            && list.indexOf(value) === index
-        ));
-    } catch {
-        return [];
-    }
-};
+export const readFavoriteIds = () => readStringArrayFromStorage(GAME_FAVORITES_KEY);
 
-export const writeFavoriteIds = (ids) => {
-    try {
-        window.localStorage.setItem(GAME_FAVORITES_KEY, JSON.stringify(ids));
-    } catch {
-        // Ignore local storage write failures.
-    }
-};
+export const writeFavoriteIds = (ids) => writeStringArrayToStorage(GAME_FAVORITES_KEY, ids);
 
 const tagsForCard = (card) => (
     (card.dataset.sortTags || '')
@@ -93,8 +77,8 @@ export const deriveDynamicSortSets = ({ events, recs, cardById, fallbackQuickIds
 
     const recommendedId = toGameId(
         recs?.recommendedGameId
-            || recs?.recommendedGame
-            || recs?.lessonSteps?.find((step) => step?.cta)?.cta,
+        || recs?.recommendedGame
+        || recs?.lessonSteps?.find((step) => step?.cta)?.cta,
     );
 
     const quickOrdered = [];

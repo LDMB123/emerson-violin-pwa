@@ -21,3 +21,7 @@ native/
 
 .playwright-mcp/
 firebase-debug.log
+
+# Audit reports
+dead_css_report.json
+unused_css_classes.txt
