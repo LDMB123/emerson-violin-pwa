@@ -186,6 +186,7 @@ const applyContinueLastSong = async (cards, continueCard, continueTitle, events 
     if (!card) return;
 
     continueCard.setAttribute('href', `#view-song-${targetSongId}`);
+    continueCard.removeAttribute('hidden');
     const title = card.querySelector('.song-title')?.textContent?.trim();
     if (continueTitle && title) {
         continueTitle.textContent = title;

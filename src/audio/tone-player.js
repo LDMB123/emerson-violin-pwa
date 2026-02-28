@@ -33,7 +33,10 @@ const NOTE_FREQUENCIES = {
     D5: 587.33,
     E5: 659.25,
     'F#5': 739.99,
+    G5: 783.99,
     'G#5': 830.61,
+    A5: 880.00,
+    C6: 1046.50,
 };
 
 const DEFAULT_MAP = {

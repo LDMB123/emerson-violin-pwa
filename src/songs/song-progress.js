@@ -201,7 +201,11 @@ const finishRun = (songId, accuracy, duration, elapsed) => {
 const handleToggle = (toggle, songId, duration, sequence) => {
     if (toggle.checked) {
         startRun(songId, duration, toggle);
-        startPlayAlong(toggle, sequence);
+        // Only start legacy play-along if advanced controls aren't handling audio.
+        const view = toggle.closest('.song-view');
+        if (!view?.dataset.songAdvancedAudio) {
+            startPlayAlong(toggle, sequence);
+        }
         return;
     }
 

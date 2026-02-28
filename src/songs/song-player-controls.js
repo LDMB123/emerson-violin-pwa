@@ -19,7 +19,6 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
 
     let isPlaying = false;
     let tuningActive = null;
-    let playbackStartRealTime = 0;
     let playbackElapsed = 0;
     let lastAnimFrame = 0;
     let raqId = null;
@@ -29,6 +28,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     let audioTriggers = new Set();
     let isWaiting = false;
     let lastMetronomeBeat = -1;
+    const beatsPerMeasure = song?.time ? parseInt(song.time.split('/')[0], 10) || 4 : 4;
 
     const parseNotes = () => {
         notesElements = Array.from(view.querySelectorAll('.song-note')).map((el) => {
@@ -38,7 +38,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             const pitchEl = el.querySelector('.song-note-pitch');
             return {
                 el,
-                pitch: pitchEl ? pitchEl.textContent.replace(/\d+$/, '').trim() : null,
+                pitch: pitchEl ? pitchEl.textContent.trim() : null,
                 start: startMatch ? Number.parseFloat(startMatch[1]) : 0,
                 duration: durMatch ? Number.parseFloat(durMatch[1]) : 0,
             };
@@ -75,15 +75,12 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         }));
 
         if (view.dataset.songLoop === 'true') {
-            playToggle.checked = false;
-            playToggle.dispatchEvent(new Event('change', { bubbles: true }));
-            requestAnimationFrame(() => {
-                playToggle.checked = true;
-                playToggle.dispatchEvent(new Event('change', { bubbles: true }));
-            });
+            // Restart directly — avoids toggle-flipping which would
+            // trigger legacy song-progress.js handlers and cause audio gaps.
+            startPlayback();
         } else {
             playToggle.checked = false;
-            stopPlayback();
+            playToggle.dispatchEvent(new Event('change', { bubbles: true }));
         }
     };
 
@@ -141,7 +138,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             if (currentBeat > lastMetronomeBeat) {
                 lastMetronomeBeat = currentBeat;
                 // Play a woodblock/click sound. If it's the downbeat of a measure (beat 0), make it slightly different.
-                const isDownbeat = currentBeat % 4 === 0; // Assuming 4/4 for now
+                const isDownbeat = currentBeat % beatsPerMeasure === 0;
                 playToneNote(isDownbeat ? 'C6' : 'G5', {
                     duration: 0.05,
                     volume: isDownbeat ? 0.3 : 0.15,
@@ -203,7 +200,6 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         isPlaying = true;
         playbackElapsed = 0;
         lastAnimFrame = performance.now();
-        playbackStartRealTime = Date.now();
         completedNotes.clear();
         audioTriggers.clear();
         isWaiting = false;
@@ -300,7 +296,8 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     saveButton?.addEventListener('click', async () => {
         const songId = parseViewSongId(view.id);
         if (!songId) return;
-        const elapsed = playbackStartRealTime ? ((Date.now() - playbackStartRealTime) / 1000) : 0;
+        // Use musical elapsed time (pauses during Wait For Me) instead of wall-clock time.
+        const elapsed = playbackElapsed;
         const tempo = Number(view.dataset.songTempo || song?.bpm || 80);
         await saveSongCheckpoint(songId, {
             sectionId: view.dataset.songSectionId || sections[0]?.id || 'full',

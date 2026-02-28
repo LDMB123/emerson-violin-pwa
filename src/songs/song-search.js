@@ -22,7 +22,8 @@ const initSongSearch = () => {
     const continueCard = document.querySelector('[data-continue-last-song]');
     const continueTitle = document.querySelector('[data-continue-last-song-title]');
 
-    bindSongSearchFilter({ cards, filterInputs, emptyState });
+    const input = document.querySelector('[data-songs-search]');
+    bindSongSearchFilter({ input, cards, filterInputs, emptyState });
     bindSongCardLockGuards(cards);
     applyRecommendedBadges(cards);
     refreshSongCards(cards, continueCard, continueTitle);

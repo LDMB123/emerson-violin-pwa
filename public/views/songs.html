@@ -9,10 +9,13 @@
       alt="Song Player Panda" loading="eager" decoding="sync">
   </div>
 
-  <a class="songs-continue-card glass btn btn-primary btn-giant" href="#view-song-twinkle" data-continue-last-song>
+  <a class="songs-continue-card glass btn btn-primary btn-giant" href="#view-song-twinkle" data-continue-last-song hidden>
     <span class="btn-giant-icon">▶️</span>
-    <span class="btn-giant-text">PLAY LAST SONG</span>
+    <span class="btn-giant-text" data-continue-last-song-title>PLAY LAST SONG</span>
   </a>
+
+  <input type="search" class="songs-search glass" data-songs-search placeholder="Search songs…"
+    aria-label="Search songs">
 
   <div class="songs-filters glass" role="group" aria-label="Filter songs">
     <label class="filter-label">
@@ -30,7 +33,7 @@
   </div>
 
   <div class="songs-grid" id="songs-grid">
-    <!-- SONGS_GRID_START -->
+    <!-- SONGS_GRID_START — Beginner (easy) -->
     <a class="song-card glass" href="#view-song-open_strings" data-song="open_strings" data-level="easy">
       <div class="song-art">🎻</div>
       <div class="song-title">Open String Song</div>
@@ -56,6 +59,42 @@
       <div class="song-title">Go Tell Aunt Rhody</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
+    <a class="song-card glass" href="#view-song-string_waltz" data-song="string_waltz" data-level="easy">
+      <div class="song-art">💃</div>
+      <div class="song-title">String Waltz</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-bridge_bells" data-song="bridge_bells" data-level="easy">
+      <div class="song-art">🔔</div>
+      <div class="song-title">Bridge Bells</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-panda_parade" data-song="panda_parade" data-level="easy">
+      <div class="song-art">🐼</div>
+      <div class="song-title">Panda Parade</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-stepwise_song" data-song="stepwise_song" data-level="easy">
+      <div class="song-art">🪜</div>
+      <div class="song-title">Stepwise Song</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-echo_strings" data-song="echo_strings" data-level="easy">
+      <div class="song-art">🔊</div>
+      <div class="song-title">Echo Strings</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-gentle_bow" data-song="gentle_bow" data-level="easy">
+      <div class="song-art">🌿</div>
+      <div class="song-title">Gentle Bow</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-a_string_march" data-song="a_string_march" data-level="easy">
+      <div class="song-art">🥁</div>
+      <div class="song-title">A String March</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <!-- Intermediate (practice) -->
     <a class="song-card glass" href="#view-song-ode_to_joy" data-song="ode_to_joy" data-level="practice">
       <div class="song-art">🎉</div>
       <div class="song-title">Ode to Joy</div>
@@ -71,11 +110,92 @@
       <div class="song-title">Gavotte</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
+    <a class="song-card glass" href="#view-song-allegretto_lane" data-song="allegretto_lane" data-level="practice">
+      <div class="song-art">🏃</div>
+      <div class="song-title">Allegretto Lane</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-string_crossing_etude" data-song="string_crossing_etude" data-level="practice">
+      <div class="song-art">🌉</div>
+      <div class="song-title">String Crossing Etude</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-rhythm_bridge" data-song="rhythm_bridge" data-level="practice">
+      <div class="song-art">🌁</div>
+      <div class="song-title">Rhythm Bridge</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-lyric_bowing" data-song="lyric_bowing" data-level="practice">
+      <div class="song-art">🎶</div>
+      <div class="song-title">Lyric Bowing</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-syncopation_study" data-song="syncopation_study" data-level="practice">
+      <div class="song-art">🎵</div>
+      <div class="song-title">Syncopation Study</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-scale_rondo" data-song="scale_rondo" data-level="practice">
+      <div class="song-art">🎹</div>
+      <div class="song-title">Scale Rondo</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-duet_line" data-song="duet_line" data-level="practice">
+      <div class="song-art">👯</div>
+      <div class="song-title">Duet Line</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-clarity_etude" data-song="clarity_etude" data-level="practice">
+      <div class="song-art">✨</div>
+      <div class="song-title">Clarity Etude</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass" href="#view-song-balanced_bows" data-song="balanced_bows" data-level="practice">
+      <div class="song-art">⚖️</div>
+      <div class="song-title">Balanced Bows</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <!-- Challenge -->
     <a class="song-card glass song-soft-lock" href="#view-song-perpetual_motion" data-song="perpetual_motion"
       data-level="challenge" aria-describedby="song-lock-perpetual">
       <div class="song-art">⚡</div>
       <div class="song-title">Perpetual Motion</div>
       <div class="song-lock-hint" id="song-lock-perpetual">Goal: 3 clean songs.</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass song-soft-lock" href="#view-song-spiccato_run" data-song="spiccato_run"
+      data-level="challenge" aria-describedby="song-lock-spiccato">
+      <div class="song-art">🏹</div>
+      <div class="song-title">Spiccato Run</div>
+      <div class="song-lock-hint" id="song-lock-spiccato">Goal: 3 clean songs.</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass song-soft-lock" href="#view-song-double_stop_sprint" data-song="double_stop_sprint"
+      data-level="challenge" aria-describedby="song-lock-double-stop">
+      <div class="song-art">🎯</div>
+      <div class="song-title">Double Stop Sprint</div>
+      <div class="song-lock-hint" id="song-lock-double-stop">Goal: 3 clean songs.</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass song-soft-lock" href="#view-song-flying_shift" data-song="flying_shift"
+      data-level="challenge" aria-describedby="song-lock-flying-shift">
+      <div class="song-art">🦅</div>
+      <div class="song-title">Flying Shift</div>
+      <div class="song-lock-hint" id="song-lock-flying-shift">Goal: 3 clean songs.</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass song-soft-lock" href="#view-song-festival_reel" data-song="festival_reel"
+      data-level="challenge" aria-describedby="song-lock-festival">
+      <div class="song-art">🎪</div>
+      <div class="song-title">Festival Reel</div>
+      <div class="song-lock-hint" id="song-lock-festival">Goal: 3 clean songs.</div>
+      <div class="song-play" aria-hidden="true">▶</div>
+    </a>
+    <a class="song-card glass song-soft-lock" href="#view-song-virtuoso_loop" data-song="virtuoso_loop"
+      data-level="challenge" aria-describedby="song-lock-virtuoso">
+      <div class="song-art">🔥</div>
+      <div class="song-title">Virtuoso Loop</div>
+      <div class="song-lock-hint" id="song-lock-virtuoso">Goal: 3 clean songs.</div>
       <div class="song-play" aria-hidden="true">▶</div>
     </a>
     <!-- SONGS_GRID_END -->

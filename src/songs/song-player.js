@@ -12,6 +12,10 @@ export const initSongPlayer = async () => {
         const songId = parseViewSongId(view.id);
         if (!songId) continue;
 
+        // Signal early (before async DB reads) so the legacy play-along in
+        // song-progress.js won't fire if the user taps play during init.
+        view.dataset.songAdvancedAudio = 'true';
+
         const [song, sections, checkpoint] = await Promise.all([
             getSongById(songId),
             getSongSections(songId),
