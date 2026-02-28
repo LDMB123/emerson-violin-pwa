@@ -1391,6 +1391,7 @@
 .tuner-needle {
     stroke: var(--color-text);
     transform-origin: 100px 110px;
+    transform: rotate(calc(var(--tuner-offset, 0) * 1.8deg));
     transition: transform 0.15s ease-out;
 }
 
