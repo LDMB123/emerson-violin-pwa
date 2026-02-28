@@ -7,6 +7,14 @@ export const formatTime = (ms) => {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 };
 
+/** Countdown variant — uses Math.ceil so display never shows 0:00 prematurely. */
+export const formatCountdown = (ms) => {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const minutes = Math.floor(total / 60);
+    const seconds = total % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
 export const createSessionTimer = ({ targetMinutes, onUpdate, onMilestone }) => {
     let interval = null;
     let startedAt = null;

@@ -1518,8 +1518,19 @@
     animation: coach-fade-in 0.5s ease-out;
 }
 
-.coach-speech-bubble p {
+.coach-bubble-text {
+    display: block;
     margin: 0;
+}
+
+.coach-speech-bubble.is-typing .coach-bubble-text {
+    opacity: 0.4;
+    transition: opacity 0.2s ease-out;
+}
+
+.coach-speech-bubble.is-revealed .coach-bubble-text {
+    opacity: 1;
+    transition: opacity 0.3s ease-in;
 }
 
 .state-checkbox {

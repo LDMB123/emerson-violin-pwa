@@ -3,8 +3,9 @@ const ensureCoachMissionStatus = () => {
     if (!coachView) return null;
     let status = coachView.querySelector('[data-coach-mission-status]');
     if (status) return status;
-    const stepper = coachView.querySelector('[data-coach-stepper]');
-    if (!stepper?.parentElement) return null;
+
+    const anchor = coachView.querySelector('.coach-kid-layout');
+    if (!anchor?.parentElement) return null;
 
     status = document.createElement('p');
     status.className = 'coach-mission-status glass';
@@ -13,7 +14,7 @@ const ensureCoachMissionStatus = () => {
     status.setAttribute('aria-live', 'polite');
     status.textContent = 'Mission progress: 0/0 goals complete.';
 
-    stepper.parentElement.insertBefore(status, stepper.nextSibling);
+    anchor.parentElement.insertBefore(status, anchor.nextSibling);
     return status;
 };
 
@@ -24,14 +25,13 @@ const ensureCoachMissionTimeline = () => {
     let timeline = coachView.querySelector('[data-coach-mission-timeline]');
     if (timeline) return timeline;
 
-    const targetCard = coachView.querySelector('[data-coach-step-card="play"] .lesson-plan')
-        || coachView.querySelector('[data-coach-step-card="play"]');
-    if (!targetCard) return null;
+    const missionStatus = ensureCoachMissionStatus();
+    if (!missionStatus?.parentElement) return null;
 
     timeline = document.createElement('ol');
     timeline.className = 'mission-timeline';
     timeline.dataset.coachMissionTimeline = 'true';
-    targetCard.appendChild(timeline);
+    missionStatus.parentElement.insertBefore(timeline, missionStatus.nextSibling);
     return timeline;
 };
 
@@ -41,15 +41,15 @@ const ensureHomeMissionSummary = () => {
     let summary = home.querySelector('[data-home-mission-summary]');
     if (summary) return summary;
 
-    const missionActions = home.querySelector('.mission-actions');
-    if (!missionActions?.parentElement) return null;
+    const anchor = home.querySelector('.home-giant-actions');
+    if (!anchor?.parentElement) return null;
 
     summary = document.createElement('p');
     summary.className = 'home-mission-summary';
     summary.dataset.homeMissionSummary = 'true';
     summary.setAttribute('aria-live', 'polite');
     summary.textContent = 'Mission ready.';
-    missionActions.parentElement.insertBefore(summary, missionActions.nextSibling);
+    anchor.parentElement.insertBefore(summary, anchor.nextSibling);
     return summary;
 };
 

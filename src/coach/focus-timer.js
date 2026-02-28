@@ -1,18 +1,17 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { PERSIST_APPLIED, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
-import { setDifficultyBadge, triggerMiniConfetti } from '../games/shared.js';
+import { triggerMiniConfetti } from '../games/shared.js';
+import { formatCountdown } from '../games/session-timer.js';
 import { shouldStopFocusTimer } from './focus-timer-utils.js';
 
 let focusToggle = null;
 let focusArea = null;
-let durationEl = null;
 let statusEl = null;
-let durationRadios = [];
 
 let intervalId = null;
 let endTime = null;
-let activeMinutes = 5;
+let activeMinutes = 10;
 let isCompleting = false;
 let recommendedMinutes = 10;
 let globalListenersBound = false;
@@ -20,32 +19,8 @@ let globalListenersBound = false;
 const resolveElements = () => {
     focusToggle = document.querySelector('#focus-timer');
     focusArea = document.querySelector('.practice-focus');
-    durationEl = document.querySelector('.focus-duration');
     statusEl = document.querySelector('.focus-status');
-    durationRadios = Array.from(document.querySelectorAll('input[name="focus-duration"]'));
     return Boolean(focusToggle && focusArea);
-};
-
-const selectMinutes = (minutes) => {
-    const target = durationRadios.find((radio) => radio.id === `focus-${minutes}`);
-    if (target) {
-        target.checked = true;
-    }
-};
-
-const getSelectedMinutes = () => {
-    const selected = durationRadios.find((radio) => radio.checked);
-    if (!selected) return 5;
-    if (selected.id === 'focus-10') return 10;
-    if (selected.id === 'focus-15') return 15;
-    return 5;
-};
-
-const formatTime = (ms) => {
-    const total = Math.max(0, Math.ceil(ms / 1000));
-    const minutes = Math.floor(total / 60);
-    const seconds = total % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
 const setFocusDuration = (minutes) => {
@@ -53,20 +28,15 @@ const setFocusDuration = (minutes) => {
     if (focusArea) {
         focusArea.style.setProperty('--focus-duration', `${minutes * 60}s`);
     }
-    if (durationEl) {
-        durationEl.textContent = `${minutes} min focus sprint`;
-    }
 };
 
 const applyTuning = async () => {
     if (!focusArea) return;
     const tuning = await getGameTuning('coach-focus');
     recommendedMinutes = tuning.focusMinutes ?? recommendedMinutes;
-    setDifficultyBadge(document.querySelector('.coach-card-header'), tuning.difficulty, 'Coach');
     if (!focusArea.dataset.userSet) {
-        selectMinutes(recommendedMinutes);
         setFocusDuration(recommendedMinutes);
-        if (statusEl) statusEl.textContent = `Ready!`;
+        if (statusEl) statusEl.textContent = 'Ready!';
     }
 };
 
@@ -120,7 +90,7 @@ const updateCountdown = () => {
     if (!endTime) return;
     const remaining = endTime - Date.now();
     if (statusEl) {
-        statusEl.textContent = remaining > 0 ? `Time left ${formatTime(remaining)}` : 'Session complete!';
+        statusEl.textContent = remaining > 0 ? `Time left ${formatCountdown(remaining)}` : 'Session complete!';
     }
     if (remaining <= 0) {
         finishSession();
@@ -128,11 +98,9 @@ const updateCountdown = () => {
 };
 
 const startSession = () => {
-    const minutes = getSelectedMinutes();
-    setFocusDuration(minutes);
     clearTimer();
-    endTime = Date.now() + minutes * 60 * 1000;
-    if (statusEl) statusEl.textContent = `Time left ${formatTime(minutes * 60 * 1000)}`;
+    endTime = Date.now() + activeMinutes * 60 * 1000;
+    if (statusEl) statusEl.textContent = `Time left ${formatCountdown(activeMinutes * 60 * 1000)}`;
     intervalId = window.setInterval(updateCountdown, 1000);
 };
 
@@ -159,19 +127,6 @@ const stopWhenInactive = ({ force = false } = {}) => {
 };
 
 const bindLocalListeners = () => {
-    durationRadios.forEach((radio) => {
-        if (radio.dataset.focusTimerBound === 'true') return;
-        radio.dataset.focusTimerBound = 'true';
-        radio.addEventListener('change', () => {
-            const minutes = getSelectedMinutes();
-            if (focusArea) focusArea.dataset.userSet = 'true';
-            setFocusDuration(minutes);
-            if (focusToggle?.checked) {
-                startSession();
-            }
-        });
-    });
-
     if (focusToggle && focusToggle.dataset.focusTimerBound !== 'true') {
         focusToggle.dataset.focusTimerBound = 'true';
         focusToggle.addEventListener('change', handleToggle);
@@ -195,7 +150,7 @@ const bindGlobalListeners = () => {
 
     document.addEventListener(PERSIST_APPLIED, () => {
         if (!resolveElements()) return;
-        setFocusDuration(getSelectedMinutes());
+        setFocusDuration(activeMinutes);
     });
 
     document.addEventListener(ML_UPDATE, (event) => {
@@ -216,7 +171,7 @@ const initFocusTimer = () => {
     if (!resolveElements()) return;
     bindLocalListeners();
     applyTuning();
-    setFocusDuration(getSelectedMinutes());
+    setFocusDuration(activeMinutes);
 };
 
 export const init = initFocusTimer;
