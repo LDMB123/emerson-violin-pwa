@@ -15,7 +15,7 @@ If both pass, you are at a known-good baseline.
 
 ## What Has Been Done
 
-Major development phases (Feb 17–27, 2026):
+Major development phases (Feb 17–28, 2026):
 
 - **Architecture** — Declarative module registry (`src/app/module-registry.js`), async render gate, idle prefetch, `requestIdleCallback` staggering
 - **Persistence** — IndexedDB-first with localStorage fallback, retry-safe DB open, concurrent refresh dedup
@@ -26,6 +26,8 @@ Major development phases (Feb 17–27, 2026):
 - **CI** — Quality workflow with lint, audits, unit tests, build, perf budgets, Playwright E2E on iPad Safari
 - **Performance budgets** — FCP/LCP enforcement with calibration/recommendation/guardrail pipeline
 - **UI polish** — Dialog centering, onboarding dot centering, bottom-nav clearance, game empty states, CSS dead code removal
+- **CSS polish** — Missing styles for settings/help/about/backup/privacy/progress/parent/tuner/trainer/coach views; shared game CSS classes; orphaned rule cleanup; CSS token/variable consolidation
+- **Coach cleanup** — Connected speech bubble to coach-actions.js; removed dead DOM queries and dead functions from focus-timer.js; fixed mission-progress-render.js anchor selectors; consolidated formatCountdown into session-timer.js; added `.is-typing`/`.is-revealed` animation CSS
 - **Security** — CSP hardening, referrer/permissions-policy metas, secret leak scanning
 
 Historical phase-by-phase details are available in git history and archived plan docs under `_archived/plans/`.

@@ -69,7 +69,7 @@ npx playwright test tests/e2e
 - View visibility is controlled with `.view.is-active` (JS-applied on render)
 - Persistence is IndexedDB-first (`src/persistence/storage.js`) with localStorage fallback
 
-## Worktree Notes (2026-02-27)
+## Worktree Notes (2026-02-28)
 
 - E2E runs should account for onboarding-first behavior on fresh contexts.
 - Audio source rewriting now occurs after each view render in `showView()`.
@@ -84,6 +84,10 @@ npx playwright test tests/e2e
 - Song library expanded: 21 playable song sheets under `public/views/songs/`.
 - CSS dead code pass removed unused variables/classes; remaining CSS is auditable via `scripts/find-dead-css-vars.mjs`.
 - All game views use full-bleed immersive layout (no bottom-nav overlap).
+- Coach speech bubble is connected via `data-progress="coach-speech"` + `.coach-bubble-text` in `coach.html`.
+- `formatCountdown` (Math.ceil variant) is exported from `session-timer.js`; focus-timer imports it instead of a private copy.
+- Coach module-level listeners (coach-actions, mission-progress-listeners) are permanent singletons guarded by `listenersBound` / `globalListenersBound` flags — teardown not needed.
+- `mission-progress-render.js` anchors reference `.coach-kid-layout` (coach view) and `.home-giant-actions` (home view).
 
 ## Report Writing Standards
 
