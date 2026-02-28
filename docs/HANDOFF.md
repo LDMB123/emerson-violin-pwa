@@ -20,7 +20,7 @@ Major development phases (Feb 17–28, 2026):
 - **Architecture** — Declarative module registry (`src/app/module-registry.js`), async render gate, idle prefetch, `requestIdleCallback` staggering
 - **Persistence** — IndexedDB-first with localStorage fallback, retry-safe DB open, concurrent refresh dedup
 - **Lifecycle hardening** — bfcache-safe `pagehide` guards across all games and non-game surfaces, per-game deactivation hooks in shell, tone/audio/sample cleanup on navigation
-- **Games** — 4 new canvas-based games (Dynamic Dojo, Echo, Stir Soup, Wipers) with shared `canvas-engine-base.js`, full-bleed immersive layouts, mastery progression system
+- **Games** — 18 games: Bow Hero, Duet Challenge, Dynamic Dojo, Ear Trainer, Echo, Melody Maker, Note Memory, Pitch Quest, Pizzicato, Rhythm Dash, Rhythm Painter, Scale Practice, Sequence Game, Stir Soup, Story Song, String Quest, Tuning Time, Wipers — with shared `canvas-engine-base.js`, full-bleed immersive layouts, mastery progression system
 - **Song library** — 21 playable song sheets under `public/views/songs/`
 - **QA tooling** — Critical coverage gate, feature module completeness audit, dead code audit (knip), dependency dupe audit, secret scanner, view-sync audit, a11y audit, learning audit
 - **CI** — Quality workflow with lint, audits, unit tests, build, perf budgets, Playwright E2E on iPad Safari
@@ -111,3 +111,11 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 - `npm run handoff:verify` passes with no manual patching.
 - CI quality workflow passes on PR/main.
 - This runbook matches current repo behavior.
+
+## Known-Good Baseline (2026-02-28)
+
+- Branch: `main`
+- Latest commit: `0e230f9` (docs: update all docs)
+- Unit tests: 570 passing
+- E2E tests: 45 passing
+- All audits: passing

@@ -94,6 +94,7 @@ If either command hangs or intermittently times out, step down by one worker.
 - Active view visibility is JS-driven via `.view.is-active` (not solely CSS `:target`).
 - Idle/secondary modules are queued with `requestIdleCallback` fallback.
 - Audio file URLs in loaded views are rewritten at render-time via `getAudioPath()`.
+- View extraction from `index.html` is retired; view parity enforced via `npm run audit:view-sync` against `public/views/home.html`.
 
 ## Project Layout
 
@@ -105,7 +106,3 @@ docs/           Guides and implementation plans
 scripts/        Build/precache/optimization utilities
 wasm/           Rust source for WASM modules
 ```
-
-## Important Caveat
-
-View extraction from `index.html` has been retired; view parity is now enforced via `npm run audit:view-sync` against `public/views/home.html`.

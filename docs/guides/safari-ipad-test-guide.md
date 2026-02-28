@@ -48,6 +48,13 @@ console.log('SW active:', regs[0]?.active?.state); // Expected: "activated"
 // Check Console panel — should be clean
 ```
 
+**Success Criteria**:
+- ✅ App loads without console errors
+- ✅ Onboarding shown on first launch (or main view on subsequent launches)
+- ✅ Microphone permission prompt accepted
+- ✅ Service Worker active (`"activated"`)
+- ✅ DevTools connection working (Web Inspector panel visible on Mac)
+
 ---
 
 ## Phase 2: Safari-Compatible API Testing
@@ -448,20 +455,43 @@ caches.keys()
 
 ---
 
-## Phase 6 & 7: Documentation & Build Validation
+## Phase 6: Documentation
 
-### Post-Testing Actions
+### Post-Testing Documentation
 
 After completing all iPad tests:
 
 1. **Document findings** in issue tracker or notes
 2. **Take screenshots** of any issues found
 3. **Note performance metrics** from Safari Web Inspector
-4. **Run lint and build** on development machine:
-   ```bash
-   npm run lint
-   npm run build
-   ```
+   - AudioContext base latency
+   - LCP / FCP from Safari Web Inspector Timeline
+   - Memory usage during AudioWorklet processing
+
+**Success Criteria**:
+- ✅ All issues filed or noted
+- ✅ Screenshots taken for any regressions
+- ✅ Performance metrics recorded for future comparison
+
+---
+
+## Phase 7: Build Validation
+
+### Post-Testing Build Check
+
+Run quality gates on development machine after testing:
+
+```bash
+npm run lint:all
+npm run build
+npm run test        # Unit tests
+npm run handoff:verify  # Full gate (optional but recommended)
+```
+
+**Success Criteria**:
+- ✅ `npm run lint:all` passes
+- ✅ `npm run build` completes without errors
+- ✅ No new regressions introduced by any fixes applied during testing
 
 ---
 
@@ -484,7 +514,7 @@ These are expected behaviors (not bugs):
 ## Success Criteria Summary
 
 **Must Pass**:
-- ✅ All 9 manual tests above
+- ✅ All 10 manual tests above (Phases 1–5)
 - ✅ No console errors for Safari-compatible APIs
 - ✅ Smooth performance on iPad mini A15
 - ✅ Offline functionality works completely
@@ -505,7 +535,7 @@ These are expected behaviors (not bugs):
 
 ### Badge Not Appearing
 - Ensure app added to Home Screen (badges only work for installed PWAs)
-- Check Settings > Notifications > Emerson Violin > Badges enabled
+- Check Settings > Notifications > Panda Violin > Badges enabled
 
 ### Service Worker Not Caching
 - Clear Safari cache: Settings > Safari > Clear History and Website Data
@@ -518,5 +548,5 @@ These are expected behaviors (not bugs):
 
 ---
 
-**Testing Duration**: Approximately 45-60 minutes for complete test suite
+**Testing Duration**: Approximately 60-75 minutes for complete test suite (Phases 1–7)
 **Prerequisites**: iPad mini (6th gen) with iPadOS 26.2, Safari 26.2, deployed HTTPS app

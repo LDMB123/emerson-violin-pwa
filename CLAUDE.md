@@ -79,7 +79,7 @@ npm run handoff:verify # audit:full + E2E
 - Perf budget workflow consistency is validated by `scripts/audit-performance-budget-config.mjs`.
 - CI quality guard is defined in `.github/workflows/quality.yml`.
 - Zero-context pickup runbook is in `docs/HANDOFF.md`.
-- Games use `src/games/canvas-engine-base.js` as shared base for canvas-driven games (Dynamic Dojo, Echo, Stir Soup, Wipers).
+- 18 games in `src/games/`: Bow Hero, Duet Challenge, Dynamic Dojo, Ear Trainer, Echo, Melody Maker, Note Memory, Pitch Quest, Pizzicato, Rhythm Dash, Rhythm Painter, Scale Practice, Sequence Game, Stir Soup, Story Song, String Quest, Tuning Time, Wipers — all use `src/games/canvas-engine-base.js` as shared base.
 - Song library expanded: 21 playable song sheets under `public/views/songs/`.
 - CSS dead code pass removed unused variables/classes; remaining CSS is auditable via `scripts/find-dead-css-vars.mjs`.
 - All game views use full-bleed immersive layout (no bottom-nav overlap).

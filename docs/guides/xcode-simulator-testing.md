@@ -8,7 +8,7 @@ Quick validation using Xcode Simulator before physical device testing.
 # List available iPad mini simulators
 xcrun simctl list devices | grep "iPad mini"
 
-# Boot iPad mini (6th generation) - iPadOS 18.2 (closest to 26.2)
+# Boot iPad mini (6th generation) — Xcode 26 provides iPadOS 26 simulators
 # Find device UDID from list above, then:
 xcrun simctl boot <DEVICE_UDID>
 
@@ -221,7 +221,7 @@ See [`docs/guides/safari-ipad-test-guide.md`](safari-ipad-test-guide.md) for com
 ```bash
 #!/bin/bash
 # Quick Xcode Simulator validation
-# Run from project root: bash docs/guides/xcode-simulator-testing-quick.sh
+# Run from project root: bash test-simulator.sh
 
 echo "Starting iPad mini simulator..."
 DEVICE_UDID=$(xcrun simctl list devices | grep "iPad mini (6th generation)" | grep -oE '[0-9A-F-]{36}' | head -1)
@@ -250,4 +250,4 @@ echo "Press Ctrl+C to stop dev server when done"
 wait $DEV_PID
 ```
 
-Save as `test-simulator.sh`, run with `bash test-simulator.sh`
+Save as `test-simulator.sh` (or any name), run with `bash test-simulator.sh`
