@@ -31,6 +31,7 @@ Major development phases (Feb 17–28, 2026):
 - **Security** — CSP hardening, referrer/permissions-policy metas, secret leak scanning
 - **Safari 26.2 / iPadOS 26.2 hardening** — Fixed WASM export mismatch in `panda_audio.js` (`RhythmResult.rhythm_offset_ms`); added iOS AudioContext `interrupted` state handling in tone-player; replaced deprecated `window.orientationchange` with `screen.orientation.change`; fixed SW `clients.claim()` race and added `'audioworklet'` to `STATIC_DESTINATIONS`; removed `user-scalable=no` WCAG violation; fixed `translateZ(1000px)` compositing layer and `100vh→100dvh` in games.css; added `desynchronized:true` to canvas 2D context; added LCP hero image preload + async Google Fonts; applied `Map.getOrInsertComputed` (Safari 26.2+) to module-registry, view-loader, progress-model-primary
 - **Canvas + platform polish** — Fixed RAF lifecycle in `canvas-engine.js` (store rafId, cancelAnimationFrame on stop() — previously chain continued one extra frame after stop); added `{ passive: true }` to `visualViewport` resize/scroll listeners in `viewport-offset-controller.js`
+- **WASM optimization** — Removed 4 dead `#[wasm_bindgen]` exports from panda-audio (rhythm analysis reimplemented natively in JS); moved `[profile.release]` from per-crate Cargo.toml (silently ignored) to workspace root; panda-audio binary reduced 36KB→30KB (-17%); fixed O(events) `calculate_streak` hot loop to O(unique_days) in `progress-model-primary.js`; corrected test mock semantics for trailing-streak behavior
 
 Historical phase-by-phase details are available in git history and archived plan docs under `_archived/plans/`.
 
@@ -115,7 +116,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 ## Known-Good Baseline (2026-02-28)
 
 - Branch: `main`
-- Latest commit: `0e230f9` (docs: update all docs)
+- Latest commit: `5bffce7` (build(wasm): rebuild with LTO + dead export removal; panda-audio -17%)
 - Unit tests: 570 passing
 - E2E tests: 45 passing
 - All audits: passing
