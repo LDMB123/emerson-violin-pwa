@@ -75,14 +75,14 @@ const initSessionReview = async () => {
     const recommendations = await getLearningRecommendations().catch(() => null);
     renderer.updateMissionStatus(recommendations?.mission || null);
     renderer.renderNextActions(recommendations);
-    renderer.setCoachAltMessage('Keep your tempo steady and enjoy the melody.');
 
-    const recs = await getLearningRecommendations();
-    if (recs?.coachMessage) {
-        renderer.setCoachMessage(recs.coachMessage);
+    if (recommendations?.coachMessage) {
+        renderer.setCoachMessage(recommendations.coachMessage);
     }
-    if (recs?.coachActionMessage) {
-        renderer.setCoachAltMessage(recs.coachActionMessage);
+    if (recommendations?.coachActionMessage) {
+        renderer.setCoachAltMessage(recommendations.coachActionMessage);
+    } else {
+        renderer.setCoachAltMessage('Keep your tempo steady and enjoy the melody.');
     }
 
     teardown = () => {

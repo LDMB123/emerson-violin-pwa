@@ -45,12 +45,32 @@ export const buildSkillProfile = ({ SkillProfile, SkillCategory, events, updateS
         profile.update_skill(SkillCategory.Pitch, clamp(accuracy * 0.85, 25, 100));
     });
 
+    const GAME_SKILL_MAP = {
+        'pitch-quest': SkillCategory.Pitch,
+        'ear-trainer': SkillCategory.Pitch,
+        'tuning-time': SkillCategory.Pitch,
+        'scale-practice': SkillCategory.Pitch,
+        'rhythm-dash': SkillCategory.Rhythm,
+        'rhythm-painter': SkillCategory.Rhythm,
+        pizzicato: SkillCategory.Rhythm,
+        'duet-challenge': SkillCategory.Rhythm,
+        echo: SkillCategory.Rhythm,
+        'bow-hero': SkillCategory.BowControl,
+        'string-quest': SkillCategory.BowControl,
+        'dynamic-dojo': SkillCategory.BowControl,
+        'stir-soup': SkillCategory.BowControl,
+        wipers: SkillCategory.BowControl,
+        'note-memory': SkillCategory.Reading,
+        'story-song': SkillCategory.Reading,
+        'melody-maker': SkillCategory.Reading,
+    };
+
     events
         .filter((event) => event.type === 'game')
         .forEach((event) => {
             const score = clamp(event.accuracy || event.score || 0, 0, 100);
-            if (event.id === 'rhythm-dash') profile.update_skill(SkillCategory.Rhythm, score);
-            if (event.id === 'bow-hero') profile.update_skill(SkillCategory.BowControl, score);
+            const category = GAME_SKILL_MAP[event.id];
+            if (category !== undefined) profile.update_skill(category, score);
         });
 
     return profile;
