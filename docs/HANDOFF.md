@@ -30,6 +30,7 @@ Major development phases (Feb 17–28, 2026):
 - **Coach cleanup** — Connected speech bubble to coach-actions.js; removed dead DOM queries and dead functions from focus-timer.js; fixed mission-progress-render.js anchor selectors; consolidated formatCountdown into session-timer.js; added `.is-typing`/`.is-revealed` animation CSS
 - **Security** — CSP hardening, referrer/permissions-policy metas, secret leak scanning
 - **Safari 26.2 / iPadOS 26.2 hardening** — Fixed WASM export mismatch in `panda_audio.js` (`RhythmResult.rhythm_offset_ms`); added iOS AudioContext `interrupted` state handling in tone-player; replaced deprecated `window.orientationchange` with `screen.orientation.change`; fixed SW `clients.claim()` race and added `'audioworklet'` to `STATIC_DESTINATIONS`; removed `user-scalable=no` WCAG violation; fixed `translateZ(1000px)` compositing layer and `100vh→100dvh` in games.css; added `desynchronized:true` to canvas 2D context; added LCP hero image preload + async Google Fonts; applied `Map.getOrInsertComputed` (Safari 26.2+) to module-registry, view-loader, progress-model-primary
+- **Canvas + platform polish** — Fixed RAF lifecycle in `canvas-engine.js` (store rafId, cancelAnimationFrame on stop() — previously chain continued one extra frame after stop); added `{ passive: true }` to `visualViewport` resize/scroll listeners in `viewport-offset-controller.js`
 
 Historical phase-by-phase details are available in git history and archived plan docs under `_archived/plans/`.
 

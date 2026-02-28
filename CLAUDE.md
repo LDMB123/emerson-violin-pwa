@@ -47,14 +47,6 @@ npm run handoff:status # Print branch/commit/env snapshot
 npm run handoff:verify # audit:full + E2E
 ```
 
-For QA checks:
-
-```bash
-npm run lint
-npm test
-npx playwright test tests/e2e
-```
-
 ## Gotchas
 
 - **Web Audio API**: Requires HTTPS or localhost
@@ -95,6 +87,7 @@ npx playwright test tests/e2e
 - `formatCountdown` (Math.ceil variant) is exported from `session-timer.js`; focus-timer imports it instead of a private copy.
 - Coach module-level listeners (coach-actions, mission-progress-listeners) are permanent singletons guarded by `listenersBound` / `globalListenersBound` flags — teardown not needed.
 - `mission-progress-render.js` anchors reference `.coach-kid-layout` (coach view) and `.home-giant-actions` (home view).
+- Canvas engines: `src/utils/canvas-engine.js` (non-game use) stores `this.rafId` and calls `cancelAnimationFrame(this.rafId)` in `stop()` — subclasses must not bypass `stop()`. Game canvases use `src/games/canvas-engine-base.js` which uses `render()` as the RAF callback (self-terminating via `isRunning` guard).
 
 ## Report Writing Standards
 

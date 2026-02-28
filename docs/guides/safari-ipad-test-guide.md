@@ -27,6 +27,29 @@ npm run preview
 
 ---
 
+## Phase 1: Baseline Sanity
+
+### Pre-flight Checklist
+
+Before running individual tests, confirm:
+
+1. **App loads**: Navigate to deployed URL — home/tuner screen appears, no console errors
+2. **Onboarding**: If first launch, complete onboarding flow before testing other views
+3. **Microphone permission**: Grant when prompted (required for tuner tests)
+4. **DevTools connected**: Safari on Mac > Develop > [iPad name] > localhost
+
+**Console check**:
+```javascript
+// Confirm Service Worker is active
+const regs = await navigator.serviceWorker.getRegistrations();
+console.log('SW active:', regs[0]?.active?.state); // Expected: "activated"
+
+// Confirm no startup errors
+// Check Console panel — should be clean
+```
+
+---
+
 ## Phase 2: Safari-Compatible API Testing
 
 ### Test 1: Web Crypto PBKDF2 (Parent PIN)

@@ -18,12 +18,10 @@ xcrun simctl boot <DEVICE_UDID>
 ## Start Development Server
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa
+# From project root
+npm install  # Install dependencies if needed
 
-# Install dependencies if needed
-npm install
-
-# Start dev server with HTTPS (required for microphone access)
+# Start dev server (microphone requires HTTPS; localhost is sufficient for dev)
 npm run dev -- --host
 ```
 
@@ -185,7 +183,7 @@ document.querySelectorAll('button, a, [role="button"]').forEach(el => {
 6. **Wake Lock** - Screen stays on during practice
 7. **A15 performance** - Frame rates, memory usage
 
-See `docs/guides/safari-ipad-test-guide.md` for complete physical device test suite.
+See [`docs/guides/safari-ipad-test-guide.md`](safari-ipad-test-guide.md) for complete physical device test suite.
 
 ## Xcode Instruments Profiling
 
@@ -223,6 +221,7 @@ See `docs/guides/safari-ipad-test-guide.md` for complete physical device test su
 ```bash
 #!/bin/bash
 # Quick Xcode Simulator validation
+# Run from project root: bash docs/guides/xcode-simulator-testing-quick.sh
 
 echo "Starting iPad mini simulator..."
 DEVICE_UDID=$(xcrun simctl list devices | grep "iPad mini (6th generation)" | grep -oE '[0-9A-F-]{36}' | head -1)
@@ -245,7 +244,7 @@ echo "Opening app in Safari..."
 xcrun simctl openurl booted "http://localhost:5173"
 
 echo ""
-echo "Simulator ready! Run manual tests from docs/xcode-simulator-testing.md"
+echo "Simulator ready! Run manual tests from docs/guides/xcode-simulator-testing.md"
 echo "Press Ctrl+C to stop dev server when done"
 
 wait $DEV_PID
