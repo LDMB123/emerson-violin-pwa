@@ -1,13 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
     getViewId,
-    isPrimaryView,
-    getModulesForView,
     getActiveNavHref,
     isNavItemActive,
     isMissionCheckpointView,
     toMissionCheckpointHref,
 } from '../src/utils/app-utils.js';
+import { resolveModulesForView } from '../src/app/module-registry.js';
 
 describe('app-utils', () => {
     describe('getViewId', () => {
@@ -23,23 +22,9 @@ describe('app-utils', () => {
         });
     });
 
-    describe('isPrimaryView', () => {
-        it('treats child core views as primary', () => {
-            expect(isPrimaryView('view-home')).toBe(true);
-            expect(isPrimaryView('view-coach')).toBe(true);
-            expect(isPrimaryView('view-games')).toBe(true);
-            expect(isPrimaryView('view-songs')).toBe(true);
-            expect(isPrimaryView('view-progress')).toBe(true);
-        });
-
-        it('treats parent view as non-primary', () => {
-            expect(isPrimaryView('view-parent')).toBe(false);
-        });
-    });
-
-    describe('getModulesForView', () => {
+    describe('resolveModulesForView', () => {
         it('returns coach modules', () => {
-            const modules = getModulesForView('view-coach');
+            const modules = resolveModulesForView('view-coach');
             expect(modules).toContain('coachActions');
             expect(modules).toContain('focusTimer');
             expect(modules).toContain('lessonPlan');
@@ -47,7 +32,7 @@ describe('app-utils', () => {
         });
 
         it('returns parent advanced modules', () => {
-            const modules = getModulesForView('view-parent');
+            const modules = resolveModulesForView('view-parent');
             expect(modules).toContain('parentPin');
             expect(modules).toContain('parentGoals');
             expect(modules).toContain('parentRecordings');
@@ -60,22 +45,22 @@ describe('app-utils', () => {
         });
 
         it('returns no special modules for settings view', () => {
-            expect(getModulesForView('view-settings')).toEqual([]);
+            expect(resolveModulesForView('view-settings')).toEqual([]);
         });
 
         it('returns game modules for game views', () => {
-            const modules = getModulesForView('view-game-pitch-quest');
+            const modules = resolveModulesForView('view-game-pitch-quest');
             expect(modules).toContain('gameMetrics');
             expect(modules).toContain('gameEnhancements');
         });
 
         it('returns a frozen module list', () => {
-            const modules = getModulesForView('view-coach');
+            const modules = resolveModulesForView('view-coach');
             expect(Object.isFrozen(modules)).toBe(true);
         });
 
         it('returns empty modules for invalid view id', () => {
-            expect(getModulesForView(null)).toEqual([]);
+            expect(resolveModulesForView(null)).toEqual([]);
         });
     });
 

@@ -1,5 +1,5 @@
 import { SOUNDS_CHANGE, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
-import { isBfcachePagehide } from './trainer-utils.js';
+import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
 
 export const attachTrainerGlobalListeners = ({
     metronomeController,

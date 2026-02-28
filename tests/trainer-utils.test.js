@@ -12,8 +12,8 @@ import {
     formatPostureHint,
     formatBowingIntroText,
     shouldClearTapTimes,
-    isBfcachePagehide
 } from '../src/trainer/trainer-utils.js';
+import { isBfcachePagehide } from '../src/utils/lifecycle-utils.js';
 
 describe('trainer-utils', () => {
     describe('isPracticeView', () => {

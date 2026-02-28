@@ -1,7 +1,6 @@
 import { whenReady } from './utils/dom-ready.js';
 import {
     getViewId,
-    getModulesForView,
     getActiveNavHref,
     isNavItemActive,
     toMissionCheckpointHref,
@@ -15,6 +14,7 @@ import {
     EAGER_MODULES,
     IDLE_MODULE_PLAN,
     PREFETCH_VIEW_IDS,
+    resolveModulesForView,
 } from './app/module-registry.js';
 import { createAsyncGate } from './app/async-gate.js';
 import {
@@ -98,7 +98,7 @@ const runModuleInit = (module) => {
 
 const loadForView = async (viewId) => {
     if (!viewId) return;
-    const modules = getModulesForView(viewId);
+    const modules = resolveModulesForView(viewId);
     const loadedModules = await Promise.all(modules.map((module) => loadModule(module)));
     loadedModules.forEach((module) => runModuleInit(module));
 };
