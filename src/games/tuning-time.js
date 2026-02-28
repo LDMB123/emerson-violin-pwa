@@ -146,7 +146,7 @@ const { bind } = createGame({
                 gameState.tuningEnergy -= 0.015; // Drain slowly
             }
 
-            // Phase 14: Toggle Bioluminescent Mascot Class
+            // Toggle Bioluminescent Mascot Class
             const container = document.getElementById('view-game-tuning-time');
             if (container) {
                 if (gameState.tuningEnergy > 0.8) {

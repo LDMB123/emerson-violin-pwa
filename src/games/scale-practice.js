@@ -76,7 +76,7 @@ const { bind } = createGame({
                 canvasEngine.setActiveIndex(index);
             }
 
-            // Phase 14: Scale Practice Live Progress Climber
+            // Scale Practice Live Progress Climber
             const mascot = stage.querySelector('.mascot-scale');
             if (mascot) {
                 // The scale peaks at index 7 (High G) 

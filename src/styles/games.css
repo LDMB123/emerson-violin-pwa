@@ -93,7 +93,7 @@
         border-radius: var(--radius-2xl);
         box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.8);
 
-        /* Phase 19: Absolute floating modal centered over game */
+        /* Absolute floating modal centered over game */
         position: absolute;
         inset: 0;
         margin: auto;
@@ -154,7 +154,7 @@
         font-size: var(--text-xs);
     }
 
-    /* Phase 5: Massive Touch Target Checklists */
+    /* Massive Touch Target Checklists */
 
     .game-check-item {
         position: relative;
@@ -375,7 +375,7 @@
         }
     }
 
-    /* Phase 5: Massive Radio Tile Overrides for Ear Trainer & Pitch Quest */
+    /* Massive Radio Tile Overrides for Ear Trainer & Pitch Quest */
 
     .ear-choice {
         appearance: none;

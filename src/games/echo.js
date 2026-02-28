@@ -39,7 +39,7 @@ const handleRealtimeFeature = (e) => {
 
 const generateTeacherWaveform = () => {
     // Generate a visual representation of the audio the teacher is playing.
-    // In Phase 5, this will be generated directly from the WASM synth buffer
+    // TODO: generate directly from the WASM synth buffer
     const buffer = new Float32Array(400); // 400 slices
 
     // Fill buffer based on mock pattern

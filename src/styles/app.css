@@ -161,7 +161,7 @@
             0 6px 14px rgba(86, 40, 23, 0.08),
             inset 0 0 0 1px rgba(255, 255, 255, 0.3);
 
-        /* Typography (Phase 10: Fredoka "WOW" Scale for 8yo legibility) */
+        /* Typography — Fredoka "WOW" Scale for 8yo legibility */
         --font-main: 'Fredoka', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
         --font-display: 'Fredoka', 'Fraunces', 'Nunito', serif;
 
@@ -323,7 +323,7 @@
 @layer components {
 
     /* Ambient Background */
-    /* Dynamic Phase 10 SVG Background */
+    /* Dynamic SVG Background */
     .global-animated-bg {
         position: fixed;
         inset: 0;
@@ -476,7 +476,7 @@
         max-height: 100dvh;
         padding: var(--space-4);
         padding-top: calc(var(--safe-top) + 80px);
-        /* Phase 18 Fix: global header clearance */
+        /* Global header clearance */
         padding-bottom: calc(80px + var(--safe-bottom) + var(--keyboard-offset));
         overflow-y: auto;
         scroll-behavior: smooth;
@@ -493,7 +493,7 @@
         opacity: 1;
         transform: translateY(0);
         scroll-margin-top: calc(var(--safe-top) + 80px);
-        /* Phase 18 Fix: anchor targeting clearance */
+        /* Anchor targeting clearance */
     }
 
     /* Target-based visibility */
@@ -502,7 +502,7 @@
         display: block;
     }
 
-    /* Phase 9: Full-Screen "Focus" Profiles for Games and Songs */
+    /* Full-Screen Focus Profiles for Games and Songs */
     .game-view.is-active,
     .game-view:target,
     .song-view.is-active,
@@ -551,7 +551,7 @@
         }
     }
 
-    /* Phase 11 PhilharMagic: Cinematic 3D Transitions */
+    /* Cinematic 3D Transitions */
     @keyframes slide-out-left {
         from {
             opacity: 1;
@@ -664,7 +664,7 @@
         transform: scale(0.95);
     }
 
-    /* Buttons (Phase 11: PhilharMagic 4D Immersion) */
+    /* Buttons — PhilharMagic Immersion */
     .btn {
         display: inline-flex;
         align-items: center;
@@ -719,7 +719,7 @@
         }
     }
 
-    /* Phase 11: 4D Hover/Focus Pop */
+    /* Hover/Focus Pop */
     @media (hover: hover) and (pointer: fine) {
         .btn:hover {
             transform: perspective(800px) rotateX(10deg) rotateY(-5deg) translateZ(20px) scale(1.05);
@@ -929,10 +929,6 @@
             background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
         }
     }
-
-    /* Feature Grid */
-
-    /* Container Query for responsive feature cards */
 
     /* Games Grid */
 
@@ -1205,7 +1201,7 @@
 
     /* CSS-first nav active state based on :target */
 
-    /* Phase 18: Hide bottom nav completely when a game view is active for full immersion */
+    /* Hide bottom nav completely when a game view is active for full immersion */
     :root:has(.game-view:target) .bottom-nav,
     :root:has(.game-view.is-active) .bottom-nav {
         display: none !important;
@@ -1323,7 +1319,7 @@
         }
     }
 
-    /* Phase 14: Bioluminescent Panda Glow & Kinetic Metronome */
+    /* Bioluminescent Panda Glow & Kinetic Metronome */
     @keyframes mascot-bounce {
         0% {
             transform: scale(1) translateY(0);
@@ -1353,7 +1349,7 @@
 }
 
 .tuner-cents {
-    /* Phase 15: Giant Tactile Typography */
+    /* Giant Tactile Typography */
     font-size: 8rem;
     font-weight: 800;
     color: var(--color-text-muted);
@@ -1461,7 +1457,7 @@
     border-radius: 36px;
     background: linear-gradient(165deg, rgba(255, 246, 235, 0.7), rgba(255, 232, 210, 0.6));
     box-shadow: 0 40px 80px rgba(88, 45, 28, 0.2);
-    /* Phase 15: Volumetric Glass Control */
+    /* Volumetric Glass Control */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.6);
@@ -1479,7 +1475,7 @@
     position: relative;
 }
 
-/* Phase 11 PhilharMagic: Living Mascot Breathing */
+/* Living Mascot Breathing */
 
 @keyframes mascot-breathe {
     0% {
@@ -1520,7 +1516,7 @@
     }
 }
 
-/* Phase 11 PhilharMagic: Glowing Aura Timer */
+/* Glowing Aura Timer */
 
 @keyframes plasma-spin {
     from {
@@ -1573,7 +1569,7 @@
     cursor: pointer;
     transition: transform var(--duration-normal) var(--ease-bounce),
         box-shadow var(--duration-normal) var(--ease-out);
-    /* Phase 11 PhilharMagic Setup */
+    /* PhilharMagic Setup */
     will-change: transform, box-shadow;
     /* Hardware acceleration for Safari */
     transform: translateZ(0);
@@ -1613,7 +1609,7 @@
     letter-spacing: 0.1em;
     border-radius: var(--radius-full);
     justify-content: center;
-    /* Phase 15: Tactile physical pedals */
+    /* Tactile physical pedals */
     min-height: 120px;
     box-shadow: 0 16px 32px rgba(233, 86, 57, 0.4);
     transition: transform var(--duration-fast) var(--ease-bounce), box-shadow var(--duration-fast) var(--ease-out);
@@ -3592,7 +3588,7 @@
     opacity: 0;
     transition: opacity var(--duration-fast) var(--ease-out);
     pointer-events: none;
-    /* Phase 18 Fix: Prevent click interception on game cards */
+    /* Prevent click interception on game cards */
 }
 
 /* Skeleton Loading States */
@@ -3696,8 +3692,6 @@
         animation: none;
     }
 }
-
-/* Empty States */
 
 /* =========================================================
        iPad Mini 6 — Portrait (≥768px) & Landscape (≥1024px)
@@ -4168,7 +4162,7 @@ dialog[open]::backdrop {
     display: none;
 }
 
-/* Phase 11 PhilharMagic: Sparkling Wand Playhead */
+/* Sparkling Wand Playhead */
 .song-playhead {
     position: absolute;
     top: -10px;
@@ -4207,7 +4201,7 @@ dialog[open]::backdrop {
     }
 }
 
-/* Phase 11 PhilharMagic: 3D Popping Notes */
+/* 3D Popping Notes */
 .song-note {
     position: absolute;
     top: 50%;
@@ -4286,7 +4280,7 @@ dialog[open]::backdrop {
     }
 }
 
-/* Phase 11 PhilharMagic: 4D Explosive Hit State */
+/* Explosive Hit State */
 @keyframes song-note-highlight {
 
     0%,
@@ -4724,7 +4718,7 @@ dialog[open]::backdrop {
         color: var(--color-text);
     }
 
-    /* Phase 9: Pediatric Home View */
+    /* Pediatric Home View */
     .home-kid-hero {
         margin-top: calc(var(--safe-top) + 20px);
         display: flex;
@@ -4797,7 +4791,7 @@ dialog[open]::backdrop {
         box-shadow: 0 8px 0 var(--color-brand-brown) !important;
         gap: var(--space-5);
         text-decoration: none;
-        /* Phase 13 Safari Sibling Indexing */
+        /* Safari Sibling Indexing */
         animation: slide-in-bottom 0.5s var(--ease-bounce) both;
         animation-delay: calc(sibling-index() * 70ms);
     }
@@ -4846,9 +4840,9 @@ dialog[open]::backdrop {
         color: contrast-color(#A06CD5);
     }
 
-    /* Phase 9: Pediatric Coach View */
+    /* Pediatric Coach View */
 
-    /* Phase 9: Pediatric Games/Songs Cards */
+    /* Pediatric Games/Songs Cards */
     .game-card,
     .song-card {
         display: flex;
@@ -5425,7 +5419,7 @@ dialog[open]::backdrop {
     font-size: 0.86rem;
 }
 
-/* Phase 4: Suzuki Home Teacher Dashboard */
+/* Suzuki Home Teacher Dashboard */
 .parent-home-teacher {
     margin-bottom: var(--space-4);
 }
