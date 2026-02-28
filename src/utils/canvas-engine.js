@@ -7,6 +7,7 @@ export class BaseCanvasEngine {
         this.isRunning = false;
         this.lastTime = performance.now();
         this.particles = [];
+        this.rafId = null;
 
         // Setup base resize handling
         this.handleResize = this.handleResize.bind(this);
@@ -27,6 +28,10 @@ export class BaseCanvasEngine {
 
     stop() {
         this.isRunning = false;
+        if (this.rafId !== null) {
+            cancelAnimationFrame(this.rafId);
+            this.rafId = null;
+        }
     }
 
     loop() {
@@ -40,7 +45,7 @@ export class BaseCanvasEngine {
         if (this.update) this.update(dt);
         if (this.draw) this.draw();
 
-        requestAnimationFrame(() => this.loop());
+        this.rafId = requestAnimationFrame(() => this.loop());
     }
 
     destroy() {

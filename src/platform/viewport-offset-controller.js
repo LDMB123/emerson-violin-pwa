@@ -21,8 +21,8 @@ export const createViewportOffsetController = ({ rootStyle = document.documentEl
         update();
         if (visualViewportGlobalsBound) return;
         visualViewportGlobalsBound = true;
-        window.visualViewport.addEventListener('resize', update);
-        window.visualViewport.addEventListener('scroll', update);
+        window.visualViewport.addEventListener('resize', update, { passive: true });
+        window.visualViewport.addEventListener('scroll', update, { passive: true });
         if (screen.orientation) {
             screen.orientation.addEventListener('change', update);
         } else {
