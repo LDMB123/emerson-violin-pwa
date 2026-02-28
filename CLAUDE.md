@@ -68,6 +68,10 @@ npm run handoff:verify # audit:full + E2E
 - Safari 26+ freezes OS version in UA string — `parseIPadOSVersion()` returns stale value; don't display parsed version to users (`ipados-capabilities.js`).
 - `Map.getOrInsertComputed(key, fn)` is the established pattern for atomic get-or-create (Safari 26.2+/Chrome 133+); used in module-registry, view-loader, progress-model-primary — always include `supportsGetOrInsertComputed` fallback.
 - WASM bindings in `src/wasm/panda_audio.js` follow `{typename}_{methodname}` export naming — mismatches return `undefined` silently; verify with `console.log(wasm)` exports when debugging.
+- `[profile.release]` in per-crate `Cargo.toml` (workspace members) is **silently ignored** — release profile must be in `wasm/Cargo.toml` workspace root to take effect.
+- WASM rebuild on macOS may fail with "You have not agreed to the Xcode license" — run `sudo xcodebuild -license accept` first; proc-macro build scripts need the native host linker.
+- Dead `#[wasm_bindgen]` exports: remove the attribute from functions not called by any JS consumer — LTO will then eliminate them from the binary. Don't just delete the Rust function without first checking JS imports.
+- `calculate_streak` (panda-core) returns **trailing** streak — iterates backward from most-recent day and breaks on first gap; it is NOT best-ever. Test mocks must match this semantics (dedup, sort ascending, walk backward, break on gap).
 - SW `clients.claim()` must be inside `event.waitUntil()` and awaited — placing it outside causes an activation race (`public/sw.js`).
 - Canvas games: `desynchronized: true` on 2D context for GPU compositor independence; avoid `translateZ` values > 0 (creates oversized compositing layers); use `100dvh` not `100vh` for mobile Safari toolbar clearance.
 - E2E runs should account for onboarding-first behavior on fresh contexts.

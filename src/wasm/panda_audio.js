@@ -235,13 +235,6 @@ if (Symbol.dispose) PitchResult.prototype[Symbol.dispose] = PitchResult.prototyp
  * Rhythm analysis result for realtime coaching
  */
 export class RhythmResult {
-    static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(RhythmResult.prototype);
-        obj.__wbg_ptr = ptr;
-        RhythmResultFinalization.register(obj, obj.__wbg_ptr, obj);
-        return obj;
-    }
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
@@ -289,59 +282,6 @@ export class RhythmResult {
     }
 }
 if (Symbol.dispose) RhythmResult.prototype[Symbol.dispose] = RhythmResult.prototype.free;
-
-/**
- * Estimate onset strength from RMS novelty against a baseline.
- * @param {Float32Array} buffer
- * @param {number} baseline_rms
- * @returns {number}
- */
-export function analyze_onset(buffer, baseline_rms) {
-    const ptr0 = passArrayF32ToWasm0(buffer, wasm.__wbindgen_malloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.analyze_onset(ptr0, len0, baseline_rms);
-    return ret;
-}
-
-/**
- * Analyze a rhythm frame and return onset/tempo confidence primitives.
- * @param {Float32Array} buffer
- * @param {number} baseline_rms
- * @param {number} now_ms
- * @param {number} last_onset_ms
- * @param {number} tempo_bpm
- * @returns {RhythmResult}
- */
-export function analyze_rhythm_frame(buffer, baseline_rms, now_ms, last_onset_ms, tempo_bpm) {
-    const ptr0 = passArrayF32ToWasm0(buffer, wasm.__wbindgen_malloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.analyze_rhythm_frame(ptr0, len0, baseline_rms, now_ms, last_onset_ms, tempo_bpm);
-    return RhythmResult.__wrap(ret);
-}
-
-/**
- * Compute the nearest-beat rhythm offset (ms) for a running tempo.
- * @param {number} last_onset_ms
- * @param {number} now_ms
- * @param {number} tempo_bpm
- * @returns {number}
- */
-export function compute_rhythm_offset_ms(last_onset_ms, now_ms, tempo_bpm) {
-    const ret = wasm.compute_rhythm_offset_ms(last_onset_ms, now_ms, tempo_bpm);
-    return ret;
-}
-
-/**
- * Estimate tempo (BPM) from onset intervals in milliseconds.
- * @param {Float32Array} intervals_ms
- * @returns {number}
- */
-export function estimate_tempo_bpm(intervals_ms) {
-    const ptr0 = passArrayF32ToWasm0(intervals_ms, wasm.__wbindgen_malloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.estimate_tempo_bpm(ptr0, len0);
-    return ret;
-}
 
 export function init() {
     wasm.init();
