@@ -114,23 +114,15 @@ vi.mock('../../src/wasm/load-core.js', () => {
     }
 
     const calculate_streak = (days) => {
-        const values = Array.from(days || [])
-            .map((value) => Number(value))
-            .filter((value) => Number.isFinite(value))
-            .sort((left, right) => left - right);
+        const unique = [...new Set(Array.from(days || []).map((v) => Number(v)).filter((v) => Number.isFinite(v)))];
+        const values = unique.sort((left, right) => left - right);
         if (!values.length) return 0;
-
         let streak = 1;
-        let best = 1;
-        for (let index = 1; index < values.length; index += 1) {
-            if (values[index] === values[index - 1] + 1) {
-                streak += 1;
-            } else if (values[index] !== values[index - 1]) {
-                streak = 1;
-            }
-            best = Math.max(best, streak);
+        for (let i = values.length - 2; i >= 0; i -= 1) {
+            if (values[i + 1] - values[i] === 1) { streak += 1; }
+            else { break; }
         }
-        return best;
+        return streak;
     };
 
     return {

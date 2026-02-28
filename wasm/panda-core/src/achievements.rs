@@ -138,7 +138,7 @@ impl AchievementTracker {
             Achievement {
                 id: "all_games".to_string(),
                 name: "Game Champion".to_string(),
-                description: "Play all 9 games at least once".to_string(),
+                description: "Play all 18 games at least once".to_string(),
                 icon: "🎮".to_string(),
                 unlocked: false,
                 unlock_date: None,

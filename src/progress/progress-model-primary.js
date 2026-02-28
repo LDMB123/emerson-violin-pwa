@@ -18,12 +18,13 @@ const trackPracticeEvents = ({ practiceEvents, progress, skillProfile, calculate
     let totalMinutes = 0;
     let weekMinutes = 0;
 
+    let streak = 0;
     for (const event of practiceEvents) {
         if (!seenDays.has(event.day)) {
             seenDays.add(event.day);
             uniqueDays.push(event.day);
+            streak = calculateStreakFromDays(calculateStreak, uniqueDays);
         }
-        const streak = calculateStreakFromDays(calculateStreak, uniqueDays);
         progress.log_practice(event.minutes, streak);
         totalMinutes += event.minutes;
         updateSkillProfile(skillProfile, event.id, event.minutes);

@@ -141,7 +141,6 @@ fn compute_rms(buffer: &[f32]) -> f32 {
 }
 
 /// Estimate onset strength from RMS novelty against a baseline.
-#[wasm_bindgen]
 pub fn analyze_onset(buffer: &[f32], baseline_rms: f32) -> f32 {
     let energy = compute_rms(buffer);
     let novelty = (energy - baseline_rms).max(0.0);
@@ -149,7 +148,6 @@ pub fn analyze_onset(buffer: &[f32], baseline_rms: f32) -> f32 {
 }
 
 /// Estimate tempo (BPM) from onset intervals in milliseconds.
-#[wasm_bindgen]
 pub fn estimate_tempo_bpm(intervals_ms: &[f32]) -> f32 {
     let valid: Vec<f32> = intervals_ms
         .iter()
@@ -172,7 +170,6 @@ pub fn estimate_tempo_bpm(intervals_ms: &[f32]) -> f32 {
 }
 
 /// Compute the nearest-beat rhythm offset (ms) for a running tempo.
-#[wasm_bindgen]
 pub fn compute_rhythm_offset_ms(last_onset_ms: f32, now_ms: f32, tempo_bpm: f32) -> f32 {
     if tempo_bpm <= 0.0 || last_onset_ms <= 0.0 || now_ms <= last_onset_ms {
         return 0.0;
@@ -187,7 +184,6 @@ pub fn compute_rhythm_offset_ms(last_onset_ms: f32, now_ms: f32, tempo_bpm: f32)
 }
 
 /// Analyze a rhythm frame and return onset/tempo confidence primitives.
-#[wasm_bindgen]
 pub fn analyze_rhythm_frame(
     buffer: &[f32],
     baseline_rms: f32,
