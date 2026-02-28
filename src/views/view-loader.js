@@ -1,3 +1,6 @@
+// Safari 26.2+, Chrome 133+
+const supportsGetOrInsertComputed = 'getOrInsertComputed' in Map.prototype;
+
 export class ViewLoader {
   constructor() {
     this.cache = new Map();
@@ -60,6 +63,13 @@ export class ViewLoader {
   }
 
   #cacheTemplate(viewPath, html) {
+    if (supportsGetOrInsertComputed) {
+      return this.templates.getOrInsertComputed(viewPath, () => {
+        const template = document.createElement('template');
+        template.innerHTML = html;
+        return template;
+      });
+    }
     if (this.templates.has(viewPath)) {
       return this.templates.get(viewPath);
     }

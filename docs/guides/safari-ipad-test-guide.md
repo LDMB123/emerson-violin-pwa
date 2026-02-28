@@ -452,6 +452,9 @@ These are expected behaviors (not bugs):
 4. **Push notifications**: Require explicit user permission, no silent push
 5. **Fullscreen API**: Not available in iOS Safari
 6. **Web Bluetooth/USB**: Not supported
+7. **UA string OS version frozen** (Safari 26+): Parsed iPadOS version from UA is stale — do not display or rely on it for feature detection
+8. **`window.orientationchange` removed** (Safari 26+): Use `screen.orientation.addEventListener('change', ...)` with fallback for older browsers
+9. **AudioContext `interrupted` state** (iOS): System events (phone calls, alerts) put AudioContext in `'interrupted'` — must handle alongside `'suspended'` when resuming audio
 
 ---
 

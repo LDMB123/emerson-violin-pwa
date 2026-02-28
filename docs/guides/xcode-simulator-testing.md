@@ -185,7 +185,7 @@ document.querySelectorAll('button, a, [role="button"]').forEach(el => {
 6. **Wake Lock** - Screen stays on during practice
 7. **A15 performance** - Frame rates, memory usage
 
-See `docs/safari-ipad-test-guide.md` for complete physical device test suite.
+See `docs/guides/safari-ipad-test-guide.md` for complete physical device test suite.
 
 ## Xcode Instruments Profiling
 

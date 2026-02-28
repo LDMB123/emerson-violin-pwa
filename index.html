@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0" />
+    content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#F56B49" />
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'" />
@@ -41,9 +41,13 @@
 
   <title>Panda Violin | Violin Practice Companion</title>
   <!-- Premium Pediatric Typography -->
+  <!-- LCP hero preload -->
+  <link rel="preload" as="image" href="./assets/illustrations/epic_mascot.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Load Fredoka asynchronously to avoid render-blocking -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;800;900&display=swap"></noscript>
   <link rel="stylesheet" href="./src/styles/app.css" />
 </head>
 

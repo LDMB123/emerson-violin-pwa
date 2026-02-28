@@ -10,8 +10,8 @@
         inset: 0;
         z-index: 9999 !important;
         /* Force true full screen */
-        transform: translateZ(1000px);
-        /* Hardware acceleration over Safari shell layers */
+        transform: translateZ(0);
+        /* Promote to compositor layer, avoid extreme z-depth */
         overflow: hidden;
     }
 
@@ -107,7 +107,7 @@
         margin: auto;
         max-width: 540px;
         height: max-content;
-        max-height: calc(100vh - 120px);
+        max-height: calc(100dvh - 120px);
         overflow-y: auto;
         z-index: 10000;
         pointer-events: auto;

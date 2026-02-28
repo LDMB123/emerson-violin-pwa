@@ -128,26 +128,29 @@ const MODULE_RULES = [
 ];
 
 const modulesByView = new Map();
+// Safari 26.2+, Chrome 133+
+const supportsGetOrInsertComputed = 'getOrInsertComputed' in Map.prototype;
+
+const computeModulesForView = (viewId) => {
+    const modules = [];
+    MODULE_RULES.forEach(({ when, modules: ruleModules }) => {
+        if (!when(viewId)) return;
+        ruleModules.forEach((module) => {
+            if (!modules.includes(module)) modules.push(module);
+        });
+    });
+    return Object.freeze(modules);
+};
 
 export const resolveModulesForView = (viewId) => {
     if (typeof viewId !== 'string' || !viewId) {
         return [];
     }
-    if (modulesByView.has(viewId)) {
-        return modulesByView.get(viewId);
+    if (supportsGetOrInsertComputed) {
+        return modulesByView.getOrInsertComputed(viewId, computeModulesForView);
     }
-
-    const modules = [];
-    MODULE_RULES.forEach(({ when, modules: ruleModules }) => {
-        if (!when(viewId)) return;
-        ruleModules.forEach((module) => {
-            if (!modules.includes(module)) {
-                modules.push(module);
-            }
-        });
-    });
-
-    const resolvedModules = Object.freeze(modules);
-    modulesByView.set(viewId, resolvedModules);
-    return resolvedModules;
+    if (modulesByView.has(viewId)) return modulesByView.get(viewId);
+    const resolved = computeModulesForView(viewId);
+    modulesByView.set(viewId, resolved);
+    return resolved;
 };

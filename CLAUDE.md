@@ -71,6 +71,13 @@ npx playwright test tests/e2e
 
 ## Worktree Notes (2026-02-28)
 
+- AudioContext can enter `'interrupted'` state on iOS (phone calls, system audio) — handle alongside `'suspended'` in `src/audio/tone-player/context-manager.js`.
+- Safari 26+ removed `window.orientationchange` — use `screen.orientation.addEventListener('change', ...)` with `{ passive: true }` fallback for older browsers.
+- Safari 26+ freezes OS version in UA string — `parseIPadOSVersion()` returns stale value; don't display parsed version to users (`ipados-capabilities.js`).
+- `Map.getOrInsertComputed(key, fn)` is the established pattern for atomic get-or-create (Safari 26.2+/Chrome 133+); used in module-registry, view-loader, progress-model-primary — always include `supportsGetOrInsertComputed` fallback.
+- WASM bindings in `src/wasm/panda_audio.js` follow `{typename}_{methodname}` export naming — mismatches return `undefined` silently; verify with `console.log(wasm)` exports when debugging.
+- SW `clients.claim()` must be inside `event.waitUntil()` and awaited — placing it outside causes an activation race (`public/sw.js`).
+- Canvas games: `desynchronized: true` on 2D context for GPU compositor independence; avoid `translateZ` values > 0 (creates oversized compositing layers); use `100dvh` not `100vh` for mobile Safari toolbar clearance.
 - E2E runs should account for onboarding-first behavior on fresh contexts.
 - Audio source rewriting now occurs after each view render in `showView()`.
 - Idle module imports are staggered with `requestIdleCallback` fallback to reduce startup contention.

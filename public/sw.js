@@ -31,7 +31,7 @@ const buildPrecacheList = () => {
 };
 
 const PRECACHE_URLS = buildPrecacheList();
-const STATIC_DESTINATIONS = new Set(['style', 'script', 'font', 'image', 'audio']);
+const STATIC_DESTINATIONS = new Set(['style', 'script', 'font', 'image', 'audio', 'audioworklet']);
 let offlineMode = false;
 
 self.addEventListener('install', (event) => {
@@ -69,9 +69,9 @@ self.addEventListener('activate', (event) => {
             } catch {
                 // Navigation preload not supported
             }
+            await self.clients.claim();
         })()
     );
-    self.clients.claim();
 });
 
 const parseRange = (rangeHeader, size) => {

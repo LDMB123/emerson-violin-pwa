@@ -24,4 +24,5 @@ firebase-debug.log
 
 # Audit reports
 dead_css_report.json
+unused_css.txt
 unused_css_classes.txt
