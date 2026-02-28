@@ -38,6 +38,8 @@ const { bind } = createGame({
         gameState.correctStreak = 0;
         gameState.correctCount = 0;
         gameState.totalAnswered = 0;
+        gameState.incorrectGuesses = 0;
+        gameState.lives = 3;
         const rounds = gameState._rounds || 0;
         if (gameState._dots) {
             gameState._dots.forEach((dot) => {
@@ -52,6 +54,7 @@ const { bind } = createGame({
         if (gameState._setActiveDot) gameState._setActiveDot();
         if (gameState._setQuestion) gameState._setQuestion(`Question 1 of ${rounds}`);
         if (gameState._updateStreak) gameState._updateStreak();
+        if (gameState._updateStatsUI) gameState._updateStatsUI();
     },
     onBind: (stage, difficulty, { reportSession, resetSession, gameState, registerCleanup }) => {
         const levelEl = stage.querySelector('[data-ear="level"]');

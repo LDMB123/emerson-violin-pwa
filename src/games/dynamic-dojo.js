@@ -68,10 +68,12 @@ const { bind } = createGame({
 
             // Check Win Conditions
             if (gameState.currentTarget === 'forte' && data.rms > gameState.targetVolumeThreshold) {
+                document.removeEventListener(RT_STATE, onAudioData);
                 triggerWin(gameState, checkGameOver);
             } else if (gameState.currentTarget === 'piano' && data.rms > 0.005 && data.rms < gameState.targetVolumeThreshold) {
                 gameState.pianoFrames++;
                 if (gameState.pianoFrames > 30) {
+                    document.removeEventListener(RT_STATE, onAudioData);
                     triggerWin(gameState, checkGameOver);
                     gameState.pianoFrames = 0;
                 }
@@ -86,13 +88,7 @@ const { bind } = createGame({
             if (gameState.score >= gameState.totalTargets) {
                 gameState._instructionEl.textContent = "Dojo Master! You Win!";
                 cleanupListeners();
-                reportSession({
-                    score: 100,
-                    accuracy: 100,
-                    stars: 3,
-                    objectiveTotal: gameState.totalTargets,
-                    objectivesCompleted: gameState.score,
-                });
+                reportSession();
             } else {
                 nextRound(gameState);
                 document.addEventListener(RT_STATE, onAudioData);

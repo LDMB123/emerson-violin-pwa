@@ -1,7 +1,7 @@
 import { StirSoupCanvasEngine } from './stir-soup-canvas.js';
 import { recordGameEvent } from './shared.js';
 
-const GAME_ID_STIR_SOUP = 'stir_soup';
+const GAME_ID_STIR_SOUP = 'stir-soup';
 
 let engine = null;
 let bound = false;
@@ -47,17 +47,17 @@ export const init = () => {
                 startBtn.textContent = 'Stop Stirring';
             }
         });
+        // Auto-pause if navigating away
+        const onHashChange = () => {
+            if (window.location.hash !== '#view-game-stir-soup') {
+                if (engine?.isRunning) {
+                    engine.stop();
+                    if (startBtn) startBtn.textContent = 'Start Stirring';
+                }
+            }
+        };
+        window.addEventListener('hashchange', onHashChange);
+
         bound = true;
     }
-
-    // Auto-pause if navigating away
-    const onHashChange = () => {
-        if (window.location.hash !== '#view-game-stir-soup') {
-            if (engine?.isRunning) {
-                engine.stop();
-                if (startBtn) startBtn.textContent = 'Start Stirring';
-            }
-        }
-    };
-    window.addEventListener('hashchange', onHashChange);
 };

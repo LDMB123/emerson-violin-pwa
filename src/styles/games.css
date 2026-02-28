@@ -666,6 +666,158 @@
         font-size: var(--text-xs);
     }
 
+    /* Glass Panel — frosted container used in game HUDs */
+
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: var(--radius-2xl);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Game Mascot — decorative illustration in game views */
+
+    .game-mascot {
+        display: block;
+        width: clamp(80px, 20vw, 140px);
+        height: auto;
+        object-fit: contain;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    /* Game Drill — checklist/exercise content section */
+
+    .game-drill {
+        display: grid;
+        gap: var(--space-3);
+        padding: var(--space-4);
+        border-radius: var(--radius-2xl);
+        position: relative;
+        z-index: 10;
+        pointer-events: auto;
+    }
+
+    .game-drill-intro {
+        margin: 0;
+        font-weight: 700;
+        font-size: var(--text-sm);
+        color: var(--color-text-muted);
+    }
+
+    .game-checklist-group {
+        display: grid;
+        gap: var(--space-3);
+    }
+
+    .game-checklist {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: var(--space-2);
+    }
+
+    .game-progress {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        font-size: var(--text-sm);
+        font-weight: 700;
+        color: var(--color-text-muted);
+    }
+
+    .game-progress-label {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 800;
+        font-size: var(--text-xs);
+    }
+
+    /* Pitch Audio — reference tone section */
+
+    .pitch-audio {
+        position: relative;
+        z-index: 10;
+        pointer-events: auto;
+        margin: var(--space-3);
+        padding: var(--space-3);
+        border-radius: var(--radius-xl);
+    }
+
+    .pitch-audio summary {
+        cursor: pointer;
+        font-weight: 700;
+    }
+
+    .audio-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: var(--space-2);
+        margin-top: var(--space-2);
+    }
+
+    /* Dynamic Dojo — target visibility & animation states */
+
+    .dojo-hidden {
+        opacity: 0;
+        transform: scale(0.6);
+        pointer-events: none;
+        transition: opacity 0.3s, transform 0.3s var(--ease-spring);
+    }
+
+    .dojo-visible {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
+        transition: opacity 0.3s, transform 0.4s var(--ease-spring);
+    }
+
+    .dojo-board-break {
+        animation: dojo-smash 0.5s var(--ease-spring) forwards;
+    }
+
+    @keyframes dojo-smash {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        40% {
+            transform: scale(1.15);
+        }
+
+        100% {
+            transform: scale(0.3) rotate(8deg);
+            opacity: 0;
+            filter: blur(4px);
+        }
+    }
+
+    .dojo-tiger-wake {
+        animation: dojo-tiger-surprise 0.6s var(--ease-spring) forwards;
+    }
+
+    @keyframes dojo-tiger-surprise {
+        0% {
+            transform: scale(1);
+        }
+
+        30% {
+            transform: scale(1.2) rotate(-5deg);
+        }
+
+        60% {
+            transform: scale(1.1) rotate(3deg);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
     /* Full-Screen Immersion Fix: Ensure all HUDs stack above the absolute Canvases */
 
     [class$="-content"]>*:not(canvas),

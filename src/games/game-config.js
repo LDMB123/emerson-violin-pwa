@@ -207,7 +207,37 @@ export const GAME_META = {
             hard: { speed: 1.3, complexity: 2 },
         },
     },
-    'stir_soup': {
+    'dynamic-dojo': {
+        skill: 'Dynamics',
+        goal: 'Control volume between forte and piano on command.',
+        targetMinutes: 5,
+        steps: [
+            { minutes: 2, label: 'Play forte on cue', cue: 'Fill the room with sound.' },
+            { minutes: 3, label: 'Play piano on cue', cue: 'Gentle bow, near the fingerboard.' },
+        ],
+        tip: 'Use bow speed and weight together to control dynamics.',
+        difficulty: {
+            easy: { speed: 0.8, complexity: 0 },
+            medium: { speed: 1.0, complexity: 1 },
+            hard: { speed: 1.2, complexity: 2 },
+        },
+    },
+    echo: {
+        skill: 'Rhythm',
+        goal: 'Listen to a rhythm pattern and play it back.',
+        targetMinutes: 5,
+        steps: [
+            { minutes: 2, label: 'Listen to the pattern', cue: 'Count the beats silently.' },
+            { minutes: 3, label: 'Echo it back', cue: 'Match the rhythm exactly.' },
+        ],
+        tip: 'Tap the rhythm on your leg before playing on the violin.',
+        difficulty: {
+            easy: { speed: 0.8, complexity: 0 },
+            medium: { speed: 1.0, complexity: 1 },
+            hard: { speed: 1.2, complexity: 2 },
+        },
+    },
+    'stir-soup': {
         skill: 'Bowing',
         goal: 'Practice smooth, circular bow arm mechanics in the air.',
         targetMinutes: 5,
@@ -222,7 +252,7 @@ export const GAME_META = {
             hard: { speed: 1.2, complexity: 2 },
         },
     },
-    'windshield_wipers': {
+    'wipers': {
         skill: 'Bowing',
         goal: 'Balance a cheerio and practice forearm pronation/supination.',
         targetMinutes: 5,

@@ -7,6 +7,7 @@ import {
     markChecklistIf,
     playToneNote,
     stopTonePlayer,
+    bindTap,
     createStandardGameUpdate,
 } from './shared.js';
 import {

@@ -1,7 +1,7 @@
 import { WipersCanvasEngine } from './wipers-canvas.js';
 import { recordGameEvent } from './shared.js';
 
-const GAME_ID_WIPERS = 'windshield_wipers';
+const GAME_ID_WIPERS = 'wipers';
 
 let engine = null;
 let bound = false;
@@ -44,17 +44,17 @@ export const init = () => {
                 startBtn.textContent = 'Stop Engine';
             }
         });
+        // Auto-pause if navigating away
+        const onHashChange = () => {
+            if (window.location.hash !== '#view-game-wipers') {
+                if (engine?.isRunning) {
+                    engine.stop();
+                    if (startBtn) startBtn.textContent = 'Start Engine';
+                }
+            }
+        };
+        window.addEventListener('hashchange', onHashChange);
+
         bound = true;
     }
-
-    // Auto-pause if navigating away
-    const onHashChange = () => {
-        if (window.location.hash !== '#view-game-wipers') {
-            if (engine?.isRunning) {
-                engine.stop();
-                if (startBtn) startBtn.textContent = 'Start Engine';
-            }
-        }
-    };
-    window.addEventListener('hashchange', onHashChange);
 };

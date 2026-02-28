@@ -69,7 +69,7 @@ const { bind } = createGame({
 
         const { targetStrings } = gameState;
 
-        const canvasEl = stage.querySelector('#pitch-quest-canvas');
+        const canvasEl = stage.querySelector('#tuning-time-canvas');
         let tuningEngine = null;
         if (canvasEl) {
             tuningEngine = new TuningCanvasEngine(canvasEl);
