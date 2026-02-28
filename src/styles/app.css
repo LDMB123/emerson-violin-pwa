@@ -3289,7 +3289,64 @@
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
-/* Settings / Help / About */
+/* Settings / Help / About / Backup / Privacy */
+
+.settings-layout,
+.help-layout,
+.about-layout,
+.backup-layout {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-4);
+}
+
+.settings-card,
+.help-card,
+.about-card,
+.backup-card {
+    padding: var(--space-4);
+    border-radius: var(--radius-2xl);
+}
+
+.settings-card h3,
+.about-card h3,
+.backup-card h3 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: 800;
+}
+
+.about-card p,
+.backup-card p {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-muted);
+}
+
+.help-card summary {
+    cursor: pointer;
+    font-weight: 700;
+    font-size: var(--text-base);
+    padding: var(--space-1) 0;
+}
+
+.help-card p {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-muted);
+}
+
+.home-utility-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    margin: var(--space-3) var(--space-4);
+    border-radius: var(--radius-2xl);
+    justify-content: center;
+}
 
 .setting-note {
     margin: var(--space-3) 0 0;
