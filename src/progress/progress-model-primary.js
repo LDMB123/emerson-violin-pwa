@@ -7,6 +7,9 @@ import {
     addMinutesToDailyWindow,
 } from './progress-model-events.js';
 
+// Safari 26.2+, Chrome 133+
+const supportsGetOrInsertComputed = 'getOrInsertComputed' in Map.prototype;
+
 const calculateStreakFromDays = (calculateStreak, uniqueDays) => calculateStreak(new Uint32Array(uniqueDays));
 
 const trackPracticeEvents = ({ practiceEvents, progress, skillProfile, calculateStreak, updateSkillProfile, currentDay, dailyMinutes }) => {
@@ -42,11 +45,22 @@ const logGameEvents = (gameEvents, progress, skillProfile, SkillCategory) => {
     }
 };
 
+const newGameStatEntry = () => ({ bestScore: 0, bestStars: 0 });
+
 const buildGameStats = (gameEvents) => {
     const stats = new Map();
     for (const event of gameEvents) {
         if (!event.id) continue;
-        const entry = stats.get(event.id) || { bestScore: 0, bestStars: 0 };
+        let entry;
+        if (supportsGetOrInsertComputed) {
+            entry = stats.getOrInsertComputed(event.id, newGameStatEntry);
+        } else {
+            entry = stats.get(event.id);
+            if (!entry) {
+                entry = newGameStatEntry();
+                stats.set(event.id, entry);
+            }
+        }
         const scoreValue = Number.isFinite(event.accuracy) ? event.accuracy : event.score;
         if (Number.isFinite(scoreValue)) {
             entry.bestScore = Math.max(entry.bestScore, scoreValue);
@@ -54,7 +68,6 @@ const buildGameStats = (gameEvents) => {
         if (Number.isFinite(event.stars)) {
             entry.bestStars = Math.max(entry.bestStars, event.stars);
         }
-        stats.set(event.id, entry);
     }
     return stats;
 };

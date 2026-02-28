@@ -277,7 +277,7 @@ export class RhythmResult {
      * @returns {number}
      */
     get rhythm_offset_ms() {
-        const ret = wasm.pitchresult_frequency(this.__wbg_ptr);
+        const ret = wasm.rhythmresult_rhythm_offset_ms(this.__wbg_ptr);
         return ret;
     }
     /**

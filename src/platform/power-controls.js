@@ -142,11 +142,19 @@ export const createPowerControls = () => {
         if (!orientationGlobalsBound) {
             orientationGlobalsBound = true;
             window.addEventListener('hashchange', requestOrientationLock, { passive: true });
-            window.addEventListener('orientationchange', () => {
-                if (elements.orientationToggle?.checked && orientationLocked) {
-                    requestOrientationLock();
-                }
-            }, { passive: true });
+            if (screen.orientation) {
+                screen.orientation.addEventListener('change', () => {
+                    if (elements.orientationToggle?.checked && orientationLocked) {
+                        requestOrientationLock();
+                    }
+                });
+            } else {
+                window.addEventListener('orientationchange', () => {
+                    if (elements.orientationToggle?.checked && orientationLocked) {
+                        requestOrientationLock();
+                    }
+                }, { passive: true });
+            }
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) {
                     unlockOrientation();

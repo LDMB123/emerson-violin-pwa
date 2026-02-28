@@ -38,10 +38,10 @@ const updateStatus = () => {
         statusEl.textContent = 'Optimized for iPadOS 26.2 with offline-first storage.';
         return;
     }
-    const version = parseIPadOSVersion();
-    const versionLabel = version?.raw ? `iPadOS ${version.raw}` : 'iPadOS 26.2';
+    // Safari 26+ freezes the OS version in the UA string, so don't display
+    // the parsed version — it will show an incorrect frozen value.
     const mode = updateStandaloneState() ? 'Home Screen' : 'Safari';
-    statusEl.textContent = `${versionLabel} detected. Running in ${mode} mode.`;
+    statusEl.textContent = `iPadOS detected. Running in ${mode} mode.`;
 };
 
 const bindGlobalListeners = () => {

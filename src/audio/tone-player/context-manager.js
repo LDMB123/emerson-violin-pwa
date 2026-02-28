@@ -19,10 +19,15 @@ export const ensurePlayerContext = async (state) => {
         if (!state.context) return null;
         state.outputNode = null;
     }
-    if (state.context.state === 'suspended') {
+    if (state.context.state === 'suspended' || state.context.state === 'interrupted') {
         try {
             await state.context.resume();
         } catch {
+            // Close the broken context so the next call creates a fresh one
+            // rather than re-entering the resume path repeatedly.
+            state.context.close().catch(() => {});
+            state.context = null;
+            state.outputNode = null;
             return null;
         }
     }
@@ -52,7 +57,8 @@ export const ensurePlayerOutputNode = (state, ctx) => {
 };
 
 export const unlockTonePlayerContext = (state) => {
-    if (!state.context || state.context.state !== 'suspended') return;
+    if (!state.context) return;
+    if (state.context.state !== 'suspended' && state.context.state !== 'interrupted') return;
     state.context.resume().catch(() => {});
 };
 

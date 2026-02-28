@@ -1,7 +1,7 @@
 export class BaseCanvasEngine {
     constructor(canvas) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false });
+        this.ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
         this.width = canvas.width;
         this.height = canvas.height;
         this.isRunning = false;
