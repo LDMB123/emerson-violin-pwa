@@ -59,13 +59,25 @@ export const unlockTonePlayerContext = (state) => {
 export const bindTonePlayerUnlockGestures = (state, unlockContext) => {
     if (state.unlockBound) return;
     state.unlockBound = true;
+    // Store the handler reference so we can remove it later
+    state.unlockHandler = unlockContext;
     document.addEventListener('pointerdown', unlockContext, { passive: true });
     document.addEventListener('touchstart', unlockContext, { passive: true });
     document.addEventListener('keydown', unlockContext, { passive: true });
 };
 
+const unbindUnlockGestures = (state) => {
+    if (!state.unlockBound || !state.unlockHandler) return;
+    document.removeEventListener('pointerdown', state.unlockHandler);
+    document.removeEventListener('touchstart', state.unlockHandler);
+    document.removeEventListener('keydown', state.unlockHandler);
+    state.unlockBound = false;
+    state.unlockHandler = null;
+};
+
 export const releaseTonePlayerContext = (state, stopAll) => {
     stopAll();
+    unbindUnlockGestures(state);
     if (state.context) {
         state.context.close().catch(() => {});
         state.context = null;

@@ -8,6 +8,7 @@ import {
     RT_SESSION_STARTED,
     RT_SESSION_STOPPED,
     RT_QUALITY,
+    RT_FEATURE,
 } from '../utils/event-names.js';
 import { assertRealtimePayload } from './contracts.js';
 import { appendRealtimeEvent, saveRealtimeQuality } from './event-log.js';
@@ -77,6 +78,12 @@ const runtimeEngine = createSessionRuntimeEngine({
 const audioGraph = createSessionAudioGraph({
     createAudioContext,
     onFeatureFrame: (frame) => {
+        // Route non-pitch worklet messages (echo envelope, etc.) to RT_FEATURE
+        // so game modules can receive them. These are NOT pitch detection frames.
+        if (frame && frame.type === 'echo_envelope') {
+            emitRealtimeEvent(RT_FEATURE, frame, { log: false }).catch(() => {});
+            return;
+        }
         runtimeEngine.processFeatureFrame(frame);
     },
     onFallbackReason: (reason) => runtimeEngine.handleFallbackReason(reason),

@@ -150,7 +150,8 @@ const loadSampleBufferForRoot = async (state, ctx, root) => {
                 // Try the next candidate path.
             }
         }
-        state.samplerBlocked = true;
+        // Don't permanently block sampler — allow retry on next playNote() call.
+        // A transient network failure shouldn't disable samples for the entire session.
         return null;
     })();
 

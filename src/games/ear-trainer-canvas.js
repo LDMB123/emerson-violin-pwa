@@ -1,45 +1,52 @@
 import { updateParticles, drawGlowingParticles, emitRadialParticles } from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 
+// Module-level cache: MediaElementAudioSourceNode can only be created once
+// per <audio> element (Web Audio spec). We cache the AudioContext, analyser,
+// and source nodes so they survive game re-binds (Play Again).
+let sharedAudioCtx = null;
+let sharedAnalyser = null;
+const sourceCache = new WeakMap();
+
+const ensureAudioGraph = (audioElements) => {
+    if (!sharedAudioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        sharedAudioCtx = new AC();
+        sharedAnalyser = sharedAudioCtx.createAnalyser();
+        sharedAnalyser.fftSize = 2048;
+        sharedAnalyser.connect(sharedAudioCtx.destination);
+    }
+
+    // Connect any audio elements that haven't been connected yet
+    Object.values(audioElements).forEach(audioEl => {
+        if (!audioEl || sourceCache.has(audioEl)) return;
+        try {
+            const source = sharedAudioCtx.createMediaElementSource(audioEl);
+            source.connect(sharedAnalyser);
+            sourceCache.set(audioEl, source);
+        } catch {
+            // Already connected by another context — safe to ignore
+        }
+    });
+
+    return { audioCtx: sharedAudioCtx, analyser: sharedAnalyser };
+};
+
 export class EarTrainerCanvasEngine extends BaseCanvasEngine {
     constructor(canvas, audioElements) {
         super(canvas);
 
-        // Web Audio API Setup
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.audioCtx = new AudioContext();
-        this.analyser = this.audioCtx.createAnalyser();
+        // Reuse the module-level audio graph (survives re-binds)
+        const { audioCtx, analyser } = ensureAudioGraph(audioElements);
+        this.audioCtx = audioCtx;
+        this.analyser = analyser;
 
-        // High resolution for smooth 2D rendering
-        this.analyser.fftSize = 2048;
         this.bufferLength = this.analyser.frequencyBinCount;
         this.dataArray = new Uint8Array(this.bufferLength);
-
-        // Connect each audio element to the single visualizer analyser
-        this.mediaSources = [];
-        Object.values(audioElements).forEach(audioEl => {
-            if (audioEl) {
-                // MediaElementAudioSourceNode can only be created once per element
-                // We wrap this in a try-catch in case it was already created somewhere else
-                try {
-                    const source = this.audioCtx.createMediaElementSource(audioEl);
-                    source.connect(this.analyser);
-                    this.mediaSources.push(source);
-                } catch (e) {
-                    // Safe to ignore if already connected
-                    console.warn('AudioSource already connected', e);
-                }
-            }
-        });
-
-        // Final output to speakers
-        this.analyser.connect(this.audioCtx.destination);
 
         // Visual state
         this.particles = [];
         this.pulseRing = 0;
-        this.lastRMS = 0;
-
         this.lastRMS = 0;
 
         // Resume AudioContext on first user interaction if suspended
@@ -179,8 +186,9 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
 
     destroy() {
         super.destroy();
-        if (this.audioCtx) {
-            this.audioCtx.close();
-        }
+        // Do NOT close the shared AudioContext — it is module-level and
+        // reused across game re-binds. Closing it would break subsequent
+        // ear-trainer sessions since MediaElementSourceNodes cannot be
+        // re-created for the same <audio> elements.
     }
 }
