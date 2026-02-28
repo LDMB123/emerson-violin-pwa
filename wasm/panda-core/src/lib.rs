@@ -5,7 +5,7 @@ mod xp;
 mod achievements;
 mod skills;
 
-pub use xp::{XpRewards, PlayerProgress};
+pub use xp::PlayerProgress;
 pub use achievements::{Achievement, AchievementTracker};
 pub use skills::{SkillCategory, SkillProfile, calculate_streak};
 

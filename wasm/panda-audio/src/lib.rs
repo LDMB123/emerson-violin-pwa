@@ -21,7 +21,7 @@ pub fn init() {
 const NOTE_NAMES: [&str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 /// Violin string frequencies (standard tuning)
-pub const VIOLIN_STRINGS: [(f32, &str); 4] = [
+pub(crate) const VIOLIN_STRINGS: [(f32, &str); 4] = [
     (196.0, "G3"),
     (293.66, "D4"),
     (440.0, "A4"),
@@ -118,91 +118,12 @@ impl RhythmResult {
     }
 }
 
-fn median(values: &[f32]) -> f32 {
-    if values.is_empty() {
-        return 0.0;
-    }
-    let mut sorted = values.to_vec();
-    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    let middle = sorted.len() / 2;
-    if sorted.len() % 2 == 0 {
-        (sorted[middle - 1] + sorted[middle]) / 2.0
-    } else {
-        sorted[middle]
-    }
-}
-
 fn compute_rms(buffer: &[f32]) -> f32 {
     if buffer.is_empty() {
         return 0.0;
     }
     let sum: f32 = buffer.iter().map(|&x| x * x).sum();
     (sum / buffer.len() as f32).sqrt()
-}
-
-/// Estimate onset strength from RMS novelty against a baseline.
-pub fn analyze_onset(buffer: &[f32], baseline_rms: f32) -> f32 {
-    let energy = compute_rms(buffer);
-    let novelty = (energy - baseline_rms).max(0.0);
-    (novelty * 60.0).clamp(0.0, 1.0)
-}
-
-/// Estimate tempo (BPM) from onset intervals in milliseconds.
-pub fn estimate_tempo_bpm(intervals_ms: &[f32]) -> f32 {
-    let valid: Vec<f32> = intervals_ms
-        .iter()
-        .copied()
-        .filter(|interval| *interval >= 220.0 && *interval <= 1500.0)
-        .collect();
-    if valid.is_empty() {
-        return 0.0;
-    }
-    let interval = median(&valid);
-    if interval <= 0.0 {
-        return 0.0;
-    }
-    let bpm = 60000.0 / interval;
-    if (40.0..=220.0).contains(&bpm) {
-        bpm
-    } else {
-        0.0
-    }
-}
-
-/// Compute the nearest-beat rhythm offset (ms) for a running tempo.
-pub fn compute_rhythm_offset_ms(last_onset_ms: f32, now_ms: f32, tempo_bpm: f32) -> f32 {
-    if tempo_bpm <= 0.0 || last_onset_ms <= 0.0 || now_ms <= last_onset_ms {
-        return 0.0;
-    }
-    let beat_interval = 60000.0 / tempo_bpm;
-    if beat_interval <= 0.0 {
-        return 0.0;
-    }
-    let elapsed = now_ms - last_onset_ms;
-    let nearest = (elapsed / beat_interval).round() * beat_interval;
-    elapsed - nearest
-}
-
-/// Analyze a rhythm frame and return onset/tempo confidence primitives.
-pub fn analyze_rhythm_frame(
-    buffer: &[f32],
-    baseline_rms: f32,
-    now_ms: f32,
-    last_onset_ms: f32,
-    tempo_bpm: f32,
-) -> RhythmResult {
-    let onset_strength = analyze_onset(buffer, baseline_rms);
-    let onset_detected = onset_strength > 0.35;
-    let rhythm_offset_ms = compute_rhythm_offset_ms(last_onset_ms, now_ms, tempo_bpm);
-    let confidence = onset_strength;
-
-    RhythmResult {
-        onset_strength,
-        onset_detected,
-        tempo_bpm,
-        confidence,
-        rhythm_offset_ms,
-    }
 }
 
 /// Pitch detector using autocorrelation algorithm
@@ -261,7 +182,7 @@ impl PitchDetector {
     #[wasm_bindgen]
     pub fn detect(&mut self, buffer: &[f32]) -> PitchResult {
         // Calculate RMS volume (O(N))
-        let volume = self.calculate_rms(buffer);
+        let volume = compute_rms(buffer);
 
         // If volume is too low, return no pitch
         if volume < self.volume_threshold {
@@ -310,12 +231,6 @@ impl PitchDetector {
             confidence,
             in_tune,
         }
-    }
-
-    /// Calculate RMS (Root Mean Square) volume
-    fn calculate_rms(&self, buffer: &[f32]) -> f32 {
-        let sum: f32 = buffer.iter().map(|&x| x * x).sum();
-        (sum / buffer.len() as f32).sqrt()
     }
 
     /// Optimized Autocorrelation using Coarse-to-Fine Strategy
@@ -545,29 +460,15 @@ mod tests {
 
     #[test]
     fn test_rms_calculation() {
-        let detector = PitchDetector::new(48000.0, 2048);
-
         // Test with silence
         let silence = vec![0.0f32; 1024];
-        assert_eq!(detector.calculate_rms(&silence), 0.0);
+        assert_eq!(compute_rms(&silence), 0.0);
 
         // Test with constant signal
         let constant = vec![0.5f32; 1024];
-        assert!((detector.calculate_rms(&constant) - 0.5).abs() < 0.01);
+        assert!((compute_rms(&constant) - 0.5).abs() < 0.01);
     }
 
-    #[test]
-    fn test_estimate_tempo() {
-        let intervals = vec![500.0f32, 510.0, 495.0, 505.0];
-        let bpm = estimate_tempo_bpm(&intervals);
-        assert!((bpm - 120.0).abs() < 5.0);
-    }
-
-    #[test]
-    fn test_compute_rhythm_offset() {
-        let offset = compute_rhythm_offset_ms(1000.0, 1510.0, 120.0);
-        assert!(offset.abs() < 20.0);
-    }
 }
 
 /// Echo recording and evaluation buffer

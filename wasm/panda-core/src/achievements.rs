@@ -15,7 +15,6 @@ pub struct Achievement {
     description: String,
     icon: String,
     unlocked: bool,
-    unlock_date: Option<u64>,
 }
 
 #[wasm_bindgen]
@@ -53,7 +52,6 @@ impl AchievementTracker {
                 description: "Play your first note".to_string(),
                 icon: "🎵".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "pitch_perfect".to_string(),
@@ -61,7 +59,6 @@ impl AchievementTracker {
                 description: "Get 100% accuracy in Pitch Quest".to_string(),
                 icon: "🎯".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "rhythm_master".to_string(),
@@ -69,7 +66,6 @@ impl AchievementTracker {
                 description: "Get a 50x combo in Rhythm Dash".to_string(),
                 icon: "🥁".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "streak_7".to_string(),
@@ -77,7 +73,6 @@ impl AchievementTracker {
                 description: "Practice for 7 days in a row".to_string(),
                 icon: "🔥".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "streak_30".to_string(),
@@ -85,7 +80,6 @@ impl AchievementTracker {
                 description: "Practice for 30 days in a row".to_string(),
                 icon: "🏆".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "level_5".to_string(),
@@ -93,7 +87,6 @@ impl AchievementTracker {
                 description: "Reach Level 5".to_string(),
                 icon: "⭐".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "level_10".to_string(),
@@ -101,7 +94,6 @@ impl AchievementTracker {
                 description: "Reach Level 10".to_string(),
                 icon: "🌟".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "songs_10".to_string(),
@@ -109,7 +101,6 @@ impl AchievementTracker {
                 description: "Complete 10 different songs".to_string(),
                 icon: "📚".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "bow_hero".to_string(),
@@ -117,7 +108,6 @@ impl AchievementTracker {
                 description: "Get 5 stars in Bow Hero".to_string(),
                 icon: "🎻".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "ear_training".to_string(),
@@ -125,7 +115,6 @@ impl AchievementTracker {
                 description: "100% accuracy in Ear Trainer advanced mode".to_string(),
                 icon: "👂".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "practice_100".to_string(),
@@ -133,7 +122,6 @@ impl AchievementTracker {
                 description: "Practice for 100 total minutes".to_string(),
                 icon: "⏰".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
             Achievement {
                 id: "all_games".to_string(),
@@ -141,7 +129,6 @@ impl AchievementTracker {
                 description: "Play all 18 games at least once".to_string(),
                 icon: "🎮".to_string(),
                 unlocked: false,
-                unlock_date: None,
             },
         ];
 
@@ -150,11 +137,10 @@ impl AchievementTracker {
 
     /// Check and unlock achievement by ID
     #[wasm_bindgen]
-    pub fn unlock(&mut self, id: &str, timestamp: u64) -> bool {
+    pub fn unlock(&mut self, id: &str, _timestamp: u64) -> bool {
         for achievement in &mut self.achievements {
             if achievement.id == id && !achievement.unlocked {
                 achievement.unlocked = true;
-                achievement.unlock_date = Some(timestamp);
                 return true;
             }
         }

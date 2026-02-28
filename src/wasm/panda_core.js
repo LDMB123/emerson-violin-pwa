@@ -139,13 +139,13 @@ export class AchievementTracker {
     /**
      * Check and unlock achievement by ID
      * @param {string} id
-     * @param {bigint} timestamp
+     * @param {bigint} _timestamp
      * @returns {boolean}
      */
-    unlock(id, timestamp) {
+    unlock(id, _timestamp) {
         const ptr0 = passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.achievementtracker_unlock(this.__wbg_ptr, ptr0, len0, timestamp);
+        const ret = wasm.achievementtracker_unlock(this.__wbg_ptr, ptr0, len0, _timestamp);
         return ret !== 0;
     }
     /**

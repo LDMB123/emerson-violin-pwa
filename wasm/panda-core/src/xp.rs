@@ -30,30 +30,6 @@ const LEVEL_XP: [u32; 20] = [
     27700,  // Level 20
 ];
 
-/// XP reward multipliers
-#[derive(Clone, Copy, Debug)]
-pub struct XpRewards {
-    /// Base XP per minute of practice
-    pub per_minute: u32,
-    /// Bonus for completing a song
-    pub song_complete: u32,
-    /// Bonus for perfect score in a game
-    pub game_perfect: u32,
-    /// Multiplier for streak days
-    pub streak_multiplier: f32,
-}
-
-impl Default for XpRewards {
-    fn default() -> Self {
-        XpRewards {
-            per_minute: 10,
-            song_complete: 25,
-            game_perfect: 50,
-            streak_multiplier: 1.0,
-        }
-    }
-}
-
 /// Player progress state
 #[wasm_bindgen]
 #[derive(Clone, Debug, Serialize, Deserialize)]
