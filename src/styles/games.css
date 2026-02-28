@@ -744,6 +744,35 @@
         font-size: var(--text-xs);
     }
 
+    /* Game Tips — details/summary pattern for hints */
+
+    .game-tip {
+        padding: var(--space-3);
+        border-radius: var(--radius-xl);
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .game-tip summary {
+        cursor: pointer;
+        font-weight: 700;
+        font-size: var(--text-sm);
+    }
+
+    .game-tip-list {
+        margin: var(--space-2) 0 0;
+        padding-left: var(--space-5);
+        display: grid;
+        gap: var(--space-1);
+        font-size: var(--text-sm);
+        color: var(--color-text-muted);
+    }
+
+    /* Game Card — curated highlight variant */
+
+    .game-card-curated {
+        border: 2px solid rgba(233, 86, 57, 0.2);
+    }
+
     /* Pitch Audio — reference tone section */
 
     .pitch-audio {
