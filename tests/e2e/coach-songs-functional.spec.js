@@ -65,10 +65,10 @@ test('songs filtering and continue-last-song stay functional after navigation', 
     await expect(page.locator('#view-songs')).toBeVisible();
 
     await page.locator('label:has(input[name="song-filter"][value="challenge"]) .filter-chip').click({ force: true });
-    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(1);
+    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(6);
 
     await page.locator('label:has(input[name="song-filter"][value="easy"]) .filter-chip').click({ force: true });
-    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(5);
+    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(12);
 
     await page.locator('a[href="#view-song-mary"]').click();
     await page.waitForURL('**/#view-song-mary');
@@ -79,7 +79,7 @@ test('songs filtering and continue-last-song stay functional after navigation', 
     await page.waitForURL('**/#view-songs');
 
     await page.locator('label:has(input[name="song-filter"][value="easy"]) .filter-chip').click({ force: true });
-    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(5);
+    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(12);
 
     await expect.poll(async () => {
         return page.locator('[data-continue-last-song]').getAttribute('href');
