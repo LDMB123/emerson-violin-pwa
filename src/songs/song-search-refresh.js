@@ -46,23 +46,18 @@ const mergeSongStats = (eventsStats, progressState) => {
     return merged;
 };
 
-const ensureSongProgressMeta = (card) => {
-    let meta = card.querySelector('.song-progress-meta');
-    if (meta) return meta;
-    meta = document.createElement('div');
-    meta.className = 'song-progress-meta';
-    card.appendChild(meta);
-    return meta;
+const ensureChildDiv = (parent, className) => {
+    let el = parent.querySelector(`.${className}`);
+    if (el) return el;
+    el = document.createElement('div');
+    el.className = className;
+    parent.appendChild(el);
+    return el;
 };
 
-const ensureSectionMeta = (card) => {
-    let section = card.querySelector('.song-section-meta');
-    if (section) return section;
-    section = document.createElement('div');
-    section.className = 'song-section-meta';
-    card.appendChild(section);
-    return section;
-};
+const ensureSongProgressMeta = (card) => ensureChildDiv(card, 'song-progress-meta');
+
+const ensureSectionMeta = (card) => ensureChildDiv(card, 'song-section-meta');
 
 const formatSongStats = (stats) => {
     if (!stats) return 'No runs yet.';
@@ -93,14 +88,7 @@ const applySongStats = (cards, events, progressState, catalogById) => {
     });
 };
 
-const ensureLockHint = (card) => {
-    let hint = card.querySelector('.song-lock-hint');
-    if (hint) return hint;
-    hint = document.createElement('div');
-    hint.className = 'song-lock-hint';
-    card.appendChild(hint);
-    return hint;
-};
+const ensureLockHint = (card) => ensureChildDiv(card, 'song-lock-hint');
 
 const setCardLocked = (card, { locked, hintText }) => {
     const hint = ensureLockHint(card);

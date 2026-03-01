@@ -1,9 +1,9 @@
+import { clone } from '../utils/math.js';
+
 const CATALOG_PATH = '/content/songs/catalog.v2.json';
 
 let cachedCatalog = null;
 let catalogPromise = null;
-
-const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const normalizeSection = (section, index) => ({
     id: section?.id || `section-${index + 1}`,

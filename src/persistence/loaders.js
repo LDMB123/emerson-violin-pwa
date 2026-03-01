@@ -1,15 +1,11 @@
 import { getJSON, setJSON, getBlob } from './storage.js';
 import { EVENTS_KEY, RECORDINGS_KEY } from './storage-keys.js';
-
-const dayFromTimestamp = (timestamp) => {
-    if (!Number.isFinite(timestamp)) return 0;
-    return Math.floor(timestamp / 86400000);
-};
+import { clamp, dayFromTimestamp } from '../utils/math.js';
 
 const clampScore = (value, max = 100) => {
     const score = Number(value);
     if (!Number.isFinite(score)) return null;
-    return Math.max(0, Math.min(max, Math.round(score)));
+    return clamp(Math.round(score), 0, max);
 };
 
 const normalizeSongStars = (event, accuracy) => {

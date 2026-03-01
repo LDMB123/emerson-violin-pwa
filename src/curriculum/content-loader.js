@@ -1,3 +1,5 @@
+import { clone } from '../utils/math.js';
+
 const CURRICULUM_PATH = '/content/curriculum/track-beginner-intermediate.v1.json';
 
 const FALLBACK_CONTENT = Object.freeze({
@@ -25,8 +27,6 @@ const FALLBACK_CONTENT = Object.freeze({
 
 let cachedContent = null;
 let loadingPromise = null;
-
-const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const normalizeUnit = (unit, index) => ({
     id: unit?.id || `unit-${index + 1}`,

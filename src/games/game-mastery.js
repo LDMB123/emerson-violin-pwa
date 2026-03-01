@@ -1,8 +1,7 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { GAME_MASTERY_KEY } from '../persistence/storage-keys.js';
+import { clone } from '../utils/math.js';
 import { DEFAULT_MASTERY_THRESHOLDS, dayCounts } from '../utils/mastery-utils.js';
-
-const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const normalizeGameEntry = (entry) => ({
     id: entry?.id || '',

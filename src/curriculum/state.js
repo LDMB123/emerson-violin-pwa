@@ -3,6 +3,7 @@ import {
     CURRICULUM_STATE_KEY,
     MISSION_HISTORY_KEY,
 } from '../persistence/storage-keys.js';
+import { clone } from '../utils/math.js';
 
 const STATE_VERSION = 1;
 const MAX_HISTORY = 240;
@@ -16,8 +17,6 @@ export const MISSION_STEP_STATES = Object.freeze({
 });
 
 const STEP_STATE_SET = new Set(Object.values(MISSION_STEP_STATES));
-
-const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const normalizeStep = (step, index) => {
     const status = STEP_STATE_SET.has(step?.status) ? step.status : MISSION_STEP_STATES.NOT_STARTED;

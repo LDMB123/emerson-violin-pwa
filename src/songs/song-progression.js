@@ -1,6 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { SONG_PROGRESS_KEY } from '../persistence/storage-keys.js';
-import { clamp, todayDay } from '../utils/math.js';
+import { clamp, clone, todayDay } from '../utils/math.js';
 import { loadCurriculumState } from '../curriculum/state.js';
 import {
     DAY_MS,
@@ -16,8 +16,6 @@ const DEFAULT_STATE = {
     version: 2,
     songs: {},
 };
-
-const clone = (value) => JSON.parse(JSON.stringify(value));
 
 const normalizeState = (stored) => {
     const base = stored && typeof stored === 'object' ? stored : DEFAULT_STATE;
