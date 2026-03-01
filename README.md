@@ -5,7 +5,7 @@ Local-first violin practice app for iPad-focused use, with an onboarding flow, p
 ## Current Status (March 1, 2026)
 
 - `npm run lint:all`: passing
-- `npm run test:coverage`: passing (570 tests)
+- `npm run test:coverage`: passing (567 tests)
 - `npm run test:e2e`: passing (45 tests)
 - `npm run handoff:verify`: passing (`audit:full` + E2E)
 
