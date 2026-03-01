@@ -1,5 +1,6 @@
 import { clampRounded, positiveRound } from '../utils/math.js';
 import { renderNextActionsList } from '../utils/render-utils.js';
+import { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 
 const renderChipGrid = (container, chips, emptyText) => {
     if (!container) return;
@@ -34,9 +35,9 @@ const renderMirroredChipGrid = (primary, secondary, chips, emptyText) => {
 
 const songTier = (score) => {
     const safe = clampRounded(score || 0, 0, 100);
-    if (safe >= 92) return 'gold';
-    if (safe >= 80) return 'silver';
-    if (safe >= 60) return 'bronze';
+    if (safe >= DEFAULT_MASTERY_THRESHOLDS.gold) return 'gold';
+    if (safe >= DEFAULT_MASTERY_THRESHOLDS.silver) return 'silver';
+    if (safe >= DEFAULT_MASTERY_THRESHOLDS.bronze) return 'bronze';
     return 'foundation';
 };
 

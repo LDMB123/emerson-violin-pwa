@@ -1,4 +1,5 @@
 import { clone } from '../utils/math.js';
+import { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 
 const CURRICULUM_PATH = '/content/curriculum/track-beginner-intermediate.v1.json';
 
@@ -8,10 +9,10 @@ const FALLBACK_CONTENT = Object.freeze({
     title: 'Beginner to Intermediate Violin Track',
     tiers: ['beginner', 'intermediate'],
     masteryThresholds: {
-        bronze: 60,
-        silver: 80,
-        gold: 92,
-        distinctDays: 3,
+        bronze: DEFAULT_MASTERY_THRESHOLDS.bronze,
+        silver: DEFAULT_MASTERY_THRESHOLDS.silver,
+        gold: DEFAULT_MASTERY_THRESHOLDS.gold,
+        distinctDays: DEFAULT_MASTERY_THRESHOLDS.distinctDays,
     },
     units: [
         { id: 'u-beg-01', tier: 'beginner', title: 'Open Strings and Posture', order: 1, requiredObjectives: { practiceMinutes: 15, games: ['tuning-time', 'pitch-quest'], songs: ['open_strings'] }, missionTemplate: { steps: [{ id: 'step-tune', type: 'tuner', label: 'Tune open strings', target: 'all-strings' }] } },
@@ -55,10 +56,10 @@ const normalizeContent = (content) => {
         title: base.title || FALLBACK_CONTENT.title,
         tiers: Array.isArray(base.tiers) && base.tiers.length ? base.tiers : FALLBACK_CONTENT.tiers,
         masteryThresholds: {
-            bronze: Number.isFinite(base?.masteryThresholds?.bronze) ? base.masteryThresholds.bronze : 60,
-            silver: Number.isFinite(base?.masteryThresholds?.silver) ? base.masteryThresholds.silver : 80,
-            gold: Number.isFinite(base?.masteryThresholds?.gold) ? base.masteryThresholds.gold : 92,
-            distinctDays: Number.isFinite(base?.masteryThresholds?.distinctDays) ? base.masteryThresholds.distinctDays : 3,
+            bronze: Number.isFinite(base?.masteryThresholds?.bronze) ? base.masteryThresholds.bronze : DEFAULT_MASTERY_THRESHOLDS.bronze,
+            silver: Number.isFinite(base?.masteryThresholds?.silver) ? base.masteryThresholds.silver : DEFAULT_MASTERY_THRESHOLDS.silver,
+            gold: Number.isFinite(base?.masteryThresholds?.gold) ? base.masteryThresholds.gold : DEFAULT_MASTERY_THRESHOLDS.gold,
+            distinctDays: Number.isFinite(base?.masteryThresholds?.distinctDays) ? base.masteryThresholds.distinctDays : DEFAULT_MASTERY_THRESHOLDS.distinctDays,
         },
         units: units.length ? units : clone(FALLBACK_CONTENT.units),
     };

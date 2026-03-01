@@ -1,3 +1,6 @@
+import { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
+export { DEFAULT_MASTERY_THRESHOLDS };
+
 export const GAME_META = {
     'pitch-quest': {
         skill: 'Pitch',
@@ -270,13 +273,6 @@ export const GAME_META = {
 };
 
 export const GAME_OBJECTIVE_TIERS = Object.freeze(['foundation', 'core', 'mastery']);
-
-export const DEFAULT_MASTERY_THRESHOLDS = Object.freeze({
-    bronze: 60,
-    silver: 80,
-    gold: 92,
-    distinctDays: 3,
-});
 
 const toObjective = (step, index) => ({
     id: `${step?.id || `objective-${index + 1}`}`,

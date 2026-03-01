@@ -1,5 +1,5 @@
 export { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
-import { reviewIntervalDays } from '../utils/mastery-utils.js';
+import { reviewIntervalDays, dayCounts, DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 import { clampRounded, DAY_MS } from '../utils/math.js';
 
 const bucketLevel = (score, { bronze, silver, gold }) => {
@@ -37,10 +37,7 @@ const updateMasteryEntry = (entry, event, score) => {
 };
 
 const withMasteryTier = (entry, thresholds) => {
-    const days = Array.from(entry.byDay.values());
-    const bronzeDays = days.filter((score) => score >= thresholds.bronze).length;
-    const silverDays = days.filter((score) => score >= thresholds.silver).length;
-    const goldDays = days.filter((score) => score >= thresholds.gold).length;
+    const { bronzeDays, silverDays, goldDays } = dayCounts(Object.fromEntries(entry.byDay), thresholds);
 
     let tier = bucketLevel(entry.best, thresholds);
     if (tier !== 'none') {
@@ -103,9 +100,9 @@ export const skillMastery = (skillScores, skillLabels = {}) => {
             label: skillLabels[id] || id,
             score,
         };
-        if (score >= 92) byTier.gold.push(item);
-        else if (score >= 80) byTier.silver.push(item);
-        else if (score >= 60) byTier.bronze.push(item);
+        if (score >= DEFAULT_MASTERY_THRESHOLDS.gold) byTier.gold.push(item);
+        else if (score >= DEFAULT_MASTERY_THRESHOLDS.silver) byTier.silver.push(item);
+        else if (score >= DEFAULT_MASTERY_THRESHOLDS.bronze) byTier.bronze.push(item);
         else byTier.developing.push(item);
     });
 

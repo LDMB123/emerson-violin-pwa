@@ -1,4 +1,5 @@
 import { clampRounded } from '../utils/math.js';
+import { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 
 const toScore = (value, fallback = 0) => {
     const score = Number(value);
@@ -17,9 +18,9 @@ const starsFromScores = (timing, intonation, overall) => {
 };
 
 const tierFromScore = (score) => {
-    if (score >= 92) return 'gold';
-    if (score >= 80) return 'silver';
-    if (score >= 60) return 'bronze';
+    if (score >= DEFAULT_MASTERY_THRESHOLDS.gold) return 'gold';
+    if (score >= DEFAULT_MASTERY_THRESHOLDS.silver) return 'silver';
+    if (score >= DEFAULT_MASTERY_THRESHOLDS.bronze) return 'bronze';
     return 'foundation';
 };
 

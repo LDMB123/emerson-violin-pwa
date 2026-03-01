@@ -45,11 +45,11 @@ describe('shouldRetryPersist', () => {
         expect(shouldRetryPersist(state)).toBe(false);
     });
 
-    it('returns false when lastAttempt is exactly one week', () => {
+    it('returns false when lastAttempt is just under one week', () => {
         const oneWeek = 7 * 24 * 60 * 60 * 1000;
         const state = {
             persisted: false,
-            lastAttempt: Date.now() - oneWeek,
+            lastAttempt: Date.now() - oneWeek + 1000, // 1s inside boundary — avoids timing race
         };
         expect(shouldRetryPersist(state)).toBe(false);
     });
