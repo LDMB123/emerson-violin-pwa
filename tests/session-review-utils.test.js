@@ -4,7 +4,6 @@ import {
     coachMessageFor,
     buildChart,
     chartCaptionFor,
-    filterSongEvents,
     getRecentEvents,
 } from '../src/utils/session-review-utils.js';
 
@@ -119,29 +118,6 @@ describe('session-review-utils', () => {
         it('returns Keep practicing for below 60', () => {
             expect(chartCaptionFor(59)).toBe('Keep practicing!');
             expect(chartCaptionFor(0)).toBe('Keep practicing!');
-        });
-    });
-
-    describe('filterSongEvents', () => {
-        it('filters song events', () => {
-            const events = [
-                { type: 'song', id: 1 },
-                { type: 'game', id: 2 },
-                { type: 'song', id: 3 },
-            ];
-            const result = filterSongEvents(events);
-            expect(result).toHaveLength(2);
-            expect(result[0].id).toBe(1);
-            expect(result[1].id).toBe(3);
-        });
-
-        it('returns empty for no song events', () => {
-            const events = [{ type: 'game' }];
-            expect(filterSongEvents(events)).toEqual([]);
-        });
-
-        it('returns empty for empty input', () => {
-            expect(filterSongEvents([])).toEqual([]);
         });
     });
 

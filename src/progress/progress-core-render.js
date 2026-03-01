@@ -1,8 +1,6 @@
 import { clamp } from '../utils/math.js';
 import { coachMessageFor, buildRadarPoints } from './progress-utils.js';
-
-const FILLED_STAR = String.fromCharCode(9733);
-const EMPTY_STAR = String.fromCharCode(9734);
+import { starString } from '../utils/session-review-utils.js';
 
 const updateProgressTrack = (el, percent, text) => {
     if (!el) return;
@@ -15,11 +13,6 @@ const updateProgressTrack = (el, percent, text) => {
 
 const setFillWidth = (el, percent) => {
     if (el) el.style.width = `${percent}%`;
-};
-
-const formatStars = (value) => {
-    const stars = clamp(Math.round(value / 20), 1, 5);
-    return `${FILLED_STAR.repeat(stars)}${EMPTY_STAR.repeat(5 - stars)}`;
 };
 
 const getXpState = (progress) => {
@@ -96,7 +89,7 @@ const renderParentChart = (elements, dailyMinutes, weekMinutes, weeklyTarget) =>
 const renderCoachStars = (elements, skills) => {
     if (!elements.coachStarsEl || !skills) return;
     const overall = Math.round((skills.pitch + skills.rhythm + skills.bow_control + skills.posture + skills.reading) / 5);
-    elements.coachStarsEl.textContent = formatStars(overall);
+    elements.coachStarsEl.textContent = starString(overall);
 };
 
 const renderParentSkillStars = (elements, skills) => {
@@ -104,7 +97,7 @@ const renderParentSkillStars = (elements, skills) => {
     elements.parentSkillStars.forEach((el) => {
         const key = el.dataset.parentSkill;
         const value = skills[key] ?? 0;
-        el.textContent = formatStars(value);
+        el.textContent = starString(value);
     });
 };
 

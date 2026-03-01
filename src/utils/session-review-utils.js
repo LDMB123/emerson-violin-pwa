@@ -45,10 +45,6 @@ export const chartCaptionFor = (latestScore) => {
     return 'Keep practicing!';
 };
 
-export const filterSongEvents = (events) => {
-    return events.filter((event) => event.type === 'song');
-};
-
 export const getRecentEvents = (events, count = 2) => {
     return events.slice(-count).reverse();
 };
