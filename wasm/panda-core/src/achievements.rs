@@ -162,18 +162,6 @@ impl AchievementTracker {
         newly_unlocked
     }
 
-    /// Get count of unlocked achievements
-    #[wasm_bindgen]
-    pub fn unlocked_count(&self) -> usize {
-        self.achievements.iter().filter(|a| a.unlocked).count()
-    }
-
-    /// Get total achievements count
-    #[wasm_bindgen]
-    pub fn total_count(&self) -> usize {
-        self.achievements.len()
-    }
-
     /// Check if a specific achievement is unlocked
     #[wasm_bindgen]
     pub fn is_unlocked(&self, id: &str) -> bool {

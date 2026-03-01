@@ -45,14 +45,6 @@ export class AchievementTracker {
         return this;
     }
     /**
-     * Get total achievements count
-     * @returns {number}
-     */
-    total_count() {
-        const ret = wasm.achievementtracker_total_count(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
      * Check and unlock achievement by ID
      * @param {string} id
      * @param {bigint} _timestamp
@@ -63,14 +55,6 @@ export class AchievementTracker {
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.achievementtracker_unlock(this.__wbg_ptr, ptr0, len0, _timestamp);
         return ret !== 0;
-    }
-    /**
-     * Get count of unlocked achievements
-     * @returns {number}
-     */
-    unlocked_count() {
-        const ret = wasm.achievementtracker_unlocked_count(this.__wbg_ptr);
-        return ret >>> 0;
     }
 }
 if (Symbol.dispose) AchievementTracker.prototype[Symbol.dispose] = AchievementTracker.prototype.free;

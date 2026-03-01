@@ -472,11 +472,6 @@ impl EchoBuffer {
         hit_capacity
     }
 
-    #[wasm_bindgen]
-    pub fn get_size(&self) -> usize {
-        self.size
-    }
-
     /// Simplified envelope extractor. 
     /// Condenses 48kHz audio into `target_bins` (e.g., 400 slices) based on RMS amplitude.
     #[wasm_bindgen]

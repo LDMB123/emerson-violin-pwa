@@ -27,13 +27,6 @@ export class EchoBuffer {
         return v1;
     }
     /**
-     * @returns {number}
-     */
-    get_size() {
-        const ret = wasm.echobuffer_get_size(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
      * @param {number} capacity
      */
     constructor(capacity) {
