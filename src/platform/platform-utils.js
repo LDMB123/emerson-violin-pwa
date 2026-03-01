@@ -2,6 +2,7 @@
  * Pure utility functions for platform/PWA features
  * Extracted from native-apis.js for testability
  */
+import { DAY_MS } from '../utils/math.js';
 
 /**
  * Determines if persistent storage request should be retried
@@ -14,7 +15,7 @@ export const shouldRetryPersist = (state) => {
     if (!state) return true;
     if (state.persisted) return false;
     if (!state.lastAttempt) return true;
-    const week = 7 * 24 * 60 * 60 * 1000;
+    const week = 7 * DAY_MS;
     return Date.now() - state.lastAttempt > week;
 };
 

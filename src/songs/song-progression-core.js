@@ -1,12 +1,5 @@
 import { clampRounded, DAY_MS, positiveRound } from '../utils/math.js';
-import { dayCounts, reviewIntervalDays } from '../utils/mastery-utils.js';
-
-const SONG_MASTERY_THRESHOLDS = {
-    bronze: 60,
-    silver: 80,
-    gold: 92,
-    distinctDays: 3,
-};
+import { dayCounts, DEFAULT_MASTERY_THRESHOLDS, reviewIntervalDays } from '../utils/mastery-utils.js';
 
 const scoreFromEntry = (entry) => {
     const accuracy = Number.isFinite(entry?.bestAccuracy) ? entry.bestAccuracy : 0;
@@ -41,7 +34,7 @@ const normalizeDays = (entry) => {
     };
 };
 
-export const tierFromCounts = (counts, thresholds = SONG_MASTERY_THRESHOLDS) => {
+export const tierFromCounts = (counts, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
     if ((counts?.goldDays || 0) >= thresholds.distinctDays) return 'gold';
     if ((counts?.silverDays || 0) >= thresholds.distinctDays) return 'silver';
     if ((counts?.bronzeDays || 0) >= thresholds.distinctDays) return 'bronze';

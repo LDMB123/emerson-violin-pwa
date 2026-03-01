@@ -1,4 +1,4 @@
-import { clamp, todayDay } from './math.js';
+import { clamp, DAY_MS, todayDay } from './math.js';
 
 export const SKILL_BY_GAME = {
     'pitch-quest': 'pitch',
@@ -61,7 +61,7 @@ export const SKILL_LABELS = {
 
 export const recencyWeight = (timestamp) => {
     if (!timestamp) return 1;
-    const daysAgo = Math.max(0, (Date.now() - timestamp) / 86400000);
+    const daysAgo = Math.max(0, (Date.now() - timestamp) / DAY_MS);
     return 1 / (1 + daysAgo * 0.35);
 };
 

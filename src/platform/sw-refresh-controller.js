@@ -1,3 +1,5 @@
+import { DAY_MS } from '../utils/math.js';
+
 const FOREGROUND_REFRESH_MIN_INTERVAL = 5 * 60 * 1000;
 
 export const createSwRefreshController = ({ setSyncStatus }) => {
@@ -48,7 +50,7 @@ export const createSwRefreshController = ({ setSyncStatus }) => {
         if ('periodicSync' in registration) {
             try {
                 await registration.periodicSync.register('panda-refresh', {
-                    minInterval: 24 * 60 * 60 * 1000,
+                    minInterval: DAY_MS,
                 });
                 setSyncStatus('Background refresh enabled.');
                 return;
