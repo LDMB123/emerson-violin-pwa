@@ -120,7 +120,9 @@ const ensureRhythmRunStarted = async (page) => {
     const runToggle = page.locator('#view-game-rhythm-dash #rhythm-run');
     if (await runToggle.isChecked().catch(() => false)) return;
 
-    await page.locator('#view-game-rhythm-dash label.btn-start').click();
+    const startLabel = page.locator('#view-game-rhythm-dash label.btn-start');
+    await startLabel.waitFor({ state: 'visible', timeout: 8000 });
+    await startLabel.click();
     if (!(await runToggle.isChecked().catch(() => false))) {
         await page.evaluate(() => {
             const toggle = document.querySelector('#view-game-rhythm-dash #rhythm-run');
