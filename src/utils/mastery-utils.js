@@ -24,3 +24,12 @@ export const dayCounts = (days, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
         goldDays: values.filter((score) => score >= thresholds.gold).length,
     };
 };
+
+const REVIEW_INTERVAL_DAYS_BY_TIER = {
+    foundation: 1,
+    bronze: 3,
+    silver: 5,
+    gold: 7,
+};
+
+export const reviewIntervalDays = (tier = 'foundation') => REVIEW_INTERVAL_DAYS_BY_TIER[tier] || 1;

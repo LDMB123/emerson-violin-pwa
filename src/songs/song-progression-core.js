@@ -1,20 +1,11 @@
-import { clampRounded, positiveRound } from '../utils/math.js';
-import { dayCounts } from '../utils/mastery-utils.js';
-
-export const DAY_MS = 24 * 60 * 60 * 1000;
+import { clampRounded, DAY_MS, positiveRound } from '../utils/math.js';
+import { dayCounts, reviewIntervalDays } from '../utils/mastery-utils.js';
 
 const SONG_MASTERY_THRESHOLDS = {
     bronze: 60,
     silver: 80,
     gold: 92,
     distinctDays: 3,
-};
-
-const REVIEW_INTERVAL_DAYS_BY_TIER = {
-    foundation: 1,
-    bronze: 3,
-    silver: 5,
-    gold: 7,
 };
 
 const scoreFromEntry = (entry) => {
@@ -56,8 +47,6 @@ export const tierFromCounts = (counts, thresholds = SONG_MASTERY_THRESHOLDS) => 
     if ((counts?.bronzeDays || 0) >= thresholds.distinctDays) return 'bronze';
     return 'foundation';
 };
-
-export const reviewIntervalDays = (tier = 'foundation') => REVIEW_INTERVAL_DAYS_BY_TIER[tier] || 1;
 
 export const normalizeSongEntry = (entry) => ({
     ...(() => {

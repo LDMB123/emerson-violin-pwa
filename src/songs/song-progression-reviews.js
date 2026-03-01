@@ -1,8 +1,6 @@
-import {
-    DAY_MS,
-    normalizeSongEntry,
-    reviewIntervalDays,
-} from './song-progression-core.js';
+import { normalizeSongEntry } from './song-progression-core.js';
+import { reviewIntervalDays } from '../utils/mastery-utils.js';
+import { DAY_MS } from '../utils/math.js';
 
 export const collectDueSongReviewsFromState = ({ songs = {}, now = Date.now(), limit = 5 } = {}) => {
     return Object.entries(songs || {})

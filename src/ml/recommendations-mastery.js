@@ -1,13 +1,6 @@
 export { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
-import { clampRounded } from '../utils/math.js';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-const REVIEW_INTERVAL_DAYS_BY_TIER = {
-    foundation: 1,
-    bronze: 3,
-    silver: 5,
-    gold: 7,
-};
+import { reviewIntervalDays } from '../utils/mastery-utils.js';
+import { clampRounded, DAY_MS } from '../utils/math.js';
 
 const bucketLevel = (score, { bronze, silver, gold }) => {
     if (score >= gold) return 'gold';
@@ -119,7 +112,6 @@ export const skillMastery = (skillScores, skillLabels = {}) => {
     return byTier;
 };
 
-const reviewIntervalDays = (tier = 'foundation') => REVIEW_INTERVAL_DAYS_BY_TIER[tier] || 1;
 const hasRecordedAttempts = (attempts) => !Number.isFinite(attempts) || attempts > 0;
 
 const pickTopDueReview = (dueSongs = [], dueGames = []) => {
