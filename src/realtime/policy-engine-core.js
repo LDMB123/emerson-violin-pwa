@@ -7,19 +7,16 @@ const PRESET_BOUNDS = Object.freeze({
     gentle: Object.freeze({
         pitchToleranceCents: 12,
         rhythmToleranceMs: 120,
-        frustrationLimit: 3,
         cueCooldownMs: 1300,
     }),
     standard: Object.freeze({
         pitchToleranceCents: 8,
         rhythmToleranceMs: 90,
-        frustrationLimit: 2,
         cueCooldownMs: 1050,
     }),
     challenge: Object.freeze({
         pitchToleranceCents: 6,
         rhythmToleranceMs: 70,
-        frustrationLimit: 2,
         cueCooldownMs: 900,
     }),
 });
@@ -77,11 +74,6 @@ export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
         Number.isFinite(features.confidence) ? features.confidence : 0,
         0,
         1,
-    );
-    const frustration = clamp(
-        Number.isFinite(context.frustrationScore) ? context.frustrationScore : 0,
-        0,
-        5,
     );
     const confidenceBand = confidenceBandFrom(confidence);
     const bounds = getBounds(state.preset);
@@ -178,11 +170,10 @@ export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
     }
 
     state.consecutiveCorrections = 0;
-    const calmCueState = frustration >= bounds.frustrationLimit ? 'retry-calm' : 'steady';
     const cue = createCue({
         state,
-        cueState: calmCueState,
-        message: calmCueState === 'steady' ? 'Nice and steady.' : 'Great effort. One calm try.',
+        cueState: 'steady',
+        message: 'Nice and steady.',
         confidenceBand,
         domain: 'system',
         now,

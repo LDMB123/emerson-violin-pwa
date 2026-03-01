@@ -50,7 +50,7 @@ const scheduleSave = (model) => {
     const persist = () => {
         saveTimer = null;
         model.updatedAt = Date.now();
-        scheduler.postTask(() => setJSON(MODEL_KEY, model), { priority: 'background' });
+        setJSON(MODEL_KEY, model).catch(() => {});
     };
     saveTimer = window.setTimeout(persist, 120);
 };

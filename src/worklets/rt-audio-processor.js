@@ -178,7 +178,6 @@ class RealtimeAudioProcessor extends AudioWorkletProcessor {
                     frequency: result.frequency,
                     note: result.note,
                     cents: result.cents,
-                    pitchCents: result.cents,
                     volume: result.volume,
                     inTune: result.in_tune,
                     confidence: result.confidence,
