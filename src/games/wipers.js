@@ -45,13 +45,15 @@ export const init = () => {
                 startBtn.textContent = 'Stop Engine';
             }
         });
-        // Auto-pause if navigating away
+        // Auto-pause if navigating away; self-removes on first non-game navigation
         const onHashChange = () => {
             if (!isGameView(window.location.hash, 'wipers')) {
                 if (engine?.isRunning) {
                     engine.stop();
                     if (startBtn) startBtn.textContent = 'Start Engine';
                 }
+                window.removeEventListener('hashchange', onHashChange);
+                bound = false;
             }
         };
         window.addEventListener('hashchange', onHashChange);

@@ -1,4 +1,4 @@
-import { finiteOrZero } from '../utils/math.js';
+import { finiteOrNow, finiteOrZero } from '../utils/math.js';
 
 export const cloneFeature = (feature) => {
     if (!feature || typeof feature !== 'object') return null;
@@ -11,6 +11,6 @@ export const cloneFeature = (feature) => {
         rhythmOffsetMs: finiteOrZero(feature.rhythmOffsetMs),
         onset: Boolean(feature.onset),
         hasSignal: Boolean(feature.hasSignal),
-        timestamp: Number.isFinite(feature.timestamp) ? feature.timestamp : Date.now(),
+        timestamp: finiteOrNow(feature.timestamp),
     };
 };

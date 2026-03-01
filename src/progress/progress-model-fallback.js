@@ -1,4 +1,5 @@
 import { atLeast1, clamp, clampRounded, percentageRounded, positiveRound, todayDay, average } from '../utils/math.js';
+import { eventScore } from '../utils/event-score.js';
 import {
     buildProgressEventBuckets,
     createDailyMinutes,
@@ -47,12 +48,8 @@ const weakestSkillFromValues = (skills) => (
 );
 
 const estimateFallbackSkills = ({ practiceMinutes, gameEvents, songEvents }) => {
-    const gameScores = gameEvents.map((event) => (
-        Number.isFinite(event.accuracy) ? Number(event.accuracy) : Number(event.score)
-    ));
-    const songScores = songEvents.map((event) => (
-        Number.isFinite(event.accuracy) ? Number(event.accuracy) : Number(event.score)
-    ));
+    const gameScores = gameEvents.map((event) => Number(eventScore(event)));
+    const songScores = songEvents.map((event) => Number(eventScore(event)));
     const avgGame = average(gameScores, 62);
     const avgSong = average(songScores, 64);
     const practiceBoost = clampRounded(practiceMinutes / 6, 0, 20);

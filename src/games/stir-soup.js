@@ -48,13 +48,15 @@ export const init = () => {
                 startBtn.textContent = 'Stop Stirring';
             }
         });
-        // Auto-pause if navigating away
+        // Auto-pause if navigating away; self-removes on first non-game navigation
         const onHashChange = () => {
             if (!isGameView(window.location.hash, 'stir-soup')) {
                 if (engine?.isRunning) {
                     engine.stop();
                     if (startBtn) startBtn.textContent = 'Start Stirring';
                 }
+                window.removeEventListener('hashchange', onHashChange);
+                bound = false;
             }
         };
         window.addEventListener('hashchange', onHashChange);

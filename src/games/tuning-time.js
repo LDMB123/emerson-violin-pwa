@@ -216,6 +216,7 @@ const { bind } = createGame({
         document.addEventListener(RT_STATE, onRealtimeState);
         registerCleanup(() => {
             document.removeEventListener(RT_STATE, onRealtimeState);
+            if (tuningEngine) tuningEngine.stop();
         });
 
         buttons.forEach((button) => {

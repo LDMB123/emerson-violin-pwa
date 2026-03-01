@@ -1,6 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { GAME_MASTERY_KEY } from '../persistence/storage-keys.js';
-import { clampRounded, clone, finiteOrZero, positiveRound } from '../utils/math.js';
+import { clampRounded, clone, finiteOrNow, finiteOrZero, positiveRound } from '../utils/math.js';
 import { DEFAULT_MASTERY_THRESHOLDS, dayCounts } from '../utils/mastery-utils.js';
 
 const normalizeGameEntry = (entry) => ({
@@ -12,7 +12,7 @@ const normalizeGameEntry = (entry) => ({
     silverDays: positiveRound(entry?.silverDays || 0),
     goldDays: positiveRound(entry?.goldDays || 0),
     tier: entry?.tier || 'foundation',
-    updatedAt: Number.isFinite(entry?.updatedAt) ? entry.updatedAt : Date.now(),
+    updatedAt: finiteOrNow(entry?.updatedAt),
 });
 
 const normalizeState = (stored) => {

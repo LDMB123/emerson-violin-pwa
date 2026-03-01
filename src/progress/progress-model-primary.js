@@ -1,5 +1,6 @@
 import { toTrackerTimestamp } from './progress-utils.js';
 import { clamp, durationToMinutes, todayDay } from '../utils/math.js';
+import { eventScore } from '../utils/event-score.js';
 import {
     PRACTICE_GAME_RULES,
     buildProgressEventBuckets,
@@ -62,7 +63,7 @@ const buildGameStats = (gameEvents) => {
                 stats.set(event.id, entry);
             }
         }
-        const scoreValue = Number.isFinite(event.accuracy) ? event.accuracy : event.score;
+        const scoreValue = eventScore(event);
         if (Number.isFinite(scoreValue)) {
             entry.bestScore = Math.max(entry.bestScore, scoreValue);
         }

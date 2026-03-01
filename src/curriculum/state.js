@@ -3,7 +3,7 @@ import {
     CURRICULUM_STATE_KEY,
     MISSION_HISTORY_KEY,
 } from '../persistence/storage-keys.js';
-import { clampRounded, clone, percentageRounded } from '../utils/math.js';
+import { clampRounded, clone, finiteOrNow, percentageRounded } from '../utils/math.js';
 
 const STATE_VERSION = 1;
 const MAX_HISTORY = 240;
@@ -68,8 +68,8 @@ export const normalizeMission = (mission) => {
             ? clampRounded(mission.completionPercent, 0, 100)
             : computeCompletionPercent(steps),
         status: mission.status || (computeCompletionPercent(steps) >= 100 ? 'complete' : 'active'),
-        createdAt: Number.isFinite(mission.createdAt) ? mission.createdAt : Date.now(),
-        updatedAt: Number.isFinite(mission.updatedAt) ? mission.updatedAt : Date.now(),
+        createdAt: finiteOrNow(mission.createdAt),
+        updatedAt: finiteOrNow(mission.updatedAt),
         pausedAt: Number.isFinite(mission.pausedAt) ? mission.pausedAt : null,
         completedAt: Number.isFinite(mission.completedAt) ? mission.completedAt : null,
     };
@@ -95,7 +95,7 @@ const normalizeState = (stored) => {
         currentMission: mission,
         completedUnitIds: Array.isArray(base.completedUnitIds) ? base.completedUnitIds.filter(Boolean) : [],
         unitProgress: base.unitProgress && typeof base.unitProgress === 'object' ? base.unitProgress : {},
-        lastUpdatedAt: Number.isFinite(base.lastUpdatedAt) ? base.lastUpdatedAt : Date.now(),
+        lastUpdatedAt: finiteOrNow(base.lastUpdatedAt),
     };
 };
 
@@ -106,7 +106,7 @@ const normalizeHistoryEntry = (entry) => {
     return {
         mission,
         reason: entry.reason || 'snapshot',
-        at: Number.isFinite(entry.at) ? entry.at : Date.now(),
+        at: finiteOrNow(entry.at),
     };
 };
 

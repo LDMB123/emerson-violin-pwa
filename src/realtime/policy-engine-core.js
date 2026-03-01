@@ -2,7 +2,7 @@ import {
     CUE_STATES,
     confidenceBandFrom,
 } from './contracts.js';
-import { clamp, finiteOrZero } from '../utils/math.js';
+import { clamp, finiteOrNow, finiteOrZero } from '../utils/math.js';
 
 const PRESET_BOUNDS = Object.freeze({
     gentle: Object.freeze({
@@ -67,7 +67,7 @@ const createCue = ({
 };
 
 export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
-    const now = Number.isFinite(context.now) ? context.now : Date.now();
+    const now = finiteOrNow(context.now);
     const pitchCents = finiteOrZero(features.pitchCents);
     const rhythmOffsetMs = finiteOrZero(features.rhythmOffsetMs);
     const confidence = clamp(

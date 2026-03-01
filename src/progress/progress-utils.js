@@ -1,4 +1,4 @@
-import { clamp } from '../utils/math.js';
+import { clamp, finiteOrNow } from '../utils/math.js';
 
 const RADAR_CENTER = 100;
 const RADAR_RADIUS = 80;
@@ -20,7 +20,7 @@ export const minutesForInput = (input) => {
 };
 
 export const toTrackerTimestamp = (value) => {
-    const parsed = Number.isFinite(Number(value)) ? Number(value) : Date.now();
+    const parsed = finiteOrNow(Number(value));
     return BigInt(Math.floor(parsed));
 };
 

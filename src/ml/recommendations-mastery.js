@@ -2,6 +2,7 @@ export { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 import { reviewIntervalDays, dayCounts, DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 import { gameViewHash, songViewHash } from '../utils/view-hash-utils.js';
 import { atLeast1, clampRounded, DAY_MS, finiteOrZero } from '../utils/math.js';
+import { eventScore } from '../utils/event-score.js';
 
 const bucketLevel = (score, { bronze, silver, gold }) => {
     if (score >= gold) return 'gold';
@@ -17,9 +18,7 @@ const isScorableMasteryEvent = (event) => (
     && Boolean(event.id)
 );
 
-const masteryScoreForEvent = (event) => (
-    Number.isFinite(event.accuracy) ? event.accuracy : event.score
-);
+const masteryScoreForEvent = (event) => eventScore(event);
 
 const ensureMasteryEntry = (targetMap, id) => targetMap.get(id) || {
     id,

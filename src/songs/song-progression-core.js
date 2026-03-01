@@ -1,4 +1,4 @@
-import { clampRounded, DAY_MS, finiteOrZero, positiveRound } from '../utils/math.js';
+import { clampRounded, DAY_MS, finiteOrNow, finiteOrZero, positiveRound } from '../utils/math.js';
 import { dayCounts, DEFAULT_MASTERY_THRESHOLDS, reviewIntervalDays } from '../utils/mastery-utils.js';
 
 const scoreFromEntry = (entry) => {
@@ -28,7 +28,7 @@ const normalizeDays = (entry) => {
     if (inferredScore <= 0) return {};
     const inferredDay = Number.isFinite(entry?.day)
         ? Math.round(entry.day)
-        : Math.round((Number.isFinite(entry?.updatedAt) ? entry.updatedAt : Date.now()) / DAY_MS);
+        : Math.round(finiteOrNow(entry?.updatedAt) / DAY_MS);
     return {
         [String(inferredDay)]: inferredScore,
     };
@@ -43,7 +43,7 @@ export const tierFromCounts = (counts, thresholds = DEFAULT_MASTERY_THRESHOLDS) 
 
 export const normalizeSongEntry = (entry) => ({
     ...(() => {
-        const updatedAt = Number.isFinite(entry?.updatedAt) ? entry.updatedAt : Date.now();
+        const updatedAt = finiteOrNow(entry?.updatedAt);
         const days = normalizeDays(entry);
         const counts = dayCounts(days);
         const tier = typeof entry?.tier === 'string' && entry.tier.trim()

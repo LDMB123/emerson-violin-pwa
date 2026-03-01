@@ -31,4 +31,5 @@ export const percentageRounded = (numerator, denominator, fallback = 0) => {
 };
 
 export const finiteOrZero = (x) => (Number.isFinite(x) ? x : 0);
+export const finiteOrNow = (x) => (Number.isFinite(x) ? x : Date.now());
 export const atLeast1 = (x) => Math.max(1, x);

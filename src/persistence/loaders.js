@@ -1,6 +1,6 @@
 import { getJSON, setJSON, getBlob } from './storage.js';
 import { EVENTS_KEY, RECORDINGS_KEY } from './storage-keys.js';
-import { clampRounded, positiveRound, dayFromTimestamp } from '../utils/math.js';
+import { clampRounded, finiteOrNow, positiveRound, dayFromTimestamp } from '../utils/math.js';
 
 const clampScore = (value, max = 100) => {
     const score = Number(value);
@@ -23,7 +23,7 @@ const normalizeSongStars = (event, accuracy) => {
 
 const normalizeEvent = (event) => {
     if (!event || typeof event !== 'object') return null;
-    const timestamp = Number.isFinite(event.timestamp) ? event.timestamp : Date.now();
+    const timestamp = finiteOrNow(event.timestamp);
     const normalized = {
         ...event,
         timestamp,
@@ -120,7 +120,7 @@ export const loadRecordings = async () => {
             return {
                 ...recording,
                 id: recording.id || `recording-${recording.timestamp || Date.now()}`,
-                timestamp: Number.isFinite(recording.timestamp) ? recording.timestamp : Date.now(),
+                timestamp: finiteOrNow(recording.timestamp),
             };
         })
         .filter(Boolean);

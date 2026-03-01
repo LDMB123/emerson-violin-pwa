@@ -1,7 +1,7 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { WEB_VITALS_KEY } from '../persistence/storage-keys.js';
 import { emitEvent, WEB_VITALS_UPDATED } from '../utils/event-names.js';
-import { finiteOrZero } from '../utils/math.js';
+import { finiteOrNow, finiteOrZero } from '../utils/math.js';
 
 const SESSION_LIMIT = 40;
 
@@ -90,7 +90,7 @@ const normalizeHistory = (stored) => {
     const sessions = rawSessions
         .filter((entry) => entry && typeof entry === 'object')
         .map((entry) => ({
-            timestamp: Number.isFinite(entry.timestamp) ? entry.timestamp : Date.now(),
+            timestamp: finiteOrNow(entry.timestamp),
             reason: typeof entry.reason === 'string' ? entry.reason : 'unknown',
             route: typeof entry.route === 'string' ? entry.route : '#view-home',
             sessionMs: finiteOrZero(entry.sessionMs),

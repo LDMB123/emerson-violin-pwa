@@ -2,6 +2,7 @@ import { loadEvents } from '../persistence/loaders.js';
 import { getCurriculumContent } from './content-loader.js';
 import { loadCurriculumState } from './state.js';
 import { average, percentageRounded } from '../utils/math.js';
+import { eventScore } from '../utils/event-score.js';
 
 const FLOW_FIRST_TIME = 'first_time';
 const FLOW_PROGRESSING = 'progressing';
@@ -49,13 +50,13 @@ const summarizeUnitCompletion = (unit, events = []) => {
     events.forEach((event) => {
         if (!event || typeof event !== 'object') return;
         if (event.type === 'game' && requiredGames.has(event.id)) {
-            const score = Number.isFinite(event.accuracy) ? event.accuracy : event.score;
+            const score = eventScore(event);
             if (Number.isFinite(score) && score >= 60) {
                 gameDone.add(event.id);
             }
         }
         if (event.type === 'song' && requiredSongs.has(event.id)) {
-            const score = Number.isFinite(event.accuracy) ? event.accuracy : event.score;
+            const score = eventScore(event);
             if (Number.isFinite(score) && score >= 60) {
                 songDone.add(event.id);
             }
