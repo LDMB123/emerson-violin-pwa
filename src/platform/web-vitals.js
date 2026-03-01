@@ -1,5 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { WEB_VITALS_KEY } from '../persistence/storage-keys.js';
+import { emitEvent } from '../utils/event-names.js';
 
 const SESSION_LIMIT = 40;
 const METRIC_EVENT = 'panda:web-vitals-updated';
@@ -123,13 +124,11 @@ const buildSessionPayload = (reason = 'unknown') => ({
 });
 
 const dispatchVitalsEvent = (session) => {
-    document.dispatchEvent(new CustomEvent(METRIC_EVENT, {
-        detail: {
-            session,
-            metrics: session.metrics,
-            timestamp: session.timestamp,
-        },
-    }));
+    emitEvent(METRIC_EVENT, {
+        session,
+        metrics: session.metrics,
+        timestamp: session.timestamp,
+    });
 };
 
 const persistSession = async (reason = 'unknown') => {

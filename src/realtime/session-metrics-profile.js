@@ -1,4 +1,4 @@
-import { clamp } from '../utils/math.js';
+import { clamp, positiveRound } from '../utils/math.js';
 
 const p95 = (values) => {
     if (!Array.isArray(values) || !values.length) return 0;
@@ -115,7 +115,7 @@ export const createSessionMetricsProfile = ({
             // Slower long-term personalization seed, constrained by safety bounds.
             state.calibration.pitchBiasCents = clamp(savedPitchBias, -18, 18);
             state.calibration.rhythmBiasMs = clamp(savedRhythmBias, -120, 120);
-            state.calibration.samples = Math.max(0, Math.round(savedSamples));
+            state.calibration.samples = positiveRound(savedSamples);
         } catch {
             // Keep default calibration on read failures.
         }

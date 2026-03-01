@@ -1,16 +1,16 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { GAME_MASTERY_KEY } from '../persistence/storage-keys.js';
-import { clone } from '../utils/math.js';
+import { clone, positiveRound } from '../utils/math.js';
 import { DEFAULT_MASTERY_THRESHOLDS, dayCounts } from '../utils/mastery-utils.js';
 
 const normalizeGameEntry = (entry) => ({
     id: entry?.id || '',
     best: Math.max(0, Math.min(100, Math.round(entry?.best || 0))),
-    attempts: Math.max(0, Math.round(entry?.attempts || 0)),
+    attempts: positiveRound(entry?.attempts || 0),
     days: entry?.days && typeof entry.days === 'object' ? entry.days : {},
-    bronzeDays: Math.max(0, Math.round(entry?.bronzeDays || 0)),
-    silverDays: Math.max(0, Math.round(entry?.silverDays || 0)),
-    goldDays: Math.max(0, Math.round(entry?.goldDays || 0)),
+    bronzeDays: positiveRound(entry?.bronzeDays || 0),
+    silverDays: positiveRound(entry?.silverDays || 0),
+    goldDays: positiveRound(entry?.goldDays || 0),
     tier: entry?.tier || 'foundation',
     updatedAt: Number.isFinite(entry?.updatedAt) ? entry.updatedAt : Date.now(),
 });

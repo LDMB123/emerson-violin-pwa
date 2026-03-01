@@ -1,3 +1,5 @@
+import { positiveRound } from '../utils/math.js';
+
 export const createViewportOffsetController = ({ rootStyle = document.documentElement.style } = {}) => {
     let visualViewportGlobalsBound = false;
 
@@ -9,7 +11,7 @@ export const createViewportOffsetController = ({ rootStyle = document.documentEl
             return;
         }
         const rawOffset = window.innerHeight - viewport.height - viewport.offsetTop;
-        const offset = Math.max(0, Math.round(rawOffset));
+        const offset = positiveRound(rawOffset);
         rootStyle.setProperty('--keyboard-offset', `${offset}px`);
     };
 

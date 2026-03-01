@@ -1,6 +1,7 @@
 import {
     PRACTICE_STEP_COMPLETED,
     PRACTICE_STEP_STARTED,
+    emitEvent,
 } from '../utils/event-names.js';
 
 export const createMissionProgressHandlers = ({
@@ -49,13 +50,11 @@ export const createMissionProgressHandlers = ({
     };
 
     const dispatchPracticeStepEvent = (eventName, stepId) => {
-        document.dispatchEvent(new CustomEvent(eventName, {
-            detail: {
-                missionId: missionContext.mission?.id,
-                stepId,
-                timestamp: Date.now(),
-            },
-        }));
+        emitEvent(eventName, {
+            missionId: missionContext.mission?.id,
+            stepId,
+            timestamp: Date.now(),
+        });
     };
 
     const handleLessonStep = async (event) => {

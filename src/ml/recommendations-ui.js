@@ -5,6 +5,7 @@ import {
     ML_UPDATE,
     ML_RESET,
     ML_RECS,
+    emitEvent,
 } from '../utils/event-names.js';
 import {
     updateLessonPanel,
@@ -38,7 +39,7 @@ const setDailyGoalTarget = (total) => {
     document.documentElement.dataset.dailyGoalTarget = String(value);
     const targetEl = document.querySelector('[data-progress="daily-goal-value"]');
     if (targetEl) targetEl.textContent = String(value);
-    document.dispatchEvent(new CustomEvent(GOAL_TARGET_CHANGE, { detail: { value } }));
+    emitEvent(GOAL_TARGET_CHANGE, { value });
 };
 
 const runRefreshPanels = async () => {

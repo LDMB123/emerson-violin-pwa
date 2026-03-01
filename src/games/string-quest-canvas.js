@@ -172,6 +172,26 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
         drawGlowingParticles(this.ctx, this.particles);
     }
 
+    handlePointerDown(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.width / rect.width;
+        const scaleY = this.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        let closest = null;
+        let minDist = Infinity;
+        this.strings.forEach(str => {
+            const dist = this.isHorizontal
+                ? Math.abs(y - this.height * str.yPos)
+                : Math.abs(x - this.width * str.yPos);
+            if (dist < minDist) {
+                minDist = dist;
+                closest = str;
+            }
+        });
+        if (closest) this.pluck(closest.id);
+    }
+
     destroy() {
         super.destroy();
         this.canvas.removeEventListener('pointerdown', this.handlePointerDown);

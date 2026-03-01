@@ -1,3 +1,4 @@
+import { positiveRound } from '../utils/math.js';
 import { renderNextActionsList } from '../utils/render-utils.js';
 
 const renderChipGrid = (container, chips, emptyText) => {
@@ -96,7 +97,7 @@ export const renderGameMasteryMatrix = ({
         .map((id) => {
             const entry = gameMasteryState?.games?.[id] || null;
             const tier = entry?.tier || 'foundation';
-            const attempts = Math.max(0, Math.round(entry?.attempts || 0));
+            const attempts = positiveRound(entry?.attempts || 0);
             return {
                 label: gameLabels[id] || id,
                 value: `${tier} · ${attempts} runs`,

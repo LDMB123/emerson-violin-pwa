@@ -1,6 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { SONG_PROGRESS_KEY } from '../persistence/storage-keys.js';
-import { clamp, clone, todayDay } from '../utils/math.js';
+import { clampRounded, clone, todayDay } from '../utils/math.js';
 import { loadCurriculumState } from '../curriculum/state.js';
 import {
     DAY_MS,
@@ -45,15 +45,15 @@ export const updateSongProgress = async (songId, attempt = {}) => {
     const state = await loadSongProgressState();
     const existing = normalizeSongEntry(state.songs[songId]);
 
-    const accuracy = Number.isFinite(attempt.accuracy) ? clamp(Math.round(attempt.accuracy), 0, 100) : 0;
+    const accuracy = Number.isFinite(attempt.accuracy) ? clampRounded(attempt.accuracy, 0, 100) : 0;
     const timing = Number.isFinite(attempt.timingAccuracy)
-        ? clamp(Math.round(attempt.timingAccuracy), 0, 100)
+        ? clampRounded(attempt.timingAccuracy, 0, 100)
         : accuracy;
     const intonation = Number.isFinite(attempt.intonationAccuracy)
-        ? clamp(Math.round(attempt.intonationAccuracy), 0, 100)
+        ? clampRounded(attempt.intonationAccuracy, 0, 100)
         : accuracy;
     const stars = Number.isFinite(attempt.stars)
-        ? clamp(Math.round(attempt.stars), 0, 5)
+        ? clampRounded(attempt.stars, 0, 5)
         : existing.bestStars;
 
     const sectionProgress = {
@@ -67,7 +67,7 @@ export const updateSongProgress = async (songId, attempt = {}) => {
     }
 
     const dayKey = String(Number.isFinite(attempt.day) ? Math.round(attempt.day) : todayDay());
-    const attemptScore = clamp(Math.round((accuracy + timing + intonation) / 3), 0, 100);
+    const attemptScore = clampRounded((accuracy + timing + intonation) / 3, 0, 100);
     const days = {
         ...existing.days,
         [dayKey]: Math.max(Number(existing.days?.[dayKey] || 0), attemptScore),

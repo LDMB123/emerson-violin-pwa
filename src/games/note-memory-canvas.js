@@ -217,6 +217,16 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
         });
     }
 
+    handlePointerDown(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.width / rect.width;
+        const scaleY = this.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        const card = this.cards.find(c => x >= c.x && x <= c.x + c.width && y >= c.y && y <= c.y + c.height);
+        if (card && this.onCardTapped) this.onCardTapped(card);
+    }
+
     destroy() {
         super.destroy();
         this.canvas.removeEventListener('pointerdown', this.handlePointerDown);

@@ -1,5 +1,5 @@
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { SOUNDS_CHANGE } from '../utils/event-names.js';
+import { SOUNDS_CHANGE, emitEvent } from '../utils/event-names.js';
 import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
 
 const createEmptyElements = () => ({
@@ -154,7 +154,7 @@ export const createMediaSoundController = () => {
                 pauseAudioElement(audio, { reset: true });
             }
         });
-        document.dispatchEvent(new CustomEvent(SOUNDS_CHANGE, { detail: { enabled } }));
+        emitEvent(SOUNDS_CHANGE, { enabled });
     };
 
     const bindSoundToggle = () => {

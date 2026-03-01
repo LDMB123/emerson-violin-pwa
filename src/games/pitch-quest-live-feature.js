@@ -1,4 +1,4 @@
-import { clamp } from '../utils/math.js';
+import { clampRounded } from '../utils/math.js';
 import { formatPitchQuestFeedback } from './pitch-quest-feedback.js';
 
 export const applyPitchQuestLiveFeature = ({
@@ -15,7 +15,7 @@ export const applyPitchQuestLiveFeature = ({
     feedbackEl,
     markChecklist,
 }) => {
-    const cents = clamp(Math.round(feature.cents || 0), -50, 50);
+    const cents = clampRounded(feature.cents || 0, -50, 50);
     if (offsetEl) offsetEl.textContent = `${cents > 0 ? '+' : ''}${cents} cents`;
     if (noteEl) noteEl.textContent = feature.note || '--';
     if (gauge) gauge.style.setProperty('--pitch-offset', `${cents * 0.5}deg`);

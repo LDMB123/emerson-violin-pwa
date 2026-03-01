@@ -1,6 +1,6 @@
 import { loadEvents, saveEvents } from '../persistence/loaders.js';
-import { clamp, todayDay } from '../utils/math.js';
-import { SONG_RECORDED } from '../utils/event-names.js';
+import { clampRounded, todayDay } from '../utils/math.js';
+import { SONG_RECORDED, emitEvent } from '../utils/event-names.js';
 import { updateSongProgress } from './song-progression.js';
 
 const tierFromAccuracy = (accuracy) => {
@@ -22,7 +22,7 @@ export const recordSongEvent = async (
     const payload = (accuracyOrPayload && typeof accuracyOrPayload === 'object')
         ? accuracyOrPayload
         : { accuracy: accuracyOrPayload, duration, elapsed };
-    const rounded = clamp(Math.round(payload.accuracy || 0), 0, 100);
+    const rounded = clampRounded(payload.accuracy || 0, 0, 100);
     const entry = {
         type: 'song',
         id: songId,
@@ -37,15 +37,15 @@ export const recordSongEvent = async (
         entry.sectionId = payload.sectionId.trim();
     }
     if (Number.isFinite(payload.tempo)) entry.tempo = Math.max(30, Math.round(payload.tempo));
-    if (Number.isFinite(payload.timingAccuracy)) entry.timingAccuracy = clamp(Math.round(payload.timingAccuracy), 0, 100);
-    if (Number.isFinite(payload.intonationAccuracy)) entry.intonationAccuracy = clamp(Math.round(payload.intonationAccuracy), 0, 100);
-    if (Number.isFinite(payload.stars)) entry.stars = clamp(Math.round(payload.stars), 0, 5);
+    if (Number.isFinite(payload.timingAccuracy)) entry.timingAccuracy = clampRounded(payload.timingAccuracy, 0, 100);
+    if (Number.isFinite(payload.intonationAccuracy)) entry.intonationAccuracy = clampRounded(payload.intonationAccuracy, 0, 100);
+    if (Number.isFinite(payload.stars)) entry.stars = clampRounded(payload.stars, 0, 5);
     if (typeof payload.attemptType === 'string' && payload.attemptType.trim()) {
         entry.attemptType = payload.attemptType.trim();
     }
     events.push(entry);
     await saveEvents(events);
     await updateSongProgress(songId, entry);
-    document.dispatchEvent(new CustomEvent(SONG_RECORDED, { detail: entry }));
+    emitEvent(SONG_RECORDED, entry);
     onUpdated(events);
 };

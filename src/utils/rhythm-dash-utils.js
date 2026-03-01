@@ -1,4 +1,4 @@
-import { clamp, deviationAccuracy } from './math.js';
+import { clamp, clampRounded, deviationAccuracy } from './math.js';
 
 export const computeBeatInterval = (bpm) => {
     return 60000 / Math.max(1, bpm);
@@ -6,7 +6,7 @@ export const computeBeatInterval = (bpm) => {
 
 export const computeBpm = (delta) => {
     if (delta <= 0) return 0;
-    return clamp(Math.round(60000 / delta), 50, 160);
+    return clampRounded(60000 / delta, 50, 160);
 };
 
 export const computeTimingScore = (delta, beatInterval) => {

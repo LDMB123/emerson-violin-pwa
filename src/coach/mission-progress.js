@@ -1,6 +1,7 @@
 import {
     COACH_MISSION_COMPLETE,
     MISSION_UPDATED,
+    emitEvent,
 } from '../utils/event-names.js';
 import {
     completeMissionStep,
@@ -77,11 +78,9 @@ const applyGoalStateFromMission = () => {
 };
 
 const dispatchMissionUpdated = () => {
-    document.dispatchEvent(new CustomEvent(MISSION_UPDATED, {
-        detail: {
-            mission: missionContext.mission,
-        },
-    }));
+    emitEvent(MISSION_UPDATED, {
+        mission: missionContext.mission,
+    });
 };
 
 const updateMissionStatus = () => {
@@ -91,14 +90,12 @@ const updateMissionStatus = () => {
 
     if (complete && !missionContext.completionDispatched) {
         missionContext.completionDispatched = true;
-        document.dispatchEvent(new CustomEvent(COACH_MISSION_COMPLETE, {
-            detail: {
-                completed,
-                total,
-                missionId: missionContext.mission?.id,
-                timestamp: Date.now(),
-            },
-        }));
+        emitEvent(COACH_MISSION_COMPLETE, {
+            completed,
+            total,
+            missionId: missionContext.mission?.id,
+            timestamp: Date.now(),
+        });
     }
 
     if (!complete) {

@@ -38,6 +38,7 @@ vi.mock('../../src/utils/sound-state.js', () => ({
 }));
 vi.mock('../../src/utils/math.js', () => ({
     todayDay: sharedDeps.todayDay,
+    positiveRound: (value) => Math.max(0, Math.round(value)),
 }));
 vi.mock('../../src/tuner/tuner-utils.js', () => ({
     formatDifficulty: sharedDeps.formatDifficulty,

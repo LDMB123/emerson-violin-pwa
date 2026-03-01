@@ -1,10 +1,10 @@
-import { clamp } from '../utils/math.js';
+import { clamp, clampRounded } from '../utils/math.js';
 import { coachMessageFor, buildRadarPoints } from './progress-utils.js';
 import { starString } from '../utils/session-review-utils.js';
 
 const updateProgressTrack = (el, percent, text) => {
     if (!el) return;
-    const value = clamp(Math.round(percent), 0, 100);
+    const value = clampRounded(percent, 0, 100);
     el.setAttribute('aria-valuenow', String(value));
     if (text) {
         el.setAttribute('aria-valuetext', text);
@@ -49,7 +49,7 @@ const renderDailyGoal = (elements, dailyMinutes, goalTarget) => {
     if (elements.dailyGoalValueEl) elements.dailyGoalValueEl.textContent = String(goalTarget);
     if (!elements.dailyGoalFillEl || !Array.isArray(dailyMinutes)) return;
     const todayMinutes = dailyMinutes[dailyMinutes.length - 1] || 0;
-    const percent = clamp(Math.round((todayMinutes / goalTarget) * 100), 0, 100);
+    const percent = clampRounded((todayMinutes / goalTarget) * 100, 0, 100);
     setFillWidth(elements.dailyGoalFillEl, percent);
     updateProgressTrack(elements.dailyGoalTrackEl, percent, `${todayMinutes} of ${goalTarget} minutes`);
 };
@@ -66,7 +66,7 @@ const buildDailyChartPoints = (dailyMinutes) => {
 };
 
 const renderParentGoals = (elements, weekMinutes, weeklyTarget) => {
-    const percent = clamp(Math.round((weekMinutes / weeklyTarget) * 100), 0, 100);
+    const percent = clampRounded((weekMinutes / weeklyTarget) * 100, 0, 100);
     setFillWidth(elements.parentGoalFillEl, percent);
     updateProgressTrack(elements.parentGoalTrackEl, percent, `${weekMinutes} of ${weeklyTarget} minutes`);
     if (elements.parentGoalValueEl) elements.parentGoalValueEl.textContent = `${weekMinutes} / ${weeklyTarget}`;

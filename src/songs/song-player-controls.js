@@ -1,4 +1,4 @@
-import { SONG_SECTION_COMPLETED, RT_STATE } from '../utils/event-names.js';
+import { SONG_SECTION_COMPLETED, RT_STATE, emitEvent } from '../utils/event-names.js';
 import { clamp } from '../utils/math.js';
 import { getSongCheckpoint, saveSongCheckpoint } from './song-progression.js';
 import { parseViewSongId, sectionDuration, setStatus } from './song-player-view.js';
@@ -64,15 +64,13 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     };
 
     const triggerSectionComplete = (sectionId, tempo, effectiveDuration) => {
-        document.dispatchEvent(new CustomEvent(SONG_SECTION_COMPLETED, {
-            detail: {
-                songId: parseViewSongId(view.id),
-                sectionId,
-                tempo,
-                duration: effectiveDuration,
-                timestamp: Date.now(),
-            },
-        }));
+        emitEvent(SONG_SECTION_COMPLETED, {
+            songId: parseViewSongId(view.id),
+            sectionId,
+            tempo,
+            duration: effectiveDuration,
+            timestamp: Date.now(),
+        });
 
         if (view.dataset.songLoop === 'true') {
             // Restart directly — avoids toggle-flipping which would

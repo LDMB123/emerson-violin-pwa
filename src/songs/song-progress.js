@@ -1,7 +1,7 @@
 import { createTonePlayer } from '../audio/tone-player.js';
 import { wait } from '../audio/tone-player/shared.js';
 import { loadEvents } from '../persistence/loaders.js';
-import { clamp } from '../utils/math.js';
+import { clamp, clampRounded } from '../utils/math.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import { getSongIdFromViewId, parseDuration } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
@@ -175,8 +175,8 @@ const finishRun = (songId, accuracy, duration, elapsed) => {
     if (run.timeoutId) clearTimeout(run.timeoutId);
     run.logged = true;
     runs.delete(songId);
-    const timingAccuracy = clamp(Math.round(accuracy + (run.sectionId ? 4 : 0)), 0, 100);
-    const intonationAccuracy = clamp(Math.round(accuracy - (run.tempo && run.tempo > 112 ? 4 : 0)), 0, 100);
+    const timingAccuracy = clampRounded(accuracy + (run.sectionId ? 4 : 0), 0, 100);
+    const intonationAccuracy = clampRounded(accuracy - (run.tempo && run.tempo > 112 ? 4 : 0), 0, 100);
     const assessment = assessSongAttempt({
         accuracy,
         timingAccuracy,

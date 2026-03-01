@@ -1,3 +1,5 @@
+import { emitEvent } from '../utils/event-names.js';
+
 const MILESTONE_CHECKS = [
     {
         achievement: 'pitch_perfect',
@@ -50,7 +52,7 @@ export const createProgressInputController = ({
 
         events.push(entry);
         await saveEvents(events);
-        document.dispatchEvent(new CustomEvent(practiceRecordedEventName, { detail: entry }));
+        emitEvent(practiceRecordedEventName, entry);
         await onEventsUpdated(events);
     };
 

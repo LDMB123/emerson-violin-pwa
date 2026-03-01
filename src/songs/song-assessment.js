@@ -1,9 +1,9 @@
-import { clamp } from '../utils/math.js';
+import { clampRounded } from '../utils/math.js';
 
 const toScore = (value, fallback = 0) => {
     const score = Number(value);
     if (!Number.isFinite(score)) return fallback;
-    return clamp(Math.round(score), 0, 100);
+    return clampRounded(score, 0, 100);
 };
 
 const starsFromScores = (timing, intonation, overall) => {
@@ -67,7 +67,7 @@ export const aggregateSongAssessments = (events = []) => {
             const accuracy = toScore(event.accuracy, 0);
             const timing = toScore(event.timingAccuracy, accuracy);
             const intonation = toScore(event.intonationAccuracy, accuracy);
-            const stars = Number.isFinite(event.stars) ? clamp(Math.round(event.stars), 0, 5) : starsFromScores(timing, intonation, accuracy);
+            const stars = Number.isFinite(event.stars) ? clampRounded(event.stars, 0, 5) : starsFromScores(timing, intonation, accuracy);
 
             existing.attempts += 1;
             existing.bestAccuracy = Math.max(existing.bestAccuracy, accuracy);

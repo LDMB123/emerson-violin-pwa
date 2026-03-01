@@ -1,4 +1,4 @@
-import { GOAL_TARGET_CHANGE } from '../utils/event-names.js';
+import { GOAL_TARGET_CHANGE, emitEvent } from '../utils/event-names.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import {
     loadParentGoal,
@@ -78,9 +78,7 @@ const saveGoal = async () => {
     await saveParentGoal(goal);
     renderGoal(goal);
     setStatus('Goal saved.');
-    document.dispatchEvent(new CustomEvent(GOAL_TARGET_CHANGE, {
-        detail: { weeklyMinutes: goal.weeklyMinutes, title: goal.title },
-    }));
+    emitEvent(GOAL_TARGET_CHANGE, { weeklyMinutes: goal.weeklyMinutes, title: goal.title });
     setFormDisabled(false);
 };
 

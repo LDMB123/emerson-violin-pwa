@@ -1,11 +1,11 @@
 import { getJSON, setJSON, getBlob } from './storage.js';
 import { EVENTS_KEY, RECORDINGS_KEY } from './storage-keys.js';
-import { clamp, dayFromTimestamp } from '../utils/math.js';
+import { clampRounded, positiveRound, dayFromTimestamp } from '../utils/math.js';
 
 const clampScore = (value, max = 100) => {
     const score = Number(value);
     if (!Number.isFinite(score)) return null;
-    return clamp(Math.round(score), 0, max);
+    return clampRounded(score, 0, max);
 };
 
 const normalizeSongStars = (event, accuracy) => {
@@ -42,13 +42,13 @@ const normalizeEvent = (event) => {
             normalized.tier = event.level;
         }
         if (!Number.isFinite(normalized.objectiveTotal) && Number.isFinite(event?.objectives?.total)) {
-            normalized.objectiveTotal = Math.max(0, Math.round(event.objectives.total));
+            normalized.objectiveTotal = positiveRound(event.objectives.total);
         }
         if (!Number.isFinite(normalized.objectivesCompleted) && Number.isFinite(event?.objectives?.completed)) {
-            normalized.objectivesCompleted = Math.max(0, Math.round(event.objectives.completed));
+            normalized.objectivesCompleted = positiveRound(event.objectives.completed);
         }
         if (!Number.isFinite(normalized.mistakes) && Number.isFinite(event?.misses)) {
-            normalized.mistakes = Math.max(0, Math.round(event.misses));
+            normalized.mistakes = positiveRound(event.misses);
         }
     }
 

@@ -3,6 +3,7 @@ import {
     LESSON_COMPLETE,
     PRACTICE_STEP_STARTED,
     PRACTICE_STEP_COMPLETED,
+    emitEvent,
 } from '../utils/event-names.js';
 import {
     dispatchLessonRunnerEvent,
@@ -69,7 +70,7 @@ export const createLessonRunnerActions = ({
             if (startButton) startButton.textContent = 'Restart';
             if (nextButton) nextButton.disabled = true;
             if (ctaButton) ctaButton.setAttribute('href', '#view-games');
-            document.dispatchEvent(new CustomEvent(LESSON_COMPLETE));
+            emitEvent(LESSON_COMPLETE);
         } else {
             setStatus(auto ? 'Step complete. Ready for the next one.' : 'Step marked complete. Tap Next to continue.');
             if (startButton) startButton.textContent = 'Start';

@@ -1,4 +1,4 @@
-import { LESSON_STEP } from '../utils/event-names.js';
+import { LESSON_STEP, emitEvent } from '../utils/event-names.js';
 
 export const markRunnerGoalComplete = (stepId) => {
     if (!stepId) return;
@@ -11,24 +11,20 @@ export const markRunnerGoalComplete = (stepId) => {
 };
 
 export const dispatchLessonRunnerEvent = ({ state, step, index, total }) => {
-    document.dispatchEvent(new CustomEvent(LESSON_STEP, {
-        detail: {
-            state,
-            step,
-            index,
-            total,
-        },
-    }));
+    emitEvent(LESSON_STEP, {
+        state,
+        step,
+        index,
+        total,
+    });
 };
 
 export const dispatchPracticeRunnerEvent = ({ eventName, step, index, total }) => {
-    document.dispatchEvent(new CustomEvent(eventName, {
-        detail: {
-            step,
-            index,
-            total,
-            missionStepId: step?.id || null,
-            timestamp: Date.now(),
-        },
-    }));
+    emitEvent(eventName, {
+        step,
+        index,
+        total,
+        missionStepId: step?.id || null,
+        timestamp: Date.now(),
+    });
 };

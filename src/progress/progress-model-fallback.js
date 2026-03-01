@@ -1,4 +1,4 @@
-import { clamp, todayDay, average } from '../utils/math.js';
+import { clamp, clampRounded, positiveRound, todayDay, average } from '../utils/math.js';
 import {
     buildProgressEventBuckets,
     createDailyMinutes,
@@ -25,7 +25,7 @@ const createFallbackTracker = (events) => {
 };
 
 const createFallbackProgressModel = ({ totalMinutes, gameCount, songCount }) => {
-    const xp = Math.max(0, Math.round((totalMinutes * 5) + (gameCount * 9) + (songCount * 7)));
+    const xp = positiveRound((totalMinutes * 5) + (gameCount * 9) + (songCount * 7));
     const levelSize = 120;
     const level = Math.max(1, Math.floor(xp / levelSize) + 1);
     const previousLevelXp = (level - 1) * levelSize;
@@ -55,13 +55,13 @@ const estimateFallbackSkills = ({ practiceMinutes, gameEvents, songEvents }) => 
     ));
     const avgGame = average(gameScores, 62);
     const avgSong = average(songScores, 64);
-    const practiceBoost = clamp(Math.round(practiceMinutes / 6), 0, 20);
+    const practiceBoost = clampRounded(practiceMinutes / 6, 0, 20);
     return {
-        pitch: clamp(Math.round((avgGame * 0.7) + (avgSong * 0.3)), 25, 100),
-        rhythm: clamp(Math.round(avgGame + (practiceBoost * 0.6)), 25, 100),
-        bow_control: clamp(Math.round((avgGame * 0.65) + 15 + practiceBoost), 25, 100),
-        posture: clamp(Math.round(50 + practiceBoost), 25, 100),
-        reading: clamp(Math.round((avgSong * 0.85) + (practiceBoost * 0.4)), 25, 100),
+        pitch: clampRounded((avgGame * 0.7) + (avgSong * 0.3), 25, 100),
+        rhythm: clampRounded(avgGame + (practiceBoost * 0.6), 25, 100),
+        bow_control: clampRounded((avgGame * 0.65) + 15 + practiceBoost, 25, 100),
+        posture: clampRounded(50 + practiceBoost, 25, 100),
+        reading: clampRounded((avgSong * 0.85) + (practiceBoost * 0.4), 25, 100),
     };
 };
 
@@ -83,7 +83,7 @@ export const buildFallbackProgress = async (events, error) => {
     let weekMinutes = 0;
 
     for (const event of practiceEvents) {
-        const minutes = Math.max(0, Math.round(Number(event.minutes) || 0));
+        const minutes = positiveRound(Number(event.minutes) || 0);
         const eventDay = Number(event.day);
         totalMinutes += minutes;
         if (Number.isFinite(eventDay)) uniqueDays.add(eventDay);
@@ -94,7 +94,7 @@ export const buildFallbackProgress = async (events, error) => {
 
     for (const event of songEvents) {
         if (!Number.isFinite(event.duration)) continue;
-        const minutes = Math.max(0, Math.round(Number(event.duration) / 60));
+        const minutes = positiveRound(Number(event.duration) / 60);
         const eventDay = Number(event.day);
         totalMinutes += minutes;
         if (Number.isFinite(eventDay) && addMinutesToDailyWindow(dailyMinutes, currentDay, eventDay, minutes)) {

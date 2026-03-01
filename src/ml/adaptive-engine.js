@@ -1,7 +1,7 @@
 import { getJSON, setJSON, removeJSON } from '../persistence/storage.js';
 import { clamp as rawClamp } from '../utils/math.js';
 import { ML_MODEL_KEY as MODEL_KEY, ML_LOG_KEY as LOG_KEY } from '../persistence/storage-keys.js';
-import { ML_UPDATE, ML_RESET } from '../utils/event-names.js';
+import { ML_UPDATE, ML_RESET, emitEvent } from '../utils/event-names.js';
 const DEFAULT_MODEL = {
     version: 1,
     updatedAt: 0,
@@ -160,7 +160,7 @@ export const updateGameResult = async (id, payload = {}) => {
         samples: game.samples,
     };
     logDecision(entry).catch(() => { });
-    document.dispatchEvent(new CustomEvent(ML_UPDATE, { detail: entry }));
+    emitEvent(ML_UPDATE, entry);
     return tuning;
 };
 
@@ -188,5 +188,5 @@ export const resetAdaptiveModel = async () => {
         removeJSON(MODEL_KEY),
         removeJSON(LOG_KEY),
     ]);
-    document.dispatchEvent(new CustomEvent(ML_RESET));
+    emitEvent(ML_RESET);
 };

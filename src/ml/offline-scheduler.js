@@ -1,6 +1,6 @@
 import { whenReady } from '../utils/dom-ready.js';
 import { refreshRecommendationsCache } from './recommendations.js';
-import { ML_RECS, GAME_RECORDED, PRACTICE_RECORDED, SONG_RECORDED, ML_UPDATE } from '../utils/event-names.js';
+import { ML_RECS, GAME_RECORDED, PRACTICE_RECORDED, SONG_RECORDED, ML_UPDATE, emitEvent } from '../utils/event-names.js';
 
 const deviceMemory = navigator.deviceMemory || 4;
 const MIN_INTERVAL = deviceMemory <= 4 ? 4 * 60 * 1000 : 2 * 60 * 1000;
@@ -17,7 +17,7 @@ const scheduleRefresh = (reason) => {
     scheduleTask(async () => {
         try {
             await refreshRecommendationsCache();
-            document.dispatchEvent(new CustomEvent(ML_RECS, { detail: { reason } }));
+            emitEvent(ML_RECS, { reason });
         } catch {
             // Ignore ML cache failures
         } finally {

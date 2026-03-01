@@ -1,4 +1,4 @@
-import { ACHIEVEMENT_UNLOCKED } from '../utils/event-names.js';
+import { ACHIEVEMENT_UNLOCKED, emitEvent } from '../utils/event-names.js';
 
 const BADGE_META = {
     first_note: { name: 'First Note', artSrc: null },
@@ -24,9 +24,7 @@ const triggerMascotCelebration = () => {
 const dispatchAchievementUnlocked = (id) => {
     const meta = BADGE_META[id];
     if (!meta) return;
-    document.dispatchEvent(new CustomEvent(ACHIEVEMENT_UNLOCKED, {
-        detail: { id, name: meta.name, artSrc: meta.artSrc },
-    }));
+    emitEvent(ACHIEVEMENT_UNLOCKED, { id, name: meta.name, artSrc: meta.artSrc });
 };
 
 const celebrateAchievementUnlock = (el, id) => {

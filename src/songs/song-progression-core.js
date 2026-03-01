@@ -1,4 +1,4 @@
-import { clamp } from '../utils/math.js';
+import { clampRounded, positiveRound } from '../utils/math.js';
 import { dayCounts } from '../utils/mastery-utils.js';
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
@@ -21,7 +21,7 @@ const scoreFromEntry = (entry) => {
     const accuracy = Number.isFinite(entry?.bestAccuracy) ? entry.bestAccuracy : 0;
     const timing = Number.isFinite(entry?.bestTiming) ? entry.bestTiming : accuracy;
     const intonation = Number.isFinite(entry?.bestIntonation) ? entry.bestIntonation : accuracy;
-    return clamp(Math.round((accuracy + timing + intonation) / 3), 0, 100);
+    return clampRounded((accuracy + timing + intonation) / 3, 0, 100);
 };
 
 const normalizeDays = (entry) => {
@@ -32,7 +32,7 @@ const normalizeDays = (entry) => {
     if (rawDays) {
         Object.entries(rawDays).forEach(([day, score]) => {
             if (!day) return;
-            const safeScore = clamp(Math.round(Number(score) || 0), 0, 100);
+            const safeScore = clampRounded(Number(score) || 0, 0, 100);
             normalized[String(day)] = safeScore;
         });
     }
@@ -69,7 +69,7 @@ export const normalizeSongEntry = (entry) => ({
             : tierFromCounts(counts);
         const defaultNextReviewAt = updatedAt + (reviewIntervalDays(tier) * DAY_MS);
         return {
-            attempts: Math.max(0, Math.round(entry?.attempts || 0)),
+            attempts: positiveRound(entry?.attempts || 0),
             bestAccuracy: Math.max(0, Math.min(100, Math.round(entry?.bestAccuracy || 0))),
             bestTiming: Math.max(0, Math.min(100, Math.round(entry?.bestTiming || 0))),
             bestIntonation: Math.max(0, Math.min(100, Math.round(entry?.bestIntonation || 0))),
@@ -77,9 +77,9 @@ export const normalizeSongEntry = (entry) => ({
             sectionProgress: entry?.sectionProgress && typeof entry.sectionProgress === 'object' ? entry.sectionProgress : {},
             checkpoint: entry?.checkpoint && typeof entry.checkpoint === 'object' ? entry.checkpoint : null,
             days,
-            bronzeDays: Math.max(0, Math.round(entry?.bronzeDays || counts.bronzeDays || 0)),
-            silverDays: Math.max(0, Math.round(entry?.silverDays || counts.silverDays || 0)),
-            goldDays: Math.max(0, Math.round(entry?.goldDays || counts.goldDays || 0)),
+            bronzeDays: positiveRound(entry?.bronzeDays || counts.bronzeDays || 0),
+            silverDays: positiveRound(entry?.silverDays || counts.silverDays || 0),
+            goldDays: positiveRound(entry?.goldDays || counts.goldDays || 0),
             tier,
             updatedAt,
             nextReviewAt: Number.isFinite(entry?.nextReviewAt) ? entry.nextReviewAt : defaultNextReviewAt,

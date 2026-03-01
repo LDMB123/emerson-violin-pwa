@@ -5,6 +5,7 @@ import {
 } from './shared.js';
 import { bindGameSessionLifecycle } from './game-session-lifecycle.js';
 import { resolveGameObjectiveProgress } from './game-objectives.js';
+import { positiveRound } from '../utils/math.js';
 
 /**
  * createGame — factory for universal game boilerplate.
@@ -109,7 +110,7 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
                 ),
             });
             const mistakes = Number.isFinite(gameState.mistakes)
-                ? Math.max(0, Math.round(gameState.mistakes))
+                ? positiveRound(gameState.mistakes)
                 : Math.max(0, objectiveProgress.objectiveTotal - objectiveProgress.objectivesCompleted);
             const sessionMs = Math.max(0, Date.now() - (sessionStartedAt || Date.now()));
             const difficultyLevel = stage.querySelector('.difficulty-badge')?.dataset?.level

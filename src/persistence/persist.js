@@ -1,7 +1,7 @@
 import { whenReady } from '../utils/dom-ready.js';
 import { getJSON, setJSON } from './storage.js';
 import { UI_STATE_KEY as STORAGE_KEY } from './storage-keys.js';
-import { PERSIST_APPLIED, SOUNDS_CHANGE } from '../utils/event-names.js';
+import { PERSIST_APPLIED, SOUNDS_CHANGE, emitEvent } from '../utils/event-names.js';
 
 const IGNORE_IDS = new Set(['focus-timer']);
 const IGNORE_PREFIXES = ['song-play-'];
@@ -51,7 +51,7 @@ const applyState = (state) => {
             }
         }
     });
-    document.dispatchEvent(new CustomEvent(PERSIST_APPLIED, { detail: state }));
+    emitEvent(PERSIST_APPLIED, state);
 };
 
 const applyDerivedState = (state) => {
@@ -61,7 +61,7 @@ const applyDerivedState = (state) => {
     document.documentElement.dataset.sounds = soundsEnabled ? 'on' : 'off';
     document.documentElement.dataset.voiceCoach = voiceEnabled ? 'on' : 'off';
     document.documentElement.dataset.recordings = recordingsEnabled ? 'on' : 'off';
-    document.dispatchEvent(new CustomEvent(SOUNDS_CHANGE, { detail: { enabled: soundsEnabled } }));
+    emitEvent(SOUNDS_CHANGE, { enabled: soundsEnabled });
 };
 
 const initPersistence = async () => {

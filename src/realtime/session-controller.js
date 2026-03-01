@@ -9,6 +9,7 @@ import {
     RT_SESSION_STOPPED,
     RT_QUALITY,
     RT_FEATURE,
+    emitEvent,
 } from '../utils/event-names.js';
 import { assertRealtimePayload } from './contracts.js';
 import { appendRealtimeEvent, saveRealtimeQuality } from './event-log.js';
@@ -45,7 +46,7 @@ const emitRealtimeEvent = async (eventName, payload, { log = true } = {}) => {
         console.warn('[RealtimeSession] blocked invalid realtime payload', eventName, error);
         return;
     }
-    document.dispatchEvent(new CustomEvent(eventName, { detail: payload }));
+    emitEvent(eventName, payload);
     if (log) {
         appendRealtimeEvent(eventName, payload).catch(() => { });
     }

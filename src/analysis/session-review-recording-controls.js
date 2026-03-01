@@ -1,7 +1,7 @@
 import { getBlob } from '../persistence/storage.js';
 import { resolveRecordingSource } from '../persistence/loaders.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
-import { filterSongEvents, getRecentEvents } from '../utils/session-review-utils.js';
+import { getRecentEvents } from '../utils/session-review-utils.js';
 import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { createAudioController } from '../utils/audio-utils.js';
@@ -100,7 +100,7 @@ export const createSessionReviewRecordingController = () => {
         const recentRecordings = Array.isArray(recordings) ? recordings.slice(0, 2) : [];
         currentRecordings = recentRecordings;
 
-        const songEvents = filterSongEvents(events);
+        const songEvents = Array.isArray(events) ? events.filter((event) => event.type === 'song') : [];
         const recent = getRecentEvents(songEvents, 2);
         const soundEnabled = isSoundEnabled();
 

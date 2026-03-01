@@ -1,4 +1,5 @@
 import { isAutomated, isStandalone } from './platform-utils.js';
+import { emitEvent } from '../utils/event-names.js';
 
 export const INSTALL_PROMPT_CHANGE_EVENT = 'panda:install-prompt-change';
 
@@ -7,11 +8,9 @@ let globalsBound = false;
 
 const dispatchChange = () => {
     if (typeof document === 'undefined') return;
-    document.dispatchEvent(new CustomEvent(INSTALL_PROMPT_CHANGE_EVENT, {
-        detail: {
-            available: Boolean(deferredPrompt),
-        },
-    }));
+    emitEvent(INSTALL_PROMPT_CHANGE_EVENT, {
+        available: Boolean(deferredPrompt),
+    });
 };
 
 const bindGlobals = () => {

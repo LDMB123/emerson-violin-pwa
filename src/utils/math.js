@@ -13,3 +13,6 @@ export const formatTimestamp = (value) => {
     if (!value) return '—';
     try { return new Date(value).toLocaleString(); } catch { return '—'; }
 };
+
+export const clampRounded = (value, min, max) => clamp(Math.round(value), min, max);
+export const positiveRound = (value) => Math.max(0, Math.round(value));
