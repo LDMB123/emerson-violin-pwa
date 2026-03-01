@@ -36,11 +36,10 @@ vi.mock('../../src/persistence/storage.js', () => ({
 vi.mock('../../src/utils/sound-state.js', () => ({
     isSoundEnabled: sharedDeps.isSoundEnabled,
 }));
-vi.mock('../../src/utils/math.js', () => ({
-    todayDay: sharedDeps.todayDay,
-    positiveRound: (value) => Math.max(0, Math.round(value)),
-    durationToMinutes: (seconds, roundFn = Math.floor) => roundFn(Math.max(0, seconds || 0) / 60),
-}));
+vi.mock('../../src/utils/math.js', async (importOriginal) => {
+    const actual = await importOriginal();
+    return { ...actual, todayDay: sharedDeps.todayDay };
+});
 vi.mock('../../src/tuner/tuner-utils.js', () => ({
     formatDifficulty: sharedDeps.formatDifficulty,
 }));
