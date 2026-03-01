@@ -1,3 +1,5 @@
+import { wait } from '../audio/tone-player/shared.js';
+
 export const playStorySongPages = async ({
     player,
     token,
@@ -28,7 +30,7 @@ export const playStorySongPages = async ({
         const nextPageIndex = currentPageIndex + 1;
         setPageIndex(nextPageIndex);
         if (nextPageIndex < storyPages.length) {
-            await new Promise((resolve) => setTimeout(resolve, Math.max(400, stageSeconds * 250)));
+            await wait(Math.max(400, stageSeconds * 250));
         }
     }
 };

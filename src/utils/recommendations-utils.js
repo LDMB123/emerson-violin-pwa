@@ -1,4 +1,4 @@
-import { clamp } from './math.js';
+import { clamp, todayDay } from './math.js';
 
 export const SKILL_BY_GAME = {
     'pitch-quest': 'pitch',
@@ -130,7 +130,7 @@ export const computeSongLevel = (songEvents, recencyWeightFn = recencyWeight) =>
 
 export const pickDailyCue = (list, seed = 0) => {
     if (!Array.isArray(list) || !list.length) return '';
-    const day = Math.floor(Date.now() / 86400000);
+    const day = todayDay();
     const index = Math.abs(day + seed) % list.length;
     return list[index] || list[0];
 };

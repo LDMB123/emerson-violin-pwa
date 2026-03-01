@@ -1,4 +1,5 @@
 import { SONG_SECTION_COMPLETED, RT_STATE } from '../utils/event-names.js';
+import { clamp } from '../utils/math.js';
 import { getSongCheckpoint, saveSongCheckpoint } from './song-progression.js';
 import { parseViewSongId, sectionDuration, setStatus } from './song-player-view.js';
 import { attachTuning, playToneNote } from '../games/shared.js';
@@ -252,7 +253,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
 
     const applyTempo = () => {
         const percent = Number(tempoScaleInput?.value || 100);
-        const normalized = Math.max(50, Math.min(130, Number.isFinite(percent) ? percent : 100));
+        const normalized = clamp(Number.isFinite(percent) ? percent : 100, 50, 130);
         const baseTempo = Number(song?.bpm || 80);
         const tempo = Math.round((baseTempo * normalized) / 100);
         view.dataset.songTempo = String(tempo);

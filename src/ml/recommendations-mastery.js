@@ -1,9 +1,4 @@
-export const DEFAULT_MASTERY_THRESHOLDS = {
-    bronze: 60,
-    silver: 80,
-    gold: 92,
-    distinctDays: 3,
-};
+export { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const REVIEW_INTERVAL_DAYS_BY_TIER = {

@@ -1,6 +1,7 @@
 import { createGame } from './game-shell.js';
 import { attachTuning } from './shared.js';
 import { RT_STATE } from '../utils/event-names.js';
+import { clamp } from '../utils/math.js';
 
 export const computeAccuracy = (state) => {
     if (!state.totalTargets) return 0;
@@ -58,7 +59,7 @@ const { bind } = createGame({
             if (!data || typeof data.rms !== 'number') return;
 
             // Map 0.0 - 0.25 RMS to 5% - 100% height
-            const targetVisual = Math.min(100, Math.max(5, (data.rms / 0.25) * 100));
+            const targetVisual = clamp((data.rms / 0.25) * 100, 5, 100);
 
             // Smooth visually
             gameState.currentVisualVolume = gameState.currentVisualVolume + (targetVisual - gameState.currentVisualVolume) * 0.2;

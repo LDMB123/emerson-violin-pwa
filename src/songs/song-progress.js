@@ -1,4 +1,5 @@
 import { createTonePlayer } from '../audio/tone-player.js';
+import { wait } from '../audio/tone-player/shared.js';
 import { loadEvents } from '../persistence/loaders.js';
 import { clamp } from '../utils/math.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
@@ -10,7 +11,6 @@ import { saveSongCheckpoint } from './song-progression.js';
 import { recordSongEvent } from './song-progress-recording.js';
 import { updateBestAccuracyUI } from './song-progress-ui.js';
 
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const NOTE_DURATION_SCALE = 0.74;
 const NOTE_MIN_SECONDS = 0.12;
 const NOTE_MAX_SECONDS = 2.6;
