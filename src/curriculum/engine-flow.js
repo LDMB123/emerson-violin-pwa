@@ -1,7 +1,7 @@
 import { loadEvents } from '../persistence/loaders.js';
 import { getCurriculumContent } from './content-loader.js';
 import { loadCurriculumState } from './state.js';
-import { average } from '../utils/math.js';
+import { average, percentageRounded } from '../utils/math.js';
 
 const FLOW_FIRST_TIME = 'first_time';
 const FLOW_PROGRESSING = 'progressing';
@@ -68,7 +68,7 @@ const summarizeUnitCompletion = (unit, events = []) => {
     const gameRatio = requiredGames.size ? gameDone.size / requiredGames.size : 1;
     const songRatio = requiredSongs.size ? songDone.size / requiredSongs.size : 1;
     const practiceRatio = requiredMinutes ? Math.min(1, practiceMinutes / requiredMinutes) : 1;
-    const completion = Math.round(((gameRatio + songRatio + practiceRatio) / 3) * 100);
+    const completion = percentageRounded(gameRatio + songRatio + practiceRatio, 3);
 
     return {
         completion,

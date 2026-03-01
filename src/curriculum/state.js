@@ -3,7 +3,7 @@ import {
     CURRICULUM_STATE_KEY,
     MISSION_HISTORY_KEY,
 } from '../persistence/storage-keys.js';
-import { clone } from '../utils/math.js';
+import { clone, percentageRounded } from '../utils/math.js';
 
 const STATE_VERSION = 1;
 const MAX_HISTORY = 240;
@@ -36,7 +36,7 @@ const normalizeStep = (step, index) => {
 const computeCompletionPercent = (steps = []) => {
     if (!steps.length) return 0;
     const completedCount = steps.filter((step) => step.status === MISSION_STEP_STATES.COMPLETE).length;
-    return Math.round((completedCount / steps.length) * 100);
+    return percentageRounded(completedCount, steps.length);
 };
 
 export const normalizeMission = (mission) => {

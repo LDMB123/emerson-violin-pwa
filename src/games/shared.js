@@ -3,7 +3,7 @@ import { createTonePlayer } from '../audio/tone-player.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
-import { positiveRound, todayDay } from '../utils/math.js';
+import { durationToMinutes, positiveRound, todayDay } from '../utils/math.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
 import { GAME_RECORDED, GAME_MASTERY_UPDATED, ML_RESET, SOUNDS_CHANGE, emitEvent } from '../utils/event-names.js';
@@ -22,7 +22,7 @@ export const cachedEl = (selector) => {
 const MAX_EVENTS = 500;
 export const formatCountdown = (seconds) => {
     const safe = Math.max(0, Math.ceil(seconds));
-    const minutes = Math.floor(safe / 60);
+    const minutes = durationToMinutes(safe);
     const remaining = safe % 60;
     return `${minutes.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
 };

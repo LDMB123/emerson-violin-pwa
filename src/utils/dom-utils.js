@@ -45,3 +45,11 @@ export const updateProgressAttribute = (el, value, text) => {
     el.setAttribute('aria-valuenow', String(value));
     if (text !== undefined) el.setAttribute('aria-valuetext', String(text));
 };
+
+export const setHidden = (el, hidden) => {
+    if (el) el.hidden = hidden;
+};
+
+export const setDisabled = (el, disabled) => {
+    if (el) el.disabled = disabled;
+};

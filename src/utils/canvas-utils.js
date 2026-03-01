@@ -59,3 +59,23 @@ export function drawGlowingParticles(ctx, particles) {
     });
     ctx.restore();
 }
+
+/**
+ * Maps a pointer event's client coordinates to canvas logical coordinates,
+ * accounting for CSS scaling between the canvas's display size and its logical resolution.
+ *
+ * @param {PointerEvent|MouseEvent|Touch} event - Event with clientX/clientY
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ * @param {number} logicalWidth - Canvas logical width (canvas.width)
+ * @param {number} logicalHeight - Canvas logical height (canvas.height)
+ * @returns {{ x: number, y: number }}
+ */
+export const mapPointerToCanvasCoords = (event, canvas, logicalWidth, logicalHeight) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = logicalWidth / rect.width;
+    const scaleY = logicalHeight / rect.height;
+    return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY,
+    };
+};

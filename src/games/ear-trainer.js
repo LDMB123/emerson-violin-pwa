@@ -9,6 +9,7 @@ import {
     bindSoundsChange,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { setDisabled } from '../utils/dom-utils.js';
 import {
     renderEarTrainerDots,
     setEarTrainerQuestion,
@@ -146,7 +147,7 @@ const { bind } = createGame({
 
         const updateSoundState = () => {
             const enabled = isSoundEnabled();
-            if (playButton) playButton.disabled = !enabled;
+            setDisabled(playButton, !enabled);
             choices.forEach((choice) => {
                 choice.disabled = !enabled;
             });

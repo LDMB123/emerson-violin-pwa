@@ -1,5 +1,5 @@
 import { toTrackerTimestamp } from './progress-utils.js';
-import { clamp, todayDay } from '../utils/math.js';
+import { clamp, durationToMinutes, todayDay } from '../utils/math.js';
 import {
     PRACTICE_GAME_RULES,
     buildProgressEventBuckets,
@@ -120,7 +120,7 @@ const applySongEvents = ({ songEvents, progress, skillProfile, SkillCategory, cu
         skillProfile.update_skill(SkillCategory.Reading, clamp(accuracy, 30, 100));
         skillProfile.update_skill(SkillCategory.Pitch, clamp(accuracy * 0.85, 25, 100));
         if (!Number.isFinite(event.duration)) continue;
-        const minutes = Math.round(Number(event.duration) / 60);
+        const minutes = durationToMinutes(Number(event.duration), Math.round);
         if (addMinutesToDailyWindow(dailyMinutes, currentDay, event.day, minutes)) {
             weekMinutes += minutes;
         }

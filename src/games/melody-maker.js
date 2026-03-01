@@ -10,6 +10,7 @@ import {
     createStandardGameUpdate,
 } from './shared.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { setDisabled } from '../utils/dom-utils.js';
 import { resetMelodyMakerTrackState } from './melody-maker-state.js';
 import { playMelodyMakerSequence } from './melody-maker-playback.js';
 import {
@@ -109,8 +110,8 @@ const { bind } = createGame({
 
         const updateSoundState = () => {
             const enabled = isSoundEnabled();
-            if (playButton) playButton.disabled = !enabled;
-            if (playTargetButton) playTargetButton.disabled = !enabled;
+            setDisabled(playButton, !enabled);
+            setDisabled(playTargetButton, !enabled);
             if (!enabled) {
                 setStatus('Sounds are off. You can still build melodies, but enable Sounds to hear them.');
             }

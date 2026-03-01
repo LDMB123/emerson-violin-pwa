@@ -1,4 +1,4 @@
-import { clamp, clampRounded, positiveRound, todayDay, average } from '../utils/math.js';
+import { clamp, clampRounded, percentageRounded, positiveRound, todayDay, average } from '../utils/math.js';
 import {
     buildProgressEventBuckets,
     createDailyMinutes,
@@ -35,7 +35,7 @@ const createFallbackProgressModel = ({ totalMinutes, gameCount, songCount }) => 
         xp,
         xp_to_next_level: () => Math.max(0, nextLevelXp - xp),
         level_progress: () => clamp(
-            Math.round(((xp - previousLevelXp) / Math.max(1, nextLevelXp - previousLevelXp)) * 100),
+            percentageRounded(xp - previousLevelXp, Math.max(1, nextLevelXp - previousLevelXp)),
             0,
             100,
         ),

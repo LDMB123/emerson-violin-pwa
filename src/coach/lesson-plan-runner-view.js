@@ -7,6 +7,7 @@ import {
     formatStepLabel,
     formatStepCue,
 } from '../utils/lesson-plan-utils.js';
+import { setDisabled } from '../utils/dom-utils.js';
 
 export const createRunnerMarkup = () => {
     const runner = document.createElement('div');
@@ -94,8 +95,8 @@ export const renderEmptyRunnerStep = ({
     if (cueEl) cueEl.textContent = 'Practice a game to unlock a custom plan.';
     if (timerEl) timerEl.textContent = '00:00';
     setRunnerCta(ctaButton, '#view-games');
-    if (startButton) startButton.disabled = true;
-    if (nextButton) nextButton.disabled = true;
+    setDisabled(startButton, true);
+    setDisabled(nextButton, true);
     updateProgress();
 };
 
@@ -135,6 +136,6 @@ export const renderRunnerStep = ({
         const duration = computeStepDuration(step?.minutes);
         timerEl.textContent = formatTime((remainingSeconds || duration) * 1000);
     }
-    if (startButton) startButton.disabled = false;
-    if (nextButton) nextButton.disabled = completedSteps >= stepsLength;
+    setDisabled(startButton, false);
+    setDisabled(nextButton, completedSteps >= stepsLength);
 };

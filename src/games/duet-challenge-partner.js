@@ -1,3 +1,5 @@
+import { setDisabled } from '../utils/dom-utils.js';
+
 export const playDuetPartnerSequence = async ({
     partnerPlayback,
     isSoundEnabled,
@@ -14,7 +16,7 @@ export const playDuetPartnerSequence = async ({
     }
     const token = partnerPlayback.nextToken();
     let completed = true;
-    if (playButton) playButton.disabled = true;
+    setDisabled(playButton, true);
     setPrompt('Partner playing… get ready to respond.');
     for (const note of sequence) {
         if (!partnerPlayback.isCurrent(token)) {
@@ -27,7 +29,7 @@ export const playDuetPartnerSequence = async ({
         });
     }
     if (partnerPlayback.finish(token)) {
-        if (playButton) playButton.disabled = false;
+        setDisabled(playButton, false);
         return completed;
     }
     return false;

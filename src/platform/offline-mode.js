@@ -2,6 +2,7 @@ import { getJSON, setJSON } from '../persistence/storage.js';
 import { OFFLINE_MODE_KEY as MODE_KEY } from '../persistence/storage-keys.js';
 import { OFFLINE_MODE_CHANGE, emitEvent } from '../utils/event-names.js';
 import { hasServiceWorkerSupport } from './sw-support.js';
+import { setDisabled } from '../utils/dom-utils.js';
 
 let toggle = null;
 let statusEl = null;
@@ -95,13 +96,13 @@ const initOfflineMode = async () => {
     resolveElements();
     bindLocalListeners();
     bindGlobalListeners();
-    if (toggle) toggle.disabled = true;
+    setDisabled(toggle, true);
     const persistedEnabled = await loadState();
     const initialEnabled = pendingUserOverride ?? persistedEnabled;
     currentEnabled = initialEnabled;
     await applyState(initialEnabled, false);
     initialized = true;
-    if (toggle) toggle.disabled = false;
+    setDisabled(toggle, false);
 };
 
 export const init = initOfflineMode;

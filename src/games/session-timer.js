@@ -1,8 +1,10 @@
+import { durationToMinutes, percentageRounded } from '../utils/math.js';
+
 export const formatMinutes = (value) => `${Math.max(1, Math.round(value || 0))} min`;
 
 export const formatTime = (ms) => {
     const total = Math.max(0, Math.floor(ms / 1000));
-    const minutes = Math.floor(total / 60);
+    const minutes = durationToMinutes(total);
     const seconds = total % 60;
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 };
@@ -10,7 +12,7 @@ export const formatTime = (ms) => {
 /** Countdown variant — uses Math.ceil so display never shows 0:00 prematurely. */
 export const formatCountdown = (ms) => {
     const total = Math.max(0, Math.ceil(ms / 1000));
-    const minutes = Math.floor(total / 60);
+    const minutes = durationToMinutes(total);
     const seconds = total % 60;
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
@@ -43,7 +45,7 @@ export const createSessionTimer = ({ targetMinutes, onUpdate, onMilestone }) => 
 
     const tick = () => {
         const ms = elapsed();
-        const percent = Math.min(100, Math.round((ms / targetMs) * 100));
+        const percent = Math.min(100, percentageRounded(ms, targetMs));
         const complete = ms >= targetMs;
         if (onUpdate) onUpdate({ ms, percent, complete, timeLabel: formatTime(ms) });
         checkMilestones(ms);

@@ -1,6 +1,7 @@
 import { clamp, clampRounded } from '../utils/math.js';
 import { coachMessageFor, buildRadarPoints } from './progress-utils.js';
 import { starString } from '../utils/session-review-utils.js';
+import { setHidden } from '../utils/dom-utils.js';
 
 const updateProgressTrack = (el, percent, text) => {
     if (!el) return;
@@ -116,7 +117,7 @@ const renderRecentGames = (elements, recentGames) => {
         if (titleEl) titleEl.textContent = game.label;
         if (scoreEl) scoreEl.textContent = game.scoreLabel;
     });
-    if (elements.recentGamesEmptyEl) elements.recentGamesEmptyEl.hidden = hasGames;
+    setHidden(elements.recentGamesEmptyEl, hasGames);
 };
 
 const renderRadar = (elements, skills) => {

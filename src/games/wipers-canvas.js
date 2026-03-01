@@ -1,4 +1,5 @@
 import { BaseCanvasEngine } from './canvas-engine-base.js';
+import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
 
 export class WipersCanvasEngine extends BaseCanvasEngine {
     constructor(canvas, onScoreUpdate) {
@@ -20,8 +21,6 @@ export class WipersCanvasEngine extends BaseCanvasEngine {
         const handlePointerMove = (e) => {
             if (!this.pointer.isDown) return;
             e.preventDefault();
-            const rect = this.canvas.getBoundingClientRect();
-            const scaleX = this.width / rect.width;
 
             let clientX = e.clientX;
 
@@ -29,7 +28,8 @@ export class WipersCanvasEngine extends BaseCanvasEngine {
                 clientX = e.touches[0].clientX;
             }
 
-            this.pointer.x = (clientX - rect.left) * scaleX;
+            const { x } = mapPointerToCanvasCoords({ clientX, clientY: 0 }, this.canvas, this.width, this.height);
+            this.pointer.x = x;
 
             this.evaluateWipe();
         };

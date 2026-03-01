@@ -1,4 +1,4 @@
-import { updateParticles, drawGlowingParticles } from '../utils/canvas-utils.js';
+import { updateParticles, drawGlowingParticles, mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 
 export class StringQuestCanvasEngine extends BaseCanvasEngine {
@@ -173,11 +173,7 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
     }
 
     handlePointerDown(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.width / rect.width;
-        const scaleY = this.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        const { x, y } = mapPointerToCanvasCoords(e, this.canvas, this.width, this.height);
         let closest = null;
         let minDist = Infinity;
         this.strings.forEach(str => {

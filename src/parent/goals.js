@@ -1,4 +1,5 @@
 import { GOAL_TARGET_CHANGE, emitEvent } from '../utils/event-names.js';
+import { setDisabled } from '../utils/dom-utils.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import {
     loadParentGoal,
@@ -28,9 +29,9 @@ const setStatus = (message) => {
 };
 
 const setFormDisabled = (disabled) => {
-    if (titleInput) titleInput.disabled = disabled;
-    if (minutesInput) minutesInput.disabled = disabled;
-    if (saveButton) saveButton.disabled = disabled;
+    setDisabled(titleInput, disabled);
+    setDisabled(minutesInput, disabled);
+    setDisabled(saveButton, disabled);
 };
 
 const applyWeeklyTarget = (value) => {

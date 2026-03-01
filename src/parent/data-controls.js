@@ -1,4 +1,5 @@
 import { confirmLocalDataDeletion, wipeAllLocalData } from './parent-data-reset.js';
+import { setDisabled } from '../utils/dom-utils.js';
 
 let wipeButton = null;
 let statusEl = null;
@@ -18,7 +19,7 @@ const handleWipe = async () => {
         return;
     }
 
-    if (wipeButton) wipeButton.disabled = true;
+    setDisabled(wipeButton, true);
     setStatus('Deleting local data...');
 
     try {
@@ -36,7 +37,7 @@ const handleWipe = async () => {
     } catch {
         setStatus('Unable to delete all data right now. Try again.');
     } finally {
-        if (wipeButton) wipeButton.disabled = false;
+        setDisabled(wipeButton, false);
     }
 };
 

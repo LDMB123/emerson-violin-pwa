@@ -1,6 +1,7 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { setDifficultyBadge } from '../games/shared.js';
+import { setDisabled } from '../utils/dom-utils.js';
 import { createTonePlayer } from '../audio/tone-player.js';
 import {
     calculateMetronomeInterval,
@@ -190,8 +191,8 @@ export const createMetronomeController = () => {
             applyTuning();
         },
         disableControls(message) {
-            if (elements.toggle) elements.toggle.disabled = true;
-            if (elements.tap) elements.tap.disabled = true;
+            setDisabled(elements.toggle, true);
+            setDisabled(elements.tap, true);
             setStatus(message);
         },
         bindControls,

@@ -1,5 +1,6 @@
 import { formatTimestamp } from '../utils/math.js';
 import { hasServiceWorkerSupport } from './sw-support.js';
+import { setDisabled } from '../utils/dom-utils.js';
 import {
     defaultOfflineMetrics,
     loadOfflineMetrics,
@@ -49,9 +50,9 @@ const updateUI = (metrics) => {
 
 const setButtonsSupported = (supported) => {
     const disabled = !supported;
-    if (checkButton) checkButton.disabled = disabled;
-    if (selfTestButton) selfTestButton.disabled = disabled;
-    if (repairButton) repairButton.disabled = disabled;
+    setDisabled(checkButton, disabled);
+    setDisabled(selfTestButton, disabled);
+    setDisabled(repairButton, disabled);
 };
 
 const mutateMetrics = async (mutator) => {

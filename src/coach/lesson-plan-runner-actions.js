@@ -1,4 +1,5 @@
 import { formatTime } from '../games/session-timer.js';
+import { setDisabled } from '../utils/dom-utils.js';
 import {
     LESSON_COMPLETE,
     PRACTICE_STEP_STARTED,
@@ -68,13 +69,13 @@ export const createLessonRunnerActions = ({
         if (isRunnerComplete(runnerState)) {
             setStatus('Lesson complete! Awesome work.');
             if (startButton) startButton.textContent = 'Restart';
-            if (nextButton) nextButton.disabled = true;
+            setDisabled(nextButton, true);
             if (ctaButton) ctaButton.setAttribute('href', '#view-games');
             emitEvent(LESSON_COMPLETE);
         } else {
             setStatus(auto ? 'Step complete. Ready for the next one.' : 'Step marked complete. Tap Next to continue.');
             if (startButton) startButton.textContent = 'Start';
-            if (nextButton) nextButton.disabled = false;
+            setDisabled(nextButton, false);
         }
         updateStepDetails();
     };
@@ -97,7 +98,7 @@ export const createLessonRunnerActions = ({
         stopTimer();
         setStatus('Step in progress.');
         if (startButton) startButton.textContent = 'Pause';
-        if (nextButton) nextButton.disabled = false;
+        setDisabled(nextButton, false);
 
         dispatchLessonRunnerEvent({
             state: 'start',
@@ -123,7 +124,7 @@ export const createLessonRunnerActions = ({
         stopTimer();
         setStatus('Paused. Tap Resume when ready.');
         if (startButton) startButton.textContent = 'Resume';
-        if (nextButton) nextButton.disabled = false;
+        setDisabled(nextButton, false);
         dispatchLessonRunnerEvent({
             state: 'pause',
             step: getCurrentStep(),

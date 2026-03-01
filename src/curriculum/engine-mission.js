@@ -5,6 +5,7 @@ import {
     normalizeMission,
     updateMission,
 } from './state.js';
+import { percentageRounded } from '../utils/math.js';
 import { saveMissionState } from './engine-mission-persistence.js';
 
 const persistMissionUpdate = async ({ mission, state, unit, reason }) => {
@@ -46,7 +47,7 @@ export const completeMissionStep = async ({
         || null;
 
     const completionPercent = steps.length
-        ? Math.round((steps.filter((step) => step.status === MISSION_STEP_STATES.COMPLETE).length / steps.length) * 100)
+        ? percentageRounded(steps.filter((step) => step.status === MISSION_STEP_STATES.COMPLETE).length, steps.length)
         : 100;
 
     const updated = updateMission(normalized, {

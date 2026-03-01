@@ -1,4 +1,4 @@
-import { clamp } from '../utils/math.js';
+import { clamp, percentageRounded } from '../utils/math.js';
 
 export const parseViewSongId = (viewId) => {
     if (typeof viewId !== 'string') return null;
@@ -63,7 +63,7 @@ export const createControls = ({ song, checkpoint }) => {
         const scaleInput = wrapper.querySelector('[data-song-tempo-scale]');
         const label = wrapper.querySelector('[data-song-tempo-label]');
         const baseTempo = Number(song?.bpm || 80);
-        const ratio = Math.round((checkpoint.tempo / Math.max(baseTempo, 1)) * 100);
+        const ratio = percentageRounded(checkpoint.tempo, Math.max(baseTempo, 1));
         const nextValue = clamp(ratio, 50, 130);
         if (scaleInput) scaleInput.value = String(nextValue);
         if (label) label.textContent = `${nextValue}%`;

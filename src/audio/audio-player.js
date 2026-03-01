@@ -1,6 +1,7 @@
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { prepareAudioElementSource } from './format-detection.js';
+import { setDisabled } from '../utils/dom-utils.js';
 
 /**
  * Progressive enhancement: replaces raw <audio controls> inside .audio-card
@@ -41,7 +42,7 @@ const stopAllAudioCards = (exceptCard = null) => {
 const syncCardSoundState = (card, enabled = isSoundEnabled()) => {
     if (!card || card.dataset.audioPlayerEnhanced !== 'true') return;
     const button = card.querySelector('.tone-play-btn');
-    if (button) button.disabled = !enabled;
+    setDisabled(button, !enabled);
     if (!enabled) stopCardAudio(card);
 };
 

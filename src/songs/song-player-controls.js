@@ -1,5 +1,5 @@
 import { SONG_SECTION_COMPLETED, RT_STATE, emitEvent } from '../utils/event-names.js';
-import { clamp } from '../utils/math.js';
+import { clamp, percentageRounded } from '../utils/math.js';
 import { getSongCheckpoint, saveSongCheckpoint } from './song-progression.js';
 import { parseViewSongId, sectionDuration, setStatus } from './song-player-view.js';
 import { attachTuning, playToneNote } from '../games/shared.js';
@@ -318,7 +318,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             sectionSelect.value = checkpoint.sectionId;
         }
         if (Number.isFinite(checkpoint.tempo) && Number.isFinite(song?.bpm) && song.bpm > 0) {
-            const percent = Math.round((checkpoint.tempo / song.bpm) * 100);
+            const percent = percentageRounded(checkpoint.tempo, song.bpm);
             if (tempoScaleInput) tempoScaleInput.value = String(Math.max(50, Math.min(130, percent)));
         }
         applySection();

@@ -2,6 +2,7 @@ import { getAdaptiveSummary, resetAdaptiveModel, updateGameResult } from './adap
 import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { formatTimestamp } from '../utils/math.js';
 import { ML_UPDATE, ML_RESET } from '../utils/event-names.js';
+import { setDisabled } from '../utils/dom-utils.js';
 
 let statusEl = null;
 let detailEl = null;
@@ -63,7 +64,7 @@ const sampleIds = [
 ];
 
 const simulateAdaptiveSessions = async () => {
-    if (simulateButton) simulateButton.disabled = true;
+    setDisabled(simulateButton, true);
     const chooseAccuracy = () => {
         const roll = Math.random();
         if (roll < 0.33) return 35 + Math.random() * 10;
@@ -78,7 +79,7 @@ const simulateAdaptiveSessions = async () => {
     }
     await updateSummary();
     if (statusEl) statusEl.textContent = 'Demo data applied. Adaptive difficulty has shifted.';
-    if (simulateButton) simulateButton.disabled = false;
+    setDisabled(simulateButton, false);
 };
 
 const bindLocalListeners = () => {

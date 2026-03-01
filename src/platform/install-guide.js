@@ -1,6 +1,7 @@
 import { INSTALL_GUIDE_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
 import { isIPadOS, isStandalone, isAutomated, setRootDataset } from './platform-utils.js';
 import { markDismissed, wasDismissed } from './dismiss-helpers.js';
+import { setHidden } from '../utils/dom-utils.js';
 
 let helpButton = null;
 let lastFocused = null;
@@ -116,12 +117,12 @@ const buildGuide = () => {
 const showGuide = async (force = false) => {
     if (isAutomated()) return;
     if (!isIPadOS()) {
-        if (helpButton) helpButton.hidden = true;
+        setHidden(helpButton, true);
         return;
     }
 
     if (isStandalone() && !force) {
-        if (helpButton) helpButton.hidden = true;
+        setHidden(helpButton, true);
         return;
     }
 
@@ -140,11 +141,11 @@ const showGuide = async (force = false) => {
 const initInstallGuide = () => {
     resolveElements();
     if (isAutomated()) {
-        if (helpButton) helpButton.hidden = true;
+        setHidden(helpButton, true);
         return;
     }
     if (!isIPadOS()) {
-        if (helpButton) helpButton.hidden = true;
+        setHidden(helpButton, true);
         return;
     }
 

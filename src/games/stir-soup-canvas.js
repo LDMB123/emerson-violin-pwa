@@ -1,4 +1,5 @@
 import { BaseCanvasEngine } from './canvas-engine-base.js';
+import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
 
 export class StirSoupCanvasEngine extends BaseCanvasEngine {
     constructor(canvas, onScoreUpdate) {
@@ -26,10 +27,6 @@ export class StirSoupCanvasEngine extends BaseCanvasEngine {
         const handlePointerMove = (e) => {
             if (!this.isStirring) return;
             e.preventDefault();
-            const rect = this.canvas.getBoundingClientRect();
-            // Map pointer to internal resolution (1200x800)
-            const scaleX = this.width / rect.width;
-            const scaleY = this.height / rect.height;
 
             let clientX = e.clientX;
             let clientY = e.clientY;
@@ -39,8 +36,10 @@ export class StirSoupCanvasEngine extends BaseCanvasEngine {
                 clientY = e.touches[0].clientY;
             }
 
-            this.pointer.x = (clientX - rect.left) * scaleX;
-            this.pointer.y = (clientY - rect.top) * scaleY;
+            // Map pointer to internal resolution (1200x800)
+            const { x, y } = mapPointerToCanvasCoords({ clientX, clientY }, this.canvas, this.width, this.height);
+            this.pointer.x = x;
+            this.pointer.y = y;
 
             this.evaluateStir();
         };

@@ -1,4 +1,5 @@
 import { isIPadOS, isStandalone, setRootDataset } from './platform-utils.js';
+import { setDisabled } from '../utils/dom-utils.js';
 
 let statusEl = null;
 let voiceToggle = null;
@@ -27,7 +28,7 @@ const updateStandaloneState = () => {
 };
 
 const updateVoiceSupport = () => {
-    if (voiceToggle) voiceToggle.disabled = false;
+    setDisabled(voiceToggle, false);
     if (voiceNote) voiceNote.textContent = 'Spoken coach tips use built-in iPad voices and work offline.';
     setRootDataset('voiceSupport', 'true');
 };

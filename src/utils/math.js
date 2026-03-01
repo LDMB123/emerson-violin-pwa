@@ -16,3 +16,15 @@ export const formatTimestamp = (value) => {
 
 export const clampRounded = (value, min, max) => clamp(Math.round(value), min, max);
 export const positiveRound = (value) => Math.max(0, Math.round(value));
+
+export const durationToMinutes = (seconds, roundFn = Math.floor) => {
+    const total = Math.max(0, seconds || 0);
+    return roundFn(total / 60);
+};
+
+export const percentageRounded = (numerator, denominator, fallback = 0) => {
+    if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) {
+        return fallback;
+    }
+    return Math.round((numerator / denominator) * 100);
+};

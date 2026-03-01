@@ -13,6 +13,7 @@ import {
 } from './shared.js';
 import { RT_STATE } from '../utils/event-names.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { setDisabled } from '../utils/dom-utils.js';
 import { playDuetPartnerSequence } from './duet-challenge-partner.js';
 import {
     setDuetChallengePrompt,
@@ -91,12 +92,12 @@ const { bind } = createGame({
         };
 
         const updateSoundState = () => {
-            if (playButton) playButton.disabled = !isSoundEnabled();
+            setDisabled(playButton, !isSoundEnabled());
         };
 
         const stopPartnerAudio = () => {
             cueBank.stopAll();
-            if (playButton) playButton.disabled = false;
+            setDisabled(playButton, false);
         };
         const partnerPlayback = createPlaybackRuntime({
             onStop: stopPartnerAudio,

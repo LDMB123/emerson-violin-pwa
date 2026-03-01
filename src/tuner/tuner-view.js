@@ -1,3 +1,5 @@
+import { setDisabled } from '../utils/dom-utils.js';
+
 const normalizeFrameMetrics = (frame) => ({
     cents: Number.isFinite(frame?.cents) ? Math.round(frame.cents) : 0,
     frequency: Number.isFinite(frame?.frequency) ? Math.round(frame.frequency * 10) / 10 : 0,
@@ -61,6 +63,6 @@ export const updateControlState = ({ startButton, stopButton, livePanel }, activ
         startButton.setAttribute('aria-pressed', active ? 'true' : 'false');
         startButton.textContent = active ? 'Listening' : 'Start Listening';
     }
-    if (stopButton) stopButton.disabled = !active;
+    setDisabled(stopButton, !active);
     if (livePanel) livePanel.classList.toggle('is-active', Boolean(active));
 };

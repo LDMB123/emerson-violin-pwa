@@ -1,3 +1,6 @@
+import { setDisabled } from '../utils/dom-utils.js';
+import { durationToMinutes } from '../utils/math.js';
+
 export const createParentRecordingsRenderer = () => {
     let listEl = null;
     let statusEl = null;
@@ -20,12 +23,12 @@ export const createParentRecordingsRenderer = () => {
     };
 
     const setClearEnabled = (enabled) => {
-        if (clearButton) clearButton.disabled = !enabled;
+        setDisabled(clearButton, !enabled);
     };
 
     const formatDuration = (seconds) => {
         const value = Number.isFinite(seconds) ? Math.round(seconds) : 0;
-        const minutes = Math.floor(value / 60);
+        const minutes = durationToMinutes(value);
         const remainder = value % 60;
         if (!minutes) return `${remainder}s`;
         return `${minutes}:${String(remainder).padStart(2, '0')}`;

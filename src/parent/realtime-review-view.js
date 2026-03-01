@@ -6,6 +6,7 @@ import {
     RT_SESSION_STARTED,
     RT_SESSION_STOPPED,
 } from '../utils/event-names.js';
+import { setHidden } from '../utils/dom-utils.js';
 import { loadRealtimeEvents, loadRealtimeQuality } from '../realtime/event-log.js';
 import { setParentPreset } from '../realtime/session-controller.js';
 import { getPolicyState } from '../realtime/policy-engine.js';
@@ -135,11 +136,11 @@ const renderTimeline = async () => {
 
     list.replaceChildren();
     if (!filtered.length) {
-        if (empty) empty.hidden = false;
+        setHidden(empty, false);
         return;
     }
 
-    if (empty) empty.hidden = true;
+    setHidden(empty, true);
     filtered.forEach((event) => {
         list.appendChild(createTimelineCard(event));
     });

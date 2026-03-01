@@ -1,6 +1,7 @@
 import { hasServiceWorkerSupport } from './sw-support.js';
 import { createSwUpdateFlowController } from './sw-update-flow.js';
 import { createSwRefreshController } from './sw-refresh-controller.js';
+import { setHidden, setDisabled } from '../utils/dom-utils.js';
 
 let statusEl = null;
 let syncStatusEl = null;
@@ -24,7 +25,7 @@ const setSyncStatus = (message) => {
 };
 
 const showApply = (show) => {
-    if (applyButton) applyButton.hidden = !show;
+    setHidden(applyButton, !show);
 };
 
 const updateFlowController = createSwUpdateFlowController({
@@ -89,15 +90,15 @@ const initSwUpdates = async () => {
         setStatus('Service worker not supported on this browser.');
         setSyncStatus('Background refresh unavailable on this browser.');
         showApply(false);
-        if (updateButton) updateButton.disabled = true;
-        if (applyButton) applyButton.disabled = true;
+        setDisabled(updateButton, true);
+        setDisabled(applyButton, true);
         return;
     }
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) {
         setStatus('Service worker not ready yet.');
         setSyncStatus('Background refresh will start once the app is installed.');
-        if (updateButton) updateButton.disabled = true;
+        setDisabled(updateButton, true);
         return;
     }
 

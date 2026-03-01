@@ -1,4 +1,4 @@
-import { clamp, todayDay } from '../utils/math.js';
+import { clamp, durationToMinutes, todayDay } from '../utils/math.js';
 
 const buildSongEvents = (events) => events.filter((event) => event.type === 'song');
 
@@ -9,7 +9,7 @@ const calculateTodayMinutes = (events, day = todayDay()) =>
     events.reduce((sum, event) => {
         if (event.day !== day) return sum;
         if (event.type === 'practice') return sum + (event.minutes || 0);
-        if (event.type === 'song') return sum + Math.round((event.elapsed || event.duration || 0) / 60);
+        if (event.type === 'song') return sum + durationToMinutes(event.elapsed || event.duration || 0, Math.round);
         return sum;
     }, 0);
 
