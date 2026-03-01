@@ -472,12 +472,6 @@ impl EchoBuffer {
         hit_capacity
     }
 
-    /// Get a pointer to the linear memory array for JS to read
-    #[wasm_bindgen]
-    pub fn get_buffer_ptr(&self) -> *const f32 {
-        self.buffer.as_ptr()
-    }
-
     #[wasm_bindgen]
     pub fn get_size(&self) -> usize {
         self.size

@@ -67,8 +67,7 @@ impl PlayerProgress {
     }
 
     /// Add XP and check for level up
-    #[wasm_bindgen]
-    pub fn add_xp(&mut self, amount: u32) -> bool {
+    fn add_xp(&mut self, amount: u32) -> bool {
         self.xp += amount;
         self.check_level_up()
     }
@@ -182,15 +181,6 @@ impl PlayerProgress {
 
     #[wasm_bindgen(getter)]
     pub fn streak(&self) -> u32 { self.streak }
-
-    #[wasm_bindgen(getter)]
-    pub fn total_minutes(&self) -> u32 { self.total_minutes }
-
-    #[wasm_bindgen(getter)]
-    pub fn songs_completed(&self) -> u32 { self.songs_completed }
-
-    #[wasm_bindgen(getter)]
-    pub fn games_played(&self) -> u32 { self.games_played }
 }
 
 #[cfg(test)]

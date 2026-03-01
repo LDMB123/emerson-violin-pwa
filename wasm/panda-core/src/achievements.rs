@@ -7,7 +7,6 @@ use crate::xp::PlayerProgress;
 // ============================================================================
 
 /// Achievement definition
-#[wasm_bindgen]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Achievement {
     id: String,
@@ -15,24 +14,6 @@ pub struct Achievement {
     description: String,
     icon: String,
     unlocked: bool,
-}
-
-#[wasm_bindgen]
-impl Achievement {
-    #[wasm_bindgen(getter)]
-    pub fn id(&self) -> String { self.id.clone() }
-
-    #[wasm_bindgen(getter)]
-    pub fn name(&self) -> String { self.name.clone() }
-
-    #[wasm_bindgen(getter)]
-    pub fn description(&self) -> String { self.description.clone() }
-
-    #[wasm_bindgen(getter)]
-    pub fn icon(&self) -> String { self.icon.clone() }
-
-    #[wasm_bindgen(getter)]
-    pub fn unlocked(&self) -> bool { self.unlocked }
 }
 
 /// Achievement tracker

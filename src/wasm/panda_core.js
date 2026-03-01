@@ -1,90 +1,6 @@
 /* @ts-self-types="./panda_core.d.ts" */
 
 /**
- * Achievement definition
- */
-export class Achievement {
-    __destroy_into_raw() {
-        const ptr = this.__wbg_ptr;
-        this.__wbg_ptr = 0;
-        AchievementFinalization.unregister(this);
-        return ptr;
-    }
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_achievement_free(ptr, 0);
-    }
-    /**
-     * @returns {string}
-     */
-    get description() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.achievement_description(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
-    }
-    /**
-     * @returns {string}
-     */
-    get icon() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.achievement_icon(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
-    }
-    /**
-     * @returns {string}
-     */
-    get id() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.achievement_id(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
-    }
-    /**
-     * @returns {string}
-     */
-    get name() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.achievement_name(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
-    }
-    /**
-     * @returns {boolean}
-     */
-    get unlocked() {
-        const ret = wasm.achievement_unlocked(this.__wbg_ptr);
-        return ret !== 0;
-    }
-}
-if (Symbol.dispose) Achievement.prototype[Symbol.dispose] = Achievement.prototype.free;
-
-/**
  * Achievement tracker
  */
 export class AchievementTracker {
@@ -174,22 +90,6 @@ export class PlayerProgress {
         wasm.__wbg_playerprogress_free(ptr, 0);
     }
     /**
-     * Add XP and check for level up
-     * @param {number} amount
-     * @returns {boolean}
-     */
-    add_xp(amount) {
-        const ret = wasm.playerprogress_add_xp(this.__wbg_ptr, amount);
-        return ret !== 0;
-    }
-    /**
-     * @returns {number}
-     */
-    get games_played() {
-        const ret = wasm.playerprogress_games_played(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
      * @returns {number}
      */
     get level() {
@@ -244,22 +144,8 @@ export class PlayerProgress {
     /**
      * @returns {number}
      */
-    get songs_completed() {
-        const ret = wasm.playerprogress_songs_completed(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
-     * @returns {number}
-     */
     get streak() {
         const ret = wasm.playerprogress_streak(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
-     * @returns {number}
-     */
-    get total_minutes() {
-        const ret = wasm.playerprogress_total_minutes(this.__wbg_ptr);
         return ret >>> 0;
     }
     /**
@@ -318,14 +204,6 @@ export class SkillProfile {
         this.__wbg_ptr = ret >>> 0;
         SkillProfileFinalization.register(this, this.__wbg_ptr, this);
         return this;
-    }
-    /**
-     * Get overall skill level (average)
-     * @returns {number}
-     */
-    overall() {
-        const ret = wasm.skillprofile_overall(this.__wbg_ptr);
-        return ret;
     }
     /**
      * @returns {number}
@@ -447,9 +325,6 @@ function __wbg_get_imports() {
     };
 }
 
-const AchievementFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_achievement_free(ptr >>> 0, 1));
 const AchievementTrackerFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_achievementtracker_free(ptr >>> 0, 1));

@@ -27,14 +27,6 @@ export class EchoBuffer {
         return v1;
     }
     /**
-     * Get a pointer to the linear memory array for JS to read
-     * @returns {number}
-     */
-    get_buffer_ptr() {
-        const ret = wasm.echobuffer_get_buffer_ptr(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-    /**
      * @returns {number}
      */
     get_size() {

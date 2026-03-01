@@ -72,12 +72,6 @@ impl SkillProfile {
             .unwrap_or_else(|| "pitch".to_string())
     }
 
-    /// Get overall skill level (average)
-    #[wasm_bindgen]
-    pub fn overall(&self) -> f32 {
-        (self.pitch + self.rhythm + self.bow_control + self.posture + self.reading) / 5.0
-    }
-
     // Getters
     #[wasm_bindgen(getter)]
     pub fn pitch(&self) -> f32 { self.pitch }
