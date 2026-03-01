@@ -37,6 +37,7 @@ Major development phases (Feb 17–28, 2026):
 - **WASM dead code pass 3** — Removed `Achievement` `#[wasm_bindgen]` export + 5-getter impl block (JS never receives `Achievement` instances — uses BADGE_META dict + `is_unlocked()` bool); deleted `SkillProfile::overall()` (JS computes average inline); made `PlayerProgress::add_xp()` private (internal-only, called by `log_*` methods); removed 3 dead getters: `total_minutes`, `songs_completed`, `games_played` (zero app JS callsites); deleted `EchoBuffer::get_buffer_ptr()` (raw pointer API, app uses `extract_envelope()` exclusively); 175 lines net deleted; 570/570 tests pass
 - **WASM dead code pass 4** — Removed `AchievementTracker::unlocked_count()` + `total_count()` (zero app JS + test callsites; JS uses `is_unlocked()` bool per badge); removed `EchoBuffer::get_size()` (zero app JS + test callsites; worklet never queries buffer size); 40 lines deleted; 570/570 tests pass; all remaining exports fully verified against app JS callsites — no further dead exports remain
 - **WASM dead code pass 5** — Removed 3 dead `Achievement` struct fields (`name`, `description`, `icon`): set in `new()` but never read by any method; JS uses `BADGE_META` dict exclusively; `Achievement` struct made private + removed from `pub use` re-export. Removed `Serialize, Deserialize` derives + `serde` imports from `xp.rs`, `skills.rs`, `achievements.rs`; `serde`/`serde-wasm-bindgen` deps removed from all 3 Cargo.toml files (never imported in any source). Simplified `add_xp()` + `check_level_up()` return type `bool → ()` (all callers discarded result). Deduped inline RMS loop in `extract_envelope()` → calls `compute_rms()`. 92 lines net deleted; 570/570 tests pass; **WASM dead code audit COMPLETE** — all exported symbols + struct fields + derives + Cargo deps verified; total ~659 lines removed across passes 1-5
+- **JS deduplication pass** — Exhaustive audit of all ~150 JS modules for duplicate/redundant functions (5 parallel agents); confirmed-safe fixes across 3 commits: scheduler cross-browser guard added, dead frustration-state code removed, redundant `pitchCents` key eliminated; `clamp()` inline patterns consolidated across realtime/audio modules; inline `wait()`, `todayDay()`, and `DEFAULT_MASTERY_THRESHOLDS` constant duplicates replaced with canonical imports from `tone-player/shared.js`, `utils/math.js`, and `utils/mastery-utils.js`; `Math.min/max` inline clamp patterns replaced in `dynamic-dojo.js`, `song-player-controls.js`, `song-player-view.js`; E2E timing hardened for rhythm-dash on iPad Safari; 570/570 unit tests + 45/45 E2E pass
 
 Historical phase-by-phase details are available in git history and archived plan docs under `_archived/plans/`.
 
@@ -118,10 +119,10 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 - CI quality workflow passes on PR/main.
 - This runbook matches current repo behavior.
 
-## Known-Good Baseline (2026-02-28)
+## Known-Good Baseline (2026-03-01)
 
 - Branch: `main`
-- Latest commit: `e430296` (refactor(wasm): dead code and duplicate removal pass)
+- Latest commit: `d496548` (refactor: consolidate duplicate utility patterns across JS modules)
 - Unit tests: 570 passing
 - E2E tests: 45 passing
 - All audits: passing
