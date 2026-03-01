@@ -109,23 +109,6 @@ export class PitchDetector {
         return PitchResult.__wrap(ret);
     }
     /**
-     * Check if a frequency matches a violin string (within tolerance)
-     * @param {number} frequency
-     * @returns {string}
-     */
-    get_nearest_string(frequency) {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.pitchdetector_get_nearest_string(this.__wbg_ptr, frequency);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
-    }
-    /**
      * Create a new pitch detector
      *
      * # Arguments
@@ -231,58 +214,6 @@ export class PitchResult {
 }
 if (Symbol.dispose) PitchResult.prototype[Symbol.dispose] = PitchResult.prototype.free;
 
-/**
- * Rhythm analysis result for realtime coaching
- */
-export class RhythmResult {
-    __destroy_into_raw() {
-        const ptr = this.__wbg_ptr;
-        this.__wbg_ptr = 0;
-        RhythmResultFinalization.unregister(this);
-        return ptr;
-    }
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_rhythmresult_free(ptr, 0);
-    }
-    /**
-     * @returns {number}
-     */
-    get confidence() {
-        const ret = wasm.rhythmresult_confidence(this.__wbg_ptr);
-        return ret;
-    }
-    /**
-     * @returns {boolean}
-     */
-    get onset_detected() {
-        const ret = wasm.rhythmresult_onset_detected(this.__wbg_ptr);
-        return ret !== 0;
-    }
-    /**
-     * @returns {number}
-     */
-    get onset_strength() {
-        const ret = wasm.rhythmresult_onset_strength(this.__wbg_ptr);
-        return ret;
-    }
-    /**
-     * @returns {number}
-     */
-    get rhythm_offset_ms() {
-        const ret = wasm.rhythmresult_rhythm_offset_ms(this.__wbg_ptr);
-        return ret;
-    }
-    /**
-     * @returns {number}
-     */
-    get tempo_bpm() {
-        const ret = wasm.rhythmresult_tempo_bpm(this.__wbg_ptr);
-        return ret;
-    }
-}
-if (Symbol.dispose) RhythmResult.prototype[Symbol.dispose] = RhythmResult.prototype.free;
-
 export function init() {
     wasm.init();
 }
@@ -340,9 +271,6 @@ const PitchDetectorFinalization = (typeof FinalizationRegistry === 'undefined')
 const PitchResultFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_pitchresult_free(ptr >>> 0, 1));
-const RhythmResultFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_rhythmresult_free(ptr >>> 0, 1));
 
 function getArrayF32FromWasm0(ptr, len) {
     ptr = ptr >>> 0;

@@ -356,41 +356,6 @@ export class SkillProfile {
         return ret;
     }
     /**
-     * Update bow control skill
-     * @param {number} score
-     */
-    update_bow_control(score) {
-        wasm.skillprofile_update_bow_control(this.__wbg_ptr, score);
-    }
-    /**
-     * Update pitch skill
-     * @param {number} score
-     */
-    update_pitch(score) {
-        wasm.skillprofile_update_pitch(this.__wbg_ptr, score);
-    }
-    /**
-     * Update posture skill
-     * @param {number} score
-     */
-    update_posture(score) {
-        wasm.skillprofile_update_posture(this.__wbg_ptr, score);
-    }
-    /**
-     * Update reading skill
-     * @param {number} score
-     */
-    update_reading(score) {
-        wasm.skillprofile_update_reading(this.__wbg_ptr, score);
-    }
-    /**
-     * Update rhythm skill
-     * @param {number} score
-     */
-    update_rhythm(score) {
-        wasm.skillprofile_update_rhythm(this.__wbg_ptr, score);
-    }
-    /**
      * Update a skill score with exponential moving average
      * @param {SkillCategory} category
      * @param {number} score

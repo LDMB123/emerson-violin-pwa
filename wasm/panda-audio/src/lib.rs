@@ -20,14 +20,6 @@ pub fn init() {
 /// Musical note names
 const NOTE_NAMES: [&str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-/// Violin string frequencies (standard tuning)
-pub(crate) const VIOLIN_STRINGS: [(f32, &str); 4] = [
-    (196.0, "G3"),
-    (293.66, "D4"),
-    (440.0, "A4"),
-    (659.25, "E5"),
-];
-
 /// Pitch detection result
 #[wasm_bindgen]
 #[derive(Clone, Debug)]
@@ -76,45 +68,6 @@ impl PitchResult {
     #[wasm_bindgen(getter)]
     pub fn in_tune(&self) -> bool {
         self.in_tune
-    }
-}
-
-/// Rhythm analysis result for realtime coaching
-#[wasm_bindgen]
-#[derive(Clone, Debug)]
-pub struct RhythmResult {
-    onset_strength: f32,
-    onset_detected: bool,
-    tempo_bpm: f32,
-    confidence: f32,
-    rhythm_offset_ms: f32,
-}
-
-#[wasm_bindgen]
-impl RhythmResult {
-    #[wasm_bindgen(getter)]
-    pub fn onset_strength(&self) -> f32 {
-        self.onset_strength
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn onset_detected(&self) -> bool {
-        self.onset_detected
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn tempo_bpm(&self) -> f32 {
-        self.tempo_bpm
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn confidence(&self) -> f32 {
-        self.confidence
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn rhythm_offset_ms(&self) -> f32 {
-        self.rhythm_offset_ms
     }
 }
 
@@ -409,24 +362,6 @@ impl PitchDetector {
         let note_name = format!("{}{}", NOTE_NAMES[note_idx as usize], octave);
 
         (note_name, cents)
-    }
-
-    /// Check if a frequency matches a violin string (within tolerance)
-    #[wasm_bindgen]
-    pub fn get_nearest_string(&self, frequency: f32) -> String {
-        let mut closest = "";
-        let mut min_diff = f32::MAX;
-
-        for (string_freq, string_name) in VIOLIN_STRINGS.iter() {
-            // Calculate difference in cents
-            let cents_diff = (1200.0 * (frequency / string_freq).log2()).abs();
-            if cents_diff < min_diff {
-                min_diff = cents_diff;
-                closest = string_name;
-            }
-        }
-
-        closest.to_string()
     }
 
     /// Set volume threshold for pitch detection

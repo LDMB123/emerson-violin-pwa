@@ -25,8 +25,6 @@ pub struct SkillProfile {
     bow_control: f32,
     posture: f32,
     reading: f32,
-    /// Sample count for averaging
-    sample_count: u32,
 }
 
 #[wasm_bindgen]
@@ -39,7 +37,6 @@ impl SkillProfile {
             bow_control: 50.0,
             posture: 50.0,
             reading: 50.0,
-            sample_count: 0,
         }
     }
 
@@ -55,37 +52,6 @@ impl SkillProfile {
         };
 
         *skill = alpha * score + (1.0 - alpha) * *skill;
-        self.sample_count += 1;
-    }
-
-    /// Update pitch skill
-    #[wasm_bindgen]
-    pub fn update_pitch(&mut self, score: f32) {
-        self.update_skill(SkillCategory::Pitch, score);
-    }
-
-    /// Update rhythm skill
-    #[wasm_bindgen]
-    pub fn update_rhythm(&mut self, score: f32) {
-        self.update_skill(SkillCategory::Rhythm, score);
-    }
-
-    /// Update bow control skill
-    #[wasm_bindgen]
-    pub fn update_bow_control(&mut self, score: f32) {
-        self.update_skill(SkillCategory::BowControl, score);
-    }
-
-    /// Update posture skill
-    #[wasm_bindgen]
-    pub fn update_posture(&mut self, score: f32) {
-        self.update_skill(SkillCategory::Posture, score);
-    }
-
-    /// Update reading skill
-    #[wasm_bindgen]
-    pub fn update_reading(&mut self, score: f32) {
-        self.update_skill(SkillCategory::Reading, score);
     }
 
     /// Get the weakest skill category for focus
