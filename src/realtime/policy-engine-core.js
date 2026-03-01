@@ -2,6 +2,7 @@ import {
     CUE_STATES,
     confidenceBandFrom,
 } from './contracts.js';
+import { clamp } from '../utils/math.js';
 
 const PRESET_BOUNDS = Object.freeze({
     gentle: Object.freeze({
@@ -28,7 +29,6 @@ export const HARD_RAILS = Object.freeze({
     minCooldownMs: 800,
 });
 
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const getBounds = (preset) => PRESET_BOUNDS[preset] || PRESET_BOUNDS.standard;
 

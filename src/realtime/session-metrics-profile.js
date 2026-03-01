@@ -1,4 +1,4 @@
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+import { clamp } from '../utils/math.js';
 
 const p95 = (values) => {
     if (!Array.isArray(values) || !values.length) return 0;

@@ -1,8 +1,7 @@
-import { SONG_SECTION_COMPLETED } from '../utils/event-names.js';
+import { SONG_SECTION_COMPLETED, RT_STATE } from '../utils/event-names.js';
 import { getSongCheckpoint, saveSongCheckpoint } from './song-progression.js';
 import { parseViewSongId, sectionDuration, setStatus } from './song-player-view.js';
 import { attachTuning, playToneNote } from '../games/shared.js';
-import { RT_STATE } from '../utils/event-names.js';
 
 export const applyControlsToView = ({ view, controls, song, sections }) => {
     const sectionSelect = controls.querySelector('[data-song-section]');

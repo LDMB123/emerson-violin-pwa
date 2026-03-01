@@ -1,6 +1,6 @@
 import { getAudioPathCandidates } from '../format-detection.js';
+import { clamp } from '../../utils/math.js';
 import {
-    clamp,
     setParam,
     safeStop,
     disconnectNodes,

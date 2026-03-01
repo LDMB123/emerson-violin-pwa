@@ -1,7 +1,5 @@
 export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-
 export const setParam = (param, value, time = 0, method = null) => {
     if (!param) return;
     if (method && typeof param[method] === 'function') {
