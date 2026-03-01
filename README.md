@@ -2,7 +2,7 @@
 
 Local-first violin practice app for iPad-focused use, with an onboarding flow, practice tools, games, coach guidance, and offline behavior.
 
-## Current Status (February 28, 2026)
+## Current Status (March 1, 2026)
 
 - `npm run lint:all`: passing
 - `npm run test:coverage`: passing (570 tests)
