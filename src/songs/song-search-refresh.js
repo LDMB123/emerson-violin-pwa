@@ -3,6 +3,7 @@ import { loadEvents } from '../persistence/loaders.js';
 import { getSongCatalog } from './song-library.js';
 import { buildSongUnlockMap, loadSongProgressState } from './song-progression.js';
 import { ensureChildDiv } from '../utils/dom-utils.js';
+import { clampRounded } from '../utils/math.js';
 
 const recommendationLevelMap = {
     beginner: 'easy',
@@ -54,7 +55,7 @@ const ensureSectionMeta = (card) => ensureChildDiv(card, 'song-section-meta');
 const formatSongStats = (stats) => {
     if (!stats) return 'No runs yet.';
     const attempts = Math.max(0, stats.attempts || 0);
-    const best = Math.max(0, Math.min(100, Math.round(stats.best || 0)));
+    const best = clampRounded(stats.best || 0, 0, 100);
     const runLabel = attempts === 1 ? 'run' : 'runs';
     return `${attempts} ${runLabel} · Best ${best}%`;
 };

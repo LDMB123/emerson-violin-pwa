@@ -70,9 +70,9 @@ export const normalizeSongEntry = (entry) => ({
         const defaultNextReviewAt = updatedAt + (reviewIntervalDays(tier) * DAY_MS);
         return {
             attempts: positiveRound(entry?.attempts || 0),
-            bestAccuracy: Math.max(0, Math.min(100, Math.round(entry?.bestAccuracy || 0))),
-            bestTiming: Math.max(0, Math.min(100, Math.round(entry?.bestTiming || 0))),
-            bestIntonation: Math.max(0, Math.min(100, Math.round(entry?.bestIntonation || 0))),
+            bestAccuracy: clampRounded(entry?.bestAccuracy || 0, 0, 100),
+            bestTiming: clampRounded(entry?.bestTiming || 0, 0, 100),
+            bestIntonation: clampRounded(entry?.bestIntonation || 0, 0, 100),
             bestStars: Math.max(0, Math.min(5, Math.round(entry?.bestStars || 0))),
             sectionProgress: entry?.sectionProgress && typeof entry.sectionProgress === 'object' ? entry.sectionProgress : {},
             checkpoint: entry?.checkpoint && typeof entry.checkpoint === 'object' ? entry.checkpoint : null,

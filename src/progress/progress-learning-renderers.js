@@ -1,4 +1,4 @@
-import { positiveRound } from '../utils/math.js';
+import { clampRounded, positiveRound } from '../utils/math.js';
 import { renderNextActionsList } from '../utils/render-utils.js';
 
 const renderChipGrid = (container, chips, emptyText) => {
@@ -33,7 +33,7 @@ const renderMirroredChipGrid = (primary, secondary, chips, emptyText) => {
 };
 
 const songTier = (score) => {
-    const safe = Math.max(0, Math.min(100, Math.round(score || 0)));
+    const safe = clampRounded(score || 0, 0, 100);
     if (safe >= 92) return 'gold';
     if (safe >= 80) return 'silver';
     if (safe >= 60) return 'bronze';

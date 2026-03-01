@@ -1,4 +1,5 @@
 export { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
+import { clampRounded } from '../utils/math.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const REVIEW_INTERVAL_DAYS_BY_TIER = {
@@ -103,7 +104,7 @@ export const skillMastery = (skillScores, skillLabels = {}) => {
     };
 
     entries.forEach(([id, rawScore]) => {
-        const score = Math.max(0, Math.min(100, Math.round(rawScore || 0)));
+        const score = clampRounded(rawScore || 0, 0, 100);
         const item = {
             id,
             label: skillLabels[id] || id,

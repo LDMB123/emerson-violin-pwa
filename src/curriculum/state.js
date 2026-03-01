@@ -3,7 +3,7 @@ import {
     CURRICULUM_STATE_KEY,
     MISSION_HISTORY_KEY,
 } from '../persistence/storage-keys.js';
-import { clone, percentageRounded } from '../utils/math.js';
+import { clampRounded, clone, percentageRounded } from '../utils/math.js';
 
 const STATE_VERSION = 1;
 const MAX_HISTORY = 240;
@@ -65,7 +65,7 @@ export const normalizeMission = (mission) => {
             ? mission.remediationStepIds.filter(Boolean)
             : remediationStepIds,
         completionPercent: Number.isFinite(mission.completionPercent)
-            ? Math.max(0, Math.min(100, Math.round(mission.completionPercent)))
+            ? clampRounded(mission.completionPercent, 0, 100)
             : computeCompletionPercent(steps),
         status: mission.status || (computeCompletionPercent(steps) >= 100 ? 'complete' : 'active'),
         createdAt: Number.isFinite(mission.createdAt) ? mission.createdAt : Date.now(),
