@@ -135,7 +135,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 ## Known-Good Baseline (2026-03-01)
 
 - Branch: `main`
-- Latest commit: `7137fb3` (docs(pass 15): CLAUDE.md gotchas — click handler stacking, dispose scope, active flag, dev SW)
+- Latest commit: `28821de` (docs: update HANDOFF and README to reflect passes 4–14 and current baseline)
 - Unit tests: 567 passing
 - E2E tests: 45 passing
 - All audits: passing
