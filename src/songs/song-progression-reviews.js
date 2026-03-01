@@ -1,6 +1,6 @@
 import { normalizeSongEntry } from './song-progression-core.js';
 import { reviewIntervalDays } from '../utils/mastery-utils.js';
-import { DAY_MS } from '../utils/math.js';
+import { atLeast1, DAY_MS } from '../utils/math.js';
 
 export const collectDueSongReviewsFromState = ({ songs = {}, now = Date.now(), limit = 5 } = {}) => {
     return Object.entries(songs || {})
@@ -20,5 +20,5 @@ export const collectDueSongReviewsFromState = ({ songs = {}, now = Date.now(), l
         })
         .filter((entry) => entry.dueAt <= now)
         .sort((left, right) => right.overdueMs - left.overdueMs)
-        .slice(0, Math.max(1, Math.round(limit)));
+        .slice(0, atLeast1(Math.round(limit)));
 };

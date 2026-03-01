@@ -1,4 +1,5 @@
 import { createGame } from './game-shell.js';
+import { isGameView } from '../utils/view-hash-utils.js';
 import { bindVisibilityLifecycle } from './game-interactive-runtime.js';
 import {
     formatCountdown,
@@ -118,7 +119,7 @@ const { bind } = createGame({
                 gameState._timerId = timerId;
             },
             canResume: () => Boolean(runToggle?.checked)
-                && window.location.hash === '#view-game-bow-hero',
+                && isGameView(window.location.hash, 'bow-hero'),
             now: () => Date.now(),
             setIntervalFn: (callback, delay) => window.setInterval(callback, delay),
             clearIntervalFn: (timerId) => window.clearInterval(timerId),

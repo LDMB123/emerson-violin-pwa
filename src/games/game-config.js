@@ -1,5 +1,6 @@
 import { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 export { DEFAULT_MASTERY_THRESHOLDS };
+import { atLeast1 } from '../utils/math.js';
 
 export const GAME_META = {
     'pitch-quest': {
@@ -278,7 +279,7 @@ const toObjective = (step, index) => ({
     id: `${step?.id || `objective-${index + 1}`}`,
     label: step?.label || `Objective ${index + 1}`,
     cue: step?.cue || '',
-    minutes: Math.max(1, Math.round(step?.minutes || 2)),
+    minutes: atLeast1(Math.round(step?.minutes || 2)),
 });
 
 const defaultObjectivePacks = (steps = []) => {

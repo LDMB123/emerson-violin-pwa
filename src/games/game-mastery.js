@@ -1,6 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { GAME_MASTERY_KEY } from '../persistence/storage-keys.js';
-import { clampRounded, clone, positiveRound } from '../utils/math.js';
+import { clampRounded, clone, finiteOrZero, positiveRound } from '../utils/math.js';
 import { DEFAULT_MASTERY_THRESHOLDS, dayCounts } from '../utils/mastery-utils.js';
 
 const normalizeGameEntry = (entry) => ({
@@ -65,7 +65,7 @@ export const updateGameMastery = async ({
     const state = await loadGameMasteryState();
     const existing = normalizeGameEntry({ ...state.games[gameId], id: gameId });
     const normalizedScore = clampRounded(score, 0, 100);
-    const dayKey = String(Number.isFinite(day) ? day : 0);
+    const dayKey = String(finiteOrZero(day));
 
     const days = {
         ...existing.days,

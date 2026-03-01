@@ -1,6 +1,6 @@
-import { durationToMinutes, percentageRounded } from '../utils/math.js';
+import { atLeast1, durationToMinutes, percentageRounded } from '../utils/math.js';
 
-export const formatMinutes = (value) => `${Math.max(1, Math.round(value || 0))} min`;
+export const formatMinutes = (value) => `${atLeast1(Math.round(value || 0))} min`;
 
 export const formatTime = (ms) => {
     const total = Math.max(0, Math.floor(ms / 1000));
@@ -20,7 +20,7 @@ export const formatCountdown = (ms) => {
 export const createSessionTimer = ({ targetMinutes, onUpdate, onMilestone }) => {
     let interval = null;
     let startedAt = null;
-    const safeTargetMinutes = Math.max(1, targetMinutes || 0);
+    const safeTargetMinutes = atLeast1(targetMinutes || 0);
     const targetMs = safeTargetMinutes * 60 * 1000;
     const halfMs = targetMs / 2;
     const oneMinMs = 60 * 1000;

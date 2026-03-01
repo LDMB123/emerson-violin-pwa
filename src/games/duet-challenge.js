@@ -1,4 +1,5 @@
 import { createGame } from './game-shell.js';
+import { isGameView } from '../utils/view-hash-utils.js';
 import { createPlaybackRuntime } from './game-interactive-runtime.js';
 import { createAudioCueBank } from './game-audio-cues.js';
 import {
@@ -228,7 +229,7 @@ const { bind } = createGame({
         const hitDetector = createTuningHitDetector({ centsMargin: 20, debounceMs: 300 });
 
         const onRealtimeState = (event) => {
-            if (window.location.hash !== '#view-game-duet-challenge') return;
+            if (!isGameView(window.location.hash, 'duet-challenge')) return;
             const tuning = event.detail?.lastFeature;
             if (!tuning || event.detail?.paused) return;
 

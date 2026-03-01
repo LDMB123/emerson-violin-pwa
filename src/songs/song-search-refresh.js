@@ -3,7 +3,7 @@ import { loadEvents } from '../persistence/loaders.js';
 import { getSongCatalog } from './song-library.js';
 import { buildSongUnlockMap, loadSongProgressState } from './song-progression.js';
 import { ensureChildDiv } from '../utils/dom-utils.js';
-import { clampRounded } from '../utils/math.js';
+import { clampRounded, finiteOrZero } from '../utils/math.js';
 
 const recommendationLevelMap = {
     beginner: 'easy',
@@ -26,7 +26,7 @@ const getSongStatsFromEvents = (events) => {
         const existing = statsBySong[event.id] || { attempts: 0, best: 0, stars: 0 };
         existing.attempts += 1;
         existing.best = Math.max(existing.best, accuracy);
-        existing.stars = Math.max(existing.stars, Number.isFinite(event.stars) ? event.stars : 0);
+        existing.stars = Math.max(existing.stars, finiteOrZero(event.stars));
         statsBySong[event.id] = existing;
         return statsBySong;
     }, {});

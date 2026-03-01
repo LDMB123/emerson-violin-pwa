@@ -48,6 +48,12 @@ export const RT_PARENT_OVERRIDE = 'panda:rt-parent-override';
 export const RT_QUALITY = 'panda:rt-quality';
 export const RT_FEATURE = 'panda:rt-feature';
 
+// View lifecycle
+export const VIEW_RENDERED = 'panda:view-rendered';
+
+// Performance monitoring
+export const WEB_VITALS_UPDATED = 'panda:web-vitals-updated';
+
 export const emitEvent = (name, detail) => {
     document.dispatchEvent(new CustomEvent(name, { detail }));
 };

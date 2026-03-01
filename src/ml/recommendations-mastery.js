@@ -1,6 +1,7 @@
 export { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 import { reviewIntervalDays, dayCounts, DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
-import { clampRounded, DAY_MS } from '../utils/math.js';
+import { gameViewHash, songViewHash } from '../utils/view-hash-utils.js';
+import { atLeast1, clampRounded, DAY_MS, finiteOrZero } from '../utils/math.js';
 
 const bucketLevel = (score, { bronze, silver, gold }) => {
     if (score >= gold) return 'gold';
@@ -128,7 +129,7 @@ export const collectDueGameReviews = (state, { now = Date.now(), limit = 5 } = {
         .filter((entry) => hasRecordedAttempts(entry.attempts))
         .map((entry) => {
             const intervalDays = reviewIntervalDays(entry.tier);
-            const updatedAt = Number.isFinite(entry.updatedAt) ? entry.updatedAt : 0;
+            const updatedAt = finiteOrZero(entry.updatedAt);
             const dueAt = updatedAt + (intervalDays * DAY_MS);
             return {
                 id: entry.id,
@@ -140,7 +141,7 @@ export const collectDueGameReviews = (state, { now = Date.now(), limit = 5 } = {
         })
         .filter((entry) => entry.dueAt > 0 && entry.dueAt <= now)
         .sort((left, right) => right.overdueMs - left.overdueMs)
-        .slice(0, Math.max(1, Math.round(limit)));
+        .slice(0, atLeast1(Math.round(limit)));
     return entries;
 };
 
@@ -158,7 +159,7 @@ export const buildDueReviewAction = ({ dueSongs = [], dueGames = [], songCatalog
     return {
         id: 'due-review',
         label,
-        href: top.type === 'song' ? `#view-song-${top.id}` : `#view-game-${top.id}`,
+        href: top.type === 'song' ? songViewHash(top.id) : gameViewHash(top.id),
         rationale: `Spaced review keeps gains stable. ${totalDue} review item${totalDue === 1 ? '' : 's'} due.`,
     };
 };

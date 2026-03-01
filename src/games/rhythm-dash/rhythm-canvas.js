@@ -1,4 +1,5 @@
 import { BaseCanvasEngine } from '../canvas-engine-base.js';
+import { atLeast1 } from '../../utils/math.js';
 
 export class RhythmCanvasEngine extends BaseCanvasEngine {
     constructor(canvas, { colors = ['#00e5ff', '#39ff14', '#ffea00', '#ff0055'] } = {}) {
@@ -128,7 +129,7 @@ export class RhythmCanvasEngine extends BaseCanvasEngine {
             ctx.fillStyle = pt.color;
             ctx.globalAlpha = pt.life;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, Math.max(1, 8 * p.scale * pt.life), 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, atLeast1(8 * p.scale * pt.life), 0, Math.PI * 2);
             ctx.fill();
             ctx.globalAlpha = 1.0;
         }

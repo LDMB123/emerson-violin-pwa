@@ -1,5 +1,6 @@
 import { pickDailyCue } from '../utils/recommendations-utils.js';
 import { toViewId } from '../utils/lesson-plan-utils.js';
+import { atLeast1 } from '../utils/math.js';
 export { buildMissionContract, buildNextActions } from './recommendations-plan-actions.js';
 
 export const COACH_MESSAGES = {
@@ -92,13 +93,13 @@ const computeAdaptiveMinutes = (skillScores) => {
     const getScore = (skill) => skillScores?.[skill] ?? 60;
 
     // Scale model: lower score = more minutes. baseline 50 gives ~3 minutes.
-    const scale = (score, weight = 1) => Math.max(1, Math.round(((100 - score) / 15) * weight));
+    const scale = (score, weight = 1) => atLeast1(Math.round(((100 - score) / 15) * weight));
 
     const totalCalculated = {
         warmup: Math.max(2, scale(getScore('bow_control'), 0.8)),
         focus: Math.max(3, scale(getScore('pitch'), 1.2)),
         rhythm: Math.max(2, scale(getScore('rhythm'), 1.0)),
-        ear: Math.max(1, scale(getScore('pitch'), 0.6)),
+        ear: atLeast1(scale(getScore('pitch'), 0.6)),
         song: Math.max(3, scale(getScore('reading'), 1.0)),
     };
 

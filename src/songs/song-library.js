@@ -1,4 +1,4 @@
-import { clone } from '../utils/math.js';
+import { clone, finiteOrZero } from '../utils/math.js';
 
 const CATALOG_PATH = '/content/songs/catalog.v2.json';
 
@@ -8,8 +8,8 @@ let catalogPromise = null;
 const normalizeSection = (section, index) => ({
     id: section?.id || `section-${index + 1}`,
     label: section?.label || `Section ${index + 1}`,
-    start: Number.isFinite(section?.start) ? section.start : 0,
-    end: Number.isFinite(section?.end) ? section.end : 0,
+    start: finiteOrZero(section?.start),
+    end: finiteOrZero(section?.end),
 });
 
 const normalizeSong = (song) => ({

@@ -1,4 +1,5 @@
 import { getLatestWebVitalsSession, getWebVitalsHistory } from '../platform/web-vitals.js';
+import { WEB_VITALS_UPDATED } from '../utils/event-names.js';
 
 let statusEl = null;
 let detailEl = null;
@@ -96,7 +97,7 @@ const refresh = async () => {
 const bindGlobals = () => {
     if (globalsBound) return;
     globalsBound = true;
-    document.addEventListener('panda:web-vitals-updated', refresh);
+    document.addEventListener(WEB_VITALS_UPDATED, refresh);
 };
 
 const initPerformanceReview = () => {

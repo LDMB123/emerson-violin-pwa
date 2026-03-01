@@ -1,4 +1,4 @@
-import { SOUNDS_CHANGE } from '../utils/event-names.js';
+import { SOUNDS_CHANGE, VIEW_RENDERED } from '../utils/event-names.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { prepareAudioElementSource } from './format-detection.js';
 import { setDisabled } from '../utils/dom-utils.js';
@@ -139,7 +139,7 @@ const bindGlobals = () => {
         syncEnhancedSoundState(enabled);
     });
 
-    document.addEventListener('panda:view-rendered', () => {
+    document.addEventListener(VIEW_RENDERED, () => {
         enhanceAll();
     });
 

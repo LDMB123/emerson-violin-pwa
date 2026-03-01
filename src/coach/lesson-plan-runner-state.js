@@ -1,10 +1,12 @@
+import { atLeast1 } from '../utils/math.js';
+
 const toRunnerStep = (step, index) => ({
     id: step?.id || `runner-step-${index + 1}`,
     label: step?.label || `Practice step ${index + 1}`,
     cue: step?.cue || '',
     cta: step?.cta || step?.target || 'view-games',
     ctaLabel: step?.ctaLabel || 'Open activity',
-    minutes: Math.max(1, Math.round(step?.minutes || 3)),
+    minutes: atLeast1(Math.round(step?.minutes || 3)),
     status: step?.status || 'not_started',
     source: step?.source || 'plan',
 });
@@ -15,7 +17,7 @@ const toLessonRunnerStep = (step, index, recommendedGameId) => ({
     cue: step?.cue || '',
     cta: step?.cta || recommendedGameId,
     ctaLabel: step?.ctaLabel || 'Open activity',
-    minutes: Math.max(1, Math.round(step?.minutes || 3)),
+    minutes: atLeast1(Math.round(step?.minutes || 3)),
     status: 'not_started',
     source: 'plan',
 });

@@ -1,3 +1,5 @@
+import { finiteOrZero } from '../utils/math.js';
+
 export const resolvePitchQuestAttempt = ({
     feature,
     targetNote,
@@ -6,7 +8,7 @@ export const resolvePitchQuestAttempt = ({
     score,
     stars,
 }) => {
-    const cents = Number.isFinite(feature.cents) ? feature.cents : 0;
+    const cents = finiteOrZero(feature.cents);
     const inTune = Math.abs(cents) <= tolerance;
     const matchedNote = (feature.note || '').startsWith(targetNote);
     const matched = inTune && matchedNote;

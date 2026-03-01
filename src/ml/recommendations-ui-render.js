@@ -1,4 +1,4 @@
-import { positiveRound } from '../utils/math.js';
+import { atLeast1, positiveRound } from '../utils/math.js';
 import { SKILL_LABELS } from '../utils/recommendations-utils.js';
 import { toLessonLink } from '../utils/lesson-plan-utils.js';
 
@@ -7,7 +7,7 @@ const formatBpm = (value) => `${Math.round(value)} BPM`;
 const formatMinutes = (value) => `${positiveRound(value || 0)} min`;
 
 const sumStepMinutes = (steps = []) => (
-    steps.reduce((sum, step) => sum + Math.max(1, Math.round(step?.minutes || 3)), 0)
+    steps.reduce((sum, step) => sum + atLeast1(Math.round(step?.minutes || 3)), 0)
 );
 
 const getCurrentMissionStep = (recs) => {

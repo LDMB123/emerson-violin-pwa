@@ -1,4 +1,4 @@
-import { clamp, clampRounded, percentageRounded, positiveRound, todayDay, average } from '../utils/math.js';
+import { atLeast1, clamp, clampRounded, percentageRounded, positiveRound, todayDay, average } from '../utils/math.js';
 import {
     buildProgressEventBuckets,
     createDailyMinutes,
@@ -27,7 +27,7 @@ const createFallbackTracker = (events) => {
 const createFallbackProgressModel = ({ totalMinutes, gameCount, songCount }) => {
     const xp = positiveRound((totalMinutes * 5) + (gameCount * 9) + (songCount * 7));
     const levelSize = 120;
-    const level = Math.max(1, Math.floor(xp / levelSize) + 1);
+    const level = atLeast1(Math.floor(xp / levelSize) + 1);
     const previousLevelXp = (level - 1) * levelSize;
     const nextLevelXp = level * levelSize;
     return {
@@ -35,7 +35,7 @@ const createFallbackProgressModel = ({ totalMinutes, gameCount, songCount }) => 
         xp,
         xp_to_next_level: () => Math.max(0, nextLevelXp - xp),
         level_progress: () => clamp(
-            percentageRounded(xp - previousLevelXp, Math.max(1, nextLevelXp - previousLevelXp)),
+            percentageRounded(xp - previousLevelXp, atLeast1(nextLevelXp - previousLevelXp)),
             0,
             100,
         ),

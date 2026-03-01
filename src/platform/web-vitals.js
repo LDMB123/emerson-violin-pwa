@@ -1,9 +1,9 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { WEB_VITALS_KEY } from '../persistence/storage-keys.js';
-import { emitEvent } from '../utils/event-names.js';
+import { emitEvent, WEB_VITALS_UPDATED } from '../utils/event-names.js';
+import { finiteOrZero } from '../utils/math.js';
 
 const SESSION_LIMIT = 40;
-const METRIC_EVENT = 'panda:web-vitals-updated';
 
 let globalsBound = false;
 let sessionPersisted = false;
@@ -93,12 +93,12 @@ const normalizeHistory = (stored) => {
             timestamp: Number.isFinite(entry.timestamp) ? entry.timestamp : Date.now(),
             reason: typeof entry.reason === 'string' ? entry.reason : 'unknown',
             route: typeof entry.route === 'string' ? entry.route : '#view-home',
-            sessionMs: Number.isFinite(entry.sessionMs) ? entry.sessionMs : 0,
+            sessionMs: finiteOrZero(entry.sessionMs),
             metrics: {
                 ttfb: Number.isFinite(entry.metrics?.ttfb) ? entry.metrics.ttfb : null,
                 fcp: Number.isFinite(entry.metrics?.fcp) ? entry.metrics.fcp : null,
                 lcp: Number.isFinite(entry.metrics?.lcp) ? entry.metrics.lcp : null,
-                cls: Number.isFinite(entry.metrics?.cls) ? entry.metrics.cls : 0,
+                cls: finiteOrZero(entry.metrics?.cls),
                 inp: Number.isFinite(entry.metrics?.inp) ? entry.metrics.inp : null,
             },
         }));
@@ -124,7 +124,7 @@ const buildSessionPayload = (reason = 'unknown') => ({
 });
 
 const dispatchVitalsEvent = (session) => {
-    emitEvent(METRIC_EVENT, {
+    emitEvent(WEB_VITALS_UPDATED, {
         session,
         metrics: session.metrics,
         timestamp: session.timestamp,

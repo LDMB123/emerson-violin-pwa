@@ -1,4 +1,5 @@
 import { createGame } from './game-shell.js';
+import { isGameView } from '../utils/view-hash-utils.js';
 import { bindVisibilityLifecycle } from './game-interactive-runtime.js';
 import {
     cachedEl,
@@ -109,7 +110,7 @@ const { bind } = createGame({
             updateHud,
             finalizeGame,
             setGameTimerId: (value) => { gameState._timerId = value; },
-            isViewActive: () => window.location.hash === '#view-game-note-memory',
+            isViewActive: () => isGameView(window.location.hash, 'note-memory'),
         });
 
         gameState._onDeactivate = () => {
@@ -216,7 +217,7 @@ const { bind } = createGame({
             registerCleanup,
         });
 
-        if (window.location.hash === '#view-game-note-memory') {
+        if (isGameView(window.location.hash, 'note-memory')) {
             resetGame();
         }
     },

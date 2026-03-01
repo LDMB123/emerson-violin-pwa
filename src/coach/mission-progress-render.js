@@ -1,3 +1,5 @@
+import { atLeast1 } from '../utils/math.js';
+
 const ensureCoachMissionStatus = () => {
     const coachView = document.getElementById('view-coach');
     if (!coachView) return null;
@@ -132,7 +134,7 @@ export const renderMissionGoalList = ({
         const chip = document.createElement('span');
         chip.className = 'note-chip';
         chip.dataset.goalChip = 'true';
-        chip.textContent = `${Math.max(1, Math.round(step?.minutes || defaults.minutes))} min`;
+        chip.textContent = `${atLeast1(Math.round(step?.minutes || defaults.minutes))} min`;
 
         const text = document.createElement('span');
         text.dataset.goalLabel = 'true';

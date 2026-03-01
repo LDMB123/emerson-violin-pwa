@@ -1,5 +1,7 @@
 import { SKILL_LABELS } from '../utils/recommendations-utils.js';
 import { toViewId } from '../utils/lesson-plan-utils.js';
+import { finiteOrZero } from '../utils/math.js';
+import { gameViewHash } from '../utils/view-hash-utils.js';
 
 
 
@@ -32,7 +34,7 @@ export const buildMissionContract = (mission) => {
             : [],
         currentStepId: mission.currentStepId || null,
         remediationStepIds: Array.isArray(mission.remediationStepIds) ? mission.remediationStepIds : [],
-        completionPercent: Number.isFinite(mission.completionPercent) ? mission.completionPercent : 0,
+        completionPercent: finiteOrZero(mission.completionPercent),
         unitId: mission.unitId || null,
         tier: mission.tier || null,
         status: mission.status || 'active',
@@ -58,7 +60,7 @@ const resolveMissionStepHref = (missionStep) => {
     if (missionStep.type === 'song') return '#view-songs';
     if (missionStep.type === 'tuner') return '#view-tuner';
     if (missionStep.target?.startsWith('view-')) return `#${missionStep.target}`;
-    if (missionStep.target?.includes(':')) return `#view-game-${missionStep.target.split(':')[0]}`;
+    if (missionStep.target?.includes(':')) return gameViewHash(missionStep.target.split(':')[0]);
     return '#view-coach';
 };
 

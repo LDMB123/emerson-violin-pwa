@@ -1,4 +1,5 @@
 import { createGame } from './game-shell.js';
+import { isGameView } from '../utils/view-hash-utils.js';
 import { createAudioCueBank } from './game-audio-cues.js';
 import { markChecklist, bindTap, bindSoundsChange, attachTuning, createStandardGameUpdate } from './shared.js';
 import { clamp } from '../utils/math.js';
@@ -120,7 +121,7 @@ const { bind } = createGame({
         tuningActive = attachTuning('tuning-time', () => { });
 
         const onRealtimeState = (event) => {
-            if (window.location.hash !== '#view-game-tuning-time') return;
+            if (!isGameView(window.location.hash, 'tuning-time')) return;
             const tuning = event.detail?.lastFeature;
             if (!tuning || event.detail?.paused) return;
 

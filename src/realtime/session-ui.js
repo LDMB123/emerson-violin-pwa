@@ -6,7 +6,7 @@ import {
     resumeSession,
     getSessionState,
 } from './session-controller.js';
-import { RT_STATE, RT_FALLBACK, RT_SESSION_STARTED, RT_SESSION_STOPPED } from '../utils/event-names.js';
+import { RT_STATE, RT_FALLBACK, RT_SESSION_STARTED, RT_SESSION_STOPPED, VIEW_RENDERED } from '../utils/event-names.js';
 import { createSessionUiControls } from './session-ui-controls.js';
 import { hasE2ERealtimeHooks } from './session-test-flags.js';
 
@@ -61,7 +61,7 @@ const bindGlobal = () => {
         controls.scheduleControlRefresh(true);
     };
 
-    document.addEventListener('panda:view-rendered', refreshBindings);
+    document.addEventListener(VIEW_RENDERED, refreshBindings);
     window.addEventListener('hashchange', refreshBindings, { passive: true });
 };
 

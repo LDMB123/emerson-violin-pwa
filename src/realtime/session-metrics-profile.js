@@ -1,4 +1,4 @@
-import { clamp, positiveRound } from '../utils/math.js';
+import { atLeast1, clamp, finiteOrZero, positiveRound } from '../utils/math.js';
 
 const p95 = (values) => {
     if (!Array.isArray(values) || !values.length) return 0;
@@ -41,8 +41,8 @@ export const createSessionMetricsProfile = ({
     };
 
     const buildQualityPayload = () => {
-        const corrections = Math.max(1, state.quality.corrections);
-        const cueCount = Math.max(1, state.quality.cues);
+        const corrections = atLeast1(state.quality.corrections);
+        const cueCount = atLeast1(state.quality.cues);
         return {
             sessionId: state.sessionId || 'none',
             p95CueLatencyMs: Math.round(p95(state.quality.latencies)),
@@ -58,9 +58,9 @@ export const createSessionMetricsProfile = ({
             profileCache = {};
         }
         profileCache.lastSessionAt = Date.now();
-        profileCache.lastPitchCents = Number.isFinite(feature?.cents) ? feature.cents : 0;
-        profileCache.lastTempoBpm = Number.isFinite(feature?.tempoBpm) ? feature.tempoBpm : 0;
-        profileCache.lastConfidence = Number.isFinite(feature?.confidence) ? feature.confidence : 0;
+        profileCache.lastPitchCents = finiteOrZero(feature?.cents);
+        profileCache.lastTempoBpm = finiteOrZero(feature?.tempoBpm);
+        profileCache.lastConfidence = finiteOrZero(feature?.confidence);
         profileCache.longTermPitchBiasCents = state.calibration.pitchBiasCents;
         profileCache.longTermRhythmBiasMs = state.calibration.rhythmBiasMs;
         profileCache.longTermSampleCount = state.calibration.samples;
@@ -123,7 +123,7 @@ export const createSessionMetricsProfile = ({
 
     const updateSessionCalibration = (feature) => {
         if (!feature?.hasSignal) return;
-        const confidence = Number.isFinite(feature.confidence) ? feature.confidence : 0;
+        const confidence = finiteOrZero(feature.confidence);
         if (confidence < 0.6) return;
 
         // Fast in-session adaptation using clipped incremental averages.

@@ -1,4 +1,5 @@
 import { createGame } from './game-shell.js';
+import { isGameView } from '../utils/view-hash-utils.js';
 import {
     markChecklist,
     markChecklistIf,
@@ -168,7 +169,7 @@ const { bind } = createGame({
         let lastPlayedNote = null;
 
         const onRealtimeState = (event) => {
-            if (window.location.hash !== '#view-game-scale-practice') return;
+            if (!isGameView(window.location.hash, 'scale-practice')) return;
             const tuning = event.detail?.lastFeature;
             if (!tuning || event.detail?.paused) return;
 

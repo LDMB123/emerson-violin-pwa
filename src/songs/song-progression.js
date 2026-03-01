@@ -1,6 +1,6 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { SONG_PROGRESS_KEY } from '../persistence/storage-keys.js';
-import { clampRounded, clone, DAY_MS, todayDay } from '../utils/math.js';
+import { clampRounded, clone, DAY_MS, finiteOrZero, todayDay } from '../utils/math.js';
 import { loadCurriculumState } from '../curriculum/state.js';
 import {
     normalizeSongEntry,
@@ -60,7 +60,7 @@ export const updateSongProgress = async (songId, attempt = {}) => {
 
     if (typeof attempt.sectionId === 'string' && attempt.sectionId.trim()) {
         const key = attempt.sectionId.trim();
-        const bestSection = Number.isFinite(sectionProgress[key]) ? sectionProgress[key] : 0;
+        const bestSection = finiteOrZero(sectionProgress[key]);
         sectionProgress[key] = Math.max(bestSection, accuracy);
     }
 
@@ -114,7 +114,7 @@ export const saveSongCheckpoint = async (songId, checkpoint = {}) => {
                 ...existing,
                 checkpoint: {
                     sectionId: checkpoint.sectionId || null,
-                    elapsed: Number.isFinite(checkpoint.elapsed) ? checkpoint.elapsed : 0,
+                    elapsed: finiteOrZero(checkpoint.elapsed),
                     tempo: Number.isFinite(checkpoint.tempo) ? checkpoint.tempo : null,
                     savedAt: Date.now(),
                 },

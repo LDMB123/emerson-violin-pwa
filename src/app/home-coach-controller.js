@@ -1,3 +1,12 @@
+import {
+    RT_SESSION_STARTED,
+    LESSON_STEP,
+    LESSON_COMPLETE,
+    GAME_RECORDED,
+    COACH_MISSION_COMPLETE,
+} from '../utils/event-names.js';
+import { gameViewHash } from '../utils/view-hash-utils.js';
+
 export const createHomeCoachController = ({
     getViewId,
     getRouteMeta,
@@ -10,7 +19,7 @@ export const createHomeCoachController = ({
         if (!target) return '#view-coach';
         if (target.startsWith('#')) return target;
         if (target.startsWith('view-')) return `#${target}`;
-        return `#view-game-${target}`;
+        return gameViewHash(target);
     };
 
     const getResumeLabel = (href) => {
@@ -118,12 +127,12 @@ export const createHomeCoachController = ({
             coachStepperAutoBound = true;
             const canAutoSwitch = () => window.location.hash === '#view-coach' && typeof activateCoachStep === 'function';
 
-            document.addEventListener('panda:rt-session-started', () => {
+            document.addEventListener(RT_SESSION_STARTED, () => {
                 if (!canAutoSwitch()) return;
                 activateCoachStep('warmup');
             });
 
-            document.addEventListener('panda:lesson-step', (event) => {
+            document.addEventListener(LESSON_STEP, (event) => {
                 if (!canAutoSwitch()) return;
                 const state = event.detail?.state;
                 if (state === 'start' || state === 'complete') {
@@ -131,17 +140,17 @@ export const createHomeCoachController = ({
                 }
             });
 
-            document.addEventListener('panda:lesson-complete', () => {
+            document.addEventListener(LESSON_COMPLETE, () => {
                 if (!canAutoSwitch()) return;
                 activateCoachStep('play');
             });
 
-            document.addEventListener('panda:game-recorded', () => {
+            document.addEventListener(GAME_RECORDED, () => {
                 if (!canAutoSwitch()) return;
                 activateCoachStep('play');
             });
 
-            document.addEventListener('panda:coach-mission-complete', () => {
+            document.addEventListener(COACH_MISSION_COMPLETE, () => {
                 if (!canAutoSwitch()) return;
                 activateCoachStep('play');
             });

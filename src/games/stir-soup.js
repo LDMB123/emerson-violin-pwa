@@ -1,5 +1,6 @@
 import { StirSoupCanvasEngine } from './stir-soup-canvas.js';
 import { recordGameEvent } from './shared.js';
+import { isGameView } from '../utils/view-hash-utils.js';
 
 const GAME_ID_STIR_SOUP = 'stir-soup';
 
@@ -49,7 +50,7 @@ export const init = () => {
         });
         // Auto-pause if navigating away
         const onHashChange = () => {
-            if (window.location.hash !== '#view-game-stir-soup') {
+            if (!isGameView(window.location.hash, 'stir-soup')) {
                 if (engine?.isRunning) {
                     engine.stop();
                     if (startBtn) startBtn.textContent = 'Start Stirring';

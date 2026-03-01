@@ -1,4 +1,4 @@
-import { clamp } from '../../utils/math.js';
+import { atLeast1, clamp } from '../../utils/math.js';
 import { GAME_META } from '../game-config.js';
 import {
     computeAverageFromHistory,
@@ -167,7 +167,7 @@ export const applyRealtimeRhythmFrame = ({
     }
 
     const rhythmOffset = Math.abs(Number.isFinite(feature.rhythmOffsetMs) ? feature.rhythmOffsetMs : beatInterval);
-    const deltaForScore = Math.max(1, beatInterval - Math.min(rhythmOffset, beatInterval));
+    const deltaForScore = atLeast1(beatInterval - Math.min(rhythmOffset, beatInterval));
     const timingScore = computeTimingScore(deltaForScore, beatInterval);
     processBeat(timingScore, { ratingSource: 'Mic onset', bpmValue: tempo || targetBpm });
     return realtimeListening;

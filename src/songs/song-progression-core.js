@@ -1,8 +1,8 @@
-import { clampRounded, DAY_MS, positiveRound } from '../utils/math.js';
+import { clampRounded, DAY_MS, finiteOrZero, positiveRound } from '../utils/math.js';
 import { dayCounts, DEFAULT_MASTERY_THRESHOLDS, reviewIntervalDays } from '../utils/mastery-utils.js';
 
 const scoreFromEntry = (entry) => {
-    const accuracy = Number.isFinite(entry?.bestAccuracy) ? entry.bestAccuracy : 0;
+    const accuracy = finiteOrZero(entry?.bestAccuracy);
     const timing = Number.isFinite(entry?.bestTiming) ? entry.bestTiming : accuracy;
     const intonation = Number.isFinite(entry?.bestIntonation) ? entry.bestIntonation : accuracy;
     return clampRounded((accuracy + timing + intonation) / 3, 0, 100);

@@ -29,3 +29,6 @@ export const percentageRounded = (numerator, denominator, fallback = 0) => {
     }
     return Math.round((numerator / denominator) * 100);
 };
+
+export const finiteOrZero = (x) => (Number.isFinite(x) ? x : 0);
+export const atLeast1 = (x) => Math.max(1, x);

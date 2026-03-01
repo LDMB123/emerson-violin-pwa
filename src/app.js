@@ -1,5 +1,5 @@
 import { whenReady } from './utils/dom-ready.js';
-import { emitEvent } from './utils/event-names.js';
+import { emitEvent, VIEW_RENDERED } from './utils/event-names.js';
 import {
     getViewId,
     getActiveNavHref,
@@ -164,7 +164,7 @@ const showView = async (viewId, ctx = null) => {
             ctx.bindPopovers(container);
         }
 
-        emitEvent('panda:view-rendered', { viewId });
+        emitEvent(VIEW_RENDERED, { viewId });
 
         // Load modules for this view
         await loadForView(viewId);

@@ -1,4 +1,5 @@
 import { GAME_PLAY_AGAIN, SOUNDS_CHANGE } from '../../utils/event-names.js';
+import { isGameView } from '../../utils/view-hash-utils.js';
 
 export const createRhythmDashLifecycle = () => {
     let resetRequestHandler = null;
@@ -42,7 +43,7 @@ export const createRhythmDashLifecycle = () => {
         cleanup();
 
         hashChangeHandler = () => {
-            if (window.location.hash === '#view-game-rhythm-dash') {
+            if (isGameView(window.location.hash, 'rhythm-dash')) {
                 if (runToggle) {
                     runToggle.checked = false;
                     runToggle.dispatchEvent(new Event('change', { bubbles: true }));
@@ -61,7 +62,7 @@ export const createRhythmDashLifecycle = () => {
         resetRequestHandler = (event) => {
             const requestedViewId = event?.detail?.viewId;
             if (requestedViewId && requestedViewId !== 'view-game-rhythm-dash') return;
-            if (window.location.hash !== '#view-game-rhythm-dash') return;
+            if (!isGameView(window.location.hash, 'rhythm-dash')) return;
             if (runToggle) {
                 runToggle.checked = false;
                 runToggle.dispatchEvent(new Event('change', { bubbles: true }));
@@ -94,7 +95,7 @@ export const createRhythmDashLifecycle = () => {
         document.addEventListener(SOUNDS_CHANGE, soundsChangeHandler);
 
         pagehideHandler = (event) => {
-            if (window.location.hash !== '#view-game-rhythm-dash') return;
+            if (!isGameView(window.location.hash, 'rhythm-dash')) return;
             if (event?.persisted) return;
             if (runToggle?.checked) {
                 runToggle.checked = false;

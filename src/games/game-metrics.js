@@ -1,4 +1,5 @@
 import '../styles/games.css';
+import { atLeast1 } from '../utils/math.js';
 import { stopTonePlayer } from './shared.js';
 import {
     GAME_MASTERY_UPDATED,
@@ -102,7 +103,7 @@ const renderGameMasteryCards = () => {
         const tier = entry?.tier || 'foundation';
         const level = LEVEL_BY_TIER[tier] || LEVEL_BY_TIER.foundation;
         const objectivePack = GAME_META?.[gameId]?.objectivePacks?.[level.objectiveTier] || [];
-        const objectiveTotal = Math.max(1, objectivePack.length || 1);
+        const objectiveTotal = atLeast1(objectivePack.length || 1);
 
         card.dataset.masteryTier = tier;
         const meta = ensureCardMeta(card);

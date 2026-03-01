@@ -10,6 +10,7 @@ import {
     PRACTICE_STEP_STARTED,
 } from '../utils/event-names.js';
 import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
+import { finiteOrZero } from '../utils/math.js';
 import {
     GAME_MESSAGES,
     buildCoachMessages,
@@ -114,7 +115,7 @@ const handleLessonStep = (event) => {
     const detail = event.detail || {};
     const step = detail.step;
     if (!step) return;
-    const stepIndex = Number.isFinite(detail.index) ? detail.index : 0;
+    const stepIndex = finiteOrZero(detail.index);
     const total = Number.isFinite(detail.total) ? detail.total : 1;
     let message = '';
     if (detail.state === 'start') {

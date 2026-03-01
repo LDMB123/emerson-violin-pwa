@@ -1,4 +1,5 @@
 import { createGame } from './game-shell.js';
+import { isGameView } from '../utils/view-hash-utils.js';
 import {
     formatStars,
     cachedEl,
@@ -130,7 +131,7 @@ const { bind } = createGame({
         };
 
         const onRealtimeState = (event) => {
-            if (window.location.hash !== '#view-game-pitch-quest') return;
+            if (!isGameView(window.location.hash, 'pitch-quest')) return;
             const feature = event.detail?.lastFeature;
             if (!feature || event.detail?.paused) return;
             updateLiveFeature(feature);

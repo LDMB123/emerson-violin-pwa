@@ -350,6 +350,7 @@ self.__ASSETS__ = [
   "./src/utils/sound-state.js",
   "./src/utils/storage-utils.js",
   "./src/utils/tuning-utils.js",
+  "./src/utils/view-hash-utils.js",
   "./src/views/view-error.js",
   "./src/views/view-loader.js",
   "./src/views/view-paths.js",

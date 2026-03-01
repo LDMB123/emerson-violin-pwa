@@ -1,4 +1,5 @@
 import { BaseCanvasEngine } from './canvas-engine-base.js';
+import { atLeast1 } from '../utils/math.js';
 
 export class TuningCanvasEngine extends BaseCanvasEngine {
     constructor(canvas) {
@@ -146,7 +147,7 @@ export class TuningCanvasEngine extends BaseCanvasEngine {
             ctx.fillStyle = pt.color;
             ctx.globalAlpha = pt.life;
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, Math.max(1, 4 * pt.life), 0, Math.PI * 2);
+            ctx.arc(pt.x, pt.y, atLeast1(4 * pt.life), 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.globalAlpha = 1.0;
