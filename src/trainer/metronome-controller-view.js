@@ -1,4 +1,4 @@
-import { updateSliderFill } from '../utils/dom-utils.js';
+import { updateSliderFill, setAriaPressed, updateProgressAttribute } from '../utils/dom-utils.js';
 
 export const createEmptyMetronomeElements = () => ({
     slider: null,
@@ -15,7 +15,7 @@ export const createEmptyMetronomeElements = () => ({
 export const syncMetronomeRunningState = ({ elements, running }) => {
     if (elements.toggle) {
         elements.toggle.textContent = running ? 'Stop' : 'Start';
-        elements.toggle.setAttribute('aria-pressed', running ? 'true' : 'false');
+        setAriaPressed(elements.toggle, running);
     }
     if (elements.visual) {
         elements.visual.classList.toggle('is-running', running);
@@ -26,8 +26,7 @@ export const updateMetronomeDisplay = ({ elements, bpm }) => {
     if (elements.bpmLabel) elements.bpmLabel.textContent = `${bpm} BPM`;
     if (elements.dialNumber) elements.dialNumber.textContent = String(bpm);
     if (elements.slider) {
-        elements.slider.setAttribute('aria-valuenow', String(bpm));
-        elements.slider.setAttribute('aria-valuetext', `${bpm} BPM`);
+        updateProgressAttribute(elements.slider, bpm, `${bpm} BPM`);
         elements.slider.value = String(bpm);
         updateSliderFill(elements.slider);
     }

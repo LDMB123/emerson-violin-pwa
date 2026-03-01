@@ -1,6 +1,7 @@
 import { loadEvents } from '../persistence/loaders.js';
 import { getCurriculumContent } from './content-loader.js';
 import { loadCurriculumState } from './state.js';
+import { average } from '../utils/math.js';
 
 const FLOW_FIRST_TIME = 'first_time';
 const FLOW_PROGRESSING = 'progressing';
@@ -15,12 +16,6 @@ export const PHASE_BY_FLOW = {
 };
 
 const asNumber = (value, fallback = 0) => (Number.isFinite(value) ? value : fallback);
-
-const average = (values) => {
-    if (!values.length) return 0;
-    const total = values.reduce((sum, value) => sum + asNumber(value), 0);
-    return total / values.length;
-};
 
 const recentPerformance = (events = []) => {
     const qualityEvents = events

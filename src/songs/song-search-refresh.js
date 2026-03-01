@@ -2,6 +2,7 @@ import { getLearningRecommendations } from '../ml/recommendations.js';
 import { loadEvents } from '../persistence/loaders.js';
 import { getSongCatalog } from './song-library.js';
 import { buildSongUnlockMap, loadSongProgressState } from './song-progression.js';
+import { ensureChildDiv } from '../utils/dom-utils.js';
 
 const recommendationLevelMap = {
     beginner: 'easy',
@@ -44,15 +45,6 @@ const mergeSongStats = (eventsStats, progressState) => {
         };
     });
     return merged;
-};
-
-const ensureChildDiv = (parent, className) => {
-    let el = parent.querySelector(`.${className}`);
-    if (el) return el;
-    el = document.createElement('div');
-    el.className = className;
-    parent.appendChild(el);
-    return el;
 };
 
 const ensureSongProgressMeta = (card) => ensureChildDiv(card, 'song-progress-meta');

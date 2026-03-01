@@ -1,4 +1,4 @@
-import { clamp, todayDay } from '../utils/math.js';
+import { clamp, todayDay, average } from '../utils/math.js';
 import {
     buildProgressEventBuckets,
     createDailyMinutes,
@@ -40,12 +40,6 @@ const createFallbackProgressModel = ({ totalMinutes, gameCount, songCount }) => 
             100,
         ),
     };
-};
-
-const average = (values, fallback = 60) => {
-    const usable = values.filter((value) => Number.isFinite(value));
-    if (!usable.length) return fallback;
-    return usable.reduce((sum, value) => sum + value, 0) / usable.length;
 };
 
 const weakestSkillFromValues = (skills) => (

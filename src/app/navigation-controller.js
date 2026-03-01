@@ -1,3 +1,5 @@
+import { setAriaCurrent } from '../utils/dom-utils.js';
+
 export const setupNavigationController = ({
     ctx,
     getCurrentViewId,
@@ -55,11 +57,7 @@ export const setupNavigationController = ({
             const itemHref = item.getAttribute('href');
             const active = isNavItemActive(itemHref, activeHref);
             item.classList.toggle('is-active', active);
-            if (active) {
-                item.setAttribute('aria-current', 'page');
-            } else {
-                item.removeAttribute('aria-current');
-            }
+            setAriaCurrent(item, active);
         });
     };
 

@@ -19,3 +19,29 @@ export const updateSliderFill = (slider) => {
     const pct = range === 0 ? 0 : ((val - min) / range) * 100;
     slider.style.setProperty('--slider-fill', `${pct}%`);
 };
+
+export const ensureChildDiv = (parent, className) => {
+    let el = parent.querySelector(`.${className}`);
+    if (el) return el;
+    el = document.createElement('div');
+    el.className = className;
+    parent.appendChild(el);
+    return el;
+};
+
+export const setAriaCurrent = (el, active, value = 'page') => {
+    if (active) {
+        el.setAttribute('aria-current', value);
+    } else {
+        el.removeAttribute('aria-current');
+    }
+};
+
+export const setAriaPressed = (el, pressed) => {
+    el.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+};
+
+export const updateProgressAttribute = (el, value, text) => {
+    el.setAttribute('aria-valuenow', String(value));
+    if (text !== undefined) el.setAttribute('aria-valuetext', String(text));
+};

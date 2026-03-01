@@ -1,4 +1,5 @@
 import { clamp } from '../utils/math.js';
+import { ensureChildDiv } from '../utils/dom-utils.js';
 
 const computeBestBySong = (events) => {
     return events.reduce((acc, event) => {
@@ -23,12 +24,7 @@ export const updateBestAccuracyUI = (events) => {
         const rounded = clamp(Math.round(best), 0, 100);
         const card = document.querySelector(`.song-card[data-song="${songId}"]`);
         if (card) {
-            let bestEl = card.querySelector('.song-best');
-            if (!bestEl) {
-                bestEl = document.createElement('div');
-                bestEl.className = 'song-best';
-                card.appendChild(bestEl);
-            }
+            const bestEl = ensureChildDiv(card, 'song-best');
             bestEl.textContent = `Best ${rounded}%`;
         }
 
