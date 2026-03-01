@@ -21,8 +21,6 @@ web-sys = { workspace = true, features = [
     "BaseAudioContext",
 ] }
 console_error_panic_hook = { workspace = true }
-serde = { workspace = true }
-serde-wasm-bindgen = { workspace = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

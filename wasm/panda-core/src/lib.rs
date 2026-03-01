@@ -6,7 +6,7 @@ mod achievements;
 mod skills;
 
 pub use xp::PlayerProgress;
-pub use achievements::{Achievement, AchievementTracker};
+pub use achievements::AchievementTracker;
 pub use skills::{SkillCategory, SkillProfile, calculate_streak};
 
 #[wasm_bindgen(start)]

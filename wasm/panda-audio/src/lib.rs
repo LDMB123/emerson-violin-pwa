@@ -491,11 +491,7 @@ impl EchoBuffer {
             let end = (start + samples_per_bin).min(self.size);
             
             // Calculate RMS for this bin
-            let mut sum_sq = 0.0;
-            for j in start..end {
-                sum_sq += self.buffer[j] * self.buffer[j];
-            }
-            let rms = (sum_sq / (end - start) as f32).sqrt();
+            let rms = compute_rms(&self.buffer[start..end]);
             
             // Normalize slightly (magic constant for standard mic input)
             envelope[i] = (rms * 10.0).clamp(0.0, 1.0);

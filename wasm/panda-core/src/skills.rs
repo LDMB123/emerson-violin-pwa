@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use serde::{Deserialize, Serialize};
 
 // ============================================================================
 // Skill Profile (k-means inspired)
@@ -7,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// Skill categories for violin playing
 #[wasm_bindgen]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum SkillCategory {
     Pitch,
     Rhythm,
@@ -18,7 +17,7 @@ pub enum SkillCategory {
 
 /// Skill profile with ratings per category
 #[wasm_bindgen]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct SkillProfile {
     pitch: f32,
     rhythm: f32,

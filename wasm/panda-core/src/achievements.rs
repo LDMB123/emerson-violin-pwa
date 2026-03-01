@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use serde::{Deserialize, Serialize};
 use crate::xp::PlayerProgress;
 
 // ============================================================================
@@ -7,12 +6,9 @@ use crate::xp::PlayerProgress;
 // ============================================================================
 
 /// Achievement definition
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Achievement {
+#[derive(Clone, Debug)]
+struct Achievement {
     id: String,
-    name: String,
-    description: String,
-    icon: String,
     unlocked: bool,
 }
 
@@ -27,90 +23,18 @@ impl AchievementTracker {
     #[wasm_bindgen(constructor)]
     pub fn new() -> AchievementTracker {
         let achievements = vec![
-            Achievement {
-                id: "first_note".to_string(),
-                name: "First Note!".to_string(),
-                description: "Play your first note".to_string(),
-                icon: "🎵".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "pitch_perfect".to_string(),
-                name: "Pitch Perfect".to_string(),
-                description: "Get 100% accuracy in Pitch Quest".to_string(),
-                icon: "🎯".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "rhythm_master".to_string(),
-                name: "Rhythm Master".to_string(),
-                description: "Get a 50x combo in Rhythm Dash".to_string(),
-                icon: "🥁".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "streak_7".to_string(),
-                name: "Week Warrior".to_string(),
-                description: "Practice for 7 days in a row".to_string(),
-                icon: "🔥".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "streak_30".to_string(),
-                name: "Monthly Master".to_string(),
-                description: "Practice for 30 days in a row".to_string(),
-                icon: "🏆".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "level_5".to_string(),
-                name: "Rising Star".to_string(),
-                description: "Reach Level 5".to_string(),
-                icon: "⭐".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "level_10".to_string(),
-                name: "Concert Ready".to_string(),
-                description: "Reach Level 10".to_string(),
-                icon: "🌟".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "songs_10".to_string(),
-                name: "Repertoire Builder".to_string(),
-                description: "Complete 10 different songs".to_string(),
-                icon: "📚".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "bow_hero".to_string(),
-                name: "Bow Control Master".to_string(),
-                description: "Get 5 stars in Bow Hero".to_string(),
-                icon: "🎻".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "ear_training".to_string(),
-                name: "Golden Ear".to_string(),
-                description: "100% accuracy in Ear Trainer advanced mode".to_string(),
-                icon: "👂".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "practice_100".to_string(),
-                name: "Dedicated Musician".to_string(),
-                description: "Practice for 100 total minutes".to_string(),
-                icon: "⏰".to_string(),
-                unlocked: false,
-            },
-            Achievement {
-                id: "all_games".to_string(),
-                name: "Game Champion".to_string(),
-                description: "Play all 18 games at least once".to_string(),
-                icon: "🎮".to_string(),
-                unlocked: false,
-            },
+            Achievement { id: "first_note".to_string(), unlocked: false },
+            Achievement { id: "pitch_perfect".to_string(), unlocked: false },
+            Achievement { id: "rhythm_master".to_string(), unlocked: false },
+            Achievement { id: "streak_7".to_string(), unlocked: false },
+            Achievement { id: "streak_30".to_string(), unlocked: false },
+            Achievement { id: "level_5".to_string(), unlocked: false },
+            Achievement { id: "level_10".to_string(), unlocked: false },
+            Achievement { id: "songs_10".to_string(), unlocked: false },
+            Achievement { id: "bow_hero".to_string(), unlocked: false },
+            Achievement { id: "ear_training".to_string(), unlocked: false },
+            Achievement { id: "practice_100".to_string(), unlocked: false },
+            Achievement { id: "all_games".to_string(), unlocked: false },
         ];
 
         AchievementTracker { achievements }

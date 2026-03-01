@@ -11,8 +11,6 @@ crate-type = ["cdylib", "rlib"]
 wasm-bindgen = { workspace = true }
 js-sys = { workspace = true }
 console_error_panic_hook = { workspace = true }
-serde = { workspace = true }
-serde-wasm-bindgen = { workspace = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // ============================================================================
@@ -32,7 +31,7 @@ const LEVEL_XP: [u32; 20] = [
 
 /// Player progress state
 #[wasm_bindgen]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct PlayerProgress {
     /// Current XP total
     pub(crate) xp: u32,
@@ -47,7 +46,6 @@ pub struct PlayerProgress {
     /// Games played count
     pub(crate) games_played: u32,
     /// Best scores per game (game_id -> score)
-    #[serde(skip)]
     game_scores: HashMap<String, u32>,
 }
 
@@ -67,19 +65,16 @@ impl PlayerProgress {
     }
 
     /// Add XP and check for level up
-    fn add_xp(&mut self, amount: u32) -> bool {
+    fn add_xp(&mut self, amount: u32) {
         self.xp += amount;
-        self.check_level_up()
+        self.check_level_up();
     }
 
     /// Check and apply level up if earned
-    fn check_level_up(&mut self) -> bool {
+    fn check_level_up(&mut self) {
         let new_level = self.calculate_level();
         if new_level > self.level {
             self.level = new_level;
-            true
-        } else {
-            false
         }
     }
 
