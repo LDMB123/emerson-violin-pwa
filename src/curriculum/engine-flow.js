@@ -1,7 +1,7 @@
 import { loadEvents } from '../persistence/loaders.js';
 import { getCurriculumContent } from './content-loader.js';
 import { loadCurriculumState } from './state.js';
-import { average, percentageRounded } from '../utils/math.js';
+import { average, percentageRounded, finiteOrZero } from '../utils/math.js';
 import { eventScore } from '../utils/event-score.js';
 
 const FLOW_FIRST_TIME = 'first_time';
@@ -15,8 +15,6 @@ export const PHASE_BY_FLOW = {
     [FLOW_REGRESSING]: 'remediation',
     [FLOW_STABLE]: 'core',
 };
-
-const asNumber = (value, fallback = 0) => (Number.isFinite(value) ? value : fallback);
 
 const recentPerformance = (events = []) => {
     const qualityEvents = events
@@ -62,7 +60,7 @@ const summarizeUnitCompletion = (unit, events = []) => {
             }
         }
         if (event.type === 'practice') {
-            practiceMinutes += asNumber(event.minutes, 0);
+            practiceMinutes += finiteOrZero(event.minutes);
         }
     });
 

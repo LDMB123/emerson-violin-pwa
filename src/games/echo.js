@@ -139,6 +139,8 @@ export const init = () => {
     resolveElements();
     if (!container) return;
 
+    dispose();
+
     document.addEventListener(MISSION_UPDATED, handleMissionUpdate);
     document.addEventListener(RT_FEATURE, handleRealtimeFeature);
     const canvas = container.querySelector('#echo-canvas');

@@ -37,21 +37,20 @@ const loadRecommendationInputs = async () => {
     return {
         events,
         adaptiveLog,
-        metronomeTuning: { targetBpm: 90 }, // Stub fallback for deprecated config
         dueSongs,
         gameMasteryState,
         songCatalog,
     };
 };
 
-const buildBaseRecommendations = ({ events, adaptiveLog, metronomeTuning }) => {
+const buildBaseRecommendations = ({ events, adaptiveLog }) => {
     const skillScores = computeSkillScores(adaptiveLog);
     const weakestSkill = findWeakestSkill(skillScores);
     const songEvents = events.filter((event) => event.type === 'song');
     const songLevel = computeSongLevel(songEvents);
     const recommendedGameId = GAME_BY_SKILL[weakestSkill] || 'pitch-quest';
     const recommendedGameLabel = GAME_LABELS[recommendedGameId] || 'Pitch Quest';
-    const metronomeTarget = metronomeTuning?.targetBpm || 90;
+    const metronomeTarget = 90;
 
     const lessonPlan = buildLessonSteps({
         weakestSkill,
@@ -90,7 +89,6 @@ export const computeRecommendations = async () => {
     const {
         events,
         adaptiveLog,
-        metronomeTuning,
         dueSongs,
         gameMasteryState,
         songCatalog,
@@ -105,7 +103,6 @@ export const computeRecommendations = async () => {
     const baseRecommendations = buildBaseRecommendations({
         events,
         adaptiveLog,
-        metronomeTuning,
     });
     const {
         weakestSkill,

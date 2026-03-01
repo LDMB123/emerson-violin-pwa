@@ -18,8 +18,6 @@ const isScorableMasteryEvent = (event) => (
     && Boolean(event.id)
 );
 
-const masteryScoreForEvent = (event) => eventScore(event);
-
 const ensureMasteryEntry = (targetMap, id) => targetMap.get(id) || {
     id,
     best: 0,
@@ -68,7 +66,7 @@ export const masteryFromEvents = (events, thresholds = DEFAULT_MASTERY_THRESHOLD
 
     events.forEach((event) => {
         if (!isScorableMasteryEvent(event)) return;
-        const score = masteryScoreForEvent(event);
+        const score = eventScore(event);
         if (!Number.isFinite(score)) return;
 
         const id = event.id;

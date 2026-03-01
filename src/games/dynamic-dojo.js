@@ -37,10 +37,12 @@ const { bind } = createGame({
 
         let listening = false;
         let tuningActive = null;
+        let active = false;
 
         const handleStart = () => {
             if (listening) return;
             listening = true;
+            active = true;
             nextRound(gameState);
 
             // attachTuning initializes the microphone requirement
@@ -91,12 +93,14 @@ const { bind } = createGame({
                 cleanupListeners();
                 reportSession();
             } else {
+                if (!active) return;
                 nextRound(gameState);
                 document.addEventListener(RT_STATE, onAudioData);
             }
         };
 
         const cleanupListeners = () => {
+            active = false;
             document.removeEventListener(RT_STATE, onAudioData);
             if (tuningActive) tuningActive.dispose();
             tuningActive = null;

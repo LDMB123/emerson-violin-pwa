@@ -1,7 +1,6 @@
 import { setJSON, removeBlob } from '../persistence/storage.js';
 import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 import { RECORDINGS_UPDATED } from '../utils/event-names.js';
-import { clamp } from '../utils/math.js';
 
 export const saveRecordings = async (recordings) => {
     await setJSON(RECORDINGS_KEY, recordings);
@@ -9,8 +8,7 @@ export const saveRecordings = async (recordings) => {
 };
 
 export const getVisibleRecordings = (recordings, maxVisible = 4) => {
-    const maxItems = clamp(recordings.length, 1, maxVisible);
-    return recordings.slice(0, maxItems);
+    return recordings.slice(0, maxVisible);
 };
 
 export const removeRecordingAtIndex = async (recordings, index) => {
