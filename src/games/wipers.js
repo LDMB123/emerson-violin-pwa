@@ -6,6 +6,7 @@ const GAME_ID_WIPERS = 'wipers';
 
 let engine = null;
 let bound = false;
+let clickHandler = null;
 
 const WIPES_WIN = 20;
 
@@ -35,7 +36,8 @@ export const init = () => {
     }
 
     if (!bound) {
-        startBtn?.addEventListener('click', () => {
+        startBtn?.removeEventListener('click', clickHandler);
+        clickHandler = () => {
             if (engine.isRunning) {
                 engine.stop();
                 startBtn.textContent = 'Start Engine';
@@ -44,7 +46,8 @@ export const init = () => {
                 engine.start();
                 startBtn.textContent = 'Stop Engine';
             }
-        });
+        };
+        startBtn?.addEventListener('click', clickHandler);
         // Auto-pause if navigating away; self-removes on first non-game navigation
         const onHashChange = () => {
             if (!isGameView(window.location.hash, 'wipers')) {

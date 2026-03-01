@@ -6,6 +6,7 @@ const GAME_ID_STIR_SOUP = 'stir-soup';
 
 let engine = null;
 let bound = false;
+let clickHandler = null;
 
 const SCORE_WIN = 2000;
 
@@ -37,7 +38,8 @@ export const init = () => {
     }
 
     if (!bound) {
-        startBtn?.addEventListener('click', () => {
+        startBtn?.removeEventListener('click', clickHandler);
+        clickHandler = () => {
             if (engine.isRunning) {
                 engine.stop();
                 startBtn.textContent = 'Start Stirring';
@@ -47,7 +49,8 @@ export const init = () => {
                 engine.start();
                 startBtn.textContent = 'Stop Stirring';
             }
-        });
+        };
+        startBtn?.addEventListener('click', clickHandler);
         // Auto-pause if navigating away; self-removes on first non-game navigation
         const onHashChange = () => {
             if (!isGameView(window.location.hash, 'stir-soup')) {

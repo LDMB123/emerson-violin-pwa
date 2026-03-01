@@ -22,7 +22,7 @@ const recentPerformance = (events = []) => {
         .filter((event) => event.type === 'game' || event.type === 'song')
         .map((event) => ({
             accuracy: Number.isFinite(event.accuracy) ? event.accuracy : Number.isFinite(event.score) ? event.score : 0,
-            timestamp: Number.isFinite(event.timestamp) ? event.timestamp : 0,
+            timestamp: finiteOrZero(event.timestamp),
         }))
         .sort((left, right) => left.timestamp - right.timestamp);
 

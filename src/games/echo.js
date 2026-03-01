@@ -6,6 +6,7 @@ let engine = null;
 let container = null;
 let startBtn = null;
 let curtain = null;
+let startHandler = null;
 
 // Mock "Teacher" Rhythm Pattern (later this will come from ML/Curriculum)
 const MOCK_TEACHER_PATTERN = [
@@ -150,7 +151,7 @@ export const init = () => {
     }
 
     if (startBtn) {
-        startBtn.addEventListener('click', async () => {
+        startHandler = async () => {
             startBtn.disabled = true;
             startBtn.textContent = 'Get Ready...';
             // Trigger audio context warmup inside this human click handler
@@ -163,13 +164,18 @@ export const init = () => {
                     }
                 });
             }, 500);
-        });
+        };
+        startBtn.addEventListener('click', startHandler);
     }
 };
 
 export const dispose = () => {
     document.removeEventListener(MISSION_UPDATED, handleMissionUpdate);
     document.removeEventListener(RT_FEATURE, handleRealtimeFeature);
+    if (startBtn && startHandler) {
+        startBtn.removeEventListener('click', startHandler);
+        startHandler = null;
+    }
     if (engine) {
         engine.destroy();
         engine = null;

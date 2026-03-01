@@ -1,4 +1,4 @@
-import { clamp, DAY_MS, todayDay } from './math.js';
+import { average, clamp, DAY_MS, todayDay } from './math.js';
 
 export const SKILL_BY_GAME = {
     'pitch-quest': 'pitch',
@@ -63,11 +63,6 @@ export const recencyWeight = (timestamp) => {
     if (!timestamp) return 1;
     const daysAgo = Math.max(0, (Date.now() - timestamp) / DAY_MS);
     return 1 / (1 + daysAgo * 0.35);
-};
-
-const average = (values) => {
-    if (!values.length) return 0;
-    return values.reduce((sum, value) => sum + value, 0) / values.length;
 };
 
 export const weightedAverage = (items, getValue, getWeight) => {
