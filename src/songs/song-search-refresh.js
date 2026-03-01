@@ -202,12 +202,7 @@ export const applyRecommendedBadges = async (cards) => {
             const isRecommended = card.dataset.level === mappedLevel;
             card.classList.toggle('is-recommended', isRecommended);
             if (!isRecommended) return;
-            let badge = card.querySelector('.song-recommendation');
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.className = 'song-recommendation';
-                card.appendChild(badge);
-            }
+            const badge = ensureChildDiv(card, 'song-recommendation');
             badge.textContent = 'Recommended';
         });
     } catch {

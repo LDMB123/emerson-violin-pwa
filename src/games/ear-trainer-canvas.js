@@ -1,5 +1,6 @@
 import { updateParticles, drawGlowingParticles, emitRadialParticles } from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
+import { createAudioContext } from '../audio/audio-context.js';
 
 // Module-level cache: MediaElementAudioSourceNode can only be created once
 // per <audio> element (Web Audio spec). We cache the AudioContext, analyser,
@@ -10,8 +11,8 @@ const sourceCache = new WeakMap();
 
 const ensureAudioGraph = (audioElements) => {
     if (!sharedAudioCtx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        sharedAudioCtx = new AC();
+        sharedAudioCtx = createAudioContext();
+        if (!sharedAudioCtx) return { audioCtx: null, analyser: null };
         sharedAnalyser = sharedAudioCtx.createAnalyser();
         sharedAnalyser.fftSize = 2048;
         sharedAnalyser.connect(sharedAudioCtx.destination);
@@ -51,7 +52,7 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
 
         // Resume AudioContext on first user interaction if suspended
         const resumeAudio = () => {
-            if (this.audioCtx.state === 'suspended') {
+            if (this.audioCtx && (this.audioCtx.state === 'suspended' || this.audioCtx.state === 'interrupted')) {
                 this.audioCtx.resume();
             }
             document.removeEventListener('pointerdown', resumeAudio);
@@ -80,7 +81,7 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
 
 
     start() {
-        if (this.audioCtx.state === 'suspended') {
+        if (this.audioCtx && (this.audioCtx.state === 'suspended' || this.audioCtx.state === 'interrupted')) {
             this.audioCtx.resume();
         }
         super.start();
