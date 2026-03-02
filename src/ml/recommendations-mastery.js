@@ -35,7 +35,9 @@ const withMasteryTier = (entry, thresholds) => {
 
     let tier = bucketLevel(entry.best, thresholds);
     if (tier !== 'none') {
-        const eligibleDays = tier === 'gold' ? goldDays : tier === 'silver' ? silverDays : bronzeDays;
+        let eligibleDays = bronzeDays;
+        if (tier === 'gold') eligibleDays = goldDays;
+        else if (tier === 'silver') eligibleDays = silverDays;
         if (eligibleDays < thresholds.distinctDays) {
             tier = 'foundation';
         }
