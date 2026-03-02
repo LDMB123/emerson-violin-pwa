@@ -17,7 +17,7 @@ This agent is scoped to the emerson-violin-pwa project only. Do not reference dm
 - Web Audio API: AudioContext, AnalyserNode, MediaStream, ScriptProcessorNode, AudioWorkletNode
 - Real-time pitch detection: FFT analysis, autocorrelation, YIN algorithm
 - Microphone input: getUserMedia, MediaDevices API, permission handling
-- WASM audio modules: Rust → WASM pitch detection pipeline in wasm/panda-core/
+- WASM audio modules: Rust → WASM pitch detection pipeline in wasm/panda-audio/ (EchoBuffer, PitchDetector); wasm/panda-core/ handles XP/achievements/skills
 - AudioContext lifecycle: creation after user gesture, suspend/resume, iOS/Safari quirks
 - Recording: MediaRecorder API, audio export, format detection
 - PWA audio constraints: HTTPS requirement, autoplay policies, mobile browser quirks
