@@ -18,18 +18,14 @@ const isScorableMasteryEvent = (event) => (
     && Boolean(event.id)
 );
 
-const ensureMasteryEntry = (targetMap, id) => targetMap.get(id) || {
-    id,
-    best: 0,
-    attempts: 0,
-    byDay: new Map(),
-};
+const supportsGetOrInsertComputed = 'getOrInsertComputed' in Map.prototype;
+const newMasteryEntry = (id) => ({ id, best: 0, attempts: 0, byDay: new Map() });
 
 const updateMasteryEntry = (entry, event, score) => {
     entry.attempts += 1;
     entry.best = Math.max(entry.best, Math.round(score));
     if (Number.isFinite(event.day)) {
-        const dayScore = entry.byDay.get(event.day) || 0;
+        const dayScore = entry.byDay.get(event.day) ?? 0;
         entry.byDay.set(event.day, Math.max(dayScore, Math.round(score)));
     }
 };
@@ -71,9 +67,11 @@ export const masteryFromEvents = (events, thresholds = DEFAULT_MASTERY_THRESHOLD
 
         const id = event.id;
         const targetMap = event.type === 'game' ? gamesById : songsById;
-        const entry = ensureMasteryEntry(targetMap, id);
+        const entry = supportsGetOrInsertComputed
+            ? targetMap.getOrInsertComputed(id, newMasteryEntry)
+            : (targetMap.get(id) ?? newMasteryEntry(id));
         updateMasteryEntry(entry, event, score);
-        targetMap.set(id, entry);
+        targetMap.set(id, entry); // no-op on getOrInsertComputed path (same ref); needed for fallback
     });
 
     return {
