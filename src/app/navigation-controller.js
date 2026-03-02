@@ -83,18 +83,34 @@ export const setupNavigationController = ({
     });
 };
 
+// Navigation API (Safari 18 / Chrome 102) replaces hashchange for view routing.
+// hashchange still fires for all other listeners (game lifecycle, metrics, etc.).
+const supportsNavigationAPI = 'navigation' in window;
+
 export const bindHashViewController = ({
     getCurrentViewId,
     showView,
     onAfterViewChange,
 }) => {
-    const onHashChange = async () => {
-        const viewId = getCurrentViewId() || 'view-home';
-        await showView(viewId);
-        onAfterViewChange?.(viewId);
-    };
-
-    window.addEventListener('hashchange', onHashChange, { passive: true });
+    if (supportsNavigationAPI) {
+        navigation.addEventListener('navigate', (event) => {
+            if (!event.canIntercept || !event.destination.sameDocument) return;
+            event.intercept({
+                async handler() {
+                    const viewId = getCurrentViewId() || 'view-home';
+                    await showView(viewId);
+                    onAfterViewChange?.(viewId);
+                },
+            });
+        });
+    } else {
+        const onHashChange = async () => {
+            const viewId = getCurrentViewId() || 'view-home';
+            await showView(viewId);
+            onAfterViewChange?.(viewId);
+        };
+        window.addEventListener('hashchange', onHashChange, { passive: true });
+    }
 
     const syncInitialView = async (initialViewId) => {
         const resolvedViewId = getCurrentViewId() || 'view-home';

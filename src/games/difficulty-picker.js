@@ -1,4 +1,5 @@
 import { getCurrentLevel, setDifficulty } from './difficulty.js';
+import { setAriaPressed } from '../utils/dom-utils.js';
 
 const LEVELS = [
     { value: 'easy', label: 'Easy' },
@@ -36,7 +37,7 @@ const syncPickerState = (picker, selectedLevel) => {
     picker.querySelectorAll('.difficulty-btn').forEach((btn) => {
         const active = btn.dataset.level === selectedLevel;
         btn.classList.toggle('is-selected', active);
-        btn.setAttribute('aria-pressed', String(active));
+        setAriaPressed(btn, active);
     });
 };
 
@@ -68,7 +69,7 @@ export const renderDifficultyPickers = () => {
             btn.dataset.level = value;
             btn.dataset.gameId = gameId;
             btn.textContent = label;
-            btn.setAttribute('aria-pressed', String(value === currentLevel));
+            setAriaPressed(btn, value === currentLevel);
             if (value === currentLevel) btn.classList.add('is-selected');
 
             btn.addEventListener('click', (e) => {

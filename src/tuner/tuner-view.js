@@ -1,4 +1,5 @@
-import { setDisabled } from '../utils/dom-utils.js';
+import { clamp } from '../utils/math.js';
+import { setAriaPressed, setDisabled } from '../utils/dom-utils.js';
 
 const normalizeFrameMetrics = (frame) => ({
     cents: Number.isFinite(frame?.cents) ? Math.round(frame.cents) : 0,
@@ -38,7 +39,7 @@ export const applyFrame = ({
     if (viewRefs.centsEl) viewRefs.centsEl.textContent = `${cents > 0 ? '+' : ''}${cents} cents`;
     if (viewRefs.freqEl) viewRefs.freqEl.textContent = `${frequency} Hz`;
     if (viewRefs.livePanel) {
-        viewRefs.livePanel.style.setProperty('--tuner-offset', String(Math.max(-50, Math.min(50, cents))));
+        viewRefs.livePanel.style.setProperty('--tuner-offset', String(clamp(cents, -50, 50)));
         viewRefs.livePanel.classList.toggle('in-tune', inTune);
     }
 
@@ -60,7 +61,7 @@ export const realtimeRenderKey = (detail) => {
 export const updateControlState = ({ startButton, stopButton, livePanel }, active) => {
     if (startButton) {
         startButton.disabled = Boolean(active);
-        startButton.setAttribute('aria-pressed', active ? 'true' : 'false');
+        setAriaPressed(startButton, Boolean(active));
         startButton.textContent = active ? 'Listening' : 'Start Listening';
     }
     setDisabled(stopButton, !active);

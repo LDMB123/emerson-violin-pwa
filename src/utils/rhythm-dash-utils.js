@@ -1,4 +1,4 @@
-import { atLeast1, clamp, clampRounded, deviationAccuracy } from './math.js';
+import { atLeast1, clamp, clampRounded, deviationAccuracy, preciseSum } from './math.js';
 
 export const computeBeatInterval = (bpm) => {
     return 60000 / atLeast1(bpm);
@@ -43,18 +43,18 @@ export const computeScoreIncrement = (timingScore, combo) => {
 
 export const computeAverageFromHistory = (history) => {
     if (!history.length) return 0;
-    return Math.round(history.reduce((sum, value) => sum + value, 0) / history.length);
+    return Math.round(preciseSum(history) / history.length);
 };
 
 export const computeAccuracyFromTimingScores = (timingScores) => {
     if (!timingScores.length) return 0;
-    const avg = timingScores.reduce((sum, value) => sum + value, 0) / timingScores.length;
+    const avg = preciseSum(timingScores) / timingScores.length;
     return clamp(avg * 100, 0, 100);
 };
 
 export const computeAccuracyFromBpmHistory = (tapHistory, targetBpm) => {
     if (!tapHistory.length) return 0;
-    const average = tapHistory.reduce((sum, value) => sum + value, 0) / tapHistory.length;
+    const average = preciseSum(tapHistory) / tapHistory.length;
     return deviationAccuracy(average, targetBpm);
 };
 

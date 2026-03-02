@@ -1,4 +1,5 @@
 import { shouldShowGameCard } from './game-sort-model.js';
+import { setAriaPressed, setAriaHidden } from '../utils/dom-utils.js';
 
 const ensureFavoriteButton = (card) => {
     let button = card.querySelector('[data-game-favorite]');
@@ -19,7 +20,7 @@ const syncFavoriteButton = (card, favoriteIds) => {
     const title = card.querySelector('.game-title')?.textContent?.trim() || 'game';
     button.textContent = active ? '★' : '☆';
     button.classList.toggle('is-active', active);
-    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    setAriaPressed(button, active);
     button.setAttribute('aria-label', `${active ? 'Remove' : 'Add'} ${title} ${active ? 'from' : 'to'} favorites`);
     card.classList.toggle('is-favorite', active);
 };
@@ -54,7 +55,7 @@ export const applyGameSort = (context) => {
             quickIds: context.quickIds,
         });
         card.classList.toggle('is-hidden', !visible);
-        card.setAttribute('aria-hidden', visible ? 'false' : 'true');
+        setAriaHidden(card, !visible);
         if (visible) {
             card.removeAttribute('tabindex');
             visibleCount += 1;

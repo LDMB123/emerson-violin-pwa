@@ -6,7 +6,7 @@ import {
     RT_SESSION_STARTED,
     RT_SESSION_STOPPED,
 } from '../utils/event-names.js';
-import { setHidden } from '../utils/dom-utils.js';
+import { setAriaPressed, setHidden } from '../utils/dom-utils.js';
 import { loadRealtimeEvents, loadRealtimeQuality } from '../realtime/event-log.js';
 import { setParentPreset } from '../realtime/session-controller.js';
 import { getPolicyState } from '../realtime/policy-engine.js';
@@ -152,7 +152,7 @@ const renderPreset = () => {
     presetButtons.forEach((button) => {
         const active = button.dataset.rtPreset === policy.preset;
         button.classList.toggle('is-active', active);
-        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        setAriaPressed(button, active);
     });
     if (presetStatus) {
         presetStatus.textContent = `Preset: ${policy.preset.charAt(0).toUpperCase()}${policy.preset.slice(1)}`;

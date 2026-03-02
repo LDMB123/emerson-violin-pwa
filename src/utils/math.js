@@ -4,10 +4,13 @@ export const DAY_MS = 24 * 60 * 60 * 1000;
 export const todayDay = () => Math.floor(Date.now() / DAY_MS);
 export const dayFromTimestamp = (timestamp) => (Number.isFinite(timestamp) ? Math.floor(timestamp / DAY_MS) : 0);
 export const deviationAccuracy = (actual, target) => clamp((1 - Math.abs(actual - target) / Math.max(target, 1)) * 100, 0, 100);
+const _hasSumPrecise = 'sumPrecise' in Math;
+export const preciseSum = (values) => (_hasSumPrecise ? Math.sumPrecise(values) : values.reduce((a, b) => a + b, 0));
+
 export const average = (values, fallback = 0) => {
     const usable = values.filter((value) => Number.isFinite(value));
     if (!usable.length) return fallback;
-    return usable.reduce((sum, value) => sum + value, 0) / usable.length;
+    return preciseSum(usable) / usable.length;
 };
 
 export const formatTimestamp = (value) => {

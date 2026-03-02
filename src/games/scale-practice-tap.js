@@ -1,4 +1,4 @@
-import { clamp } from '../utils/math.js';
+import { clamp, preciseSum } from '../utils/math.js';
 
 export const computeScalePracticeTapResult = ({
     interval,
@@ -20,7 +20,7 @@ export const computeScalePracticeTapResult = ({
 
     const nextScore = score + Math.round(8 + timingScore * 12);
     const nextAccuracy = clamp(
-        (nextTimingScores.reduce((sum, value) => sum + value, 0) / nextTimingScores.length) * 100,
+        (preciseSum(nextTimingScores) / nextTimingScores.length) * 100,
         0,
         100,
     );

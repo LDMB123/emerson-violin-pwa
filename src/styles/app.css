@@ -601,16 +601,16 @@
         flex-wrap: wrap;
         width: min(100%, 1100px);
         margin-inline: auto;
-    }
 
-    .view-header h2 {
-        flex: 1;
-        text-align: center;
-        margin: 0;
-        font-family: var(--font-display);
-        text-wrap: balance;
-        line-height: var(--leading-tight);
-        letter-spacing: var(--tracking-tight);
+        & h2 {
+            flex: 1;
+            text-align: center;
+            margin: 0;
+            font-family: var(--font-display);
+            text-wrap: balance;
+            line-height: var(--leading-tight);
+            letter-spacing: var(--tracking-tight);
+        }
     }
 
     .back-btn {
@@ -627,16 +627,16 @@
         min-height: 44px;
         touch-action: manipulation;
         font-size: var(--text-sm);
-    }
 
-    .back-btn svg {
-        width: 18px;
-        height: 18px;
-        flex-shrink: 0;
-    }
+        & svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
 
-    .back-btn:active {
-        transform: scale(0.95);
+        &:active {
+            transform: scale(0.95);
+        }
     }
 
     /* Buttons — PhilharMagic Immersion */
@@ -660,24 +660,47 @@
         transform-style: preserve-3d;
         transform: perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(0);
         overflow: hidden;
-    }
 
-    /* Magical Glare/Shimmer */
-    .btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 50%;
-        height: 100%;
-        background: linear-gradient(to right,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.4) 50%,
-                rgba(255, 255, 255, 0) 100%);
-        transform: skewX(-25deg);
-        animation: magic-shimmer 4s infinite linear;
-        pointer-events: none;
-        z-index: 10;
+        /* Magical Glare/Shimmer */
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right,
+                    rgba(255, 255, 255, 0) 0%,
+                    rgba(255, 255, 255, 0.4) 50%,
+                    rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-25deg);
+            animation: magic-shimmer 4s infinite linear;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Hover/Focus Pop */
+        @media (hover: hover) and (pointer: fine) {
+            &:hover {
+                transform: perspective(800px) rotateX(10deg) rotateY(-5deg) translateZ(20px) scale(1.05);
+                box-shadow: -5px 15px 0 var(--color-brand-brown), -10px 25px 40px rgba(255, 120, 0, 0.3);
+                border-color: var(--color-primary);
+            }
+        }
+
+        &:disabled,
+        &[aria-disabled="true"] {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            background-color: transparent;
+            background-image: repeating-linear-gradient(-45deg,
+                    transparent,
+                    transparent 8px,
+                    rgba(0, 0, 0, 0.05) 8px,
+                    rgba(0, 0, 0, 0.05) 12px);
+        }
     }
 
     @keyframes magic-shimmer {
@@ -694,34 +717,11 @@
         }
     }
 
-    /* Hover/Focus Pop */
-    @media (hover: hover) and (pointer: fine) {
-        .btn:hover {
-            transform: perspective(800px) rotateX(10deg) rotateY(-5deg) translateZ(20px) scale(1.05);
-            box-shadow: -5px 15px 0 var(--color-brand-brown), -10px 25px 40px rgba(255, 120, 0, 0.3);
-            border-color: var(--color-primary);
-        }
-    }
-
     .btn:active,
     .icon-btn:active {
         transform: perspective(800px) rotateX(-5deg) rotateY(0deg) translateZ(-10px) scale(0.92) !important;
         box-shadow: 0 0 0 transparent !important;
         transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s;
-    }
-
-    .btn:disabled,
-    .btn[aria-disabled="true"] {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-        background-color: transparent;
-        background-image: repeating-linear-gradient(-45deg,
-                transparent,
-                transparent 8px,
-                rgba(0, 0, 0, 0.05) 8px,
-                rgba(0, 0, 0, 0.05) 12px);
     }
 
     .btn:focus-visible,
@@ -1172,6 +1172,23 @@
         color: #7A4A32;
         font-size: var(--text-base);
         font-weight: 800;
+
+        &.is-active {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+            color: white;
+            font-weight: 800;
+            transform: translateY(-2px);
+            text-shadow: 0 1px 4px rgba(65, 32, 20, 0.35);
+            box-shadow: 0 4px 14px rgba(233, 86, 57, 0.38);
+        }
+
+        &:active {
+            transform: scale(0.9);
+
+            & .nav-icon {
+                animation: nav-icon-bounce 0.35s var(--ease-bounce);
+            }
+        }
     }
 
     /* CSS-first nav active state based on :target */
@@ -1181,23 +1198,6 @@
     :root:has(.game-view.is-active) .bottom-nav {
         display: none !important;
         pointer-events: none;
-    }
-
-    .nav-item.is-active {
-        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
-        color: white;
-        font-weight: 800;
-        transform: translateY(-2px);
-        text-shadow: 0 1px 4px rgba(65, 32, 20, 0.35);
-        box-shadow: 0 4px 14px rgba(233, 86, 57, 0.38);
-    }
-
-    .nav-item:active {
-        transform: scale(0.9);
-    }
-
-    .nav-item:active .nav-icon {
-        animation: nav-icon-bounce 0.35s var(--ease-bounce);
     }
 
     @keyframes nav-icon-bounce {
@@ -4279,17 +4279,17 @@
     margin: 0;
     background: transparent;
     overflow: visible;
-}
 
-[popover]:popover-open {
-    opacity: 1;
-    transform: scale(1);
-}
+    &:popover-open {
+        opacity: 1;
+        transform: scale(1);
+    }
 
-@starting-style {
-    [popover]:popover-open {
-        opacity: 0;
-        transform: scale(0.96) translateY(8px);
+    @starting-style {
+        &:popover-open {
+            opacity: 0;
+            transform: scale(0.96) translateY(8px);
+        }
     }
 }
 

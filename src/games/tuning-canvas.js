@@ -1,5 +1,5 @@
 import { BaseCanvasEngine } from './canvas-engine-base.js';
-import { atLeast1 } from '../utils/math.js';
+import { atLeast1, clamp } from '../utils/math.js';
 
 export class TuningCanvasEngine extends BaseCanvasEngine {
     constructor(canvas) {
@@ -27,7 +27,7 @@ export class TuningCanvasEngine extends BaseCanvasEngine {
     }
 
     setEnergy(energyRatio) {
-        this.energy = Math.max(0, Math.min(1, energyRatio));
+        this.energy = clamp(energyRatio, 0, 1);
     }
 
     spawnSparkles(amount) {
@@ -70,7 +70,7 @@ export class TuningCanvasEngine extends BaseCanvasEngine {
         if (this.targetString) {
             // Calculate pointer X based on cents (-50 to +50 range)
             const maxDisplacement = cx * 0.8;
-            const clampedCents = Math.max(-50, Math.min(50, this.currentCents));
+            const clampedCents = clamp(this.currentCents, -50, 50);
             const pointerX = cx + (clampedCents / 50) * maxDisplacement;
 
             // Draw Target Center

@@ -1,4 +1,4 @@
-import { clamp, deviationAccuracy } from '../utils/math.js';
+import { clamp, deviationAccuracy, preciseSum } from '../utils/math.js';
 
 /**
  * Determines if the given view ID represents a practice view.
@@ -18,7 +18,7 @@ export const isPracticeView = (viewId) => {
  * @returns {number} Calculated BPM rounded to nearest integer
  */
 export const calculateMetronomeBpm = (intervals) => {
-    const avg = intervals.reduce((sum, value) => sum + value, 0) / intervals.length;
+    const avg = preciseSum(intervals) / intervals.length;
     return Math.round(60000 / avg);
 };
 

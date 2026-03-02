@@ -6,6 +6,7 @@ import {
     COACH_MISSION_COMPLETE,
 } from '../utils/event-names.js';
 import { gameViewHash } from '../utils/view-hash-utils.js';
+import { setAriaPressed, setAriaHidden } from '../utils/dom-utils.js';
 
 export const createHomeCoachController = ({
     getViewId,
@@ -101,14 +102,14 @@ export const createHomeCoachController = ({
             tabs.forEach((tab) => {
                 const active = tab.dataset.coachStepTarget === target;
                 tab.classList.toggle('is-active', active);
-                tab.setAttribute('aria-pressed', active ? 'true' : 'false');
+                setAriaPressed(tab, active);
             });
 
             cards.forEach((card) => {
                 const active = card.dataset.coachStepCard === target;
                 card.classList.toggle('is-active', active);
                 card.hidden = !active;
-                card.setAttribute('aria-hidden', active ? 'false' : 'true');
+                setAriaHidden(card, !active);
             });
         };
 

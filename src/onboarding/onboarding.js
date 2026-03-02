@@ -23,24 +23,34 @@ if (carousel && dots.length) {
         });
     });
 
-    // Update active dot on scroll
-    const observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((entry) => {
-                if (!entry.isIntersecting) return;
-                const id = entry.target.id;
-                const index = id.replace('onboarding-slide-', '');
-                dots.forEach((dot) => {
-                    dot.classList.toggle('is-active', dot.dataset.slide === index);
-                });
+    // Update active dot on scroll — scrollend (Safari 26.2 / Chrome 114 / FF 109)
+    // gives exact snap position; IO threshold:0.6 fallback for older engines.
+    if ('onscrollend' in window) {
+        carousel.addEventListener('scrollend', () => {
+            const index = String(Math.round(carousel.scrollLeft / (carousel.offsetWidth || 1)));
+            dots.forEach((dot) => {
+                dot.classList.toggle('is-active', dot.dataset.slide === index);
             });
-        },
-        { root: carousel, threshold: 0.6 }
-    );
+        });
+    } else {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const id = entry.target.id;
+                    const index = id.replace('onboarding-slide-', '');
+                    dots.forEach((dot) => {
+                        dot.classList.toggle('is-active', dot.dataset.slide === index);
+                    });
+                });
+            },
+            { root: carousel, threshold: 0.6 }
+        );
 
-    carousel.querySelectorAll('.onboarding-slide').forEach((slide) => {
-        observer.observe(slide);
-    });
+        carousel.querySelectorAll('.onboarding-slide').forEach((slide) => {
+            observer.observe(slide);
+        });
+    }
 }
 
 if (startBtn) {
