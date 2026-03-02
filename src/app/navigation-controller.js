@@ -37,6 +37,9 @@ export const setupNavigationController = ({
             window.addEventListener('hashchange', handle, { once: true });
         }
         if (supportsViewTransitions && shouldAnimateNav()) {
+            // Skip any in-flight transition before starting a new one (Safari 26.2+ / Chrome 111+).
+            // activeViewTransition is undefined on older engines — optional chain is a safe no-op.
+            document.activeViewTransition?.skipTransition();
             document.documentElement.dataset.navDirection = navDirection;
             const transition = document.startViewTransition(() => {
                 window.location.hash = href;
