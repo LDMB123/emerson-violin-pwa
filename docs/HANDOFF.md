@@ -136,7 +136,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 ## Known-Good Baseline (2026-03-01)
 
 - Branch: `main`
-- Latest commit: `a9e9ba8` (style(ml): replace chained ternary with if/else in withMasteryTier)
+- Latest commit: `11c974f` (docs(agents): fix WASM module path in web-audio-specialist)
 - Unit tests: 567 passing
 - E2E tests: 45 passing
 - All audits: passing
