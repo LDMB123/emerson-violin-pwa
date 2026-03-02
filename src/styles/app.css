@@ -3881,6 +3881,8 @@
     background-size: 200% 100%;
     border-radius: var(--radius-md);
     animation: skeleton-shimmer 1.8s ease-in-out infinite;
+    /* Stagger shimmer by sibling position (Safari 26.2; no-op on older engines — all start at 0ms) */
+    animation-delay: calc((sibling-index() - 1) * 120ms);
 }
 
 .skeleton-header {
@@ -3908,21 +3910,6 @@
     flex: 1;
 }
 
-.skeleton-bar:nth-child(1) {
-    animation-delay: 0ms;
-}
-
-.skeleton-bar:nth-child(2) {
-    animation-delay: 120ms;
-}
-
-.skeleton-bar:nth-child(3) {
-    animation-delay: 240ms;
-}
-
-.skeleton-bar:nth-child(4) {
-    animation-delay: 360ms;
-}
 
 .skeleton-card {
     animation-delay: 80ms;
