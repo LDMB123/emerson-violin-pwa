@@ -51,6 +51,7 @@ Major development phases (Feb 17–28, 2026):
 - **JS dead code pass 12** — Extracted `finiteOrNow(x)` to math.js; extracted `eventScore(event)` to event-score.js; fixed game lifecycle defects in tuning-time.js, stir-soup.js, wipers.js: self-removing hashchange listeners + `bound` flag to prevent zombie RT_STATE listeners after navigation; 567/567 unit tests + 45/45 E2E pass
 - **JS dead code pass 13** — echo.js: `dispose()` called at start of `init()` removes document listeners on re-entry; dynamic-dojo.js: `active` flag guards `setTimeout`→`checkGameOver` path (prevents zombie RT_STATE listener registration after navigation cleanup); engine-flow.js: removed private `asNumber` helper, adopted `finiteOrZero`; recommendations-mastery.js: removed trivial passthrough alias `masteryScoreForEvent`; recommendations-core.js: removed dead `metronomeTuning: { targetBpm: 90 }` stub; parent-recordings-data.js: replaced wrong `clamp(recordings.length, 1, maxVisible)` → `slice(0, maxVisible)`; 567/567 unit tests + 45/45 E2E pass
 - **JS dead code pass 14 (devil's advocate review)** — Click handler stacking fixed in echo.js, stir-soup.js, wipers.js: start-button handlers elevated to module-level `let ref = null`; `removeEventListener` before re-adding on each `init()` call (anonymous arrow functions create new object refs each call — cannot be removed otherwise); engine-flow.js:25: remaining inline `Number.isFinite` ternary migrated to `finiteOrZero`; recommendations-utils.js: private `average` removed, import from math.js; vite.config.js dev SW change reverted (intentional one-shot cleanup SW — `clients.claim()` must precede `registration.unregister()`; reversal caused E2E regression); JS production readiness audit COMPLETE; 567/567 unit tests + 45/45 E2E pass
+- **Safari 26.2 API adoption** — `Math.sumPrecise()` adopted in math.js; `scrollend` event adopted in navigation; Navigation API + CSS nesting improvements; `document.activeViewTransition?.skipTransition()` in navigation-controller.js to abort in-flight View Transitions before starting new ones (Safari 26.2+ / Chrome 111+); CSS `sibling-index()` for skeleton-bar stagger in app.css (replaces `:nth-child` selector stacks); `Map.getOrInsertComputed` adopted in recommendations-mastery.js; pre-existing chained ternary in `withMasteryTier` replaced with if/else chain; CLAUDE.md updated with new patterns + Code Style section; 567/567 unit tests + 45/45 E2E pass
 
 Historical phase-by-phase details are available in git history and archived plan docs under `_archived/plans/`.
 
@@ -135,7 +136,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 ## Known-Good Baseline (2026-03-01)
 
 - Branch: `main`
-- Latest commit: `28821de` (docs: update HANDOFF and README to reflect passes 4–14 and current baseline)
+- Latest commit: `a9e9ba8` (style(ml): replace chained ternary with if/else in withMasteryTier)
 - Unit tests: 567 passing
 - E2E tests: 45 passing
 - All audits: passing

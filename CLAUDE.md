@@ -96,6 +96,12 @@ npm run handoff:verify # audit:full + E2E
 - `dispose()` scope: module-level `dispose()` can only access module-level refs. Handler refs created inside `init()` are invisible to `dispose()` unless explicitly elevated to module scope with a `let` declaration outside the function.
 - `async` flag pattern: `let active = false` at module level, set `true` on start, set `false` first in cleanup. Async callbacks (setTimeout, etc.) check `if (!active) return` before re-registering any listeners. Prevents zombie listeners from delayed callbacks firing after navigation cleanup. Pattern established in `dynamic-dojo.js`.
 - `vite.config.js` dev SW: the dev-only `devServiceWorkerPlugin()` is a one-shot cleanup SW — it intentionally calls `self.clients.claim()` BEFORE `self.registration.unregister()`. Do NOT move `clients.claim()` after `unregister()` — by then the SW has already unregistered and `claim()` is a no-op (confirmed by E2E regression).
+- `document.activeViewTransition?.skipTransition()` — call before `document.startViewTransition()` to abort any in-flight transition; optional chain is safe no-op on older engines; see `navigation-controller.js` (Safari 26.2+ / Chrome 111+).
+- CSS `sibling-index()` — Safari 26.2+ only (no Chrome/Firefox); used in `app.css` for skeleton-bar stagger (`animation-delay: calc(sibling-index() * 80ms)`); replaces `:nth-child` selector stacks.
+
+## Code Style
+
+- No nested/chained ternaries — `a === 'x' ? b : a === 'y' ? c : d` → `let v = d; if (a === 'x') v = b; else if (a === 'y') v = c;`. Code-simplifier enforces this.
 
 ## Report Writing Standards
 
