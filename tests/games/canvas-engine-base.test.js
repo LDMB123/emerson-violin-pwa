@@ -4,6 +4,12 @@ import { BaseCanvasEngine } from '../../src/games/canvas-engine-base.js';
 describe('games/canvas-engine-base BaseCanvasEngine', () => {
     let nextRafId;
     let rafCallbacks;
+    const setVisibility = (value) => {
+        Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            value,
+        });
+    };
 
     const createEngine = () => {
         const parent = document.createElement('div');
@@ -40,6 +46,7 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
     beforeEach(() => {
         nextRafId = 1;
         rafCallbacks = new Map();
+        setVisibility('visible');
 
         Object.defineProperty(window, 'devicePixelRatio', {
             configurable: true,
@@ -87,6 +94,33 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
         expect(engine.isRunning).toBe(false);
     });
 
+    it('pauses scheduling while hidden and resumes when visible', () => {
+        const { engine } = createEngine();
+
+        setVisibility('hidden');
+        engine.start();
+        expect(requestAnimationFrame).toHaveBeenCalledTimes(0);
+        expect(engine.rafId).toBeNull();
+
+        setVisibility('visible');
+        document.dispatchEvent(new Event('visibilitychange'));
+        expect(requestAnimationFrame).toHaveBeenCalledTimes(1);
+        expect(engine.rafId).toBe(1);
+    });
+
+    it('cancels queued animation frame when the page becomes hidden', () => {
+        const { engine } = createEngine();
+
+        engine.start();
+        expect(engine.rafId).toBe(1);
+
+        setVisibility('hidden');
+        document.dispatchEvent(new Event('visibilitychange'));
+
+        expect(cancelAnimationFrame).toHaveBeenCalledWith(1);
+        expect(engine.rafId).toBeNull();
+    });
+
     it('clears the canvas with current dimensions', () => {
         const { engine, ctx } = createEngine();
 
@@ -119,7 +153,11 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
 
         engine.isRunning = true;
         engine.lastTime = 0;
+        setVisibility('hidden');
+        expect(engine.beginFrame(50)).toBeNull();
+        expect(requestAnimationFrame).toHaveBeenCalledTimes(0);
 
+        setVisibility('visible');
         const frame = engine.beginFrame(500);
         expect(frame).toEqual({ dt: 0.1, ctx });
         expect(engine.lastTime).toBe(500);

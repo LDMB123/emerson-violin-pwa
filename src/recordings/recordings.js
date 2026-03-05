@@ -19,7 +19,17 @@ const getSongTitle = (songId) => {
     return title || songId || 'Practice Clip';
 };
 
-const scheduleIdle = (task) => window.setTimeout(task, 400);
+const scheduleIdle = (task) => {
+    if (typeof window.scheduler?.postTask === 'function') {
+        window.scheduler.postTask(task, { priority: 'background', delay: 400 });
+        return;
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(() => task(), { timeout: 1500 });
+        return;
+    }
+    window.setTimeout(task, 400);
+};
 
 const resolveSettingsElements = () => {
     recordToggle = document.querySelector('#setting-recordings');

@@ -30,6 +30,7 @@ export const createMetronomeController = () => {
     let targetBpm = 90;
     let metronomeReported = false;
     let metronomeTouched = false;
+    let pausedByVisibility = false;
 
     const setStatus = (message) => {
         if (elements.status) {
@@ -75,32 +76,65 @@ export const createMetronomeController = () => {
         updateGameResult('trainer-metronome', { accuracy, score: metronomeBpm }).catch(() => { });
     };
 
-    const stop = ({ silent = false } = {}) => {
-        if (!silent) {
-            report();
-        }
+    const clearMetronomeLoop = () => {
         if (metronomeTimer) {
             clearInterval(metronomeTimer);
             metronomeTimer = null;
         }
-        tapTimes = [];
         syncRunningState();
+    };
+
+    const startMetronomeLoop = ({ announce = true } = {}) => {
+        if (metronomeTimer) return true;
+        if (!isSoundEnabled()) {
+            if (announce) {
+                setStatus('Sounds are off. Turn on Sounds to hear the click.');
+            }
+            return false;
+        }
+        const interval = calculateMetronomeInterval(metronomeBpm);
+        playClick();
+        metronomeTimer = window.setInterval(playClick, interval);
+        syncRunningState();
+        if (announce) {
+            setStatus(`Running at ${metronomeBpm} BPM.`);
+        }
+        return true;
+    };
+
+    const pauseForVisibility = () => {
+        if (!metronomeTimer) return false;
+        pausedByVisibility = true;
+        clearMetronomeLoop();
+        return true;
+    };
+
+    const resumeForVisibility = () => {
+        if (!pausedByVisibility) return false;
+        if (document.visibilityState !== 'visible') return false;
+        const resumed = startMetronomeLoop({ announce: false });
+        pausedByVisibility = false;
+        if (resumed) {
+            setStatus(`Running at ${metronomeBpm} BPM.`);
+        }
+        return resumed;
+    };
+
+    const stop = ({ silent = false } = {}) => {
+        if (!silent) {
+            report();
+        }
+        pausedByVisibility = false;
+        clearMetronomeLoop();
+        tapTimes = [];
         if (!silent) {
             setStatus('Metronome paused.');
         }
     };
 
     const start = () => {
-        if (metronomeTimer) return;
-        if (!isSoundEnabled()) {
-            setStatus('Sounds are off. Turn on Sounds to hear the click.');
-            return;
-        }
-        const interval = calculateMetronomeInterval(metronomeBpm);
-        playClick();
-        metronomeTimer = window.setInterval(playClick, interval);
-        syncRunningState();
-        setStatus(`Running at ${metronomeBpm} BPM.`);
+        pausedByVisibility = false;
+        startMetronomeLoop();
     };
 
     const refreshMetronome = () => {
@@ -198,6 +232,8 @@ export const createMetronomeController = () => {
         bindControls,
         report,
         stop,
+        pauseForVisibility,
+        resumeForVisibility,
         isRunning() {
             return Boolean(metronomeTimer);
         },

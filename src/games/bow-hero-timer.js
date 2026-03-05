@@ -1,4 +1,5 @@
 const toWholeSeconds = (milliseconds) => Math.max(0, Math.ceil(milliseconds / 1000));
+const TIMER_TICK_MS = 500;
 
 export const createBowHeroTimerLifecycle = ({
     timeLimit,
@@ -21,6 +22,8 @@ export const createBowHeroTimerLifecycle = ({
     let runStartedAt = 0;
     let paused = false;
     let pausedAt = 0;
+    let thirtySecondsMarked = false;
+    let lastRenderedSecond = null;
 
     const publishTimerHandle = () => {
         setTimerHandle(timerId);
@@ -35,10 +38,20 @@ export const createBowHeroTimerLifecycle = ({
         publishTimerHandle();
     };
 
+    const publishRemaining = (nextRemaining) => {
+        if (nextRemaining === lastRenderedSecond) return;
+        lastRenderedSecond = nextRemaining;
+        updateTimer(nextRemaining);
+    };
+
     const startTimer = () => {
         if (timerId !== null) return;
         paused = false;
         if (remaining <= 0) remaining = timeLimit;
+        if (remaining === timeLimit) {
+            thirtySecondsMarked = false;
+            lastRenderedSecond = null;
+        }
         if (remaining === timeLimit && shouldResetStarsBeforeStart()) {
             resetStars();
         }
@@ -48,7 +61,7 @@ export const createBowHeroTimerLifecycle = ({
             if (!endTime) return;
             const currentNow = now();
             remaining = toWholeSeconds(endTime - currentNow);
-            updateTimer(remaining);
+            publishRemaining(remaining);
             if (remaining <= 0) {
                 stopTimer();
                 if (runToggle) runToggle.checked = false;
@@ -56,12 +69,13 @@ export const createBowHeroTimerLifecycle = ({
                 onTimeElapsed();
                 return;
             }
-            if (runStartedAt && currentNow - runStartedAt >= 30000) {
+            if (!thirtySecondsMarked && runStartedAt && currentNow - runStartedAt >= 30000) {
+                thirtySecondsMarked = true;
                 onThirtySeconds();
             }
-        }, 300);
+        }, TIMER_TICK_MS);
         publishTimerHandle();
-        updateTimer(remaining);
+        publishRemaining(remaining);
         setStatus('Timer running. Keep bow strokes steady.');
     };
 
@@ -93,6 +107,8 @@ export const createBowHeroTimerLifecycle = ({
         runStartedAt = 0;
         paused = false;
         pausedAt = 0;
+        thirtySecondsMarked = false;
+        lastRenderedSecond = null;
     };
 
     const renderTimer = () => {

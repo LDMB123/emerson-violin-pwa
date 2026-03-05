@@ -7,10 +7,22 @@ const MIN_INTERVAL = deviceMemory <= 4 ? 4 * 60 * 1000 : 2 * 60 * 1000;
 let lastRun = 0;
 let pending = false;
 
-const scheduleTask = (task) => window.setTimeout(task, 200);
+const scheduleTask = (task) => {
+    // Prefer browser background/idle queues to reduce foreground contention and power draw.
+    if (typeof window.scheduler?.postTask === 'function') {
+        window.scheduler.postTask(task, { priority: 'background', delay: 200 });
+        return;
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(() => task(), { timeout: 1200 });
+        return;
+    }
+    window.setTimeout(task, 200);
+};
 
 const scheduleRefresh = (reason) => {
     const now = Date.now();
+    if (document.visibilityState === 'hidden') return;
     if (pending) return;
     if (now - lastRun < MIN_INTERVAL) return;
     pending = true;

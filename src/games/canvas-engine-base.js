@@ -8,27 +8,63 @@ export class BaseCanvasEngine {
         this.lastTime = 0;
         this.isRunning = false;
         this.rafId = null;
+        this.visibilityListenerBound = false;
 
         this.render = this.render.bind(this);
+        this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
     }
 
     start() {
         if (this.isRunning === true) return;
         this.lastTime = performance.now();
         this.isRunning = true;
+        this.bindVisibilityListener();
         this.scheduleRender();
     }
 
     scheduleRender() {
+        if (!this.isRunning) return;
+        if (this.rafId !== null) return;
+        if (this.isPageHidden()) return;
         this.rafId = requestAnimationFrame(this.render);
+    }
+
+    cancelScheduledRender() {
+        if (this.rafId === null) return;
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+    }
+
+    isPageHidden() {
+        return document.visibilityState === 'hidden';
+    }
+
+    bindVisibilityListener() {
+        if (this.visibilityListenerBound) return;
+        document.addEventListener('visibilitychange', this.handleVisibilityChange);
+        this.visibilityListenerBound = true;
+    }
+
+    unbindVisibilityListener() {
+        if (!this.visibilityListenerBound) return;
+        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+        this.visibilityListenerBound = false;
+    }
+
+    handleVisibilityChange() {
+        if (!this.isRunning) return;
+        if (this.isPageHidden()) {
+            this.cancelScheduledRender();
+            return;
+        }
+        this.lastTime = performance.now();
+        this.scheduleRender();
     }
 
     stop() {
         this.isRunning = false;
-        if (this.rafId !== null) {
-            cancelAnimationFrame(this.rafId);
-            this.rafId = null;
-        }
+        this.cancelScheduledRender();
+        this.unbindVisibilityListener();
         if (this.cleanupEvents) {
             this.cleanupEvents();
             this.cleanupEvents = null;
@@ -58,7 +94,12 @@ export class BaseCanvasEngine {
 
     beginFrame(time) {
         if (!this.isRunning) return null;
-        this.rafId = requestAnimationFrame(this.render);
+        if (this.isPageHidden()) {
+            this.cancelScheduledRender();
+            return null;
+        }
+        this.rafId = null;
+        this.scheduleRender();
         const dt = Math.min((time - this.lastTime) / 1000, 0.1);
         this.lastTime = time;
         return { dt, ctx: this.ctx };
@@ -115,6 +156,7 @@ export class BaseCanvasEngine {
     render(_time) {
         // To be overridden by subclasses
         if (!this.isRunning) return;
+        this.rafId = null;
         this.scheduleRender();
     }
 }

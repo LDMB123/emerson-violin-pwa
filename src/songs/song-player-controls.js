@@ -5,6 +5,9 @@ import { parseViewSongId, sectionDuration, setStatus } from './song-player-view.
 import { attachTuning, playToneNote } from '../games/shared.js';
 import { getActiveTuningFeature, roundTuningCents } from '../utils/tuning-utils.js';
 
+const PLAYHEAD_AUTOSCROLL_INTERVAL_MS = 80;
+const PLAYHEAD_AUTOSCROLL_DELTA_PX = 4;
+
 export const applyControlsToView = ({ view, controls, song, sections }) => {
     const sectionSelect = controls.querySelector('[data-song-section]');
     const tempoScaleInput = controls.querySelector('[data-song-tempo-scale]');
@@ -31,6 +34,8 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     let isWaiting = false;
     let lastMetronomeBeat = -1;
     let visibilityListenerBound = false;
+    let lastAutoScrollAt = 0;
+    let lastAutoScrollTarget = 0;
     const beatsPerMeasure = song?.time ? parseInt(song.time.split('/')[0], 10) || 4 : 4;
     const defaultSectionId = sections[0]?.id || 'full';
 
@@ -103,6 +108,8 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         if (raqId) cancelAnimationFrame(raqId);
         raqId = null;
         playheadEl = null;
+        lastAutoScrollAt = 0;
+        lastAutoScrollTarget = 0;
         unbindVisibilityListener();
         if (tuningActive) {
             if (tuningActive.rtListener) {
@@ -116,6 +123,28 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             // Force reset of animations via triggering reflow on play toggle
         }
         isWaiting = false;
+    };
+
+    const updateAutoScroll = (now) => {
+        if (!songSheet || !playheadEl) return;
+        if (now - lastAutoScrollAt < PLAYHEAD_AUTOSCROLL_INTERVAL_MS) return;
+        lastAutoScrollAt = now;
+
+        const playheadRect = playheadEl.getBoundingClientRect();
+        const containerRect = songSheet.getBoundingClientRect();
+        const relativeX = playheadRect.left - containerRect.left + songSheet.scrollLeft;
+        const viewWidth = songSheet.clientWidth;
+        if (viewWidth <= 0) return;
+
+        const nextTarget = relativeX > viewWidth * 0.5
+            ? relativeX - (viewWidth * 0.5)
+            : 0;
+
+        if (Math.abs(nextTarget - lastAutoScrollTarget) < PLAYHEAD_AUTOSCROLL_DELTA_PX) return;
+        lastAutoScrollTarget = nextTarget;
+
+        if (Math.abs(songSheet.scrollLeft - nextTarget) < PLAYHEAD_AUTOSCROLL_DELTA_PX) return;
+        songSheet.scrollLeft = nextTarget;
     };
 
     const triggerSectionComplete = (sectionId, tempo, effectiveDuration) => {
@@ -155,23 +184,8 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             songSheet.style.setProperty('--song-playhead-paused-time', `${playbackElapsed}s`);
         }
 
-        // Auto-scroll the song sheet to keep up with the playhead
-        if (songSheet) {
-            if (playheadEl) {
-                // Read the actual computed X position from the CSS animation
-                const rect = playheadEl.getBoundingClientRect();
-                const containerRect = songSheet.getBoundingClientRect();
-                const relativeX = rect.left - containerRect.left + songSheet.scrollLeft;
-                const viewWidth = songSheet.clientWidth;
-
-                // If the playhead pushes past 50% of the viewport, scroll to keep it centered
-                if (relativeX > viewWidth * 0.5) {
-                    songSheet.scrollLeft = relativeX - (viewWidth * 0.5);
-                } else {
-                    songSheet.scrollLeft = 0;
-                }
-            }
-        }
+        // Throttle layout reads/writes to reduce main-thread work during playback.
+        updateAutoScroll(now);
 
         // Check if we hit the end
         if (playbackElapsed >= effectiveDuration) {
@@ -250,6 +264,8 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         audioTriggers.clear();
         isWaiting = false;
         lastMetronomeBeat = -1;
+        lastAutoScrollAt = 0;
+        lastAutoScrollTarget = songSheet ? songSheet.scrollLeft : 0;
 
         if (songSheet) songSheet.classList.remove('is-waiting');
         parseNotes();

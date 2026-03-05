@@ -48,10 +48,21 @@ const setVisibility = (value) => {
     });
 };
 
-const mountSongView = (id = 'twinkle') => {
+const mountSongView = (id = 'twinkle', { withSheet = false } = {}) => {
+    const sheetMarkup = withSheet
+        ? `
+            <div class="song-sheet">
+                <div class="song-playhead"></div>
+                <div class="song-note" style="--note-start: 0s; --note-duration: 0.4s;">
+                    <span class="song-note-pitch">A4</span>
+                </div>
+            </div>
+        `
+        : '';
     document.body.innerHTML = `
         <section id="view-song-${id}" class="song-view">
             <label><input type="checkbox" class="song-play-toggle" /> Play</label>
+            ${sheetMarkup}
             <div class="song-controls"></div>
         </section>
     `;
@@ -172,5 +183,52 @@ describe('songs/song-player', () => {
         document.dispatchEvent(new Event('visibilitychange'));
         await vi.advanceTimersByTimeAsync(1100);
         expect(emitted.length).toBeGreaterThan(0);
+    });
+
+    it('throttles playhead auto-scroll layout reads during playback', async () => {
+        const view = mountSongView('twinkle', { withSheet: true });
+        const songSheet = view?.querySelector('.song-sheet');
+        const playhead = view?.querySelector('.song-playhead');
+        Object.defineProperty(songSheet, 'clientWidth', {
+            configurable: true,
+            value: 200,
+        });
+        const sheetRectSpy = vi.spyOn(songSheet, 'getBoundingClientRect').mockReturnValue({
+            left: 0,
+            top: 0,
+            right: 260,
+            bottom: 120,
+            width: 260,
+            height: 120,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+        });
+        let playheadLeft = 150;
+        const playheadRectSpy = vi.spyOn(playhead, 'getBoundingClientRect').mockImplementation(() => {
+            playheadLeft += 6;
+            return {
+                left: playheadLeft,
+                top: 0,
+                right: playheadLeft + 6,
+                bottom: 120,
+                width: 6,
+                height: 120,
+                x: playheadLeft,
+                y: 0,
+                toJSON: () => ({}),
+            };
+        });
+
+        await initSongPlayer();
+        const playToggle = view?.querySelector('.song-play-toggle');
+        playToggle.checked = true;
+        playToggle.dispatchEvent(new Event('change', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(320);
+
+        expect(playheadRectSpy.mock.calls.length).toBeGreaterThan(0);
+        expect(playheadRectSpy.mock.calls.length).toBeLessThanOrEqual(8);
+        expect(sheetRectSpy.mock.calls.length).toBeLessThanOrEqual(8);
+        expect(songSheet.scrollLeft).toBeGreaterThan(0);
     });
 });
