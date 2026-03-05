@@ -4,7 +4,7 @@ import { getSongCheckpoint, saveSongCheckpoint } from './song-progression.js';
 import { parseViewSongId, sectionDuration, setStatus } from './song-player-view.js';
 import { attachTuning, playToneNote } from '../games/shared.js';
 import { getActiveTuningFeature, roundTuningCents } from '../utils/tuning-utils.js';
-import { createVisibilityListener } from '../utils/visibility-listener.js';
+import { createVisibilityListener } from '../utils/lifecycle-utils.js';
 
 const PLAYHEAD_AUTOSCROLL_INTERVAL_MS = 80;
 const PLAYHEAD_AUTOSCROLL_DELTA_PX = 4;

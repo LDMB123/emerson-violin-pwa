@@ -18,7 +18,7 @@ export const gameModuleRows = [
 
 export const gameModuleImportSpecs = [...new Set(gameModuleRows.map(({ importSpec }) => importSpec))];
 
-export class MockIntersectionObserver {
+class MockIntersectionObserver {
     observe() {
         return undefined;
     }
@@ -32,7 +32,7 @@ export class MockIntersectionObserver {
     }
 }
 
-export class MockAudio {
+class MockAudio {
     constructor() {
         this.currentTime = 0;
         this.duration = 0;
@@ -114,9 +114,9 @@ export const installGameCompleteModalDom = () => {
     document.body.innerHTML = GAME_COMPLETE_MODAL_HTML;
 };
 
-export const toErrorMessage = (error) => (error instanceof Error ? error.message : String(error));
+const toErrorMessage = (error) => (error instanceof Error ? error.message : String(error));
 
-export const loadModuleOrRecordFailure = async ({
+const loadModuleOrRecordFailure = async ({
     failures = [],
     label = '',
     load = null,

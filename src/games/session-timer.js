@@ -1,4 +1,5 @@
 import { atLeast1, durationToMinutes, percentageRounded } from '../utils/math.js';
+import { createIntervalTicker } from '../utils/interval-ticker.js';
 
 export const formatMinutes = (value) => `${atLeast1(Math.round(value || 0))} min`;
 
@@ -22,7 +23,6 @@ export const formatCountdown = (ms) => {
 };
 
 export const createSessionTimer = ({ targetMinutes, onUpdate, onMilestone }) => {
-    let interval = null;
     let startedAt = null;
     const safeTargetMinutes = atLeast1(targetMinutes || 0);
     const targetMs = safeTargetMinutes * 60 * 1000;
@@ -54,19 +54,18 @@ export const createSessionTimer = ({ targetMinutes, onUpdate, onMilestone }) => 
         if (onUpdate) onUpdate({ ms, percent, complete, timeLabel: formatTime(ms) });
         checkMilestones(ms);
     };
+    const ticker = createIntervalTicker({ onTick: tick, intervalMs: 1000 });
 
     const start = () => {
-        if (interval) return;
+        if (ticker.isRunning()) return;
         startedAt = Date.now();
         announced.clear();
         tick();
-        interval = setInterval(tick, 1000);
+        ticker.start();
     };
 
     const stop = () => {
-        if (!interval) return;
-        clearInterval(interval);
-        interval = null;
+        ticker.stop();
     };
 
     const reset = () => {

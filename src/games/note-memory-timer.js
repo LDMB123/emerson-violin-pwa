@@ -1,3 +1,5 @@
+import { createIntervalTicker } from '../utils/interval-ticker.js';
+
 export const createNoteMemoryTimer = ({
     getTimeLeft,
     setTimeLeft,
@@ -10,16 +12,30 @@ export const createNoteMemoryTimer = ({
     isViewActive,
 }) => {
     const TIMER_TICK_MS = 500;
-    let timerId = null;
     let endTime = null;
     let paused = false;
     let lastRenderedTimeLeft = null;
 
-    const stopTimer = () => {
-        if (timerId) {
-            clearInterval(timerId);
-            timerId = null;
+    const tick = () => {
+        if (!endTime) return;
+        const nextTimeLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        if (nextTimeLeft <= 0) {
+            publishTimeLeft(0);
+            setEnded(true);
+            clearLock();
+            stopTimer();
+            finalizeGame();
+            return;
         }
+        publishTimeLeft(nextTimeLeft);
+    };
+    const ticker = createIntervalTicker({
+        onTick: tick,
+        intervalMs: TIMER_TICK_MS,
+    });
+
+    const stopTimer = () => {
+        ticker.stop();
         endTime = null;
         setGameTimerId(null);
     };
@@ -32,7 +48,7 @@ export const createNoteMemoryTimer = ({
     };
 
     const pauseTimer = () => {
-        if (!timerId) return;
+        if (!ticker.isRunning()) return;
         if (endTime) {
             publishTimeLeft(Math.max(0, Math.ceil((endTime - Date.now()) / 1000)));
         }
@@ -41,24 +57,12 @@ export const createNoteMemoryTimer = ({
     };
 
     const startTimer = () => {
-        if (timerId) return;
+        if (ticker.isRunning()) return;
         paused = false;
         endTime = Date.now() + getTimeLeft() * 1000;
         lastRenderedTimeLeft = null;
-        timerId = window.setInterval(() => {
-            if (!endTime) return;
-            const nextTimeLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-            if (nextTimeLeft <= 0) {
-                publishTimeLeft(0);
-                setEnded(true);
-                clearLock();
-                stopTimer();
-                finalizeGame();
-                return;
-            }
-            publishTimeLeft(nextTimeLeft);
-        }, TIMER_TICK_MS);
-        setGameTimerId(timerId);
+        ticker.start();
+        setGameTimerId(ticker.getId());
         publishTimeLeft(getTimeLeft());
     };
 
@@ -77,6 +81,6 @@ export const createNoteMemoryTimer = ({
         pauseTimer,
         startTimer,
         resumeTimer,
-        isRunning: () => Boolean(timerId),
+        isRunning: ticker.isRunning,
     };
 };

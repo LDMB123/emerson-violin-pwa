@@ -20,6 +20,7 @@ import {
     restartRunner,
     startCurrentRunnerStep,
 } from './lesson-plan-runner-machine.js';
+import { createIntervalTicker } from '../utils/interval-ticker.js';
 
 export const createLessonRunnerActions = (deps) => {
     const {
@@ -59,8 +60,7 @@ export const createLessonRunnerActions = (deps) => {
     };
 
     const stopTimer = () => {
-        if (!runnerState.timerId) return;
-        clearInterval(runnerState.timerId);
+        if (!timerTicker.stop()) return;
         runnerState.timerId = null;
     };
 
@@ -113,6 +113,10 @@ export const createLessonRunnerActions = (deps) => {
         if (timerEl) timerEl.textContent = formatTime(runnerState.remainingSeconds * 1000);
         updateProgress();
     };
+    const timerTicker = createIntervalTicker({
+        onTick: tick,
+        intervalMs: 1000,
+    });
 
     const startStep = () => {
         if (!hasRunnerSteps(runnerState)) return;
@@ -127,14 +131,15 @@ export const createLessonRunnerActions = (deps) => {
 
         dispatchStartEvents(startedStep);
 
-        runnerState.timerId = window.setInterval(tick, 1000);
+        timerTicker.start();
+        runnerState.timerId = timerTicker.getId();
         if (timerEl) timerEl.textContent = formatTime(runnerState.remainingSeconds * 1000);
         updateProgress();
         syncStepList();
     };
 
     const pauseStep = () => {
-        if (!runnerState.timerId) return;
+        if (!timerTicker.isRunning()) return;
         stopTimer();
         setStatus('Paused. Tap Resume when ready.');
         if (startButton) startButton.textContent = 'Resume';
@@ -155,7 +160,7 @@ export const createLessonRunnerActions = (deps) => {
             startStep();
             return;
         }
-        if (runnerState.timerId) {
+        if (timerTicker.isRunning()) {
             pauseStep();
         } else {
             startStep();
@@ -164,7 +169,7 @@ export const createLessonRunnerActions = (deps) => {
 
     const handleNextClick = () => {
         if (!hasRunnerSteps(runnerState)) return;
-        if (runnerState.timerId) {
+        if (timerTicker.isRunning()) {
             completeStep({ auto: false });
             return;
         }

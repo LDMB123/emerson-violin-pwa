@@ -2,7 +2,7 @@ import {
     getMetronomeNote,
     getMetronomeVolume,
 } from '../../utils/rhythm-dash-utils.js';
-import { createVisibilityListener } from '../../utils/visibility-listener.js';
+import { createVisibilityListener } from '../../utils/lifecycle-utils.js';
 
 export const createRhythmDashMetronome = ({
     isEnabled,

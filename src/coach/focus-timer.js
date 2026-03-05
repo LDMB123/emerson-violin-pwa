@@ -9,12 +9,12 @@ import { markCheckboxInputChecked } from '../utils/checkbox-utils.js';
 import { triggerMiniConfetti } from '../games/shared.js';
 import { formatCountdown } from '../games/session-timer.js';
 import { shouldStopFocusTimer } from './focus-timer-utils.js';
+import { createIntervalTicker } from '../utils/interval-ticker.js';
 
 let focusToggle = null;
 let focusArea = null;
 let statusEl = null;
 
-let intervalId = null;
 let endTime = null;
 let activeMinutes = 10;
 let isCompleting = false;
@@ -52,10 +52,7 @@ const logFocusMinutes = (minutes) => {
 };
 
 const clearTimer = () => {
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-    }
+    countdownTicker.stop();
     endTime = null;
 };
 
@@ -99,12 +96,16 @@ const updateCountdown = () => {
         finishSession();
     }
 };
+const countdownTicker = createIntervalTicker({
+    onTick: updateCountdown,
+    intervalMs: 1000,
+});
 
 const startSession = () => {
     clearTimer();
     endTime = Date.now() + activeMinutes * 60 * 1000;
     if (statusEl) statusEl.textContent = `Time left ${formatCountdown(activeMinutes * 60 * 1000)}`;
-    intervalId = window.setInterval(updateCountdown, 1000);
+    countdownTicker.start();
 };
 
 const handleToggle = () => {

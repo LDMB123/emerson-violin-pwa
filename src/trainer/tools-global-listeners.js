@@ -9,17 +9,14 @@ export const attachTrainerGlobalListeners = ({
     refreshTrainerTuningById,
     onMlReset,
 }) => {
-    let pausedByVisibility = false;
-
     const stopAndReportMetronome = () => {
-        pausedByVisibility = false;
         metronomeController.report();
         metronomeController.stop({ silent: true });
     };
 
     bindHiddenAndPagehide({
         onHidden: () => {
-            pausedByVisibility = Boolean(metronomeController.pauseForVisibility?.());
+            metronomeController.pauseForVisibility?.();
         },
         onPagehide: () => {
             stopAndReportMetronome();
@@ -28,12 +25,9 @@ export const attachTrainerGlobalListeners = ({
     });
 
     bindVisibleVisibilityChange(() => {
-        if (!pausedByVisibility) return;
         if (!isPracticeView()) {
-            pausedByVisibility = false;
             return;
         }
-        pausedByVisibility = false;
         metronomeController.resumeForVisibility?.();
     });
 
@@ -46,7 +40,6 @@ export const attachTrainerGlobalListeners = ({
 
     document.addEventListener(SOUNDS_CHANGE, (event) => {
         runIfSoundDisabled(event, () => {
-            pausedByVisibility = false;
             metronomeController.stop({ silent: true });
             metronomeController.setStatus('Sounds are off.');
         });
