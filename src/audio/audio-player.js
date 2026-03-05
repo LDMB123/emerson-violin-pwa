@@ -128,16 +128,19 @@ const enhanceAll = () => {
 };
 
 const bindGlobals = () => {
-    if (globalsBound) return;
+    if (globalsBound === true) {
+        return;
+    }
     globalsBound = true;
 
-    document.addEventListener(SOUNDS_CHANGE, (event) => {
+    const handleSoundsChange = (event) => {
         const enabled = event.detail?.enabled !== false;
         if (!enabled) {
             stopAllAudioCards();
         }
         syncEnhancedSoundState(enabled);
-    });
+    };
+    document.addEventListener(SOUNDS_CHANGE, handleSoundsChange);
 
     document.addEventListener(VIEW_RENDERED, () => {
         enhanceAll();

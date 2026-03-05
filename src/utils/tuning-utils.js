@@ -62,3 +62,7 @@ export function createTuningHitDetector(options = {}) {
 
     return { detectHit, reset };
 }
+
+export const createDefaultTuningHitDetector = () => (
+    createTuningHitDetector({ centsMargin: 20, debounceMs: 300 })
+);

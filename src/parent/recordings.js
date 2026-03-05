@@ -1,5 +1,5 @@
 import { loadRecordings } from '../persistence/loaders.js';
-import { isSoundEnabled } from '../utils/sound-state.js';
+import { isSoundEnabled, isSoundDisabledEvent } from '../utils/sound-state.js';
 import { RECORDINGS_UPDATED, SOUNDS_CHANGE } from '../utils/event-names.js';
 import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
 import { getVisibleRecordings } from './parent-recordings-data.js';
@@ -54,7 +54,7 @@ const bindGlobalListeners = () => {
 
     window.addEventListener(RECORDINGS_UPDATED, handleUpdate);
     document.addEventListener(SOUNDS_CHANGE, (event) => {
-        if (event.detail?.enabled === false) {
+        if (isSoundDisabledEvent(event)) {
             interactions.stop();
         }
         render();

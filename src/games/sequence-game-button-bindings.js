@@ -1,6 +1,6 @@
 import { handleSequenceGameTap } from './sequence-game-input.js';
 import { RT_STATE } from '../utils/event-names.js';
-import { createTuningHitDetector } from '../utils/tuning-utils.js';
+import { createDefaultTuningHitDetector } from '../utils/tuning-utils.js';
 import { buildSequenceTapPayload } from './sequence-game-tap-context.js';
 
 
@@ -10,7 +10,7 @@ export const bindSequenceGameMicrophone = ({
     tapContext,
     applyTapResult,
 }) => {
-    const hitDetector = createTuningHitDetector({ centsMargin: 20, debounceMs: 300 });
+    const hitDetector = createDefaultTuningHitDetector();
 
     const onRealtimeState = (event) => {
         if (window.location.hash !== hashId) return;

@@ -39,8 +39,8 @@ export class BowHeroCanvasEngine extends BaseCanvasEngine {
 
     emitParticles(x, y, dx) {
         // Emit sparkling rosin particles trailing the bow stroke
-        const count = 3 + Math.random() * 5;
-        for (let i = 0; i < count; i++) {
+        const particleCount = Math.ceil(3 + Math.random() * 5);
+        for (let i = 0; i < particleCount; i++) {
             this.particles.push({
                 x: x + (Math.random() * 20 - 10),
                 y: y + (Math.random() * 60 - 30),

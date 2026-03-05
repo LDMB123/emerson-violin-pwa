@@ -96,8 +96,8 @@ const refresh = async () => {
 
 const bindGlobals = () => {
     if (globalsBound) return;
-    globalsBound = true;
     document.addEventListener(WEB_VITALS_UPDATED, refresh);
+    globalsBound = true;
 };
 
 const initPerformanceReview = () => {

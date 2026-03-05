@@ -12,9 +12,10 @@ export class BaseCanvasEngine {
     }
 
     start() {
-        if (this.isRunning) return;
+        if (this.isRunning === true) return;
         this.isRunning = true;
-        this.lastTime = performance.now();
+        const now = performance.now();
+        this.lastTime = now;
         requestAnimationFrame(this.render);
     }
 

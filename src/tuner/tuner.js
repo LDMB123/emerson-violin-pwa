@@ -179,6 +179,21 @@ const applyTuning = async () => {
     setStatusText(idleStatusText());
 };
 
+const refreshTuningFromModel = () => {
+    resolveElements();
+    applyTuning();
+};
+
+const handleMlUpdate = (event) => {
+    const id = event.detail?.id;
+    if (id !== 'tuner') return;
+    refreshTuningFromModel();
+};
+
+const handleMlReset = () => {
+    refreshTuningFromModel();
+};
+
 const bindGlobalListeners = () => {
     if (globalListenersBound) return;
     globalListenersBound = true;
@@ -203,17 +218,8 @@ const bindGlobalListeners = () => {
         scheduleRealtimeState(detail);
     });
 
-    document.addEventListener(ML_UPDATE, (event) => {
-        if (event.detail?.id === 'tuner') {
-            resolveElements();
-            applyTuning();
-        }
-    });
-
-    document.addEventListener(ML_RESET, () => {
-        resolveElements();
-        applyTuning();
-    });
+    document.addEventListener(ML_UPDATE, handleMlUpdate);
+    document.addEventListener(ML_RESET, handleMlReset);
 };
 
 const initTuner = () => {

@@ -1,6 +1,6 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { PERSIST_APPLIED, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
-import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
+import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
 import { triggerMiniConfetti } from '../games/shared.js';
 import { formatCountdown } from '../games/session-timer.js';
 import { shouldStopFocusTimer } from './focus-timer-utils.js';
@@ -133,19 +133,36 @@ const bindLocalListeners = () => {
     }
 };
 
+const refreshFocusTuning = () => {
+    resolveElements();
+    applyTuning();
+};
+
+const handleMlUpdate = (event) => {
+    if (event.detail?.id !== 'coach-focus') return;
+    refreshFocusTuning();
+};
+
+const handleMlReset = () => {
+    resolveElements();
+    if (focusArea) delete focusArea.dataset.userSet;
+    applyTuning();
+};
+
 const bindGlobalListeners = () => {
-    if (globalListenersBound) return;
+    if (globalListenersBound === true) {
+        return;
+    }
     globalListenersBound = true;
 
     window.addEventListener('hashchange', () => stopWhenInactive(), { passive: true });
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
+    bindHiddenAndPagehide({
+        onHidden: () => {
             stopWhenInactive({ force: true });
-        }
-    });
-    window.addEventListener('pagehide', (event) => {
-        if (isBfcachePagehide(event)) return;
-        stopWhenInactive({ force: true });
+        },
+        onPagehide: () => {
+            stopWhenInactive({ force: true });
+        },
     });
 
     document.addEventListener(PERSIST_APPLIED, () => {
@@ -153,18 +170,8 @@ const bindGlobalListeners = () => {
         setFocusDuration(activeMinutes);
     });
 
-    document.addEventListener(ML_UPDATE, (event) => {
-        if (event.detail?.id === 'coach-focus') {
-            resolveElements();
-            applyTuning();
-        }
-    });
-
-    document.addEventListener(ML_RESET, () => {
-        resolveElements();
-        if (focusArea) delete focusArea.dataset.userSet;
-        applyTuning();
-    });
+    document.addEventListener(ML_RESET, handleMlReset);
+    document.addEventListener(ML_UPDATE, handleMlUpdate);
 };
 
 const initFocusTimer = () => {

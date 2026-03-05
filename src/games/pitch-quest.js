@@ -1,5 +1,4 @@
 import { createGame } from './game-shell.js';
-import { isGameView } from '../utils/view-hash-utils.js';
 import {
     formatStars,
     cachedEl,
@@ -8,6 +7,7 @@ import {
     markChecklist,
     bindTap,
     bindDocumentEvent,
+    createRealtimeFeatureStateHandler,
     playToneNote,
     stopTonePlayer,
 } from './shared.js';
@@ -52,7 +52,8 @@ const { bind } = createGame({
         if (gameState._gauge) gameState._gauge.style.setProperty('--pitch-offset', '0deg');
         if (gameState._bambooFillEl) gameState._bambooFillEl.style.setProperty('--bamboo-fill', '0%');
     },
-    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
+    onBind: (stage, difficulty, bindContext) => {
+        const { reportSession, gameState, registerCleanup } = bindContext;
         const statusEl = stage.querySelector('[data-pitch="status"]');
         const checkButton = stage.querySelector('[data-pitch="check"]');
         const scoreEl = stage.querySelector('[data-pitch="score"]');
@@ -131,12 +132,9 @@ const { bind } = createGame({
             lastStableAt = nextState.lastStableAt;
         };
 
-        const onRealtimeState = (event) => {
-            if (!isGameView(window.location.hash, 'pitch-quest')) return;
-            const feature = event.detail?.lastFeature;
-            if (!feature || event.detail?.paused) return;
+        const onRealtimeState = createRealtimeFeatureStateHandler('pitch-quest', (feature) => {
             updateLiveFeature(feature);
-        };
+        });
 
         bindDocumentEvent(RT_STATE, onRealtimeState, registerCleanup);
 

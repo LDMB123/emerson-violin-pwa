@@ -1,6 +1,7 @@
 import '../styles/games.css';
 import { atLeast1 } from '../utils/math.js';
 import { getCheckboxInput } from '../utils/dom-utils.js';
+import { isSoundDisabledEvent } from '../utils/sound-state.js';
 import { stopTonePlayer } from './shared.js';
 import {
     GAME_MASTERY_UPDATED,
@@ -235,7 +236,6 @@ document.addEventListener(GAME_MASTERY_UPDATED, (event) => {
 });
 
 document.addEventListener(SOUNDS_CHANGE, (event) => {
-    if (event.detail?.enabled === false) {
-        stopTonePlayer();
-    }
+    if (!isSoundDisabledEvent(event)) return;
+    stopTonePlayer();
 });

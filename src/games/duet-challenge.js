@@ -1,5 +1,4 @@
 import { createGame } from './game-shell.js';
-import { isGameView } from '../utils/view-hash-utils.js';
 import { createPlaybackRuntime } from './game-interactive-runtime.js';
 import { createAudioCueBank } from './game-audio-cues.js';
 import {
@@ -11,6 +10,7 @@ import {
     updateScoreCombo,
     bindSoundsChange,
     bindDocumentEvent,
+    createRealtimeFeatureStateHandler,
     createStandardGameUpdate,
 } from './shared.js';
 import { RT_STATE } from '../utils/event-names.js';
@@ -27,7 +27,7 @@ import {
     ensureDuetChallengeReadyForTap,
 } from './duet-challenge-round.js';
 import { resolveDuetChallengeTapTurn } from './duet-challenge-input.js';
-import { createTuningHitDetector } from '../utils/tuning-utils.js';
+import { createDefaultTuningHitDetector } from '../utils/tuning-utils.js';
 
 const updateDuetChallenge = createStandardGameUpdate({
     viewId: '#view-game-duet-challenge',
@@ -227,13 +227,9 @@ const { bind } = createGame({
             });
         });
 
-        const hitDetector = createTuningHitDetector({ centsMargin: 20, debounceMs: 300 });
+        const hitDetector = createDefaultTuningHitDetector();
 
-        const onRealtimeState = (event) => {
-            if (!isGameView(window.location.hash, 'duet-challenge')) return;
-            const tuning = event.detail?.lastFeature;
-            if (!tuning || event.detail?.paused) return;
-
+        const onRealtimeState = createRealtimeFeatureStateHandler('duet-challenge', (tuning) => {
             if (!ensureDuetChallengeReadyForTap({
                 isPartnerPlaying: partnerPlayback.playing,
                 active,
@@ -253,7 +249,7 @@ const { bind } = createGame({
 
             // Hit verified!
             handleTurn(targetNote);
-        };
+        });
 
         bindDocumentEvent(RT_STATE, onRealtimeState, registerCleanup);
 

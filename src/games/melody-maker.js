@@ -9,7 +9,7 @@ import {
     bindSoundsChange,
     createStandardGameUpdate,
 } from './shared.js';
-import { isSoundEnabled } from '../utils/sound-state.js';
+import { isSoundEnabled, isSoundDisabledEvent } from '../utils/sound-state.js';
 import { setDisabled } from '../utils/dom-utils.js';
 import { resetMelodyMakerTrackState } from './melody-maker-state.js';
 import { playMelodyMakerSequence } from './melody-maker-playback.js';
@@ -164,13 +164,13 @@ const { bind } = createGame({
             markChecklistIf,
         };
 
-        buttons.forEach((button) => {
+        for (const button of buttons) {
             bindTap(button, () => {
-                const note = button.dataset.melodyNote;
-                if (!note) return;
+                const note = button.dataset?.melodyNote;
+                if (typeof note !== 'string' || note.length === 0) return;
                 handleMelodyMakerNoteTap(note, noteTapContext);
             });
-        });
+        }
 
         bindTap(clearButton, () => {
             reportSession();
@@ -191,7 +191,7 @@ const { bind } = createGame({
         });
 
         const soundsHandler = (event) => {
-            if (event.detail?.enabled === false) {
+            if (isSoundDisabledEvent(event)) {
                 stopPlayback('Sounds are off. Enable Sounds to play your melody.');
             } else if (event.detail?.enabled === true) {
                 setStatus('Sounds on. Tap Play to hear your melody.');

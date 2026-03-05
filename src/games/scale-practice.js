@@ -196,9 +196,7 @@ const { bind } = createGame({
         updateTempo();
         gameState._updateHighlight();
 
-        registerCleanup(() => {
-            if (canvasEngine) canvasEngine.destroy();
-        });
+        registerCleanup(() => canvasEngine?.destroy());
     },
 });
 

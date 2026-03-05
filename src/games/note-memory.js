@@ -10,6 +10,7 @@ import {
     stopTonePlayer,
     bindSoundsChange,
 } from './shared.js';
+import { isSoundDisabledEvent } from '../utils/sound-state.js';
 import { shuffleNoteValues } from './note-memory-cards.js';
 import { createNoteMemoryTimer } from './note-memory-timer.js';
 import { NoteMemoryCanvasEngine } from './note-memory-canvas.js';
@@ -197,7 +198,7 @@ const { bind } = createGame({
         });
 
         const soundsHandler = (event) => {
-            if (event.detail?.enabled === false) {
+            if (isSoundDisabledEvent(event)) {
                 stopTonePlayer();
             }
         };

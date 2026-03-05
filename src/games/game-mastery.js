@@ -15,9 +15,13 @@ const normalizeGameEntry = (entry) => ({
     updatedAt: finiteOrNow(entry?.updatedAt),
 });
 
+const asObject = (value) => (
+    value && typeof value === 'object' ? value : {}
+);
+
 const normalizeState = (stored) => {
-    const base = stored && typeof stored === 'object' ? stored : {};
-    const games = base.games && typeof base.games === 'object' ? base.games : {};
+    const base = asObject(stored);
+    const games = asObject(base.games);
 
     return {
         version: 1,
