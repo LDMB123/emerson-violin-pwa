@@ -82,6 +82,12 @@ const writeCachedWebGPUAvailability = (available) => {
     }
 };
 
+const setWebGPUAvailability = (available, { persist = true } = {}) => {
+    webgpuAvailable = Boolean(available);
+    if (persist) writeCachedWebGPUAvailability(webgpuAvailable);
+    return webgpuAvailable;
+};
+
 const applyMode = (mode) => {
     const copy = MODE_COPY[mode] || MODE_COPY.wasm;
     setDataset(copy.dataset || null);
@@ -93,33 +99,26 @@ const detectWebGPU = async () => {
     if (typeof webgpuAvailable === 'boolean') return webgpuAvailable;
     const cachedAvailability = readCachedWebGPUAvailability();
     if (typeof cachedAvailability === 'boolean') {
-        webgpuAvailable = cachedAvailability;
-        return webgpuAvailable;
+        return setWebGPUAvailability(cachedAvailability, { persist: false });
     }
     if (!adapterProbePromise) {
         adapterProbePromise = (async () => {
             if (!navigator.gpu?.requestAdapter) {
-                webgpuAvailable = false;
-                writeCachedWebGPUAvailability(webgpuAvailable);
-                return webgpuAvailable;
+                return setWebGPUAvailability(false);
             }
             try {
                 // Prefer low-power adapters to reduce battery/thermal cost on Apple Silicon.
                 const lowPowerAdapter = await navigator.gpu.requestAdapter({ powerPreference: 'low-power' });
                 if (lowPowerAdapter) {
-                    webgpuAvailable = true;
-                    writeCachedWebGPUAvailability(webgpuAvailable);
-                    return webgpuAvailable;
+                    return setWebGPUAvailability(true);
                 }
 
                 // Some browsers ignore low-power preference; retry with defaults for capability detection.
                 const fallbackAdapter = await navigator.gpu.requestAdapter();
-                webgpuAvailable = Boolean(fallbackAdapter);
+                return setWebGPUAvailability(Boolean(fallbackAdapter));
             } catch {
-                webgpuAvailable = false;
+                return setWebGPUAvailability(false);
             }
-            writeCachedWebGPUAvailability(webgpuAvailable);
-            return webgpuAvailable;
         })().finally(() => {
             adapterProbePromise = null;
         });

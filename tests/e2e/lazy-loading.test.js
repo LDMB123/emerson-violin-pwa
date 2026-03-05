@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
-import { gotoAndExpectView } from './helpers/view-navigation.js';
-
-const goToView = async (page, viewHash, { timeout = 10000 } = {}) => {
-    await gotoAndExpectView(page, viewHash, { timeout });
-};
+import { gotoView } from './helpers/view-navigation.js';
 
 const measureViewLoadMs = async (page, viewHash, { timeout = 10000 } = {}) => {
     const startedAt = Date.now();
-    await goToView(page, viewHash, { timeout });
+    await gotoView(page, viewHash, { timeout });
     return Date.now() - startedAt;
 };
 
@@ -36,14 +32,14 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should lazy load trainer view', async ({ page }) => {
-        await goToView(page, '#view-trainer');
+        await gotoView(page, '#view-trainer');
 
         // Verify trainer elements are present in DOM
         await expect(page.locator('#tool-metronome')).toBeAttached();
     });
 
     test('should lazy load coach view from navigation', async ({ page }) => {
-        await goToView(page, '#view-coach');
+        await gotoView(page, '#view-coach');
         await expect(page.locator('#view-coach')).toBeVisible();
     });
 
@@ -51,7 +47,7 @@ test.describe('Lazy View Loading', () => {
         const time1 = await measureViewLoadMs(page, '#view-coach');
 
         // Navigate away
-        await goToView(page, '#view-home');
+        await gotoView(page, '#view-home');
         await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
 
         const time2 = await measureViewLoadMs(page, '#view-coach');
@@ -65,12 +61,12 @@ test.describe('Lazy View Loading', () => {
         // Load home
         await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
 
-        await goToView(page, '#view-coach');
-        await goToView(page, '#view-games');
-        await goToView(page, '#view-progress');
+        await gotoView(page, '#view-coach');
+        await gotoView(page, '#view-games');
+        await gotoView(page, '#view-progress');
 
         // Return to home via URL
-        await goToView(page, '#view-home');
+        await gotoView(page, '#view-home');
         await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
     });
 
@@ -85,18 +81,18 @@ test.describe('Lazy View Loading', () => {
         expect(await page.evaluate(() => document.readyState)).toBe('complete');
 
         // The page should still be functional - test by navigating to a valid view
-        await goToView(page, '#view-home');
+        await gotoView(page, '#view-home');
         await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
     });
 
     test('should maintain view state after navigation', async ({ page }) => {
-        await goToView(page, '#view-progress');
+        await gotoView(page, '#view-progress');
 
         // Navigate away
-        await goToView(page, '#view-home');
+        await gotoView(page, '#view-home');
         await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
 
-        await goToView(page, '#view-progress');
+        await gotoView(page, '#view-progress');
 
         // View should load quickly from cache
         const loadTime = await page.evaluate(() => {
@@ -106,8 +102,8 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should load views with deep navigation paths', async ({ page }) => {
-        await goToView(page, '#view-games');
-        await goToView(page, '#view-game-pitch-quest');
+        await gotoView(page, '#view-games');
+        await gotoView(page, '#view-game-pitch-quest');
         await expect(page.locator('#view-game-pitch-quest')).toBeVisible();
     });
 
@@ -118,7 +114,7 @@ test.describe('Lazy View Loading', () => {
         const views = ['#view-coach', '#view-games', '#view-progress'];
 
         for (const view of views) {
-            await goToView(page, view);
+            await gotoView(page, view);
         }
 
         // All views should now be cached

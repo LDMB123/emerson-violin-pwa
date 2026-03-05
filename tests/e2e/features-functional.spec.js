@@ -2,7 +2,12 @@ import { expect, test } from '@playwright/test';
 import { setCheckboxValue, setInputValue } from './helpers/dom-controls.js';
 import { openHome } from './helpers/open-home.js';
 import { seedKVValue } from './helpers/seed-kv.js';
-import { gotoAndExpectView, setParentUnlocked } from './helpers/view-navigation.js';
+import {
+    goHome,
+    goParent,
+    gotoAndExpectView,
+    setParentUnlocked,
+} from './helpers/view-navigation.js';
 
 const seedEvents = async (page, events) => {
     await seedKVValue(page, 'panda-violin:events:v1', events);
@@ -95,8 +100,6 @@ const waitForBoundFlag = async (page, selector, attribute) => {
         return page.locator(selector).getAttribute(attribute).catch(() => '');
     }, { timeout: 10000 }).toBe('true');
 };
-const goHome = async (page) => gotoAndExpectView(page, '#view-home');
-const goParent = async (page) => gotoAndExpectView(page, '#view-parent');
 const openBackupViewReady = async (page) => {
     await gotoAndExpectView(page, '#view-backup');
     await waitForBoundFlag(page, '[data-export-json]', 'data-backup-bound');

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
-import { gotoAndExpectView } from './helpers/view-navigation.js';
+import { gotoView } from './helpers/view-navigation.js';
 
 const playToneUntilCardActive = async (page, tone = 'A') => {
     const toneButton = page.locator(`[data-tone="${tone}"]`);
@@ -20,7 +20,6 @@ const toggleMetronomeUntilLabel = async (page, label) => {
     }, { timeout: 10000 }).toContain(label);
 };
 
-const gotoView = async (page, viewId) => gotoAndExpectView(page, `#${viewId}`);
 const reopenViaGames = async (page, viewId) => {
     await gotoView(page, 'view-games');
     await gotoView(page, viewId);

@@ -74,6 +74,13 @@ const applyState = async (enabled, persist = true) => {
     }
 };
 
+const resolveNextEnabledState = () => (toggle ? toggle.checked : currentEnabled);
+
+const syncCurrentState = () => {
+    if (!initialized) return;
+    return applyState(resolveNextEnabledState(), false);
+};
+
 const loadState = async () => {
     const stored = await getJSON(MODE_KEY);
     return Boolean(stored?.enabled);
@@ -85,18 +92,13 @@ const bindGlobalListeners = () => {
 
     if (hasServiceWorkerSupport()) {
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!initialized) return;
-            const next = toggle ? toggle.checked : currentEnabled;
-            applyState(next, false);
+            syncCurrentState();
         });
     }
 
     document.addEventListener('visibilitychange', () => {
-        if (!initialized) return;
-        if (document.visibilityState === 'visible') {
-            const next = toggle ? toggle.checked : currentEnabled;
-            applyState(next, false);
-        }
+        if (document.visibilityState !== 'visible') return;
+        syncCurrentState();
     });
 };
 

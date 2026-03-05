@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
 import { seedKVValue } from './helpers/seed-kv.js';
-import { gotoAndExpectView } from './helpers/view-navigation.js';
+import { goHome, gotoAndExpectView } from './helpers/view-navigation.js';
 
 const seedSongEvents = async (page, events) => {
     await seedKVValue(page, 'panda-violin:events:v1', events);
@@ -37,7 +37,6 @@ const clickLinkAndExpectHash = async (page, linkLocator, hash, { timeout = 10000
         await gotoAndExpectView(page, hash, { timeout });
     }
 };
-const goHome = async (page) => gotoAndExpectView(page, '#view-home');
 const ODE_PROGRESS = {
     attempts: 1,
     bestAccuracy: 82,
