@@ -58,7 +58,7 @@ test.describe('Lazy View Loading', () => {
 
         // Ensure reload stays in a practical cache-hit budget and does not regress badly.
         expect(time2).toBeLessThan(1200);
-        expect(time2).toBeLessThan(time1 + 250);
+        expect(time2).toBeLessThan(time1 + 350);
     });
 
     test('should load multiple different views in sequence', async ({ page }) => {

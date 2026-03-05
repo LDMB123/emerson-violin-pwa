@@ -17,6 +17,7 @@ import {
     PREFETCH_VIEW_IDS,
     resolveModulesForView,
 } from './app/module-registry.js';
+import { createModuleLoader } from './app/module-loader.js';
 import { createAsyncGate } from './app/async-gate.js';
 import {
     setupNavigationController,
@@ -46,19 +47,7 @@ const homeCoachController = createHomeCoachController({
     toMissionCheckpointHref,
 });
 
-const loaded = new Map();
-const loadModule = (key) => {
-    const loader = moduleLoaders[key];
-    if (!loader) return Promise.resolve();
-    if (loaded.has(key)) return loaded.get(key);
-    const promise = loader().catch((error) => {
-        loaded.delete(key);
-        console.warn(`[App] Failed to load ${key}`, error);
-        return null;
-    });
-    loaded.set(key, promise);
-    return promise;
-};
+const { loadModule } = createModuleLoader({ moduleLoaders });
 
 const queueIdleTask = (task, delay = 0) => {
     if ('scheduler' in window && typeof window.scheduler?.postTask === 'function') {

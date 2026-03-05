@@ -130,9 +130,7 @@ test('games favorites filter uses persisted player favorites', async ({ page }) 
     const targetFavorite = targetCard.locator('[data-game-favorite]');
 
     await expect(targetFavorite).toBeVisible();
-    await targetFavorite.evaluate((button) => {
-        button.click();
-    });
+    await targetFavorite.click({ force: true });
     await expect(targetFavorite).toHaveAttribute('aria-pressed', 'true');
 
     await page.locator('label:has(input[name="game-sort"][value="favorites"]) .filter-chip').click({ force: true });

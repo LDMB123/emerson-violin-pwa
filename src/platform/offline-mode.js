@@ -10,6 +10,7 @@ let currentEnabled = false;
 let globalsBound = false;
 let initialized = false;
 let pendingUserOverride = null;
+const SERVICE_WORKER_READY_TIMEOUT_MS = 1200;
 
 const resolveElements = () => {
     toggle = document.querySelector('#setting-offline-mode');
@@ -31,10 +32,28 @@ const setDataset = (enabled) => {
     }
 };
 
+const waitForServiceWorkerReady = async () => {
+    try {
+        const ready = navigator.serviceWorker.ready;
+        const timeout = new Promise((resolve) => {
+            globalThis.setTimeout(() => resolve(null), SERVICE_WORKER_READY_TIMEOUT_MS);
+        });
+        return await Promise.race([ready, timeout]);
+    } catch {
+        return null;
+    }
+};
+
 const notifyServiceWorker = async (enabled) => {
     if (!hasServiceWorkerSupport()) return;
     try {
-        const registration = await navigator.serviceWorker.ready;
+        let registration = null;
+        if (typeof navigator.serviceWorker.getRegistration === 'function') {
+            registration = await navigator.serviceWorker.getRegistration().catch(() => null);
+        }
+        if (!registration?.active) {
+            registration = await waitForServiceWorkerReady();
+        }
         if (registration?.active) {
             registration.active.postMessage({ type: 'SET_OFFLINE_MODE', value: enabled });
         }
@@ -49,7 +68,7 @@ const applyState = async (enabled, persist = true) => {
     setDataset(enabled);
     setStatus(enabled);
     emitEvent(OFFLINE_MODE_CHANGE, { enabled });
-    await notifyServiceWorker(enabled);
+    void notifyServiceWorker(enabled);
     if (persist) {
         await setJSON(MODE_KEY, { enabled, updatedAt: Date.now() });
     }

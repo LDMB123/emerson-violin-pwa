@@ -112,8 +112,13 @@ const prepareParentAdvancedControls = async (page) => {
     await waitForBoundFlag(page, '#setting-offline-mode', 'data-offline-mode-bound');
 };
 const setOfflineMode = async (page, enabled) => {
-    await setCheckboxValue(page.locator('#setting-offline-mode'), Boolean(enabled));
-    await expect(page.locator('[data-offline-mode-status]')).toContainText(enabled ? 'Offline mode is on' : 'Offline mode is off');
+    const expectedStatus = enabled ? 'Offline mode is on' : 'Offline mode is off';
+    await expect.poll(async () => {
+        const toggle = page.locator('#setting-offline-mode');
+        if (await toggle.isDisabled().catch(() => true)) return '';
+        await setCheckboxValue(toggle, Boolean(enabled)).catch(() => {});
+        return page.locator('[data-offline-mode-status]').innerText().catch(() => '');
+    }, { timeout: 10000 }).toContain(expectedStatus);
 };
 const enableMlDemo = async (page) => {
     await setCheckboxValue(page.locator('[data-ml-demo]'), true);
@@ -147,8 +152,8 @@ test('progress cards remain functional across navigation', async ({ page }) => {
     ]);
 
     await gotoAndExpectView(page, '#view-game-pitch-quest');
-    const listenButton = page.locator('#view-game-pitch-quest [data-pitch="listen"]');
-    await listenButton.scrollIntoViewIfNeeded();
+    const listenButton = page.locator('#view-game-pitch-quest [data-pitch="listen"]').first();
+    await expect(listenButton).toBeVisible();
     await listenButton.click({ force: true });
 
     await gotoAndExpectView(page, '#view-progress');

@@ -3,6 +3,8 @@ let detailEl = null;
 const root = document.documentElement;
 let adapterProbePromise = null;
 let webgpuAvailable;
+const WEBGPU_CACHE_KEY = 'panda-violin:webgpu-availability:v1';
+const WEBGPU_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 const MODE_COPY = {
     checking: {
@@ -47,6 +49,39 @@ const setDataset = (value) => {
     root.dataset.mlAccel = value;
 };
 
+const readCachedWebGPUAvailability = () => {
+    try {
+        const raw = sessionStorage.getItem(WEBGPU_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.available !== 'boolean' || !Number.isFinite(parsed?.timestamp)) {
+            sessionStorage.removeItem(WEBGPU_CACHE_KEY);
+            return null;
+        }
+        if ((Date.now() - parsed.timestamp) > WEBGPU_CACHE_TTL_MS) {
+            sessionStorage.removeItem(WEBGPU_CACHE_KEY);
+            return null;
+        }
+        return parsed.available;
+    } catch {
+        return null;
+    }
+};
+
+const writeCachedWebGPUAvailability = (available) => {
+    try {
+        sessionStorage.setItem(
+            WEBGPU_CACHE_KEY,
+            JSON.stringify({
+                available: Boolean(available),
+                timestamp: Date.now(),
+            }),
+        );
+    } catch {
+        // Ignore storage restrictions in private browsing and embedded contexts.
+    }
+};
+
 const applyMode = (mode) => {
     const copy = MODE_COPY[mode] || MODE_COPY.wasm;
     setDataset(copy.dataset || null);
@@ -56,19 +91,34 @@ const applyMode = (mode) => {
 
 const detectWebGPU = async () => {
     if (typeof webgpuAvailable === 'boolean') return webgpuAvailable;
+    const cachedAvailability = readCachedWebGPUAvailability();
+    if (typeof cachedAvailability === 'boolean') {
+        webgpuAvailable = cachedAvailability;
+        return webgpuAvailable;
+    }
     if (!adapterProbePromise) {
         adapterProbePromise = (async () => {
             if (!navigator.gpu?.requestAdapter) {
                 webgpuAvailable = false;
+                writeCachedWebGPUAvailability(webgpuAvailable);
                 return webgpuAvailable;
             }
             try {
                 // Prefer low-power adapters to reduce battery/thermal cost on Apple Silicon.
-                const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'low-power' });
-                webgpuAvailable = Boolean(adapter);
+                const lowPowerAdapter = await navigator.gpu.requestAdapter({ powerPreference: 'low-power' });
+                if (lowPowerAdapter) {
+                    webgpuAvailable = true;
+                    writeCachedWebGPUAvailability(webgpuAvailable);
+                    return webgpuAvailable;
+                }
+
+                // Some browsers ignore low-power preference; retry with defaults for capability detection.
+                const fallbackAdapter = await navigator.gpu.requestAdapter();
+                webgpuAvailable = Boolean(fallbackAdapter);
             } catch {
                 webgpuAvailable = false;
             }
+            writeCachedWebGPUAvailability(webgpuAvailable);
             return webgpuAvailable;
         })().finally(() => {
             adapterProbePromise = null;
