@@ -168,6 +168,19 @@ const announcePracticeStep = (prefix, event) => {
     bubble.dataset.coachAuto = 'false';
     setMessage(message);
 };
+const handlePracticeStepStarted = (event) => announcePracticeStep('Started', event);
+const handlePracticeStepCompleted = (event) => announcePracticeStep('Completed', event);
+const handleGameRecorded = (event) => {
+    const id = event.detail?.id;
+    if (id && GAME_MESSAGES[id]) {
+        pendingGameMessage = GAME_MESSAGES[id];
+    }
+};
+const handleVoiceSettingChange = (event) => {
+    const matched = getMatchingInputTarget(event.target, { id: 'setting-voice' });
+    if (!matched || matched.checked) return;
+    cancelSpeech();
+};
 
 const initCoachActions = () => {
     resolveCoachElements();
@@ -177,22 +190,16 @@ const initCoachActions = () => {
 
 export const init = initCoachActions;
 
-document.addEventListener(ML_UPDATE, applyRecommendations);
-document.addEventListener(LESSON_STEP, handleLessonStep);
-document.addEventListener(LESSON_COMPLETE, handleLessonComplete);
-document.addEventListener(COACH_MISSION_COMPLETE, handleMissionComplete);
-document.addEventListener(MISSION_UPDATED, handleMissionUpdated);
-document.addEventListener(PRACTICE_STEP_STARTED, (event) => announcePracticeStep('Started', event));
-document.addEventListener(PRACTICE_STEP_COMPLETED, (event) => announcePracticeStep('Completed', event));
-document.addEventListener(GAME_RECORDED, (e) => {
-    const id = e.detail?.id;
-    if (id && GAME_MESSAGES[id]) {
-        pendingGameMessage = GAME_MESSAGES[id];
-    }
-});
-
-document.addEventListener('change', (event) => {
-    const matched = getMatchingInputTarget(event.target, { id: 'setting-voice' });
-    if (!matched || matched.checked) return;
-    cancelSpeech();
+[
+    [ML_UPDATE, applyRecommendations],
+    [LESSON_STEP, handleLessonStep],
+    [LESSON_COMPLETE, handleLessonComplete],
+    [COACH_MISSION_COMPLETE, handleMissionComplete],
+    [MISSION_UPDATED, handleMissionUpdated],
+    [PRACTICE_STEP_STARTED, handlePracticeStepStarted],
+    [PRACTICE_STEP_COMPLETED, handlePracticeStepCompleted],
+    [GAME_RECORDED, handleGameRecorded],
+    ['change', handleVoiceSettingChange],
+].forEach(([eventName, handler]) => {
+    document.addEventListener(eventName, handler);
 });

@@ -6,6 +6,10 @@ import {
     ML_RESET,
     ML_UPDATE,
 } from '../../src/utils/event-names.js';
+import {
+    setupModuleImportDomTest,
+    teardownModuleImportDomTest,
+} from '../utils/test-listener-capture.js';
 
 const recommendationState = vi.hoisted(() => ({
     payload: {
@@ -28,10 +32,7 @@ vi.mock('../../src/parent/pin-state.js', () => pinStateMocks);
 const loadHomeTeacher = async () => import('../../src/parent/home-teacher.js');
 
 describe('parent/home-teacher', () => {
-    const documentListeners = [];
-    const windowListeners = [];
-    let documentAddSpy;
-    let windowAddSpy;
+    let moduleTest;
 
     const flushAsync = async () => {
         await Promise.resolve();
@@ -41,45 +42,27 @@ describe('parent/home-teacher', () => {
     };
 
     beforeEach(() => {
-        vi.resetModules();
-        vi.clearAllMocks();
-        vi.useFakeTimers();
-        recommendationState.payload = {
-            skillLabel: 'Bow Control',
-            coachCue: 'Keep the bow moving in a straight lane.',
-        };
-        document.body.innerHTML = `
-            <section data-parent-home-teacher>
-                <h2 data-ht-focus-title></h2>
-                <ul data-ht-checklist></ul>
-                <button type="button" data-ht-complete>Log Coaching Session</button>
-                <p data-ht-status></p>
-            </section>
-        `;
-
-        const originalDocumentAdd = document.addEventListener.bind(document);
-        const originalWindowAdd = window.addEventListener.bind(window);
-        documentAddSpy = vi.spyOn(document, 'addEventListener').mockImplementation((type, listener, options) => {
-            documentListeners.push([type, listener, options]);
-            return originalDocumentAdd(type, listener, options);
-        });
-        windowAddSpy = vi.spyOn(window, 'addEventListener').mockImplementation((type, listener, options) => {
-            windowListeners.push([type, listener, options]);
-            return originalWindowAdd(type, listener, options);
+        moduleTest = setupModuleImportDomTest({
+            html: `
+                <section data-parent-home-teacher>
+                    <h2 data-ht-focus-title></h2>
+                    <ul data-ht-checklist></ul>
+                    <button type="button" data-ht-complete>Log Coaching Session</button>
+                    <p data-ht-status></p>
+                </section>
+            `,
+            setupState: () => {
+                recommendationState.payload = {
+                    skillLabel: 'Bow Control',
+                    coachCue: 'Keep the bow moving in a straight lane.',
+                };
+            },
+            captureWindow: true,
         });
     });
 
     afterEach(() => {
-        documentListeners.splice(0).forEach(([type, listener, options]) => {
-            document.removeEventListener(type, listener, options);
-        });
-        windowListeners.splice(0).forEach(([type, listener, options]) => {
-            window.removeEventListener(type, listener, options);
-        });
-        documentAddSpy?.mockRestore();
-        windowAddSpy?.mockRestore();
-        vi.useRealTimers();
-        document.body.innerHTML = '';
+        teardownModuleImportDomTest(moduleTest);
     });
 
     it('refreshes the dashboard for each recommendation event', async () => {
