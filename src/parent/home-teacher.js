@@ -16,6 +16,7 @@ let completeBtn = null;
 let statusEl = null;
 
 let bound = false;
+const refreshEvents = [ML_UPDATE, ML_RESET, ML_RECS, MISSION_UPDATED];
 
 const resolveElements = () => {
     container = document.querySelector('[data-parent-home-teacher]');
@@ -95,10 +96,9 @@ const bindListeners = () => {
     if (alreadyBound) return;
     bound = true;
 
-    document.addEventListener(ML_UPDATE, refreshTeacherDashboard);
-    document.addEventListener(ML_RESET, refreshTeacherDashboard);
-    document.addEventListener(ML_RECS, refreshTeacherDashboard);
-    document.addEventListener(MISSION_UPDATED, refreshTeacherDashboard);
+    refreshEvents.forEach((eventName) => {
+        document.addEventListener(eventName, refreshTeacherDashboard);
+    });
 
     // Use event delegation for the complete button
     document.addEventListener('click', (e) => {
