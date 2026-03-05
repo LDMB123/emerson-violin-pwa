@@ -1,4 +1,5 @@
 import { BaseCanvasEngine } from './canvas-engine-base.js';
+import { bindCanvasPointerDrag } from './canvas-pointer-bindings.js';
 import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
 
 export class StirSoupCanvasEngine extends BaseCanvasEngine {
@@ -24,53 +25,24 @@ export class StirSoupCanvasEngine extends BaseCanvasEngine {
     }
 
     bindEvents() {
-        const handlePointerMove = (e) => {
-            if (!this.isStirring) return;
-            e.preventDefault();
-
-            let clientX = e.clientX;
-            let clientY = e.clientY;
-
-            if (e.touches && e.touches.length > 0) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            }
-
+        this.cleanupEvents = bindCanvasPointerDrag({
+            canvas: this.canvas,
+            canStart: () => this.isRunning,
+            isTracking: () => this.isStirring,
+            onStart: () => {
+                this.isStirring = true;
+            },
+            onMove: ({ clientX, clientY }) => {
             // Map pointer to internal resolution (1200x800)
             const { x, y } = mapPointerToCanvasCoords({ clientX, clientY }, this.canvas, this.width, this.height);
             this.pointer.x = x;
             this.pointer.y = y;
-
-            this.evaluateStir();
-        };
-
-        const handlePointerDown = (e) => {
-            if (this.isRunning) {
-                this.isStirring = true;
-                handlePointerMove(e);
-            }
-        };
-
-        const handlePointerUp = () => {
-            this.isStirring = false;
-        };
-
-        this.canvas.addEventListener('mousedown', handlePointerDown);
-        this.canvas.addEventListener('mousemove', handlePointerMove);
-        window.addEventListener('mouseup', handlePointerUp);
-
-        this.canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
-        this.canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
-        window.addEventListener('touchend', handlePointerUp);
-
-        this.cleanupEvents = () => {
-            this.canvas.removeEventListener('mousedown', handlePointerDown);
-            this.canvas.removeEventListener('mousemove', handlePointerMove);
-            window.removeEventListener('mouseup', handlePointerUp);
-            this.canvas.removeEventListener('touchstart', handlePointerDown);
-            this.canvas.removeEventListener('touchmove', handlePointerMove);
-            window.removeEventListener('touchend', handlePointerUp);
-        };
+                this.evaluateStir();
+            },
+            onEnd: () => {
+                this.isStirring = false;
+            },
+        });
     }
 
     evaluateStir() {

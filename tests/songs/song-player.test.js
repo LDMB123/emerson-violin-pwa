@@ -41,6 +41,13 @@ const flush = async () => {
     await Promise.resolve();
 };
 
+const setVisibility = (value) => {
+    Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value,
+    });
+};
+
 const mountSongView = (id = 'twinkle') => {
     document.body.innerHTML = `
         <section id="view-song-${id}" class="song-view">
@@ -55,11 +62,13 @@ describe('songs/song-player', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         document.body.innerHTML = '';
+        setVisibility('visible');
         songLibraryMocks.getSongById.mockClear();
         songLibraryMocks.getSongSections.mockClear();
         progressionMocks.getSongCheckpoint.mockClear();
         progressionMocks.saveSongCheckpoint.mockClear();
         globalThis.requestAnimationFrame = (callback) => setTimeout(() => callback(0), 0);
+        globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
     });
 
     afterEach(() => {
@@ -141,5 +150,27 @@ describe('songs/song-player', () => {
         expect(sectionSelect?.value).toBe('section-b');
         expect(tempoScale?.value).toBe('90');
         expect(status?.textContent).toContain('Checkpoint restored');
+    });
+
+    it('pauses playback while hidden and resumes on visibility restore', async () => {
+        const view = mountSongView('twinkle');
+        await initSongPlayer();
+
+        const playToggle = view?.querySelector('.song-play-toggle');
+        const emitted = [];
+        document.addEventListener(SONG_SECTION_COMPLETED, (event) => emitted.push(event.detail));
+
+        playToggle.checked = true;
+        playToggle.dispatchEvent(new Event('change', { bubbles: true }));
+
+        setVisibility('hidden');
+        document.dispatchEvent(new Event('visibilitychange'));
+        await vi.advanceTimersByTimeAsync(1500);
+        expect(emitted).toHaveLength(0);
+
+        setVisibility('visible');
+        document.dispatchEvent(new Event('visibilitychange'));
+        await vi.advanceTimersByTimeAsync(1100);
+        expect(emitted.length).toBeGreaterThan(0);
     });
 });

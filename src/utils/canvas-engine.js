@@ -11,7 +11,9 @@ export class BaseCanvasEngine {
 
         // Setup base resize handling
         this.handleResize = this.handleResize.bind(this);
+        this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
         window.addEventListener('resize', this.handleResize);
+        document.addEventListener('visibilitychange', this.handleVisibilityChange);
     }
 
     handleResize() {
@@ -34,8 +36,29 @@ export class BaseCanvasEngine {
         }
     }
 
+    handleVisibilityChange() {
+        if (!this.isRunning) return;
+
+        if (document.visibilityState === 'hidden') {
+            if (this.rafId !== null) {
+                cancelAnimationFrame(this.rafId);
+                this.rafId = null;
+            }
+            return;
+        }
+
+        if (this.rafId === null) {
+            this.lastTime = performance.now();
+            this.rafId = requestAnimationFrame(() => this.loop());
+        }
+    }
+
     loop() {
         if (!this.isRunning) return;
+        if (document.visibilityState === 'hidden') {
+            this.rafId = null;
+            return;
+        }
 
         const now = performance.now();
         const dt = Math.min((now - this.lastTime) / 1000, 0.1); // Cap delta to prevent huge jumps
@@ -51,5 +74,6 @@ export class BaseCanvasEngine {
     destroy() {
         this.stop();
         window.removeEventListener('resize', this.handleResize);
+        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     }
 }

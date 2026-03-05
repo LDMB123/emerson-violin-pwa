@@ -2,7 +2,24 @@ let statusEl = null;
 let detailEl = null;
 const root = document.documentElement;
 let adapterProbePromise = null;
-let adapterDetected = undefined;
+let webgpuAvailable;
+
+const MODE_COPY = {
+    checking: {
+        status: 'ML acceleration: checking…',
+        detail: '',
+    },
+    webgpu: {
+        dataset: 'webgpu',
+        status: 'ML acceleration: WebGPU ready.',
+        detail: 'On-device models can use GPU compute for faster offline updates.',
+    },
+    wasm: {
+        dataset: 'wasm',
+        status: 'ML acceleration: WebAssembly ready.',
+        detail: 'Offline models run with optimized on-device compute.',
+    },
+};
 
 const resolveElements = () => {
     statusEl = document.querySelector('.setting-note[data-ml-accel]') || document.querySelector('[data-ml-accel]');
@@ -10,11 +27,15 @@ const resolveElements = () => {
 };
 
 const setStatus = (message) => {
-    if (statusEl) statusEl.textContent = message;
+    if (statusEl && statusEl.textContent !== message) {
+        statusEl.textContent = message;
+    }
 };
 
 const setDetail = (message) => {
-    if (detailEl) detailEl.textContent = message;
+    if (detailEl && detailEl.textContent !== message) {
+        detailEl.textContent = message;
+    }
 };
 
 const setDataset = (value) => {
@@ -22,36 +43,36 @@ const setDataset = (value) => {
         delete root.dataset.mlAccel;
         return;
     }
+    if (root.dataset.mlAccel === value) return;
     root.dataset.mlAccel = value;
 };
 
 const applyMode = (mode) => {
-    if (mode === 'webgpu') {
-        setDataset('webgpu');
-        setStatus('ML acceleration: WebGPU ready.');
-        setDetail('On-device models can use GPU compute for faster offline updates.');
-        return;
-    }
-    setDataset('wasm');
-    setStatus('ML acceleration: WebAssembly ready.');
-    setDetail('Offline models run with optimized on-device compute.');
+    const copy = MODE_COPY[mode] || MODE_COPY.wasm;
+    setDataset(copy.dataset || null);
+    setStatus(copy.status);
+    setDetail(copy.detail);
 };
 
 const detectWebGPU = async () => {
-    if (adapterDetected !== undefined) return adapterDetected;
+    if (typeof webgpuAvailable === 'boolean') return webgpuAvailable;
     if (!adapterProbePromise) {
         adapterProbePromise = (async () => {
             if (!navigator.gpu?.requestAdapter) {
-                adapterDetected = null;
-                return adapterDetected;
+                webgpuAvailable = false;
+                return webgpuAvailable;
             }
             try {
-                adapterDetected = await navigator.gpu.requestAdapter({ powerPreference: 'low-power' });
+                // Prefer low-power adapters to reduce battery/thermal cost on Apple Silicon.
+                const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'low-power' });
+                webgpuAvailable = Boolean(adapter);
             } catch {
-                adapterDetected = null;
+                webgpuAvailable = false;
             }
-            return adapterDetected;
-        })();
+            return webgpuAvailable;
+        })().finally(() => {
+            adapterProbePromise = null;
+        });
     }
     return adapterProbePromise;
 };
@@ -59,16 +80,15 @@ const detectWebGPU = async () => {
 const initAccelerator = async () => {
     resolveElements();
 
-    if (adapterDetected !== undefined) {
-        applyMode(adapterDetected ? 'webgpu' : 'wasm');
+    if (typeof webgpuAvailable === 'boolean') {
+        applyMode(webgpuAvailable ? 'webgpu' : 'wasm');
         return;
     }
 
-    setStatus('ML acceleration: checking…');
-    setDetail('');
+    applyMode('checking');
 
-    const adapter = await detectWebGPU();
-    applyMode(adapter ? 'webgpu' : 'wasm');
+    const available = await detectWebGPU();
+    applyMode(available ? 'webgpu' : 'wasm');
 };
 
 export const init = initAccelerator;

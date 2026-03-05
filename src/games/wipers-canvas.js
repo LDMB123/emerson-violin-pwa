@@ -1,4 +1,5 @@
 import { BaseCanvasEngine } from './canvas-engine-base.js';
+import { bindCanvasPointerDrag } from './canvas-pointer-bindings.js';
 import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
 import { clamp } from '../utils/math.js';
 
@@ -19,51 +20,24 @@ export class WipersCanvasEngine extends BaseCanvasEngine {
     }
 
     bindEvents() {
-        const handlePointerMove = (e) => {
-            if (!this.pointer.isDown) return;
-            e.preventDefault();
-
-            let clientX = e.clientX;
-
-            if (e.touches && e.touches.length > 0) {
-                clientX = e.touches[0].clientX;
-            }
-
+        this.cleanupEvents = bindCanvasPointerDrag({
+            canvas: this.canvas,
+            canStart: () => this.isRunning,
+            isTracking: () => this.pointer.isDown,
+            onStart: () => {
+                this.pointer.isDown = true;
+            },
+            onMove: ({ clientX }) => {
             const { x } = mapPointerToCanvasCoords({ clientX, clientY: 0 }, this.canvas, this.width, this.height);
             this.pointer.x = x;
-
-            this.evaluateWipe();
-        };
-
-        const handlePointerDown = (e) => {
-            if (this.isRunning) {
-                this.pointer.isDown = true;
-                handlePointerMove(e);
-            }
-        };
-
-        const handlePointerUp = () => {
-            this.pointer.isDown = false;
-            // Snap back to 0
-            this.armAngle = 0;
-        };
-
-        this.canvas.addEventListener('mousedown', handlePointerDown);
-        this.canvas.addEventListener('mousemove', handlePointerMove);
-        window.addEventListener('mouseup', handlePointerUp);
-
-        this.canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
-        this.canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
-        window.addEventListener('touchend', handlePointerUp);
-
-        this.cleanupEvents = () => {
-            this.canvas.removeEventListener('mousedown', handlePointerDown);
-            this.canvas.removeEventListener('mousemove', handlePointerMove);
-            window.removeEventListener('mouseup', handlePointerUp);
-            this.canvas.removeEventListener('touchstart', handlePointerDown);
-            this.canvas.removeEventListener('touchmove', handlePointerMove);
-            window.removeEventListener('touchend', handlePointerUp);
-        };
+                this.evaluateWipe();
+            },
+            onEnd: () => {
+                this.pointer.isDown = false;
+                // Snap back to 0
+                this.armAngle = 0;
+            },
+        });
     }
 
     evaluateWipe() {

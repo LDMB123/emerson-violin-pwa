@@ -28,7 +28,57 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     let audioTriggers = new Set();
     let isWaiting = false;
     let lastMetronomeBeat = -1;
+    let visibilityListenerBound = false;
     const beatsPerMeasure = song?.time ? parseInt(song.time.split('/')[0], 10) || 4 : 4;
+    const defaultSectionId = sections[0]?.id || 'full';
+
+    const getActiveSectionId = () => view.dataset.songSectionId || defaultSectionId;
+    const getActiveTempo = () => Number(view.dataset.songTempo || song?.bpm || 80);
+    const getEffectiveDuration = () => {
+        const sectionId = getActiveSectionId();
+        const duration = sectionDuration(sections, sectionId);
+        const tempo = getActiveTempo();
+        const baseTempo = Number(song?.bpm || 80);
+        const scale = baseTempo > 0 ? (baseTempo / Math.max(tempo, 1)) : 1;
+        return {
+            sectionId,
+            tempo,
+            scale,
+            effectiveDuration: Math.max(0.8, duration * scale),
+        };
+    };
+
+    const scheduleUpdateLoop = () => {
+        if (raqId) cancelAnimationFrame(raqId);
+        raqId = requestAnimationFrame(updateLoop);
+    };
+
+    const onVisibilityChange = () => {
+        if (!isPlaying || !playToggle?.checked) return;
+
+        if (document.visibilityState === 'hidden') {
+            if (raqId) cancelAnimationFrame(raqId);
+            raqId = null;
+            return;
+        }
+
+        if (!raqId) {
+            lastAnimFrame = performance.now();
+            scheduleUpdateLoop();
+        }
+    };
+
+    const bindVisibilityListener = () => {
+        if (visibilityListenerBound) return;
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        visibilityListenerBound = true;
+    };
+
+    const unbindVisibilityListener = () => {
+        if (!visibilityListenerBound) return;
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        visibilityListenerBound = false;
+    };
 
     const parseNotes = () => {
         notesElements = Array.from(view.querySelectorAll('.song-note')).map((el) => {
@@ -49,6 +99,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         isPlaying = false;
         if (raqId) cancelAnimationFrame(raqId);
         raqId = null;
+        unbindVisibilityListener();
         if (tuningActive) {
             if (tuningActive.rtListener) {
                 document.removeEventListener(RT_STATE, tuningActive.rtListener);
@@ -83,18 +134,15 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     };
 
     const updateLoop = () => {
+        raqId = null;
         if (!isPlaying || !playToggle?.checked) return;
+        if (document.visibilityState === 'hidden') return;
 
         const now = performance.now();
         const delta = (now - lastAnimFrame) / 1000; // in seconds
         lastAnimFrame = now;
 
-        const sectionId = view.dataset.songSectionId || (sections[0]?.id || 'full');
-        const duration = sectionDuration(sections, sectionId);
-        const tempo = Number(view.dataset.songTempo || song?.bpm || 80);
-        const baseTempo = Number(song?.bpm || 80);
-        const scale = baseTempo > 0 ? (baseTempo / Math.max(tempo, 1)) : 1;
-        const effectiveDuration = Math.max(0.8, duration * scale);
+        const { sectionId, tempo, scale, effectiveDuration } = getEffectiveDuration();
 
         // If not waiting on a note, increment elapsed time
         if (!isWaiting) {
@@ -190,7 +238,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             });
         }
 
-        raqId = requestAnimationFrame(updateLoop);
+        scheduleUpdateLoop();
     };
 
     const startPlayback = () => {
@@ -198,6 +246,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         isPlaying = true;
         playbackElapsed = 0;
         lastAnimFrame = performance.now();
+        bindVisibilityListener();
         completedNotes.clear();
         audioTriggers.clear();
         isWaiting = false;
@@ -240,11 +289,11 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             tuningActive.rtListener = onRealtimeState;
         }
 
-        raqId = requestAnimationFrame(updateLoop);
+        scheduleUpdateLoop();
     };
 
     const applySection = () => {
-        const sectionId = sectionSelect?.value || (sections[0]?.id || 'full');
+        const sectionId = sectionSelect?.value || defaultSectionId;
         view.dataset.songSectionId = sectionId;
         setStatus(controls, `Section ${sectionId} ready.`);
     };
@@ -262,25 +311,25 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         view.dataset.songLoop = loopToggle?.checked ? 'true' : 'false';
     };
 
-    sectionSelect?.addEventListener('change', () => {
-        applySection();
+    const restartPlaybackIfActive = () => {
         if (playToggle?.checked) {
             startPlayback();
         }
+    };
+
+    sectionSelect?.addEventListener('change', () => {
+        applySection();
+        restartPlaybackIfActive();
     });
 
     tempoScaleInput?.addEventListener('input', () => {
         applyTempo();
-        if (playToggle?.checked) {
-            startPlayback();
-        }
+        restartPlaybackIfActive();
     });
 
     loopToggle?.addEventListener('change', applyLoop);
     waitToggle?.addEventListener('change', () => {
-        if (playToggle?.checked) {
-            startPlayback();
-        }
+        restartPlaybackIfActive();
     });
 
     playToggle?.addEventListener('change', () => {
@@ -298,7 +347,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         const elapsed = playbackElapsed;
         const tempo = Number(view.dataset.songTempo || song?.bpm || 80);
         await saveSongCheckpoint(songId, {
-            sectionId: view.dataset.songSectionId || sections[0]?.id || 'full',
+            sectionId: getActiveSectionId(),
             elapsed,
             tempo,
         });
