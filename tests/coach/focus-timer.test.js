@@ -1,4 +1,5 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { ML_RESET, ML_UPDATE } from '../../src/utils/event-names.js';
 import { setDocumentVisibility } from '../utils/test-lifecycle-mocks.js';
 
 const adaptiveEngineMocks = vi.hoisted(() => ({
@@ -90,5 +91,34 @@ describe('coach/focus-timer', () => {
         await vi.advanceTimersByTimeAsync(2000);
         expect(adaptiveEngineMocks.updateGameResult).not.toHaveBeenCalled();
         expect(sharedMocks.triggerMiniConfetti).not.toHaveBeenCalled();
+    });
+
+    it('refreshes tuned focus duration on ML update and reset events', async () => {
+        initFocusTimer();
+        await flush();
+
+        const focusArea = document.querySelector('.practice-focus');
+        const statusEl = document.querySelector('.focus-status');
+
+        focusArea.dataset.userSet = 'true';
+        focusArea.style.setProperty('--focus-duration', '600s');
+
+        adaptiveEngineMocks.getGameTuning.mockResolvedValueOnce({ focusMinutes: 0.05 });
+        document.dispatchEvent(new CustomEvent(ML_UPDATE, {
+            detail: { id: 'coach-focus' },
+        }));
+        await flush();
+
+        expect(focusArea.style.getPropertyValue('--focus-duration')).toBe('600s');
+        expect(adaptiveEngineMocks.getGameTuning).toHaveBeenCalledTimes(2);
+
+        adaptiveEngineMocks.getGameTuning.mockResolvedValueOnce({ focusMinutes: 0.03 });
+        document.dispatchEvent(new Event(ML_RESET));
+        await flush();
+
+        expect(focusArea.dataset.userSet).toBeUndefined();
+        expect(focusArea.style.getPropertyValue('--focus-duration')).toBe('1.7999999999999998s');
+        expect(statusEl?.textContent).toBe('Ready!');
+        expect(adaptiveEngineMocks.getGameTuning).toHaveBeenCalledTimes(3);
     });
 });

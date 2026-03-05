@@ -13,6 +13,15 @@ export const attachTrainerGlobalListeners = ({
         metronomeController.report();
         metronomeController.stop({ silent: true });
     };
+    const handleSoundsChange = (event) => {
+        runIfSoundDisabled(event, () => {
+            metronomeController.stop({ silent: true });
+            metronomeController.setStatus('Sounds are off.');
+        });
+    };
+    const handleMlUpdate = (event) => {
+        refreshTrainerTuningById(event.detail?.id);
+    };
 
     bindHiddenAndPagehide({
         onHidden: () => {
@@ -38,16 +47,11 @@ export const attachTrainerGlobalListeners = ({
         drillsController.handleHashChange(window.location.hash);
     }, { passive: true });
 
-    document.addEventListener(SOUNDS_CHANGE, (event) => {
-        runIfSoundDisabled(event, () => {
-            metronomeController.stop({ silent: true });
-            metronomeController.setStatus('Sounds are off.');
-        });
+    [
+        [SOUNDS_CHANGE, handleSoundsChange],
+        [ML_UPDATE, handleMlUpdate],
+        [ML_RESET, onMlReset],
+    ].forEach(([eventName, handler]) => {
+        document.addEventListener(eventName, handler);
     });
-
-    document.addEventListener(ML_UPDATE, (event) => {
-        refreshTrainerTuningById(event.detail?.id);
-    });
-
-    document.addEventListener(ML_RESET, onMlReset);
 };

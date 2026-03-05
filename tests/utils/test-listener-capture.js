@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 
-const captureAddedListeners = (target) => {
+export const captureAddedListeners = (target) => {
     const listeners = [];
     const originalAddEventListener = target.addEventListener.bind(target);
     const spy = vi.spyOn(target, 'addEventListener').mockImplementation((type, listener, options) => {

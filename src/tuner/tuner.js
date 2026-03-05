@@ -226,8 +226,12 @@ const bindGlobalListeners = () => runOnceBinding(claimGlobalListenersBinding, ()
         scheduleRealtimeState(detail);
     });
 
-    document.addEventListener(ML_UPDATE, handleMlUpdate);
-    document.addEventListener(ML_RESET, handleMlReset);
+    [
+        [ML_UPDATE, handleMlUpdate],
+        [ML_RESET, handleMlReset],
+    ].forEach(([eventName, handler]) => {
+        document.addEventListener(eventName, handler);
+    });
 });
 
 const updateLastRenderedStateKey = ({ listening, paused, lastFeature }) => {

@@ -36,20 +36,36 @@ const scheduleRefresh = (reason) => {
     });
 };
 
+const scheduleRefreshFor = (reason) => () => scheduleRefresh(reason);
+
+const addListener = ([target, eventName, listener, options]) => {
+    target.addEventListener(eventName, listener, options);
+};
+
+const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+        scheduleRefresh('visible');
+    }
+};
+
+const lifecycleListeners = [
+    [document, 'visibilitychange', handleVisibilityChange],
+    [window, 'online', scheduleRefreshFor('online'), { passive: true }],
+];
+
+const refreshListeners = [
+    [document, GAME_RECORDED, scheduleRefreshFor('game')],
+    [document, PRACTICE_RECORDED, scheduleRefreshFor('practice')],
+    [document, SONG_RECORDED, scheduleRefreshFor('song')],
+    [document, ML_UPDATE, scheduleRefreshFor('adaptive')],
+];
+
 const bindLifecycle = () => {
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            scheduleRefresh('visible');
-        }
-    });
-    window.addEventListener('online', () => scheduleRefresh('online'), { passive: true });
+    lifecycleListeners.forEach(addListener);
 };
 
 const bindEvents = () => {
-    document.addEventListener(GAME_RECORDED, () => scheduleRefresh('game'));
-    document.addEventListener(PRACTICE_RECORDED, () => scheduleRefresh('practice'));
-    document.addEventListener(SONG_RECORDED, () => scheduleRefresh('song'));
-    document.addEventListener(ML_UPDATE, () => scheduleRefresh('adaptive'));
+    refreshListeners.forEach(addListener);
 };
 
 const init = () => {

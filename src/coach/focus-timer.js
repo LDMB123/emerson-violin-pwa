@@ -170,8 +170,12 @@ const bindGlobalListeners = () => {
         setFocusDuration(activeMinutes);
     });
 
-    document.addEventListener(ML_RESET, handleMlReset);
-    document.addEventListener(ML_UPDATE, handleMlUpdate);
+    [
+        [ML_RESET, handleMlReset],
+        [ML_UPDATE, handleMlUpdate],
+    ].forEach(([eventName, handler]) => {
+        document.addEventListener(eventName, handler);
+    });
 };
 
 const initFocusTimer = () => {
