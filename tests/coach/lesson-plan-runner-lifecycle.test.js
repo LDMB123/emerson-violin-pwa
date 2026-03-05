@@ -1,9 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+    MISSION_UPDATED,
+    ML_RECS,
+    ML_RESET,
+    ML_UPDATE,
+} from '../../src/utils/event-names.js';
 import { setupLessonRunnerLifecycle } from '../../src/coach/lesson-plan-runner-lifecycle.js';
 import { setDocumentVisibility } from '../utils/test-lifecycle-mocks.js';
 
 describe('coach/lesson-plan-runner-lifecycle', () => {
+    const dispatchLifecycleRefreshEvents = (missionId) => {
+        document.dispatchEvent(new Event(ML_UPDATE));
+        document.dispatchEvent(new Event(ML_RESET));
+        document.dispatchEvent(new Event(ML_RECS));
+        document.dispatchEvent(new CustomEvent(MISSION_UPDATED, {
+            detail: { mission: { id: missionId, steps: [] } },
+        }));
+    };
+    const expectLifecycleRefreshCounts = (h, count) => {
+        expect(h.onMlUpdate).toHaveBeenCalledTimes(count);
+        expect(h.onMlReset).toHaveBeenCalledTimes(count);
+        expect(h.onMlRecs).toHaveBeenCalledTimes(count);
+        expect(h.onMissionUpdated).toHaveBeenCalledTimes(count);
+    };
+
     beforeEach(() => {
         document.body.innerHTML = `
             <ul data-lesson-steps></ul>
@@ -46,6 +67,10 @@ describe('coach/lesson-plan-runner-lifecycle', () => {
             stopTimer,
             pauseStep,
             startButton,
+            onMlUpdate,
+            onMlReset,
+            onMlRecs,
+            onMissionUpdated,
         };
     };
 
@@ -70,5 +95,19 @@ describe('coach/lesson-plan-runner-lifecycle', () => {
         expect(h.pauseStep).toHaveBeenCalledTimes(1);
 
         h.teardown();
+    });
+
+    it('binds and removes document listeners for ML and mission events', () => {
+        const h = createHarness();
+
+        dispatchLifecycleRefreshEvents('mission-1');
+
+        expectLifecycleRefreshCounts(h, 1);
+
+        h.teardown();
+
+        dispatchLifecycleRefreshEvents('mission-2');
+
+        expectLifecycleRefreshCounts(h, 1);
     });
 });

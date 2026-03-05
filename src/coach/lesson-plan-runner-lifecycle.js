@@ -17,10 +17,17 @@ export const setupLessonRunnerLifecycle = ({
     onMlRecs,
     onMissionUpdated,
 }) => {
-    document.addEventListener(ML_UPDATE, onMlUpdate);
-    document.addEventListener(ML_RESET, onMlReset);
-    document.addEventListener(ML_RECS, onMlRecs);
-    document.addEventListener(MISSION_UPDATED, onMissionUpdated);
+    const documentListeners = [
+        [ML_UPDATE, onMlUpdate],
+        [ML_RESET, onMlReset],
+        [ML_RECS, onMlRecs],
+        [MISSION_UPDATED, onMissionUpdated],
+    ];
+    documentListeners.forEach(([eventName, handler]) => {
+        if (typeof handler === 'function') {
+            document.addEventListener(eventName, handler);
+        }
+    });
 
     let observer = null;
     if (stepsList) {
@@ -47,10 +54,11 @@ export const setupLessonRunnerLifecycle = ({
 
     return () => {
         observer?.disconnect();
-        document.removeEventListener(ML_UPDATE, onMlUpdate);
-        document.removeEventListener(ML_RESET, onMlReset);
-        document.removeEventListener(ML_RECS, onMlRecs);
-        document.removeEventListener(MISSION_UPDATED, onMissionUpdated);
+        documentListeners.forEach(([eventName, handler]) => {
+            if (typeof handler === 'function') {
+                document.removeEventListener(eventName, handler);
+            }
+        });
         window.removeEventListener('hashchange', onHashChange);
         document.removeEventListener('visibilitychange', onVisibility);
     };
