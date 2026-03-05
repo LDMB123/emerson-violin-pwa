@@ -5,6 +5,10 @@ export const setDocumentVisibility = (value) => {
         configurable: true,
         value,
     });
+    Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: value !== 'visible',
+    });
 };
 
 export const installWindowIntervalMocks = ({ startId = 1 } = {}) => {

@@ -9,13 +9,14 @@ import { markCheckboxInputChecked } from '../utils/checkbox-utils.js';
 import { triggerMiniConfetti } from '../games/shared.js';
 import { formatCountdown } from '../games/session-timer.js';
 import { shouldStopFocusTimer } from './focus-timer-utils.js';
-import { createIntervalTicker } from '../utils/interval-ticker.js';
+import { createCountdownLifecycle } from '../utils/countdown-lifecycle.js';
+import { toCountdownSeconds } from '../utils/countdown-utils.js';
 
 let focusToggle = null;
 let focusArea = null;
 let statusEl = null;
 
-let endTime = null;
+let remainingSeconds = 0;
 let activeMinutes = 10;
 let isCompleting = false;
 let recommendedMinutes = 10;
@@ -51,9 +52,28 @@ const logFocusMinutes = (minutes) => {
     input.checked = false;
 };
 
+const updateCountdownStatus = () => {
+    if (!statusEl) return;
+    statusEl.textContent = remainingSeconds > 0
+        ? `Time left ${formatCountdown(remainingSeconds * 1000)}`
+        : 'Session complete!';
+};
+
+const countdown = createCountdownLifecycle({
+    getRemainingSeconds: () => remainingSeconds,
+    setRemainingSeconds: (nextRemaining) => {
+        remainingSeconds = nextRemaining;
+    },
+    onPublish: () => {
+        updateCountdownStatus();
+    },
+    onElapsed: () => {
+        finishSession();
+    },
+});
+
 const clearTimer = () => {
-    countdownTicker.stop();
-    endTime = null;
+    countdown.stop();
 };
 
 const stopSession = (completed = false) => {
@@ -86,26 +106,10 @@ const finishSession = () => {
     }, 0);
 };
 
-const updateCountdown = () => {
-    if (!endTime) return;
-    const remaining = endTime - Date.now();
-    if (statusEl) {
-        statusEl.textContent = remaining > 0 ? `Time left ${formatCountdown(remaining)}` : 'Session complete!';
-    }
-    if (remaining <= 0) {
-        finishSession();
-    }
-};
-const countdownTicker = createIntervalTicker({
-    onTick: updateCountdown,
-    intervalMs: 1000,
-});
-
 const startSession = () => {
     clearTimer();
-    endTime = Date.now() + activeMinutes * 60 * 1000;
-    if (statusEl) statusEl.textContent = `Time left ${formatCountdown(activeMinutes * 60 * 1000)}`;
-    countdownTicker.start();
+    remainingSeconds = toCountdownSeconds(activeMinutes * 60 * 1000);
+    countdown.start({ resetPublished: true });
 };
 
 const handleToggle = () => {
