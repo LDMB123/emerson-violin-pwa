@@ -21,6 +21,7 @@ const nextCooldownMs = (previousCooldownMs, baseCooldownMs, maxCooldownMs) => {
     return Math.min(maxCooldownMs, previousCooldownMs * 2);
 };
 
+/** Creates the lazy module loader with retry and backoff handling for view modules. */
 export const createModuleLoader = ({
     moduleLoaders,
     warn = (...args) => console.warn(...args),

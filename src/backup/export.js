@@ -203,4 +203,5 @@ const initBackupExport = () => {
     bindLocalListeners();
 };
 
+/** Initializes backup export/import controls for local app data. */
 export const init = initBackupExport;

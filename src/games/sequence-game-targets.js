@@ -1,3 +1,4 @@
+/** Updates Sequence Game target elements from the current note set. */
 export const updateSequenceTargets = ({
     targets,
     targetDataAttr,

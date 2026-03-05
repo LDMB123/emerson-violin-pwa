@@ -1,3 +1,4 @@
+/** Creates the DOM controller for Story Song page rendering. */
 export const createStorySongView = ({
     storyPages,
     toggle,

@@ -1,3 +1,4 @@
+/** Plays a Melody Maker note sequence with the active instrument. */
 export const playMelodyMakerSequence = async ({
     notes,
     isSoundEnabled,

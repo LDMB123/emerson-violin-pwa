@@ -1,3 +1,4 @@
+/** Applies a tapped note to the active Sequence Game state. */
 export const applySequenceTap = ({
     note,
     targetNote,

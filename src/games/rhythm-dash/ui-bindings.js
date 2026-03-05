@@ -1,6 +1,7 @@
 import { bindTap } from '../shared.js';
 import { handleRhythmTapInput } from './helpers.js';
 
+/** Binds Rhythm Dash UI controls to the active gameplay handlers. */
 export const bindRhythmDashUiControls = ({
     runToggle,
     tapButton,

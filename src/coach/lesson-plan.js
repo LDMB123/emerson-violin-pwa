@@ -7,4 +7,5 @@ const initLessonPlan = () => {
     teardown = setupLessonPlan();
 };
 
+/** Initializes the coach lesson plan runner and refreshes previous bindings. */
 export const init = initLessonPlan;

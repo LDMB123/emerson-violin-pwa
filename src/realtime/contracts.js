@@ -13,6 +13,7 @@ import {
  *
  * @type {readonly string[]}
  */
+/** Enumerates the supported realtime confidence bands. */
 export const CONFIDENCE_BANDS = Object.freeze(['low', 'medium', 'high']);
 
 /**
@@ -20,6 +21,7 @@ export const CONFIDENCE_BANDS = Object.freeze(['low', 'medium', 'high']);
  *
  * @type {readonly string[]}
  */
+/** Enumerates the supported realtime cue states. */
 export const CUE_STATES = Object.freeze([
     'listening',
     'steady',
@@ -34,6 +36,7 @@ export const CUE_STATES = Object.freeze([
  *
  * @type {readonly string[]}
  */
+/** Enumerates the supported parent override presets. */
 export const PARENT_PRESETS = Object.freeze(['gentle', 'standard', 'challenge']);
 
 const REALTIME_EVENTS = Object.freeze([
@@ -154,6 +157,7 @@ const EVENT_VALIDATORS = Object.freeze({
  * @param {string} eventName
  * @returns {boolean}
  */
+/** Returns whether an event name is part of the realtime contract set. */
 export const isRealtimeEventName = (eventName) => REALTIME_EVENTS.includes(eventName);
 
 /**
@@ -162,6 +166,7 @@ export const isRealtimeEventName = (eventName) => REALTIME_EVENTS.includes(event
  * @param {string} preset
  * @returns {boolean}
  */
+/** Returns whether a preset is a valid parent override preset. */
 export const isParentPreset = (preset) => PARENT_PRESETS.includes(preset);
 
 /**
@@ -170,6 +175,7 @@ export const isParentPreset = (preset) => PARENT_PRESETS.includes(preset);
  * @param {string} band
  * @returns {boolean}
  */
+/** Returns whether a band is a valid realtime confidence band. */
 export const isConfidenceBand = (band) => CONFIDENCE_BANDS.includes(band);
 
 /**
@@ -178,6 +184,7 @@ export const isConfidenceBand = (band) => CONFIDENCE_BANDS.includes(band);
  * @param {string} state
  * @returns {boolean}
  */
+/** Returns whether a state is a valid realtime cue state. */
 export const isCueState = (state) => CUE_STATES.includes(state);
 
 /**
@@ -186,6 +193,7 @@ export const isCueState = (state) => CUE_STATES.includes(state);
  * @param {number} value
  * @returns {string}
  */
+/** Maps a numeric confidence score to a realtime confidence band. */
 export const confidenceBandFrom = (value) => {
     const score = isFiniteNumber(value) ? value : 0;
     if (score >= 0.75) return 'high';
@@ -200,6 +208,7 @@ export const confidenceBandFrom = (value) => {
  * @param {any} payload
  * @returns {{ ok: boolean, errors: string[] }}
  */
+/** Validates a realtime payload and returns any contract errors. */
 export const validateRealtimePayload = (eventName, payload) => {
     const errors = [];
     if (!isRealtimeEventName(eventName)) {
@@ -222,6 +231,7 @@ export const validateRealtimePayload = (eventName, payload) => {
  * @param {any} payload
  * @returns {any}
  */
+/** Validates a realtime payload and throws on contract violations. */
 export const assertRealtimePayload = (eventName, payload) => {
     const result = validateRealtimePayload(eventName, payload);
     if (result.ok) return payload;

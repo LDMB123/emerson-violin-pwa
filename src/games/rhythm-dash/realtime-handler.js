@@ -1,5 +1,6 @@
 import { applyRealtimeRhythmFrame } from './helpers.js';
 
+/** Creates the realtime frame handler for a Rhythm Dash view. */
 export const createRhythmDashRealtimeHandler = ({
     expectedHash,
     runToggle,

@@ -95,4 +95,5 @@ const initSessionReview = async () => {
     };
 };
 
+/** Initializes the session review surface, recordings, skills, and recommendation UI. */
 export const init = initSessionReview;

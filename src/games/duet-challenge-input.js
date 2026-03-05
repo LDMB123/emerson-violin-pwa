@@ -3,6 +3,7 @@ import {
     applyDuetIncorrectTurn,
 } from './duet-challenge-turn.js';
 
+/** Resolves the next Duet Challenge state from one player tap input. */
 export const resolveDuetChallengeTapTurn = ({
     round,
     comboTarget,

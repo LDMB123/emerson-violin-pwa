@@ -1,4 +1,5 @@
 
+/** Returns a shuffled copy of the provided note values. */
 export const shuffleNoteValues = (values, random = Math.random) => {
     const shuffled = [...values];
     for (let i = shuffled.length - 1; i > 0; i -= 1) {

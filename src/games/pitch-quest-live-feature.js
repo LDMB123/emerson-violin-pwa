@@ -1,6 +1,7 @@
 import { clampRounded } from '../utils/math.js';
 import { formatPitchQuestFeedback } from './pitch-quest-feedback.js';
 
+/** Applies the current live-feature result to Pitch Quest state and UI. */
 export const applyPitchQuestLiveFeature = (state) => {
     const feature = state.feature;
     const targetNote = state.targetNote;

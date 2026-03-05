@@ -13,9 +13,11 @@ const toGameId = (value) => {
 };
 
 /** Reads the persisted set of favorite game ids for the games shelf filters. */
+/** Reads the persisted set of favorite game ids. */
 export const readFavoriteIds = () => readStringArrayFromStorage(GAME_FAVORITES_KEY);
 
 /** Persists the current favorite game ids for later filter restoration. */
+/** Persists the selected favorite game ids. */
 export const writeFavoriteIds = (ids) => writeStringArrayToStorage(GAME_FAVORITES_KEY, ids);
 
 const tagsForCard = (card) => (
@@ -26,6 +28,7 @@ const tagsForCard = (card) => (
 );
 
 /** Builds lookup tables and fallback tag sets from rendered game cards. */
+/** Builds lookup maps and fallback sort sets from game cards. */
 export const buildGameSortMaps = (cards) => {
     const cardById = new Map(
         cards
@@ -50,6 +53,7 @@ export const buildGameSortMaps = (cards) => {
 };
 
 /** Returns whether a game card belongs in the active sort/filter bucket. */
+/** Returns whether a game card should be visible for the selected filter. */
 export const shouldShowGameCard = ({ selected, id, sortTagsById, favoriteIds, newIds, quickIds }) => {
     const tags = sortTagsById.get(id) || [];
     if (selected === 'favorites') {
@@ -68,6 +72,7 @@ export const shouldShowGameCard = ({ selected, id, sortTagsById, favoriteIds, ne
 };
 
 /** Derives quick-pick and new-game sets from activity history and recommendations. */
+/** Derives dynamic quick-play and new-game sets from recent events and recommendations. */
 export const deriveDynamicSortSets = ({ events, recs, cardById, fallbackQuickIds, fallbackNewIds }) => {
     const playedRecent = [];
     events

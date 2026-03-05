@@ -3,6 +3,7 @@ import {
     setLiveNumber,
 } from './shared.js';
 
+/** Renders the Note Memory HUD from the current session state. */
 export const renderNoteMemoryHud = ({
     matchesEl,
     scoreEl,

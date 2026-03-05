@@ -55,6 +55,7 @@ const ensureHomeMissionSummary = () => {
 };
 
 /** Renders the coach mission timeline list from the current mission state. */
+/** Renders the coach mission timeline from mission state. */
 export const renderMissionTimeline = ({ missionState }) => {
     const timeline = ensureCoachMissionTimeline();
     if (!timeline) return;
@@ -99,6 +100,7 @@ export const renderMissionTimeline = ({ missionState }) => {
 };
 
 /** Renders the coach goal checklist from mission steps and slot defaults. */
+/** Renders the mission goal checklist from mission state and defaults. */
 export const renderMissionGoalList = ({
     goalList,
     missionState,
@@ -149,6 +151,7 @@ export const renderMissionGoalList = ({
 };
 
 /** Updates the coach mission status summary line. */
+/** Renders the coach mission status summary text. */
 export const renderMissionStatus = ({ completed, total, complete }) => {
     const status = ensureCoachMissionStatus();
     if (!status) return;
@@ -158,6 +161,7 @@ export const renderMissionStatus = ({ completed, total, complete }) => {
 };
 
 /** Updates the Home view summary text for the current mission. */
+/** Renders the mission summary shown on the home view. */
 export const renderHomeMissionSummary = ({ missionState, complete }) => {
     const homeSummary = ensureHomeMissionSummary();
     if (!homeSummary) return;
@@ -179,6 +183,7 @@ export const renderHomeMissionSummary = ({ missionState, complete }) => {
 };
 
 /** Ensures the mission summary/status containers exist before rendering into them. */
+/** Ensures the shared mission status and summary nodes exist. */
 export const ensureMissionUiNodes = () => {
     ensureCoachMissionStatus();
     ensureHomeMissionSummary();

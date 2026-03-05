@@ -5,6 +5,7 @@ import {
 import { createVisibilityListener } from '../../utils/lifecycle-utils.js';
 import { createIntervalTicker } from '../../utils/interval-ticker.js';
 
+/** Creates the metronome controller used by Rhythm Dash practice loops. */
 export const createRhythmDashMetronome = ({
     isEnabled,
     getPlayer,

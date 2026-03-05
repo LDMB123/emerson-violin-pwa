@@ -132,6 +132,7 @@ export const reportTrainerGameResult = (reportFn, gameId, accuracy, score) => {
     }
 };
 
+/** Creates the shared controller contract used by trainer drill modules. */
 export const createTrainerDrillBaseController = ({
     setElements,
     bindControls,

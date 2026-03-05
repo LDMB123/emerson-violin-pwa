@@ -5,6 +5,7 @@ import {
     formatRhythmStatusMessage,
 } from './helpers.js';
 
+/** Creates the Rhythm Dash beat processor used to score tap timing. */
 export const createRhythmDashBeatProcessor = ({
     getRuntimeState,
     applyRuntimeState,

@@ -2,6 +2,7 @@ import { GAME_PLAY_AGAIN } from '../utils/event-names.js';
 
 const toViewId = (hashId) => String(hashId || '').replace(/^#/, '');
 
+/** Binds shared reset and teardown handlers for a game view session. */
 export const bindGameSessionLifecycle = ({
     hashId,
     onReset = null,

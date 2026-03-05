@@ -185,6 +185,7 @@ const initFocusTimer = () => {
     setFocusDuration(activeMinutes);
 };
 
+/** Initializes the coach focus timer UI and its global lifecycle bindings. */
 export const init = initFocusTimer;
 
 bindGlobalListeners();

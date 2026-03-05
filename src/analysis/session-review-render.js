@@ -1,6 +1,7 @@
 import { starString, buildChart, chartCaptionFor } from '../utils/session-review-utils.js';
 import { renderNextActionsList } from '../utils/render-utils.js';
 
+/** Creates the renderer that updates the session review UI from computed stats. */
 export const createSessionReviewRenderer = () => {
     let chartLine = null;
     let chartPoints = null;

@@ -24,6 +24,7 @@ import {
 } from './lesson-plan-runner-machine.js';
 import { createIntervalTicker } from '../utils/interval-ticker.js';
 
+/** Creates the action handlers that drive the guided lesson runner. */
 export const createLessonRunnerActions = (deps) => {
     const {
         runnerState,

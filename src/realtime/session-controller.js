@@ -110,20 +110,28 @@ const lifecycle = createSessionLifecycle({
 });
 
 /** Starts a realtime coaching session and boots the audio/runtime lifecycle. */
+/** Starts the realtime coaching session lifecycle. */
 export const startSession = (...args) => lifecycle.startSession(...args);
 /** Stops the active realtime coaching session and tears down runtime resources. */
+/** Stops the realtime coaching session lifecycle. */
 export const stopSession = (...args) => lifecycle.stopSession(...args);
 /** Pauses the active session without discarding accumulated session state. */
+/** Pauses the active realtime coaching session. */
 export const pauseSession = (...args) => lifecycle.pauseSession(...args);
 /** Resumes a paused session after lifecycle and policy checks pass. */
+/** Resumes a paused realtime coaching session. */
 export const resumeSession = (...args) => lifecycle.resumeSession(...args);
 /** Applies the selected parent preset to the active realtime runtime engine. */
+/** Applies a parent preset to the realtime runtime. */
 export const setParentPreset = (...args) => runtimeEngine.setParentPreset(...args);
 /** Returns the latest public realtime session state snapshot. */
+/** Returns the current realtime session state snapshot. */
 export const getSessionState = () => runtimeEngine.getSessionState();
 /** Posts a control message directly to the realtime audio worklet graph. */
+/** Posts a message to the realtime audio worklet graph. */
 export const postAudioMessage = (msg) => audioGraph.postWorkletMessage(msg);
 /** Initializes global realtime session listeners and persisted UI state. */
+/** Initializes realtime session lifecycle bindings. */
 export const init = () => lifecycle.init();
 
 export default {

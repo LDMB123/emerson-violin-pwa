@@ -2,6 +2,7 @@ import {
     createCountdownLifecycle,
 } from '../utils/countdown-lifecycle.js';
 
+/** Creates the Bow Hero countdown lifecycle with pause/resume and milestone handling. */
 export const createBowHeroTimerLifecycle = ({
     timeLimit,
     runToggle,

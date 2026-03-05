@@ -1,3 +1,4 @@
+/** Defines the scripted Story Song page sequence. */
 export const STORY_SONG_PAGES = [
     {
         title: 'Open String Overture',

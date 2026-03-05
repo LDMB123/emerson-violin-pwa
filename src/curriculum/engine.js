@@ -8,6 +8,7 @@ import {
 
 export { completeMissionStep, insertRemediationForSkill, startMissionStep };
 
+/** Ensures there is a persisted current mission for the latest curriculum snapshot. */
 export const ensureCurrentMission = async ({
     recommendations,
     events,

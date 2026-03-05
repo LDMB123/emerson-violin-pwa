@@ -60,6 +60,7 @@ const hydrateGameSortDynamicSets = async (context) => {
     applyGameSort(context);
 };
 
+/** Binds the games shelf sort, favorites, and dynamic quick/new filters. */
 export const bindGameSort = (container) => {
     const context = createGameSortContext(container);
     if (!context) return;

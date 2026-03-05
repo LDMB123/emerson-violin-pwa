@@ -6,6 +6,7 @@ import { buildRecordingSlotState, applyRecordingSlotState } from '../utils/analy
 import { runRecordingExportAction } from '../utils/recording-export-feedback.js';
 import { playRecordingWithSoundCheck } from '../utils/recording-playback-utils.js';
 
+/** Creates the recording playback/export controller used by the session review view. */
 export const createSessionReviewRecordingController = () => {
     const controller = createAudioController();
     const { audio: playbackAudio, stop: stopPlayback } = controller;

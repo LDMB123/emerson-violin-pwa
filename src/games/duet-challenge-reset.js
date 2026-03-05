@@ -1,3 +1,4 @@
+/** Resets Duet Challenge state, prompt, sequence, and playback controls. */
 export const resetDuetChallengeSession = ({
     resetState,
     resetGameState,

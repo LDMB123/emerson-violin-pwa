@@ -1,5 +1,6 @@
 import { RT_STATE } from '../../utils/event-names.js';
 
+/** Creates mutable binding state for Rhythm Dash listeners and tuning. */
 export const createRhythmDashBindingState = ({ lifecycle }) => {
     let realtimeStateHandler = null;
     let tuningReport = null;

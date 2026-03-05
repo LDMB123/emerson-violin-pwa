@@ -1,5 +1,6 @@
 import { applySequenceTap } from './sequence-game-logic.js';
 
+/** Handles a Sequence Game note tap against the active sequence. */
 export const handleSequenceGameTap = ({
     note,
     sequence,

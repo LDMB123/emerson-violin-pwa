@@ -2,6 +2,7 @@ import { GAME_OBJECTIVE_TIERS } from './game-config.js';
 import { formatMinutes, createSessionTimer } from './session-timer.js';
 
 /** Maps objective tier ids to the labels shown in the coach panel. */
+/** Maps objective tiers to their display labels. */
 export const OBJECTIVE_LABELS = Object.freeze({
     foundation: 'Foundation',
     core: 'Core',
@@ -9,6 +10,7 @@ export const OBJECTIVE_LABELS = Object.freeze({
 });
 
 /** Resets view-local controls and live-score data for a guided game session. */
+/** Resets interactive game view inputs and live score markers. */
 export const resetGameView = (view, { forceEvents = false } = {}) => {
     if (!view) return;
     const inputs = Array.from(view.querySelectorAll('input[type="checkbox"], input[type="radio"]'));
@@ -31,6 +33,7 @@ export const resetGameView = (view, { forceEvents = false } = {}) => {
 };
 
 /** Attaches a guided-session timer to the supplied game view elements. */
+/** Attaches a session timer controller to a game view. */
 export const attachSessionTimer = (view, timerEl, fillEl, trackEl, targetMinutes, scoreEl, announceEl) => {
     const timer = createSessionTimer({
         targetMinutes,
@@ -75,6 +78,7 @@ export const attachSessionTimer = (view, timerEl, fillEl, trackEl, targetMinutes
 };
 
 /** Injects shared timer/reset/coach controls into a game header if missing. */
+/** Injects shared timer and reset controls into a game header. */
 export const injectHeaderControls = (view) => {
     const header = view.querySelector('.game-header');
     if (!header) return null;
@@ -137,6 +141,7 @@ export const injectHeaderControls = (view) => {
 };
 
 /** Builds and inserts the shared coach panel for a guided game view. */
+/** Builds and inserts the coach panel for a game view. */
 export const buildCoachPanel = (view, meta) => {
     const content = view.querySelector('.game-content');
     if (!content || content.querySelector('[data-game-coach]')) return null;

@@ -10,6 +10,7 @@ import {
 import { setDisabled } from '../utils/dom-utils.js';
 
 /** Creates the root DOM markup for the guided lesson runner widget. */
+/** Creates the base lesson runner markup container. */
 export const createRunnerMarkup = () => {
     const runner = document.createElement('div');
     runner.className = 'lesson-runner';
@@ -37,6 +38,7 @@ export const createRunnerMarkup = () => {
 };
 
 /** Collects the DOM nodes the lesson runner uses for rendering and controls. */
+/** Collects the DOM references used by the lesson runner view. */
 export const createRunnerViewState = ({ runner, stepsList }) => ({
     statusEl: runner.querySelector('[data-lesson-runner-status]'),
     stepEl: runner.querySelector('[data-lesson-runner-step]'),
@@ -57,12 +59,14 @@ const setRunnerCta = (ctaButton, href, label = 'Open activity') => {
 };
 
 /** Renders the runner countdown timer from a remaining-seconds value. */
+/** Renders the lesson runner countdown timer text. */
 export const renderRunnerTimer = (timerEl, seconds = 0) => {
     if (!timerEl) return;
     timerEl.textContent = formatTime(Math.max(0, Number(seconds) || 0) * 1000);
 };
 
 /** Updates lesson runner button labels and enabled states in one call. */
+/** Updates lesson runner button labels and disabled state. */
 export const setRunnerControls = (
     { startButton, nextButton } = {},
     { startLabel = null, startDisabled, nextDisabled } = {},
@@ -168,6 +172,7 @@ const renderRunnerStep = ({
 };
 
 /** Builds the renderer callbacks that keep runner state and DOM in sync. */
+/** Creates the lesson runner render functions bound to state and DOM refs. */
 export const createRunnerRenderers = ({
     runnerState,
     runnerView,

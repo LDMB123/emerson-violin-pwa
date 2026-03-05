@@ -1,3 +1,4 @@
+/** Stops Story Song playback and restores the idle UI state. */
 export const stopStorySongPlayback = ({
     playback,
     toggle,

@@ -1,5 +1,6 @@
 const alwaysTrue = () => true;
 
+/** Wires shared start and stop controls to a game engine lifecycle. */
 export const bindGameStartStop = (options = {}) => {
     const startButton = options.startButton ?? null;
     const engine = options.engine ?? null;

@@ -1,5 +1,6 @@
 import { createCountdownLifecycle } from '../utils/countdown-lifecycle.js';
 
+/** Creates the countdown controller used by Note Memory. */
 export const createNoteMemoryTimer = ({
     getTimeLeft,
     setTimeLeft,

@@ -11,6 +11,7 @@ const computeAccuracy = ({ combo, comboTarget }) => (
     comboTarget ? Math.min(1, combo / comboTarget) * 100 : 0
 );
 
+/** Reports the completed Sequence Game session once. */
 export const reportSequenceSession = ({
     reportResult,
     comboTarget,

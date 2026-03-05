@@ -1,6 +1,7 @@
 import { updateScoreCombo } from './shared.js';
 import { updateSequenceTargets } from './sequence-game-targets.js';
 
+/** Creates DOM-backed runtime helpers for a Sequence Game view. */
 export const createSequenceGameViewRuntime = ({
     stage,
     prefix,

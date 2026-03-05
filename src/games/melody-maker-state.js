@@ -1,3 +1,4 @@
+/** Clears Melody Maker track progress and score state. */
 export const resetMelodyMakerTrackState = (gameState) => {
     if (gameState._track) gameState._track.length = 0;
     gameState.score = 0;

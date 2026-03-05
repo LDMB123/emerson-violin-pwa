@@ -1,3 +1,4 @@
+/** Applies tempo-driven checklist and score updates for Scale Practice. */
 export const applyScalePracticeTempoUpdate = ({
     markChecklistIf,
     markChecklist,

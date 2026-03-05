@@ -3,6 +3,7 @@ import {
     setDifficultyBadge,
 } from './shared.js';
 
+/** Attaches adaptive tuning updates to a Sequence Game stage. */
 export const attachSequenceGameTuning = ({
     id,
     stage,

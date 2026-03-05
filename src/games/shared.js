@@ -19,6 +19,7 @@ import { bindGameStartStop } from './game-start-stop-bindings.js';
  * @param {number} total
  * @returns {string}
  */
+/** Formats a filled and empty star string for score displays. */
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 
 /**
@@ -27,6 +28,7 @@ export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(
  * @param {string} selector
  * @returns {() => Element | null}
  */
+/** Returns a lazy DOM query function that reuses a live element reference. */
 export const cachedEl = (selector) => {
     let el;
     return () => {
@@ -44,6 +46,7 @@ const MAX_EVENTS = 500;
  * @param {number} seconds
  * @returns {string}
  */
+/** Formats a second count as countdown text in mm:ss form. */
 export const formatCountdown = (seconds) => {
     const safe = Math.max(0, Math.ceil(seconds));
     const minutes = durationToMinutes(safe);
@@ -58,6 +61,7 @@ let tonePlayer = null;
  *
  * @returns {any | null}
  */
+/** Returns the shared tone player singleton, creating it on demand. */
 export const getTonePlayer = () => {
     if (tonePlayer) return tonePlayer;
     const created = createTonePlayer();
@@ -71,6 +75,7 @@ export const getTonePlayer = () => {
  *
  * @returns {void}
  */
+/** Stops all active notes on the shared tone player. */
 export const stopTonePlayer = () => {
     tonePlayer?.stopAll?.();
 };
@@ -90,6 +95,7 @@ const playWithTonePlayer = (playback) => {
  * @param {Object} options
  * @returns {boolean}
  */
+/** Plays a single tone note when shared audio playback is enabled. */
 export const playToneNote = (note, options) => {
     return playWithTonePlayer((player) => player.playNote(note, options));
 };
@@ -101,6 +107,7 @@ export const playToneNote = (note, options) => {
  * @param {Object} options
  * @returns {boolean}
  */
+/** Plays a tone sequence when shared audio playback is enabled. */
 export const playToneSequence = (notes, options) => {
     return playWithTonePlayer((player) => player.playSequence(notes, options));
 };
@@ -115,6 +122,7 @@ export const playToneSequence = (notes, options) => {
  * @param {number} [options.clickIgnoreWindow=420]
  * @returns {void}
  */
+/** Binds pointer and click events into a deduplicated tap handler. */
 export const bindTap = (element, handler, { threshold = 160, clickIgnoreWindow = 420 } = {}) => {
     if (!element || typeof handler !== 'function') return;
     let lastTap = 0;
@@ -145,6 +153,7 @@ export const bindTap = (element, handler, { threshold = 160, clickIgnoreWindow =
  * @param {string} key
  * @returns {number | null}
  */
+/** Reads a numeric live value from an element data attribute. */
 export const readLiveNumber = (el, key) => {
     if (!el) return null;
     const value = Number(el.dataset[key]);
@@ -160,6 +169,7 @@ export const readLiveNumber = (el, key) => {
  * @param {(value: number) => string | undefined} formatter
  * @returns {void}
  */
+/** Writes a numeric live value to an element data attribute and text node. */
 export const setLiveNumber = (el, key, value, formatter) => {
     if (!el) return;
     el.dataset[key] = String(value);
@@ -172,6 +182,7 @@ export const setLiveNumber = (el, key, value, formatter) => {
  * @param {string} id
  * @returns {void}
  */
+/** Marks a checklist checkbox as completed by id. */
 export const markChecklist = (id) => {
     if (!id) return;
     const input = document.getElementById(id);
@@ -185,6 +196,7 @@ export const markChecklist = (id) => {
  * @param {string} id
  * @returns {void}
  */
+/** Marks a checklist checkbox as completed when the condition is truthy. */
 export const markChecklistIf = (condition, id) => {
     if (condition) markChecklist(id);
 };
@@ -197,6 +209,7 @@ export const markChecklistIf = (condition, id) => {
  * @param {string} [prefix='Adaptive']
  * @returns {void}
  */
+/** Creates or updates a difficulty badge within a game container. */
 export const setDifficultyBadge = (container, difficulty, prefix = 'Adaptive') => {
     if (!container) return;
     let badge = container.querySelector('.difficulty-badge');
@@ -216,6 +229,7 @@ export const setDifficultyBadge = (container, difficulty, prefix = 'Adaptive') =
  * @param {number} length
  * @returns {string[]}
  */
+/** Builds a note sequence without repeating adjacent notes. */
 export const buildNoteSequence = (pool, length) => {
     const next = [];
     for (let i = 0; i < length; i += 1) {
@@ -238,6 +252,7 @@ const speakReaction = (message) => {
  * @param {Element | null | undefined} el
  * @returns {void}
  */
+/** Renders a short confetti burst near the supplied element. */
 export const triggerMiniConfetti = (el) => {
     if (!el || document.hidden) return;
     if (document.documentElement.hasAttribute('data-reduced-motion')) return;
@@ -285,6 +300,7 @@ let lastReactionTime = 0;
  * @param {number} combo
  * @returns {void}
  */
+/** Updates score and combo UI and triggers reaction feedback for streak changes. */
 export const updateScoreCombo = (scoreEl, comboEl, score, combo) => {
     const oldCombo = readLiveNumber(comboEl, 'liveCombo') || 0;
 
@@ -317,6 +333,7 @@ export const updateScoreCombo = (scoreEl, comboEl, score, combo) => {
  * @param {Object} [payload={}]
  * @returns {Promise<void>}
  */
+/** Persists and emits a normalized game session event. */
 export const recordGameEvent = async (id, payload = {}) => {
     if (!id) return;
     const events = await getJSON(EVENT_KEY);
@@ -375,6 +392,7 @@ const stopEngineAndRecordGameEvent = (engine, id, payload = {}) => {
  * @param {Object} [options.payload={}]
  * @returns {boolean}
  */
+/** Stops an engine and records a game event when a threshold is met. */
 export const maybeStopEngineAndRecordThreshold = ({
     engine,
     value,
@@ -442,6 +460,7 @@ const ensureGameStartStopBindings = ({
  *
  * @returns {{ bound: boolean, cleanupBindings: (() => void) | null }}
  */
+/** Creates mutable binding state for shared game start and stop controls. */
 export const createStartStopBindingState = () => ({
     bound: false,
     cleanupBindings: null,
@@ -454,6 +473,7 @@ export const createStartStopBindingState = () => ({
  * @param {string} [options.gameId='']
  * @returns {(() => void) | null}
  */
+/** Binds shared start and stop behavior to a hash-scoped game view. */
 export const bindHashViewGameStartStop = ({
     gameId = '',
     ...options
@@ -474,6 +494,7 @@ export const bindHashViewGameStartStop = ({
  * @param {((cleanup: () => void) => void) | null} [registerCleanup=null]
  * @returns {() => void}
  */
+/** Registers a sound-setting listener with optional cleanup tracking. */
 export const bindSoundsChange = (handler, registerCleanup = null) => {
     return bindDocumentEvent(SOUNDS_CHANGE, handler, registerCleanup);
 };
@@ -486,6 +507,7 @@ export const bindSoundsChange = (handler, registerCleanup = null) => {
  * @param {((cleanup: () => void) => void) | null} [registerCleanup=null]
  * @returns {() => void}
  */
+/** Registers a document event listener with optional cleanup tracking. */
 export const bindDocumentEvent = (eventName, handler, registerCleanup = null) => {
     if (!eventName || typeof handler !== 'function') return () => { };
     document.addEventListener(eventName, handler);
@@ -505,6 +527,7 @@ export const bindDocumentEvent = (eventName, handler, registerCleanup = null) =>
  * @param {(feature: any, event: Event) => void} onFeature
  * @returns {(event?: any) => void}
  */
+/** Creates a realtime feature event handler scoped to one game id. */
 export const createRealtimeFeatureStateHandler = (gameId, onFeature) => {
     if (typeof onFeature !== 'function') {
         return () => { };
@@ -525,6 +548,7 @@ export const createRealtimeFeatureStateHandler = (gameId, onFeature) => {
  * @param {(tuning: any) => void} onUpdate
  * @returns {((payload: any) => Promise<void>) & { refresh: () => void, dispose: () => void }}
  */
+/** Attaches adaptive tuning updates for a game id and returns cleanup helpers. */
 export const attachTuning = (id, onUpdate) => {
     const apply = (tuning) => {
         if (!tuning) return;
@@ -561,6 +585,7 @@ export const attachTuning = (id, onUpdate) => {
  * @param {number} [options.bonusScore=0]
  * @returns {() => void}
  */
+/** Creates the standard adaptive-update handler for a game view. */
 export const createStandardGameUpdate = ({
     viewId,
     inputPrefix,

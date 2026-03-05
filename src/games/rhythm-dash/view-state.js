@@ -1,5 +1,6 @@
 import { setLiveNumber } from '../shared.js';
 
+/** Creates DOM update helpers for the Rhythm Dash HUD. */
 export const createRhythmDashViewState = ({
     scoreEl,
     comboEl,

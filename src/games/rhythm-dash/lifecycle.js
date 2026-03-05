@@ -1,6 +1,7 @@
 import { GAME_PLAY_AGAIN, SOUNDS_CHANGE } from '../../utils/event-names.js';
 import { isGameView } from '../../utils/view-hash-utils.js';
 
+/** Creates the lifecycle registry for Rhythm Dash listeners and cleanup. */
 export const createRhythmDashLifecycle = () => {
     let resetRequestHandler = null;
     let hashChangeHandler = null;

@@ -1,6 +1,7 @@
 import { markCheckboxInputChecked } from '../utils/checkbox-utils.js';
 
 /** Returns the coach goal checkboxes currently rendered in the active goal list. */
+/** Returns the current mission goal checkbox inputs from the coach view. */
 export const resolveMissionGoalInputs = () => (
     Array.from(document.querySelectorAll('#view-coach [data-goal-list] input[type="checkbox"][id]'))
 );
@@ -16,6 +17,7 @@ const countBy = (collection, predicate) => (
 );
 
 /** Computes completed/total mission progress from either inputs or mission state. */
+/** Computes completed and total mission goals from inputs or mission state. */
 export const computeMissionProgressValues = ({
     missionState,
     goalInputs,
@@ -40,6 +42,7 @@ export const computeMissionProgressValues = ({
 };
 
 /** Re-renders the coach goal list while preserving any preexisting checked state. */
+/** Renders the mission goal list into the coach view and preserves prior checked state. */
 export const applyMissionGoalList = ({
     missionState,
     goalSlotIds,
@@ -75,6 +78,7 @@ const getMissionStepIdForGoal = ({ goalId, goalSlotIds, missionState }) => {
 };
 
 /** Marks a mission goal complete immediately or queues it if the UI is unavailable. */
+/** Marks a mission goal complete or queues it when the coach view is unavailable. */
 export const markMissionGoal = ({
     goalId,
     goalSlotIds,
@@ -96,6 +100,7 @@ export const markMissionGoal = ({
 };
 
 /** Replays queued goal completions against the live coach goal list. */
+/** Attempts to apply queued mission goals and rewrites any remaining queue entries. */
 export const flushQueuedMissionGoals = ({
     readQueuedGoals,
     writeQueuedGoals,

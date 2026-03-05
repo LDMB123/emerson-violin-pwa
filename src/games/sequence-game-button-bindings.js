@@ -4,6 +4,7 @@ import { createDefaultTuningHitDetector, getActiveTuningFeature } from '../utils
 import { buildSequenceTapPayload } from './sequence-game-tap-context.js';
 
 
+/** Binds microphone controls for a Sequence Game view. */
 export const bindSequenceGameMicrophone = ({
     hashId,
     getRuntimeState,

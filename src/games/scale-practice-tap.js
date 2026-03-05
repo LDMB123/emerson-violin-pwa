@@ -1,5 +1,6 @@
 import { clamp, preciseSum } from '../utils/math.js';
 
+/** Computes the scoring result for a Scale Practice tap. */
 export const computeScalePracticeTapResult = ({
     interval,
     targetTempo,

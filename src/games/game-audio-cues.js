@@ -6,6 +6,7 @@ const normalizeEntries = (source) => {
     return Object.entries(source);
 };
 
+/** Creates a keyed audio cue bank with play and stop helpers. */
 export const createAudioCueBank = (source) => {
     const cues = new Map(
         normalizeEntries(source).filter(([key, audio]) => Boolean(key) && audio instanceof HTMLMediaElement),

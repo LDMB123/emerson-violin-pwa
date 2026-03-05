@@ -61,6 +61,7 @@ const normalizeNote = (note) => {
     return mapped || null;
 };
 
+/** Creates the shared tone player used for note cues and practice sequences. */
 export const createTonePlayer = () => {
     const state = createTonePlayerState({
         playbackEnabled: isSoundEnabled(),

@@ -4,6 +4,7 @@ import {
     emitEvent,
 } from '../utils/event-names.js';
 
+/** Creates mission-progress event handlers for starts, completions, and remediation. */
 export const createMissionProgressHandlers = ({
     insertRemediationForSkill,
     startMissionStep,

@@ -8,6 +8,7 @@ import {
 import { gameViewHash } from '../utils/view-hash-utils.js';
 import { setAriaPressed, setAriaHidden } from '../utils/dom-utils.js';
 
+/** Creates the Home/Coach controller for continue actions and coach stepper state. */
 export const createHomeCoachController = ({
     getViewId,
     getRouteMeta,

@@ -188,6 +188,7 @@ const initCoachActions = () => {
     applyRecommendations();
 };
 
+/** Initializes the coach bubble actions, message rotation, and event listeners. */
 export const init = initCoachActions;
 
 [

@@ -1,5 +1,6 @@
 import { wait } from '../audio/tone-player/shared.js';
 
+/** Plays the Story Song page loop until completion or cancellation. */
 export const playStorySongPages = async ({
     player,
     token,

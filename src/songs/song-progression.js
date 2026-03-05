@@ -28,6 +28,7 @@ const normalizeState = (stored) => {
 };
 
 /** Loads and normalizes the persisted song progression state. */
+/** Loads and normalizes persisted song progress state. */
 export const loadSongProgressState = async () => {
     const stored = await getJSON(SONG_PROGRESS_KEY);
     return normalizeState(stored);
@@ -62,6 +63,7 @@ const withUpdatedSongEntry = async (songId, buildEntry) => {
 };
 
 /** Merges a completed song attempt into the stored mastery and review state. */
+/** Applies a song attempt to persisted song progress state. */
 export const updateSongProgress = async (songId, attempt = {}) => {
     return withUpdatedSongEntry(songId, (existing) => {
         const accuracy = Number.isFinite(attempt.accuracy) ? clampRounded(attempt.accuracy, 0, 100) : 0;
@@ -110,6 +112,7 @@ export const updateSongProgress = async (songId, attempt = {}) => {
 };
 
 /** Persists a resumable playback checkpoint for a song. */
+/** Persists a playback checkpoint for a song. */
 export const saveSongCheckpoint = async (songId, checkpoint = {}) => {
     return withUpdatedSongEntry(songId, (existing) => {
         const updatedAt = Date.now();
@@ -127,6 +130,7 @@ export const saveSongCheckpoint = async (songId, checkpoint = {}) => {
 };
 
 /** Returns the saved checkpoint for a song, if one exists. */
+/** Returns the saved checkpoint for a song, if present. */
 export const getSongCheckpoint = async (songId) => {
     if (!songId) return null;
     const state = await loadSongProgressState();
@@ -144,6 +148,7 @@ export const collectDueSongReviews = async ({ now = Date.now(), limit = 5 } = {}
 };
 
 /** Builds song unlock state by combining curriculum progress with song mastery. */
+/** Builds the current unlock map for a song catalog. */
 export const buildSongUnlockMap = async (catalog) => {
     const [curriculumState, songProgressState] = await Promise.all([
         loadCurriculumState(),

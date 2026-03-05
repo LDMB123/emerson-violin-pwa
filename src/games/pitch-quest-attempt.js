@@ -1,5 +1,6 @@
 import { finiteOrZero } from '../utils/math.js';
 
+/** Resolves scoring and feedback for a Pitch Quest attempt. */
 export const resolvePitchQuestAttempt = ({
     feature,
     targetNote,

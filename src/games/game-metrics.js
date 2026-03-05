@@ -208,6 +208,7 @@ const initMetrics = () => {
     }
 };
 
+/** Initializes game module loading, persistence listeners, and mastery card updates. */
 export const init = initMetrics;
 
 document.addEventListener(PERSIST_APPLIED, () => {

@@ -2,6 +2,7 @@ import { reportSequenceSession } from './sequence-game-reporting.js';
 import { createSequenceCallbackState } from './sequence-game-callback-state.js';
 import { resetSequenceSessionState } from './sequence-game-reset.js';
 
+/** Creates start and reset handlers for a Sequence Game session. */
 export const createSequenceGameSessionHandlers = ({
     runtimeApi,
     difficulty,

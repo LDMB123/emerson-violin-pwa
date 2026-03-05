@@ -119,12 +119,14 @@ const getTuningFor = (id, model) => {
 };
 
 /** Returns the current adaptive tuning values for a game or trainer surface. */
+/** Returns the current adaptive tuning for a game id. */
 export const getGameTuning = async (id) => {
     const model = await getModel();
     return getTuningFor(id, model);
 };
 
 /** Incorporates a result into the adaptive model and emits the next tuning. */
+/** Applies a game result to the adaptive model and emits an update. */
 export const updateGameResult = async (id, payload = {}) => {
     if (!id) return null;
     const model = await getModel();
@@ -167,6 +169,7 @@ export const updateGameResult = async (id, payload = {}) => {
 };
 
 /** Returns a summary of the adaptive model plus recent adaptive events. */
+/** Returns the current adaptive model snapshot and log summary. */
 export const getAdaptiveSummary = async () => {
     const [model, events] = await Promise.all([getModel(), loadLogs()]);
     const last = events.at(-1) || null;
@@ -187,6 +190,7 @@ export const getAdaptiveSummary = async () => {
 export const getAdaptiveLog = async () => loadLogs();
 
 /** Clears the adaptive model and log, then broadcasts an adaptive reset event. */
+/** Clears the adaptive model and emits a reset event. */
 export const resetAdaptiveModel = async () => {
     cachedModel = null;
     await Promise.all([

@@ -1,5 +1,6 @@
 import { readLiveNumber } from './shared.js';
 
+/** Updates the Sequence Game summary and live counters. */
 export const updateSequenceSummary = ({
     viewId,
     stepPrefix,

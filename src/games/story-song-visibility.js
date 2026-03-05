@@ -1,3 +1,4 @@
+/** Creates visibility handlers that pause Story Song playback when hidden. */
 export const createStorySongVisibilityHandlers = ({
     toggle,
     stopPlayback,

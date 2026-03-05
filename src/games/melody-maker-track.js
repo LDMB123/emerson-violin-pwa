@@ -45,6 +45,7 @@ const applyMelodyTargetMatch = ({
     buildTarget();
 };
 
+/** Handles a Melody Maker note tap and updates track progress. */
 export const handleMelodyMakerNoteTap = (note, context) => {
     const gameState = context.gameState;
     const playback = context.playback;

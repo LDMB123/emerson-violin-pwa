@@ -6,6 +6,7 @@ import {
 } from '../utils/event-names.js';
 import { setRunnerControls } from './lesson-plan-runner-view.js';
 
+/** Sets up lesson runner listeners and returns a teardown function. */
 export const setupLessonRunnerLifecycle = ({
     stepsList,
     syncStepList,

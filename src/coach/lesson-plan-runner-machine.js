@@ -34,6 +34,7 @@ const updateSingleRunnerStep = (state, step, timestamp, marker) => {
  *   recommendedGameId: string
  * }}
  */
+/** Creates the mutable lesson runner state object. */
 export const createLessonRunnerState = () => ({
     steps: [],
     currentIndex: 0,
@@ -49,6 +50,7 @@ export const createLessonRunnerState = () => ({
  * @param {{ steps: any[], currentIndex: number }} state
  * @returns {any | null}
  */
+/** Returns the current lesson runner step or null. */
 export const getCurrentRunnerStep = (state) => state.steps[state.currentIndex] || null;
 
 /**
@@ -57,6 +59,7 @@ export const getCurrentRunnerStep = (state) => state.steps[state.currentIndex] |
  * @param {{ steps: any[] }} state
  * @returns {boolean}
  */
+/** Returns whether the lesson runner has any steps. */
 export const hasRunnerSteps = (state) => state.steps.length > 0;
 
 /**
@@ -65,6 +68,7 @@ export const hasRunnerSteps = (state) => state.steps.length > 0;
  * @param {{ steps: any[], completedSteps: number }} state
  * @returns {boolean}
  */
+/** Returns whether all lesson runner steps are complete. */
 export const isRunnerComplete = (state) => state.steps.length > 0
     && state.completedSteps >= state.steps.length;
 
@@ -76,6 +80,7 @@ export const isRunnerComplete = (state) => state.steps.length > 0
  * @param {any | null} [externalMission=null]
  * @returns {void}
  */
+/** Populates runner steps from recommendations or external mission data. */
 export const setRunnerPlanFromRecommendations = (state, recs, externalMission = null) => {
     state.recommendedGameId = recs?.recommendedGameId || recs?.recommendedGame || 'view-games';
     const missionSteps = externalMission?.steps || recs?.mission?.steps;
@@ -93,6 +98,7 @@ export const setRunnerPlanFromRecommendations = (state, recs, externalMission = 
  * @param {any} state
  * @returns {void}
  */
+/** Resets runner step progress and timer state. */
 export const restartRunner = (state) => {
     state.steps = resetRunnerSteps(state.steps);
     state.remainingSeconds = 0;
@@ -106,6 +112,7 @@ export const restartRunner = (state) => {
  * @param {number} [timestamp=Date.now()]
  * @returns {any | null}
  */
+/** Marks the current runner step in progress and initializes its timer. */
 export const startCurrentRunnerStep = (state, timestamp = Date.now()) => {
     if (!hasRunnerSteps(state)) return null;
     if (isRunnerComplete(state)) restartRunner(state);
@@ -129,6 +136,7 @@ export const startCurrentRunnerStep = (state, timestamp = Date.now()) => {
  * @param {number} [timestamp=Date.now()]
  * @returns {any | null}
  */
+/** Marks the current runner step complete and clears its timer. */
 export const completeCurrentRunnerStep = (state, timestamp = Date.now()) => {
     const step = getCurrentRunnerStep(state);
     if (!step) return null;
@@ -143,6 +151,7 @@ export const completeCurrentRunnerStep = (state, timestamp = Date.now()) => {
  * @param {{ remainingSeconds: number }} state
  * @returns {boolean}
  */
+/** Decrements the remaining runner timer by one second. */
 export const decrementRunnerTimer = (state) => {
     if (state.remainingSeconds <= 0) return false;
     state.remainingSeconds -= 1;

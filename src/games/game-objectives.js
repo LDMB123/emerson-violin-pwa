@@ -36,6 +36,7 @@ const resolveGameObjectiveProgress = ({
     };
 };
 
+/** Resolves objective tier and completion counts for a guided game session. */
 export const resolveSessionObjectiveProgress = ({
     stage,
     gameId,

@@ -5,6 +5,7 @@ import {
     computeBeatInterval,
 } from '../../utils/rhythm-dash-utils.js';
 
+/** Applies a processed Rhythm Dash beat result to session state and UI. */
 export const applyRhythmBeatState = ({
     timingScore,
     combo,

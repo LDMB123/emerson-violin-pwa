@@ -1,3 +1,4 @@
+/** Creates the mutable runtime state for a Sequence Game session. */
 export const createSequenceGameRuntime = ({
     notePool,
     sequenceLength,

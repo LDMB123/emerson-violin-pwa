@@ -1,3 +1,4 @@
+/** Creates callback-backed accessors for the current Sequence Game session. */
 export const createSequenceCallbackState = ({
     getCombo,
     getScore,

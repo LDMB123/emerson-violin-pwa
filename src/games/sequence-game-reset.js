@@ -1,3 +1,4 @@
+/** Resets the current Sequence Game session state and side effects. */
 export const resetSequenceSessionState = ({
     stopTonePlayer,
     resetCoreState,

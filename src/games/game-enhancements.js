@@ -185,4 +185,5 @@ const initGameEnhancements = () => {
     return enhancePromise;
 };
 
+/** Initializes shared coach/timer enhancements across supported game views. */
 export const init = initGameEnhancements;

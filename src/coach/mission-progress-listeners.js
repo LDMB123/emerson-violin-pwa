@@ -9,6 +9,7 @@ import { inferGoalFromActivity } from './mission-progress-goals.js';
 
 let listenersBound = false;
 
+/** Binds the shared lesson, game, song, and practice listeners for mission progress. */
 export const bindMissionProgressListeners = ({
     handleLessonStep,
     updateMissionStatus,

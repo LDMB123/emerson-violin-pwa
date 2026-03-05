@@ -18,6 +18,7 @@ const computeRhythmAccuracy = ({
     return computeAccuracyFromBpmHistory(tapHistory, targetBpm);
 };
 
+/** Reports the final Rhythm Dash session result once. */
 export const reportRhythmDashSession = ({
     reported,
     tapCount,

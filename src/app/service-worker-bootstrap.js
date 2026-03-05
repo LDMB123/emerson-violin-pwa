@@ -38,6 +38,7 @@ const cleanupDevServiceWorkers = async () => {
     window.sessionStorage.removeItem(DEV_SW_RESET_FLAG);
 };
 
+/** Registers the production service worker and cleans up dev workers when needed. */
 export const registerAppServiceWorker = () => {
     onWindowLoad(() => {
         if (!import.meta.env.PROD) {

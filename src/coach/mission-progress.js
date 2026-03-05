@@ -179,4 +179,5 @@ const initMissionProgress = async () => {
     updateMissionStatus();
 };
 
+/** Initializes mission progress rendering, handlers, and recommendation sync. */
 export const init = initMissionProgress;

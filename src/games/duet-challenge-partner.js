@@ -1,5 +1,6 @@
 import { setDisabled } from '../utils/dom-utils.js';
 
+/** Plays the Duet Challenge partner sequence and reports whether it completed. */
 export const playDuetPartnerSequence = async ({
     partnerPlayback,
     sequence,
