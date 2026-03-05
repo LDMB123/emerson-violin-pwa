@@ -58,10 +58,20 @@ export const createLessonRunnerActions = (deps) => {
             ...payload,
         });
     };
+    const renderTimer = () => {
+        if (timerEl) timerEl.textContent = formatTime(runnerState.remainingSeconds * 1000);
+    };
+    const syncTimerHandle = () => {
+        runnerState.timerId = timerTicker.getId();
+    };
+    const setRunnerControls = ({ startLabel, nextDisabled }) => {
+        if (startButton) startButton.textContent = startLabel;
+        setDisabled(nextButton, nextDisabled);
+    };
 
     const stopTimer = () => {
-        if (!timerTicker.stop()) return;
-        runnerState.timerId = null;
+        timerTicker.stop();
+        syncTimerHandle();
     };
 
     const completeStep = ({ auto = false } = {}) => {
@@ -93,14 +103,12 @@ export const createLessonRunnerActions = (deps) => {
 
         if (isRunnerComplete(runnerState)) {
             setStatus('Lesson complete! Awesome work.');
-            if (startButton) startButton.textContent = 'Restart';
-            setDisabled(nextButton, true);
+            setRunnerControls({ startLabel: 'Restart', nextDisabled: true });
             if (ctaButton) ctaButton.setAttribute('href', '#view-games');
             emitEvent(LESSON_COMPLETE);
         } else {
             setStatus(auto ? 'Step complete. Ready for the next one.' : 'Step marked complete. Tap Next to continue.');
-            if (startButton) startButton.textContent = 'Start';
-            setDisabled(nextButton, false);
+            setRunnerControls({ startLabel: 'Start', nextDisabled: false });
         }
         updateStepDetails();
     };
@@ -110,7 +118,7 @@ export const createLessonRunnerActions = (deps) => {
             completeStep({ auto: true });
             return;
         }
-        if (timerEl) timerEl.textContent = formatTime(runnerState.remainingSeconds * 1000);
+        renderTimer();
         updateProgress();
     };
     const timerTicker = createIntervalTicker({
@@ -126,14 +134,13 @@ export const createLessonRunnerActions = (deps) => {
 
         stopTimer();
         setStatus('Step in progress.');
-        if (startButton) startButton.textContent = 'Pause';
-        setDisabled(nextButton, false);
+        setRunnerControls({ startLabel: 'Pause', nextDisabled: false });
 
         dispatchStartEvents(startedStep);
 
         timerTicker.start();
-        runnerState.timerId = timerTicker.getId();
-        if (timerEl) timerEl.textContent = formatTime(runnerState.remainingSeconds * 1000);
+        syncTimerHandle();
+        renderTimer();
         updateProgress();
         syncStepList();
     };
@@ -142,8 +149,7 @@ export const createLessonRunnerActions = (deps) => {
         if (!timerTicker.isRunning()) return;
         stopTimer();
         setStatus('Paused. Tap Resume when ready.');
-        if (startButton) startButton.textContent = 'Resume';
-        setDisabled(nextButton, false);
+        setRunnerControls({ startLabel: 'Resume', nextDisabled: false });
         const pausedPayload = buildStepEventPayload(getCurrentStep());
         dispatchLessonRunnerEvent({
             state: 'pause',
