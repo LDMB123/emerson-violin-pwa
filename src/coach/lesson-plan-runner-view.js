@@ -35,13 +35,40 @@ export const createRunnerMarkup = () => {
     return runner;
 };
 
+export const createRunnerViewState = ({ runner, stepsList }) => ({
+    statusEl: runner.querySelector('[data-lesson-runner-status]'),
+    stepEl: runner.querySelector('[data-lesson-runner-step]'),
+    cueEl: runner.querySelector('[data-lesson-runner-cue]'),
+    timerEl: runner.querySelector('[data-lesson-runner-timer]'),
+    trackEl: runner.querySelector('[data-lesson-runner-track]'),
+    fillEl: runner.querySelector('[data-lesson-runner-fill]'),
+    startButton: runner.querySelector('[data-lesson-runner-start]'),
+    nextButton: runner.querySelector('[data-lesson-runner-next]'),
+    ctaButton: runner.querySelector('[data-lesson-runner-cta]'),
+    stepsList,
+});
+
 const setRunnerCta = (ctaButton, href, label = 'Open activity') => {
     if (!ctaButton) return;
     ctaButton.setAttribute('href', href);
     ctaButton.textContent = label;
 };
 
-export const updateRunnerProgress = ({
+export const renderRunnerTimer = (timerEl, seconds = 0) => {
+    if (!timerEl) return;
+    timerEl.textContent = formatTime(Math.max(0, Number(seconds) || 0) * 1000);
+};
+
+export const setRunnerControls = (
+    { startButton, nextButton } = {},
+    { startLabel = null, startDisabled, nextDisabled } = {},
+) => {
+    if (startLabel !== null && startButton) startButton.textContent = startLabel;
+    if (typeof startDisabled === 'boolean') setDisabled(startButton, startDisabled);
+    if (typeof nextDisabled === 'boolean') setDisabled(nextButton, nextDisabled);
+};
+
+const updateRunnerProgress = ({
     steps,
     currentStep,
     completedSteps,
@@ -59,7 +86,7 @@ export const updateRunnerProgress = ({
     if (trackEl) trackEl.setAttribute('aria-valuenow', String(percent));
 };
 
-export const syncRunnerStepList = ({
+const syncRunnerStepList = ({
     stepsList,
     steps,
     completedSteps,
@@ -82,7 +109,7 @@ export const syncRunnerStepList = ({
     });
 };
 
-export const renderEmptyRunnerStep = ({
+const renderEmptyRunnerStep = ({
     updateProgress,
     ctaButton,
     nextButton,
@@ -93,14 +120,16 @@ export const renderEmptyRunnerStep = ({
 }) => {
     if (stepEl) stepEl.textContent = formatStepLabel(0, 0);
     if (cueEl) cueEl.textContent = 'Practice a game to unlock a custom plan.';
-    if (timerEl) timerEl.textContent = '00:00';
+    renderRunnerTimer(timerEl);
     setRunnerCta(ctaButton, '#view-games');
-    setDisabled(startButton, true);
-    setDisabled(nextButton, true);
+    setRunnerControls(
+        { startButton, nextButton },
+        { startDisabled: true, nextDisabled: true },
+    );
     updateProgress();
 };
 
-export const renderRunnerStep = ({
+const renderRunnerStep = ({
     step,
     currentIndex,
     stepsLength,
@@ -127,10 +156,64 @@ export const renderRunnerStep = ({
     if (cueEl) cueEl.textContent = formatStepCue(step);
     const ctaTarget = step?.cta || recommendedGameId;
     setRunnerCta(ctaButton, toLessonLink(ctaTarget), step?.ctaLabel || 'Open activity');
-    if (timerEl) {
-        const duration = computeStepDuration(step?.minutes);
-        timerEl.textContent = formatTime((remainingSeconds || duration) * 1000);
-    }
-    setDisabled(startButton, false);
-    setDisabled(nextButton, completedSteps >= stepsLength);
+    renderRunnerTimer(timerEl, remainingSeconds || computeStepDuration(step?.minutes));
+    setRunnerControls(
+        { startButton, nextButton },
+        { startDisabled: false, nextDisabled: completedSteps >= stepsLength },
+    );
+};
+
+export const createRunnerRenderers = ({
+    runnerState,
+    runnerView,
+    getCurrentStep,
+}) => {
+    const updateProgress = () => {
+        updateRunnerProgress({
+            steps: runnerState.steps,
+            currentStep: getCurrentStep(),
+            completedSteps: runnerState.completedSteps,
+            remainingSeconds: runnerState.remainingSeconds,
+            timerId: runnerState.timerId,
+            fillEl: runnerView.fillEl,
+            trackEl: runnerView.trackEl,
+        });
+    };
+
+    const syncStepList = () => {
+        syncRunnerStepList({
+            stepsList: runnerView.stepsList,
+            steps: runnerState.steps,
+            completedSteps: runnerState.completedSteps,
+            currentStepId: getCurrentStep()?.id || null,
+        });
+    };
+
+    const updateStepDetails = () => {
+        if (!runnerState.steps.length) {
+            renderEmptyRunnerStep({
+                ...runnerView,
+                updateProgress,
+            });
+            return;
+        }
+
+        renderRunnerStep({
+            runnerView,
+            step: getCurrentStep(),
+            currentIndex: runnerState.currentIndex,
+            stepsLength: runnerState.steps.length,
+            recommendedGameId: runnerState.recommendedGameId,
+            remainingSeconds: runnerState.remainingSeconds,
+            completedSteps: runnerState.completedSteps,
+        });
+        syncStepList();
+        updateProgress();
+    };
+
+    return {
+        updateProgress,
+        syncStepList,
+        updateStepDetails,
+    };
 };

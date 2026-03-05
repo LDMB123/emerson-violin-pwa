@@ -4,6 +4,7 @@ import {
     ML_RECS,
     MISSION_UPDATED,
 } from '../utils/event-names.js';
+import { setRunnerControls } from './lesson-plan-runner-view.js';
 
 export const setupLessonRunnerLifecycle = ({
     stepsList,
@@ -32,7 +33,7 @@ export const setupLessonRunnerLifecycle = ({
     const onHashChange = () => {
         if (window.location.hash !== '#view-coach') {
             stopTimer();
-            if (startButton) startButton.textContent = 'Start';
+            setRunnerControls({ startButton }, { startLabel: 'Start' });
         }
     };
     const onVisibility = () => {
