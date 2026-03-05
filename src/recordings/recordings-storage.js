@@ -18,6 +18,7 @@ const pruneBlobs = async (previous, next) => {
     await Promise.allSettled(removals.map((key) => removeBlob(key)));
 };
 
+/** Migrates legacy data-URL recordings into blob-backed storage entries. */
 export const migrateRecordingsToBlobs = async () => {
     const recordings = await loadRecordings();
     const candidates = recordings.filter((recording) => recording?.dataUrl && !recording?.blobKey);
@@ -45,6 +46,7 @@ export const migrateRecordingsToBlobs = async () => {
     dispatchRecordingsUpdated();
 };
 
+/** Persists a new recording entry and prunes any displaced blob payloads. */
 export const saveRecording = async ({ songId, duration, blob, getSongTitle, maxRecordings }) => {
     const recordings = await loadRecordings();
 

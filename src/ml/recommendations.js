@@ -30,6 +30,7 @@ const runRefreshRecommendations = async () => {
     return recommendations;
 };
 
+/** Recomputes recommendations and refreshes the persisted recommendations cache. */
 export const refreshRecommendationsCache = async () => {
     if (refreshPromise) {
         return refreshPromise;
@@ -40,6 +41,7 @@ export const refreshRecommendationsCache = async () => {
     return refreshPromise;
 };
 
+/** Returns learning recommendations, optionally serving and refreshing cached data. */
 export const getLearningRecommendations = async ({ allowCached = true } = {}) => {
     if (allowCached) {
         const cached = await readCache();

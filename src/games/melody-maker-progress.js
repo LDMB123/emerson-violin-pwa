@@ -1,3 +1,4 @@
+/** Computes Melody Maker checklist progress from the current played sequence. */
 export const computeMelodySequenceProgress = ({
     track,
     lengthTarget,
@@ -24,6 +25,7 @@ export const computeMelodySequenceProgress = ({
     };
 };
 
+/** Returns score and match updates when the recent motif matches the target. */
 export const computeMelodyTargetMatch = ({
     track,
     targetMotif,

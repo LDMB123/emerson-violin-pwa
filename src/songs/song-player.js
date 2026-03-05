@@ -3,6 +3,7 @@ import { getSongCheckpoint } from './song-progression.js';
 import { applyControlsToView } from './song-player-controls.js';
 import { createControls, parseViewSongId } from './song-player-view.js';
 
+/** Binds advanced playback controls into each uninitialized song view. */
 export const initSongPlayer = async () => {
     const views = Array.from(document.querySelectorAll('.song-view'));
     for (const view of views) {
@@ -37,6 +38,7 @@ export const initSongPlayer = async () => {
     }
 };
 
+/** Starts best-effort initialization for advanced song-player controls. */
 export const init = () => {
     initSongPlayer().catch(() => {
         // Song player controls are best effort.

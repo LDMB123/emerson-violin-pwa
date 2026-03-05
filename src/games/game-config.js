@@ -19,6 +19,7 @@ const practiceStep = (minutes, label, cue, extra = {}) => ({
     ...extra,
 });
 
+/** Declares guided-session metadata, objectives, and difficulty profiles for each game. */
 export const GAME_META = {
     'pitch-quest': {
         skill: 'Pitch',
@@ -222,6 +223,7 @@ export const GAME_META = {
     },
 };
 
+/** Lists the shared objective tiers used across guided game coach panels. */
 export const GAME_OBJECTIVE_TIERS = Object.freeze(['foundation', 'core', 'mastery']);
 
 const toObjective = (step, index) => ({

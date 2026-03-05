@@ -3,6 +3,7 @@ import { toViewId } from '../utils/lesson-plan-utils.js';
 import { atLeast1 } from '../utils/math.js';
 export { buildMissionContract, buildNextActions } from './recommendations-plan-actions.js';
 
+/** Base coach-message templates keyed by weakest-skill domain. */
 export const COACH_MESSAGES = {
     pitch: 'Pitch focus: aim for clean, centered notes today.',
     rhythm: 'Rhythm focus: tap the beat before you play.',
@@ -123,6 +124,7 @@ const computeAdaptiveMinutes = (skillScores) => {
     return totalCalculated;
 };
 
+/** Builds the adaptive daily lesson plan steps and coach cue for recommendations. */
 export const buildLessonSteps = ({ weakestSkill, skillScores, recommendedGameId, metronomeTarget, songLevel }) => {
     const minutes = computeAdaptiveMinutes(skillScores);
     const focus = SKILL_FOCUS[weakestSkill] || SKILL_FOCUS.pitch;

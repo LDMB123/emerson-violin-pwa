@@ -1,5 +1,6 @@
 import { bindDocumentEvent, stopTonePlayer } from './shared.js';
 
+/** Creates a token-based playback runtime for cancelable interactive game sequences. */
 export const createPlaybackRuntime = ({
     onStop = null,
     stopToneOnStop = true,
@@ -48,6 +49,7 @@ export const createPlaybackRuntime = ({
     };
 };
 
+/** Binds visibilitychange handling for interactive runtime pause/resume behavior. */
 export const bindVisibilityLifecycle = ({
     onHidden = null,
     onVisible = null,

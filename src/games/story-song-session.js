@@ -1,3 +1,4 @@
+/** Validates and prepares Story Song playback before a play-along run starts. */
 export const prepareStorySongPlayback = ({
     toggle,
     isSoundEnabled,
@@ -32,6 +33,7 @@ export const prepareStorySongPlayback = ({
     return { player, token };
 };
 
+/** Finalizes one Story Song playback token and updates UI/reporting state. */
 export const finalizeStorySongPlayback = ({
     token,
     playback,

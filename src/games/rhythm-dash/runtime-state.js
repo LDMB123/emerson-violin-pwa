@@ -1,3 +1,4 @@
+/** Creates the mutable runtime state object used by Rhythm Dash. */
 export const createRhythmDashRuntimeState = ({ targetBpm, beatInterval }) => ({
     combo: 0,
     score: 0,
@@ -19,6 +20,7 @@ export const createRhythmDashRuntimeState = ({ targetBpm, beatInterval }) => ({
     energy: 100,
 });
 
+/** Applies beat-resolution state updates back onto the Rhythm Dash runtime object. */
 export const applyRhythmDashBeatRuntimeState = (runtime, nextState) => {
     runtime.combo = nextState.combo;
     runtime.score = nextState.score;

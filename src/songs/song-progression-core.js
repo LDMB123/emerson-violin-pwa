@@ -39,10 +39,12 @@ const normalizeDays = (entry) => {
     };
 };
 
+/** Derives the song mastery tier from distinct-day mastery counts. */
 export const tierFromCounts = (counts, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
     return tierFromDistinctDayCounts(counts, thresholds);
 };
 
+/** Normalizes one persisted song progression entry into the canonical state shape. */
 export const normalizeSongEntry = (entry) => ({
     ...(() => {
         const updatedAt = finiteOrNow(entry?.updatedAt);

@@ -62,6 +62,7 @@ const deleteIndexedDb = () =>
         request.onblocked = () => finish({ ok: false, reason: 'blocked' });
     });
 
+/** Deletes app JSON state, IndexedDB storage, and runtime caches on this device. */
 export const wipeAllLocalData = async () => {
     await clearJsonState();
     clearLocalStorageState();
@@ -72,6 +73,7 @@ export const wipeAllLocalData = async () => {
     return dbResult;
 };
 
+/** Runs the confirmation flow required before local data deletion proceeds. */
 export const confirmLocalDataDeletion = () => {
     const accepted = window.confirm('Delete all local Panda Violin data on this device? This cannot be undone.');
     if (!accepted) return false;

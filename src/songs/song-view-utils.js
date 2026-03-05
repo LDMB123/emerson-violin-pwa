@@ -1,3 +1,4 @@
+/** Runs a callback once for each song view not yet marked with the given bound key. */
 export const forEachUnboundSongView = (boundKey, onView) => {
     if (!boundKey || typeof onView !== 'function') return;
     const views = document.querySelectorAll('.song-view');
@@ -8,6 +9,7 @@ export const forEachUnboundSongView = (boundKey, onView) => {
     });
 };
 
+/** Resolves the core playback DOM elements for a song view. */
 export const getSongViewPlaybackElements = (view, resolveSongId) => {
     if (!view) return null;
     const toggle = view.querySelector('.song-play-toggle');

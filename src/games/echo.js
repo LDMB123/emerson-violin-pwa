@@ -173,8 +173,10 @@ const initEcho = () => {
     }
 };
 
+/** Initializes the Echo game view, canvas engine, and realtime listeners. */
 export const init = initEcho;
 
+/** Tears down Echo game listeners, handlers, and canvas engine state. */
 export const dispose = () => {
     document.removeEventListener(MISSION_UPDATED, handleMissionUpdate);
     document.removeEventListener(RT_FEATURE, handleRealtimeFeature);

@@ -5,6 +5,7 @@ import { gameViewHash } from '../utils/view-hash-utils.js';
 
 
 
+/** Normalizes mission data into the compact contract used by recommendation UIs. */
 export const buildMissionContract = (mission) => {
     if (!mission) {
         return {
@@ -64,6 +65,7 @@ const resolveMissionStepHref = (missionStep) => {
     return '#view-coach';
 };
 
+/** Builds the prioritized next-action CTA list from mission and recommendation data. */
 export const buildNextActions = ({
     mission,
     recommendedGameId,
