@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     getBudgetFailures,
+    getLcpFallbackNote,
+    LCP_FALLBACK_NOTE,
     parseBooleanEnv,
 } from '../../scripts/audit-performance-budgets.mjs';
 
@@ -36,5 +38,21 @@ describe('audit-performance-budgets helpers', () => {
         });
 
         expect(failures).toEqual([]);
+    });
+
+    it('returns fallback note when any sample lacks lcp-entry source', () => {
+        const note = getLcpFallbackNote([
+            { lcpSource: 'lcp-entry' },
+            { lcpSource: 'fmp-fallback' },
+        ]);
+        expect(note).toBe(LCP_FALLBACK_NOTE);
+    });
+
+    it('does not return fallback note when all samples use lcp-entry', () => {
+        const note = getLcpFallbackNote([
+            { lcpSource: 'lcp-entry' },
+            { lcpSource: 'lcp-entry' },
+        ]);
+        expect(note).toBeNull();
     });
 });

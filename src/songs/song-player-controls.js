@@ -25,6 +25,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     let raqId = null;
     let currentNotePitch = null;
     let notesElements = [];
+    let playheadEl = null;
     let completedNotes = new Set();
     let audioTriggers = new Set();
     let isWaiting = false;
@@ -94,12 +95,14 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
                 duration: durMatch ? Number.parseFloat(durMatch[1]) : 0,
             };
         }).sort((a, b) => a.start - b.start);
+        playheadEl = songSheet?.querySelector('.song-playhead') || null;
     };
 
     const stopPlayback = () => {
         isPlaying = false;
         if (raqId) cancelAnimationFrame(raqId);
         raqId = null;
+        playheadEl = null;
         unbindVisibilityListener();
         if (tuningActive) {
             if (tuningActive.rtListener) {
@@ -154,7 +157,6 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
 
         // Auto-scroll the song sheet to keep up with the playhead
         if (songSheet) {
-            const playheadEl = songSheet.querySelector('.song-playhead');
             if (playheadEl) {
                 // Read the actual computed X position from the CSS animation
                 const rect = playheadEl.getBoundingClientRect();

@@ -12,6 +12,7 @@ export class BaseCanvasEngine {
         // Setup base resize handling
         this.handleResize = this.handleResize.bind(this);
         this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
+        this.loop = this.loop.bind(this);
         window.addEventListener('resize', this.handleResize);
         document.addEventListener('visibilitychange', this.handleVisibilityChange);
     }
@@ -64,7 +65,7 @@ export class BaseCanvasEngine {
 
     scheduleNextFrame() {
         if (this.rafId !== null) return;
-        this.rafId = requestAnimationFrame(() => this.loop());
+        this.rafId = requestAnimationFrame(this.loop);
     }
 
     stop() {

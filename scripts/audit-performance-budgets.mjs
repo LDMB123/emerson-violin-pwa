@@ -44,6 +44,12 @@ export const getBudgetFailures = ({ fcpMedian, lcpMedian, fcpBudgetMs, lcpBudget
     return failures;
 };
 
+export const LCP_FALLBACK_NOTE = 'LCP entries unavailable in this runtime; using FirstMeaningfulPaint fallback for budget checks.';
+
+export const getLcpFallbackNote = (samples = []) => (
+    samples.some((sample) => sample?.lcpSource !== 'lcp-entry') ? LCP_FALLBACK_NOTE : null
+);
+
 const writeSummary = (summary) => {
     const outputPath = path.resolve(summaryOutputPath);
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
@@ -217,10 +223,10 @@ const run = async () => {
             );
         }
 
-        if (samples.some((sample) => sample.lcpSource !== 'lcp-entry')) {
-            const note = 'LCP entries unavailable in this runtime; using FirstMeaningfulPaint fallback for budget checks.';
-            summary.notes.push(note);
-            console.warn(note);
+        const lcpFallbackNote = getLcpFallbackNote(samples);
+        if (lcpFallbackNote) {
+            summary.notes.push(lcpFallbackNote);
+            console.warn(lcpFallbackNote);
         }
 
         const fcpValues = samples.map((sample) => sample.fcp);

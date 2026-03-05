@@ -7,6 +7,7 @@ export class BaseCanvasEngine {
         this.particles = [];
         this.lastTime = 0;
         this.isRunning = false;
+        this.rafId = null;
 
         this.render = this.render.bind(this);
     }
@@ -19,11 +20,15 @@ export class BaseCanvasEngine {
     }
 
     scheduleRender() {
-        requestAnimationFrame(this.render);
+        this.rafId = requestAnimationFrame(this.render);
     }
 
     stop() {
         this.isRunning = false;
+        if (this.rafId !== null) {
+            cancelAnimationFrame(this.rafId);
+            this.rafId = null;
+        }
         if (this.cleanupEvents) {
             this.cleanupEvents();
             this.cleanupEvents = null;
@@ -53,7 +58,7 @@ export class BaseCanvasEngine {
 
     beginFrame(time) {
         if (!this.isRunning) return null;
-        requestAnimationFrame(this.render);
+        this.rafId = requestAnimationFrame(this.render);
         const dt = Math.min((time - this.lastTime) / 1000, 0.1);
         this.lastTime = time;
         return { dt, ctx: this.ctx };
