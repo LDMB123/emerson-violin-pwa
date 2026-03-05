@@ -3,6 +3,7 @@
  * Extracted from native-apis.js for testability
  */
 import { DAY_MS } from '../utils/math.js';
+import { isWakeEligibleView } from '../utils/view-id-utils.js';
 
 /**
  * Determines if persistent storage request should be retried
@@ -79,9 +80,7 @@ export const isAutomated = () => Boolean(navigator.webdriver);
  * @returns {boolean} True if wake lock is allowed for this view
  */
 export const viewAllowsWake = (viewId) => {
-    if (viewId.startsWith('view-game-')) return true;
-    if (viewId.startsWith('view-song-')) return true;
-    return ['view-coach', 'view-songs', 'view-trainer', 'view-tuner', 'view-session-review'].includes(viewId);
+    return isWakeEligibleView(viewId);
 };
 
 /**

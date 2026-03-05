@@ -39,6 +39,9 @@ const inEnum = (value, list) => list.includes(value);
 const pushError = (errors, condition, message) => {
     if (!condition) errors.push(message);
 };
+const pushEnumError = (errors, payload, field, list) => {
+    pushError(errors, inEnum(payload[field], list), `${field} must be one of: ${list.join(', ')}`);
+};
 
 const validateSessionStarted = (payload, errors) => {
     pushError(errors, isString(payload.sessionId), 'sessionId must be a non-empty string');
@@ -54,13 +57,9 @@ const validateSessionStopped = (payload, errors) => {
 
 const validateCue = (payload, errors) => {
     pushError(errors, isString(payload.id), 'id must be a non-empty string');
-    pushError(errors, inEnum(payload.state, CUE_STATES), `state must be one of: ${CUE_STATES.join(', ')}`);
+    pushEnumError(errors, payload, 'state', CUE_STATES);
     pushError(errors, isString(payload.message), 'message must be a non-empty string');
-    pushError(
-        errors,
-        inEnum(payload.confidenceBand, CONFIDENCE_BANDS),
-        `confidenceBand must be one of: ${CONFIDENCE_BANDS.join(', ')}`,
-    );
+    pushEnumError(errors, payload, 'confidenceBand', CONFIDENCE_BANDS);
     pushError(errors, isFiniteNumber(payload.priority), 'priority must be a finite number');
     pushError(errors, isFiniteNumber(payload.dwellMs), 'dwellMs must be a finite number');
     pushError(errors, isString(payload.domain), 'domain must be a non-empty string');
@@ -75,16 +74,8 @@ const validateState = (payload, errors) => {
     pushError(errors, isString(payload.sessionId), 'sessionId must be a non-empty string');
     pushError(errors, isBoolean(payload.listening), 'listening must be a boolean');
     pushError(errors, isBoolean(payload.paused), 'paused must be a boolean');
-    pushError(
-        errors,
-        inEnum(payload.confidenceBand, CONFIDENCE_BANDS),
-        `confidenceBand must be one of: ${CONFIDENCE_BANDS.join(', ')}`,
-    );
-    pushError(
-        errors,
-        inEnum(payload.cueState, CUE_STATES),
-        `cueState must be one of: ${CUE_STATES.join(', ')}`,
-    );
+    pushEnumError(errors, payload, 'confidenceBand', CONFIDENCE_BANDS);
+    pushEnumError(errors, payload, 'cueState', CUE_STATES);
     pushError(errors, isFiniteNumber(payload.timestamp), 'timestamp must be a finite number');
 
     if ('viewId' in payload) {
@@ -112,8 +103,8 @@ const validateFallback = (payload, errors) => {
 };
 
 const validateParentOverride = (payload, errors) => {
-    pushError(errors, inEnum(payload.preset, PARENT_PRESETS), `preset must be one of: ${PARENT_PRESETS.join(', ')}`);
-    pushError(errors, inEnum(payload.previousPreset, PARENT_PRESETS), `previousPreset must be one of: ${PARENT_PRESETS.join(', ')}`);
+    pushEnumError(errors, payload, 'preset', PARENT_PRESETS);
+    pushEnumError(errors, payload, 'previousPreset', PARENT_PRESETS);
     pushError(errors, isFiniteNumber(payload.at), 'at must be a finite number');
     pushError(errors, isString(payload.source), 'source must be a non-empty string');
 };
@@ -169,4 +160,3 @@ export const assertRealtimePayload = (eventName, payload) => {
     if (result.ok) return payload;
     throw new TypeError(`[RealtimeContracts] ${eventName} payload invalid: ${result.errors.join('; ')}`);
 };
-

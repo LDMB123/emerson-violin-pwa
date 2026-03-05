@@ -66,6 +66,30 @@ const createCue = ({
     };
 };
 
+const emitCue = (state, cue, now) => {
+    state.lastCueAt = now;
+    state.lastCueState = cue.state;
+    return cue;
+};
+
+const emitSystemCue = (state, {
+    cueState,
+    message,
+    confidenceBand,
+    now,
+    priority = 1,
+    fallback = false,
+}) => emitCue(state, createCue({
+    state,
+    cueState,
+    message,
+    confidenceBand,
+    domain: 'system',
+    now,
+    priority,
+    fallback,
+}), now);
+
 export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
     const now = finiteOrNow(context.now);
     const pitchCents = finiteOrZero(features.pitchCents);
@@ -83,33 +107,23 @@ export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
         if (state.lowConfidenceFrames >= HARD_RAILS.lowConfidenceFallbackFrames) {
             state.lowConfidenceFrames = 0;
             state.consecutiveCorrections = 0;
-            const cue = createCue({
-                state,
+            return emitSystemCue(state, {
                 cueState: 'retry-calm',
                 message: 'Let us use a helper tone for a moment.',
                 confidenceBand,
-                domain: 'system',
                 now,
                 priority: 3,
                 fallback: true,
             });
-            state.lastCueAt = now;
-            state.lastCueState = cue.state;
-            return cue;
         }
         if (shouldRespectCooldown(state, now)) return null;
-        const cue = createCue({
-            state,
+        return emitSystemCue(state, {
             cueState: 'listening',
             message: 'Listening for your sound...',
             confidenceBand,
-            domain: 'system',
             now,
             priority: 1,
         });
-        state.lastCueAt = now;
-        state.lastCueState = cue.state;
-        return cue;
     }
 
     state.lowConfidenceFrames = 0;
@@ -121,18 +135,13 @@ export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
         && state.consecutiveCorrections >= HARD_RAILS.maxConsecutiveCorrections
     ) {
         state.consecutiveCorrections = 0;
-        const cue = createCue({
-            state,
+        return emitSystemCue(state, {
             cueState: 'retry-calm',
             message: 'Tiny reset. One slow bow, then try again.',
             confidenceBand,
-            domain: 'system',
             now,
             priority: 3,
         });
-        state.lastCueAt = now;
-        state.lastCueState = cue.state;
-        return cue;
     }
 
     if (Math.abs(pitchCents) > bounds.pitchToleranceCents) {
@@ -147,9 +156,7 @@ export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
             priority: 3,
             urgent: Math.abs(pitchCents) > bounds.pitchToleranceCents * 2 && confidenceBand === 'high',
         });
-        state.lastCueAt = now;
-        state.lastCueState = cue.state;
-        return cue;
+        return emitCue(state, cue, now);
     }
 
     if (Math.abs(rhythmOffsetMs) > bounds.rhythmToleranceMs) {
@@ -164,24 +171,17 @@ export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
             priority: 2,
             urgent: Math.abs(rhythmOffsetMs) > bounds.rhythmToleranceMs * 1.6 && confidenceBand === 'high',
         });
-        state.lastCueAt = now;
-        state.lastCueState = cue.state;
-        return cue;
+        return emitCue(state, cue, now);
     }
 
     state.consecutiveCorrections = 0;
-    const cue = createCue({
-        state,
+    return emitSystemCue(state, {
         cueState: 'steady',
         message: 'Nice and steady.',
         confidenceBand,
-        domain: 'system',
         now,
         priority: 1,
     });
-    state.lastCueAt = now;
-    state.lastCueState = cue.state;
-    return cue;
 };
 
 export const getBoundsForPreset = (preset) => ({ ...getBounds(preset) });

@@ -1,4 +1,5 @@
 import { clamp, deviationAccuracy, preciseSum } from '../utils/math.js';
+import { isPracticeViewId } from '../utils/view-id-utils.js';
 
 /**
  * Determines if the given view ID represents a practice view.
@@ -7,9 +8,7 @@ import { clamp, deviationAccuracy, preciseSum } from '../utils/math.js';
  * @returns {boolean} True if the view is a practice view
  */
 export const isPracticeView = (viewId) => {
-    if (viewId.startsWith('view-game-')) return true;
-    if (viewId.startsWith('view-song-')) return true;
-    return ['view-coach', 'view-games', 'view-songs', 'view-trainer', 'view-tuner', 'view-bowing', 'view-posture'].includes(viewId);
+    return isPracticeViewId(viewId);
 };
 
 /**
