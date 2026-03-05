@@ -1,5 +1,17 @@
+import { markCheckboxInputChecked } from '../utils/checkbox-utils.js';
+
 export const resolveMissionGoalInputs = () => (
     Array.from(document.querySelectorAll('#view-coach [data-goal-list] input[type="checkbox"][id]'))
+);
+
+const buildMissionProgress = (completed, total) => ({
+    completed,
+    total,
+    complete: total > 0 && completed >= total,
+});
+
+const countBy = (collection, predicate) => (
+    Array.isArray(collection) ? collection.filter(predicate).length : 0
 );
 
 export const computeMissionProgressValues = ({
@@ -9,12 +21,8 @@ export const computeMissionProgressValues = ({
 }) => {
     if (goalInputs.length) {
         const total = Math.max(goalInputs.length, goalSlotIds.length);
-        const completed = goalInputs.filter((input) => input.checked).length;
-        return {
-            completed,
-            total,
-            complete: total > 0 && completed >= total,
-        };
+        const completed = countBy(goalInputs, (input) => input.checked);
+        return buildMissionProgress(completed, total);
     }
 
     if (!missionState?.steps?.length) {
@@ -25,12 +33,8 @@ export const computeMissionProgressValues = ({
         };
     }
     const total = missionState.steps.length;
-    const completed = missionState.steps.filter((step) => step.status === 'complete').length;
-    return {
-        completed,
-        total,
-        complete: total > 0 && completed >= total,
-    };
+    const completed = countBy(missionState.steps, (step) => step.status === 'complete');
+    return buildMissionProgress(completed, total);
 };
 
 export const applyMissionGoalList = ({
@@ -84,11 +88,7 @@ export const markMissionGoal = ({
     if (stepId && !input.dataset.stepId) {
         input.dataset.stepId = stepId;
     }
-    if (!input.checked) {
-        input.checked = true;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    return true;
+    return markCheckboxInputChecked(input) || input.checked;
 };
 
 export const flushQueuedMissionGoals = ({

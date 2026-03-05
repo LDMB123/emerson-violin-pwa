@@ -33,6 +33,7 @@ const loaded = new Map();
 const updates = new Set();
 let initialized = false;
 let masteryState = null;
+const HASH_CHANGE_OPTIONS = { passive: true };
 
 let updateScheduled = false;
 const scheduleUpdateAll = () => {
@@ -137,6 +138,7 @@ const refreshGameMastery = async () => {
     }
     renderGameMasteryCards();
 };
+const refreshGameMasterySafely = () => refreshGameMastery().catch(() => { });
 
 const loadGame = (viewId) => {
     if (loaded.has(viewId)) return loaded.get(viewId);
@@ -183,24 +185,24 @@ const loadGamesForView = (viewId) => {
 };
 
 const handleChange = (event) => {
-    const input = getCheckboxInput(event.target);
-    if (!input) return;
-    if (!input.closest('[id^="view-game-"]')) return;
+    const targetInput = getCheckboxInput(event.target);
+    if (!targetInput || !targetInput.closest('[id^="view-game-"]')) return;
     scheduleUpdateAll();
 };
 
 const initMetrics = () => {
     const hash = window.location.hash.slice(1);
     loadGamesForView(hash);
-    refreshGameMastery().catch(() => { });
+    refreshGameMasterySafely();
 
     if (!initialized) {
         initialized = true;
-        window.addEventListener('hashchange', () => {
+        const onHashChange = () => {
             const view = window.location.hash.slice(1);
             loadGamesForView(view);
             renderGameMasteryCards();
-        }, { passive: true });
+        };
+        window.addEventListener('hashchange', onHashChange, HASH_CHANGE_OPTIONS);
 
         document.addEventListener('change', handleChange);
     }
@@ -210,18 +212,18 @@ export const init = initMetrics;
 
 document.addEventListener(PERSIST_APPLIED, () => {
     scheduleUpdateAll();
-    refreshGameMastery().catch(() => { });
+    refreshGameMasterySafely();
 });
 
 document.addEventListener(GAME_RECORDED, () => {
-    refreshGameMastery().catch(() => { });
+    refreshGameMasterySafely();
 });
 
 document.addEventListener(GAME_MASTERY_UPDATED, (event) => {
     const id = event?.detail?.id;
     const game = event?.detail?.mastery;
     if (!id || !game) {
-        refreshGameMastery().catch(() => { });
+        refreshGameMasterySafely();
         return;
     }
     const nextGames = {

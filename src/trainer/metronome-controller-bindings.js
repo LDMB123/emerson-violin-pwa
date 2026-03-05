@@ -60,8 +60,8 @@ export const bindMetronomeTapControl = ({
     setStatus,
     getCurrentBpm,
     report,
-    markTouched,
     resetReported,
+    markTouched,
 } = {}) => {
     if (!tap || tap.dataset.metronomeBound === 'true') return;
     tap.dataset.metronomeBound = 'true';
@@ -80,8 +80,8 @@ export const bindMetronomeTapControl = ({
         if (slider) {
             slider.dataset.userSet = 'true';
         }
-        resetReported();
         markTouched();
+        resetReported();
         updateBpm(bpm);
         setStatus(`Tempo set to ${getCurrentBpm()} BPM.`);
         report();

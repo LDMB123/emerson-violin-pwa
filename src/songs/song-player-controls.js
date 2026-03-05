@@ -3,6 +3,7 @@ import { clamp, percentageRounded } from '../utils/math.js';
 import { getSongCheckpoint, saveSongCheckpoint } from './song-progression.js';
 import { parseViewSongId, sectionDuration, setStatus } from './song-player-view.js';
 import { attachTuning, playToneNote } from '../games/shared.js';
+import { getActiveTuningFeature, roundTuningCents } from '../utils/tuning-utils.js';
 
 export const applyControlsToView = ({ view, controls, song, sections }) => {
     const sectionSelect = controls.querySelector('[data-song-section]');
@@ -255,12 +256,12 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             tuningActive = attachTuning('song-player', () => { });
 
             const onRealtimeState = (event) => {
-                const tuning = event.detail?.lastFeature;
-                if (!tuning || event.detail?.paused) return;
+                const tuning = getActiveTuningFeature(event);
+                if (!tuning) return;
 
                 if (!isPlaying || !isWaiting || !currentNotePitch) return;
 
-                const cents = Math.round(tuning.cents || 0);
+                const cents = roundTuningCents(tuning);
 
                 if (tuning.note && tuning.note.replace(/\d+$/, '') === currentNotePitch.replace(/\d+$/, '')) {
                     if (Math.abs(cents) < 25) {
@@ -319,9 +320,15 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         notes.find((note) => isPendingActiveNote(note, seenSet, elapsed))
     );
 
-    const listPendingActiveNotes = (notes, seenSet, elapsed) => (
-        notes.filter((note) => isPendingActiveNote(note, seenSet, elapsed))
-    );
+    const listPendingActiveNotes = (notes, seenSet, elapsed) => {
+        const pending = [];
+        for (const note of notes) {
+            if (isPendingActiveNote(note, seenSet, elapsed)) {
+                pending.push(note);
+            }
+        }
+        return pending;
+    };
 
     const withSongId = (handler) => async () => {
         const songId = parseViewSongId(view.id);

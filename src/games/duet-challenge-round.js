@@ -8,7 +8,8 @@ export const startDuetChallengeRound = ({
     playPartnerSequence,
     markChecklist,
 }) => {
-    if (!isSoundEnabled()) {
+    const soundEnabled = isSoundEnabled();
+    if (!soundEnabled) {
         setPrompt('Sounds are off. Turn on Sounds to hear the partner.');
         return;
     }

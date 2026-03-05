@@ -12,6 +12,13 @@ const difficultyProfile = ({
     hard: { speed: hard, complexity: 2 },
 });
 
+const practiceStep = (minutes, label, cue, extra = {}) => ({
+    minutes,
+    label,
+    cue,
+    ...extra,
+});
+
 export const GAME_META = {
     'pitch-quest': {
         skill: 'Pitch',
@@ -42,7 +49,7 @@ export const GAME_META = {
         goal: 'Match notes quickly and remember their places.',
         targetMinutes: 6,
         steps: [
-            { minutes: 2, label: 'Name the notes out loud', cue: 'Say the note before you tap.' },
+            practiceStep(2, 'Name the notes out loud', 'Say the note before you tap.'),
             { minutes: 2, label: 'Match pairs calmly', cue: 'Focus on two at a time.' },
             { minutes: 2, label: 'Replay faster', cue: 'Try to beat your time.' },
         ],
@@ -66,7 +73,7 @@ export const GAME_META = {
         goal: 'Keep the bow straight and controlled.',
         targetMinutes: 7,
         steps: [
-            { minutes: 2, label: 'Set bow lane', cue: 'Parallel to the bridge.' },
+            practiceStep(2, 'Set bow lane', 'Parallel to the bridge.'),
             { minutes: 3, label: 'Follow the hero path', cue: 'Smooth bow changes.' },
             { minutes: 2, label: 'Finish with long bows', cue: 'Use full length strokes.' },
         ],
@@ -78,7 +85,7 @@ export const GAME_META = {
         goal: 'Travel through strings with clean crossings.',
         targetMinutes: 6,
         steps: [
-            { minutes: 2, label: 'Map the string path', cue: 'G-D-A-E order.' },
+            practiceStep(2, 'Map the string path', 'G-D-A-E order.'),
             { minutes: 2, label: 'Play crossings slowly', cue: 'Move from the arm.' },
             { minutes: 2, label: 'Build a combo', cue: 'Keep the bow angle steady.' },
         ],
@@ -90,7 +97,7 @@ export const GAME_META = {
         goal: 'Paint rhythmic patterns with precision.',
         targetMinutes: 6,
         steps: [
-            { minutes: 2, label: 'Trace the pattern', cue: 'Tap on the beat grid.' },
+            practiceStep(2, 'Trace the pattern', 'Tap on the beat grid.'),
             { minutes: 2, label: 'Layer a second rhythm', cue: 'Keep tempo steady.' },
             { minutes: 2, label: 'Play with a metronome', cue: 'Feel the pulse in your feet.' },
         ],
@@ -102,7 +109,7 @@ export const GAME_META = {
         goal: 'Tell the story with expressive dynamics.',
         targetMinutes: 8,
         steps: [
-            { minutes: 2, label: 'Read the story cues', cue: 'Circle the dynamic words.' },
+            practiceStep(2, 'Read the story cues', 'Circle the dynamic words.'),
             { minutes: 3, label: 'Play the melody slowly', cue: 'Shape the phrase.' },
             { minutes: 3, label: 'Add expression', cue: 'Use show-and-tell bowing.' },
         ],
@@ -111,8 +118,8 @@ export const GAME_META = {
     },
     pizzicato: {
         skill: 'Rhythm',
-        goal: 'Pop the strings cleanly and keep time.',
         targetMinutes: 5,
+        goal: 'Pop the strings cleanly and keep time.',
         steps: [
             { minutes: 1, label: 'Set right-hand pizzicato', cue: 'Finger pulls across the string.' },
             { minutes: 2, label: 'Tap rhythm pattern', cue: 'Stay relaxed.' },
@@ -126,7 +133,7 @@ export const GAME_META = {
         goal: 'Center each string with calm listening.',
         targetMinutes: 6,
         steps: [
-            { minutes: 2, label: 'Tune each open string', cue: 'Listen for the beats to disappear.' },
+            practiceStep(2, 'Tune each open string', 'Listen for the beats to disappear.'),
             { minutes: 2, label: 'Check with tuner', cue: 'Aim for the center line.' },
             { minutes: 2, label: 'Play slow double stops', cue: 'Listen for resonance.' },
         ],
@@ -138,7 +145,7 @@ export const GAME_META = {
         goal: 'Build a melody with strong note choices.',
         targetMinutes: 7,
         steps: [
-            { minutes: 2, label: 'Pick a starting note', cue: 'Start on an open string.' },
+            practiceStep(2, 'Pick a starting note', 'Start on an open string.'),
             { minutes: 3, label: 'Add 4-6 notes', cue: 'Keep stepwise motion.' },
             { minutes: 2, label: 'Play it back smoothly', cue: 'Keep a steady bow.' },
         ],
@@ -150,7 +157,7 @@ export const GAME_META = {
         goal: 'Play the scale with even tone and tempo.',
         targetMinutes: 8,
         steps: [
-            { minutes: 2, label: 'Finger map the scale', cue: 'Name the notes.' },
+            practiceStep(2, 'Finger map the scale', 'Name the notes.'),
             { minutes: 3, label: 'Play with metronome', cue: 'One bow per note.' },
             { minutes: 3, label: 'Repeat with dynamics', cue: 'Crescendo then decrescendo.' },
         ],
@@ -162,7 +169,7 @@ export const GAME_META = {
         goal: 'Play in sync with the duet partner.',
         targetMinutes: 7,
         steps: [
-            { minutes: 2, label: 'Listen to the partner line', cue: 'Clap the rhythm first.' },
+            practiceStep(2, 'Listen to the partner line', 'Clap the rhythm first.'),
             { minutes: 3, label: 'Play your line slowly', cue: 'Stay with the pulse.' },
             { minutes: 2, label: 'Combine both parts', cue: 'Balance your volume.' },
         ],
@@ -174,7 +181,7 @@ export const GAME_META = {
         goal: 'Control volume between forte and piano on command.',
         targetMinutes: 5,
         steps: [
-            { minutes: 2, label: 'Play forte on cue', cue: 'Fill the room with sound.' },
+            practiceStep(2, 'Play forte on cue', 'Fill the room with sound.'),
             { minutes: 3, label: 'Play piano on cue', cue: 'Gentle bow, near the fingerboard.' },
         ],
         tip: 'Use bow speed and weight together to control dynamics.',
@@ -185,7 +192,7 @@ export const GAME_META = {
         goal: 'Listen to a rhythm pattern and play it back.',
         targetMinutes: 5,
         steps: [
-            { minutes: 2, label: 'Listen to the pattern', cue: 'Count the beats silently.' },
+            practiceStep(2, 'Listen to the pattern', 'Count the beats silently.'),
             { minutes: 3, label: 'Echo it back', cue: 'Match the rhythm exactly.' },
         ],
         tip: 'Tap the rhythm on your leg before playing on the violin.',
@@ -196,7 +203,7 @@ export const GAME_META = {
         goal: 'Practice smooth, circular bow arm mechanics in the air.',
         targetMinutes: 5,
         steps: [
-            { minutes: 2, label: 'Hold the bow in the air', cue: 'Jelly shoulders.' },
+            practiceStep(2, 'Hold the bow in the air', 'Jelly shoulders.'),
             { minutes: 3, label: 'Trace big slow circles', cue: 'Keep the wrist soft on the up-circle.' },
         ],
         tip: 'Imagine stirring a giant pot of thick soup.',
@@ -207,7 +214,7 @@ export const GAME_META = {
         goal: 'Balance a cheerio and practice forearm pronation/supination.',
         targetMinutes: 5,
         steps: [
-            { minutes: 2, label: 'Place cheerio on back of hand', cue: 'Keep the Bunny Hand shape.' },
+            practiceStep(2, 'Place cheerio on back of hand', 'Keep the Bunny Hand shape.'),
             { minutes: 3, label: 'Rotate side to side', cue: 'Match the metronome beat.' },
         ],
         tip: 'Use your forearm to turn the hand, not your wrist.',

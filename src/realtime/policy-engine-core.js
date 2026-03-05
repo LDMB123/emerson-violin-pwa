@@ -101,18 +101,24 @@ export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
     );
     const confidenceBand = confidenceBandFrom(confidence);
     const bounds = getBounds(state.preset);
+    const emitRetryCalmCue = ({ message, fallback = false } = {}) => {
+        state.consecutiveCorrections = 0;
+        return emitSystemCue(state, {
+            cueState: 'retry-calm',
+            message,
+            confidenceBand,
+            now,
+            priority: 3,
+            fallback,
+        });
+    };
 
     if (confidenceBand === 'low') {
         state.lowConfidenceFrames += 1;
         if (state.lowConfidenceFrames >= HARD_RAILS.lowConfidenceFallbackFrames) {
             state.lowConfidenceFrames = 0;
-            state.consecutiveCorrections = 0;
-            return emitSystemCue(state, {
-                cueState: 'retry-calm',
+            return emitRetryCalmCue({
                 message: 'Let us use a helper tone for a moment.',
-                confidenceBand,
-                now,
-                priority: 3,
                 fallback: true,
             });
         }
@@ -134,44 +140,50 @@ export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
         (Math.abs(pitchCents) > bounds.pitchToleranceCents || Math.abs(rhythmOffsetMs) > bounds.rhythmToleranceMs)
         && state.consecutiveCorrections >= HARD_RAILS.maxConsecutiveCorrections
     ) {
-        state.consecutiveCorrections = 0;
-        return emitSystemCue(state, {
-            cueState: 'retry-calm',
+        return emitRetryCalmCue({
             message: 'Tiny reset. One slow bow, then try again.',
-            confidenceBand,
-            now,
-            priority: 3,
         });
     }
 
-    if (Math.abs(pitchCents) > bounds.pitchToleranceCents) {
+    const emitCorrectionCue = ({
+        cueState,
+        message,
+        domain,
+        priority,
+        urgent,
+    }) => {
         state.consecutiveCorrections += 1;
         const cue = createCue({
+            cueState,
+            message,
+            domain,
             state,
+            confidenceBand,
+            priority,
+            now,
+            urgent,
+        });
+        return emitCue(state, cue, now);
+    };
+
+    if (Math.abs(pitchCents) > bounds.pitchToleranceCents) {
+        return emitCorrectionCue({
             cueState: pitchCents > 0 ? 'adjust-down' : 'adjust-up',
             message: pitchCents > 0 ? 'A little lower.' : 'A little higher.',
-            confidenceBand,
             domain: 'pitch',
-            now,
             priority: 3,
             urgent: Math.abs(pitchCents) > bounds.pitchToleranceCents * 2 && confidenceBand === 'high',
         });
-        return emitCue(state, cue, now);
     }
 
     if (Math.abs(rhythmOffsetMs) > bounds.rhythmToleranceMs) {
-        state.consecutiveCorrections += 1;
-        const cue = createCue({
-            state,
+        return emitCorrectionCue({
             cueState: rhythmOffsetMs > 0 ? 'adjust-up' : 'adjust-down',
             message: rhythmOffsetMs > 0 ? 'Bow a tiny bit sooner.' : 'Bow a tiny bit later.',
-            confidenceBand,
             domain: 'rhythm',
-            now,
             priority: 2,
             urgent: Math.abs(rhythmOffsetMs) > bounds.rhythmToleranceMs * 1.6 && confidenceBand === 'high',
         });
-        return emitCue(state, cue, now);
     }
 
     state.consecutiveCorrections = 0;

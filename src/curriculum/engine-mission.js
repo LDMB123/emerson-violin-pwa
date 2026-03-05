@@ -111,8 +111,9 @@ export const completeMissionStep = async (params = {}) => {
 
 export const startMissionStep = async (params = {}) => {
     return withPersistedStepMission(params, 'step-start', ({ normalized, stepId }) => {
+        const sourceSteps = normalized.steps;
         const { steps } = mapStepStatus({
-            steps: normalized.steps,
+            steps: sourceSteps,
             stepId,
             status: MISSION_STEP_STATES.IN_PROGRESS,
             timestampKey: 'startedAt',

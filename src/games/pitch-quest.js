@@ -28,17 +28,24 @@ const noteStepMap = {
     E: 'pq-step-4',
 };
 
+const resetPitchQuestAttemptState = (gameState) => {
+    gameState.attempts = 0;
+    gameState.hits = 0;
+    gameState.liveFeature = null;
+};
+const resetPitchQuestStreakState = (gameState) => {
+    gameState.streak = 0;
+    gameState.stabilityStreak = 0;
+};
+
 const { bind } = createGame({
     id: 'pitch-quest',
     computeAccuracy: (state) => (state.attempts ? (state.hits / state.attempts) * 100 : 0),
     onReset: (gameState) => {
         gameState.score = 0;
         gameState.stars = 0;
-        gameState.streak = 0;
-        gameState.stabilityStreak = 0;
-        gameState.attempts = 0;
-        gameState.hits = 0;
-        gameState.liveFeature = null;
+        resetPitchQuestStreakState(gameState);
+        resetPitchQuestAttemptState(gameState);
 
         if (gameState._scoreEl) setLiveNumber(gameState._scoreEl, 'liveScore', 0);
         if (gameState._starsEl) {
@@ -79,9 +86,7 @@ const { bind } = createGame({
         gameState.stars = stars;
         gameState.streak = streak;
         gameState.stabilityStreak = stabilityStreak;
-        gameState.attempts = 0;
-        gameState.hits = 0;
-        gameState.liveFeature = null;
+        resetPitchQuestAttemptState(gameState);
         gameState._scoreEl = scoreEl;
         gameState._starsEl = starsEl;
         gameState._stabilityEl = stabilityEl;
@@ -131,6 +136,11 @@ const { bind } = createGame({
             stabilityStreak = nextState.stabilityStreak;
             lastStableAt = nextState.lastStableAt;
         };
+        const resetStreakState = () => {
+            streak = 0;
+            stabilityStreak = 0;
+            resetPitchQuestStreakState(gameState);
+        };
 
         const onRealtimeState = createRealtimeFeatureStateHandler('pitch-quest', (feature) => {
             updateLiveFeature(feature);
@@ -140,10 +150,7 @@ const { bind } = createGame({
 
         targets.forEach((radio) => {
             radio.addEventListener('change', () => {
-                streak = 0;
-                stabilityStreak = 0;
-                gameState.streak = 0;
-                gameState.stabilityStreak = 0;
+                resetStreakState();
                 if (stabilityEl) stabilityEl.textContent = '0x';
                 updateTargetStatus();
                 const targetNote = getTargetNote();

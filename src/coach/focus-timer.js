@@ -1,6 +1,11 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { PERSIST_APPLIED, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
+import {
+    createTargetedRefreshHandlers,
+    createResolveThenApplyHandler,
+} from '../utils/event-handlers.js';
 import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
+import { markCheckboxInputChecked } from '../utils/checkbox-utils.js';
 import { triggerMiniConfetti } from '../games/shared.js';
 import { formatCountdown } from '../games/session-timer.js';
 import { shouldStopFocusTimer } from './focus-timer-utils.js';
@@ -42,9 +47,7 @@ const applyTuning = async () => {
 
 const logFocusMinutes = (minutes) => {
     const input = document.getElementById(`goal-step-focus-${minutes}`);
-    if (!input) return;
-    input.checked = true;
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    if (!markCheckboxInputChecked(input)) return;
     input.checked = false;
 };
 
@@ -123,7 +126,8 @@ const stopWhenInactive = ({ force = false } = {}) => {
         force,
     })) return;
     focusToggle.checked = false;
-    stopSession(false);
+    const userToggle = false;
+    stopSession(userToggle);
 };
 
 const bindLocalListeners = () => {
@@ -133,20 +137,12 @@ const bindLocalListeners = () => {
     }
 };
 
-const refreshFocusTuning = () => {
-    resolveElements();
-    applyTuning();
-};
+const refreshFocusTuning = createResolveThenApplyHandler(resolveElements, applyTuning);
 
-const handleMlUpdate = (event) => {
-    if (event.detail?.id !== 'coach-focus') return;
-    refreshFocusTuning();
-};
-
+const { handleUpdate: handleMlUpdate } = createTargetedRefreshHandlers('coach-focus', refreshFocusTuning);
 const handleMlReset = () => {
-    resolveElements();
+    refreshFocusTuning();
     if (focusArea) delete focusArea.dataset.userSet;
-    applyTuning();
 };
 
 const bindGlobalListeners = () => {
@@ -156,13 +152,12 @@ const bindGlobalListeners = () => {
     globalListenersBound = true;
 
     window.addEventListener('hashchange', () => stopWhenInactive(), { passive: true });
+    const forceStopWhenInactive = () => {
+        stopWhenInactive({ force: true });
+    };
     bindHiddenAndPagehide({
-        onHidden: () => {
-            stopWhenInactive({ force: true });
-        },
-        onPagehide: () => {
-            stopWhenInactive({ force: true });
-        },
+        onHidden: forceStopWhenInactive,
+        onPagehide: forceStopWhenInactive,
     });
 
     document.addEventListener(PERSIST_APPLIED, () => {

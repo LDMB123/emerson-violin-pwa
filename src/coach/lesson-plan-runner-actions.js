@@ -21,18 +21,42 @@ import {
     startCurrentRunnerStep,
 } from './lesson-plan-runner-machine.js';
 
-export const createLessonRunnerActions = ({
-    runnerState,
-    timerEl,
-    startButton,
-    nextButton,
-    ctaButton,
-    setStatus,
-    updateProgress,
-    syncStepList,
-    updateStepDetails,
-}) => {
+export const createLessonRunnerActions = (deps) => {
+    const {
+        runnerState,
+        controls = {},
+        callbacks = {},
+    } = deps;
+    const {
+        timerEl,
+        startButton,
+        nextButton,
+        ctaButton,
+    } = controls;
+    const {
+        setStatus,
+        updateProgress,
+        syncStepList,
+        updateStepDetails,
+    } = callbacks;
+
     const getCurrentStep = () => getCurrentRunnerStep(runnerState);
+    const buildStepEventPayload = (step) => ({
+        step,
+        index: runnerState.currentIndex,
+        total: runnerState.steps.length,
+    });
+    const dispatchStartEvents = (step) => {
+        const payload = buildStepEventPayload(step);
+        dispatchLessonRunnerEvent({
+            state: 'start',
+            ...payload,
+        });
+        dispatchPracticeRunnerEvent({
+            eventName: PRACTICE_STEP_STARTED,
+            ...payload,
+        });
+    };
 
     const stopTimer = () => {
         if (!runnerState.timerId) return;
@@ -52,18 +76,19 @@ export const createLessonRunnerActions = ({
         markRunnerGoalComplete(step.id);
         const completedStep = completeCurrentRunnerStep(runnerState, timestamp);
         if (!completedStep) return;
+        const completionPayload = {
+            step: completedStep,
+            index: stepIndex,
+            total: totalSteps,
+        };
 
         dispatchLessonRunnerEvent({
             state: 'complete',
-            step: completedStep,
-            index: stepIndex,
-            total: totalSteps,
+            ...completionPayload,
         });
         dispatchPracticeRunnerEvent({
             eventName: PRACTICE_STEP_COMPLETED,
-            step: completedStep,
-            index: stepIndex,
-            total: totalSteps,
+            ...completionPayload,
         });
 
         if (isRunnerComplete(runnerState)) {
@@ -100,18 +125,7 @@ export const createLessonRunnerActions = ({
         if (startButton) startButton.textContent = 'Pause';
         setDisabled(nextButton, false);
 
-        dispatchLessonRunnerEvent({
-            state: 'start',
-            step: startedStep,
-            index: runnerState.currentIndex,
-            total: runnerState.steps.length,
-        });
-        dispatchPracticeRunnerEvent({
-            eventName: PRACTICE_STEP_STARTED,
-            step: startedStep,
-            index: runnerState.currentIndex,
-            total: runnerState.steps.length,
-        });
+        dispatchStartEvents(startedStep);
 
         runnerState.timerId = window.setInterval(tick, 1000);
         if (timerEl) timerEl.textContent = formatTime(runnerState.remainingSeconds * 1000);
@@ -125,11 +139,10 @@ export const createLessonRunnerActions = ({
         setStatus('Paused. Tap Resume when ready.');
         if (startButton) startButton.textContent = 'Resume';
         setDisabled(nextButton, false);
+        const pausedPayload = buildStepEventPayload(getCurrentStep());
         dispatchLessonRunnerEvent({
             state: 'pause',
-            step: getCurrentStep(),
-            index: runnerState.currentIndex,
-            total: runnerState.steps.length,
+            ...pausedPayload,
         });
     };
 

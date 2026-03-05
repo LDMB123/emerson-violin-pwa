@@ -2,6 +2,14 @@ import { positiveRound } from '../utils/math.js';
 import { resolveSessionObjectiveProgress } from './game-objectives.js';
 import { recordGameEvent } from './shared.js';
 
+const DEFAULT_SESSION_REPORT_OPTIONS = {
+    stage: null,
+    difficulty: null,
+    accuracy: 0,
+    score: 0,
+    sessionStartedAt: 0,
+};
+
 export const buildSessionGameEventPayload = ({
     stage = null,
     gameId = '',
@@ -44,24 +52,32 @@ export const buildSessionGameEventPayload = ({
     };
 };
 
-export const buildSessionReportEventArgs = ({
-    id = '',
-    reportResult = null,
-    stage = null,
-    difficulty = null,
-    accuracy = 0,
-    score = 0,
-    sessionStartedAt = 0,
-} = {}) => ({
-    id,
-    reportResult,
-    stage,
-    gameId: id,
-    difficulty,
-    accuracy,
-    score,
-    sessionStartedAt,
-});
+export const buildSessionReportEventArgs = (options = {}) => {
+    const normalizedOptions = {
+        ...DEFAULT_SESSION_REPORT_OPTIONS,
+        ...options,
+    };
+    const {
+        id = '',
+        reportResult = null,
+        stage,
+        difficulty,
+        accuracy,
+        score,
+        sessionStartedAt,
+    } = normalizedOptions;
+
+    return {
+        id,
+        reportResult,
+        stage,
+        gameId: id,
+        difficulty,
+        accuracy,
+        score,
+        sessionStartedAt,
+    };
+};
 
 export const isStepSetObjectiveInput = (input) => /(-step-|set-)/.test(input.id);
 

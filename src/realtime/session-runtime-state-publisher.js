@@ -32,7 +32,7 @@ export const createSessionStatePublisher = ({
             lastFeature: state.lastFeature || DEFAULT_RT_FEATURE,
             timestamp: now,
         };
-        emitRealtimeEvent(RT_STATE, payload, { log: false }).catch(() => {});
+        emitRealtimeEvent(RT_STATE, payload, { log: false }).catch(() => null);
     };
 
     const syncPolicyCache = () => {

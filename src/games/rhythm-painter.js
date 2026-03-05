@@ -99,9 +99,7 @@ const { bind } = createGame({
         gameState._dots = dots;
         gameState._stage = stage;
 
-        gameState._onDeactivate = () => {
-            stopTonePlayer();
-        };
+        gameState._onDeactivate = () => stopTonePlayer();
 
         dots.forEach((dot) => {
             bindTap(dot, () => {

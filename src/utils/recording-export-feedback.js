@@ -31,12 +31,13 @@ export const runRecordingExportWithFeedback = async ({
     }
 };
 
-export const runRecordingExportAction = async ({
-    button = null,
-    recording = null,
-    index = 0,
-    resetDelayMs = 1000,
-} = {}) => {
+export const runRecordingExportAction = async (options = {}) => {
+    const {
+        button = null,
+        recording = null,
+        index = 0,
+        resetDelayMs = 1000,
+    } = options;
     if (!recording?.dataUrl && !recording?.blobKey) return false;
     return runRecordingExportWithFeedback({
         button,

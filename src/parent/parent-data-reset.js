@@ -42,7 +42,9 @@ const deleteIndexedDb = () =>
 
         let settled = false;
         const finish = (payload) => {
-            if (settled) return;
+            if (settled) {
+                return;
+            }
             settled = true;
             resolve(payload);
         };

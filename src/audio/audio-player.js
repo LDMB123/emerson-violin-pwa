@@ -1,7 +1,7 @@
 import { SOUNDS_CHANGE, VIEW_RENDERED } from '../utils/event-names.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { prepareAudioElementSource } from './format-detection.js';
-import { setDisabled } from '../utils/dom-utils.js';
+import { setDisabled, syncAudioPlaybackClass } from '../utils/dom-utils.js';
 
 /**
  * Progressive enhancement: replaces raw <audio controls> inside .audio-card
@@ -92,9 +92,7 @@ const enhance = (card) => {
     card.insertBefore(button, audio);
     card.insertBefore(waveBars, audio);
 
-    const syncPlayingState = () => {
-        card.classList.toggle('is-playing', !audio.paused);
-    };
+    const syncPlayingState = () => syncAudioPlaybackClass({ element: card, audio });
 
     button.addEventListener('click', () => {
         if (!isSoundEnabled()) {
@@ -128,9 +126,7 @@ const enhanceAll = () => {
 };
 
 const bindGlobals = () => {
-    if (globalsBound === true) {
-        return;
-    }
+    if (globalsBound !== false) return;
     globalsBound = true;
 
     const handleSoundsChange = (event) => {
@@ -146,11 +142,12 @@ const bindGlobals = () => {
         enhanceAll();
     });
 
-    window.addEventListener('hashchange', () => {
+    const handleHashChange = () => {
         requestAnimationFrame(() => {
             requestAnimationFrame(enhanceAll);
         });
-    });
+    };
+    window.addEventListener('hashchange', handleHashChange);
 };
 
 const initAudioPlayer = () => {

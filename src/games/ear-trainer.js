@@ -1,5 +1,5 @@
-import { createGame } from './game-shell.js';
 import { createAudioCueBank } from './game-audio-cues.js';
+import { createGame } from './game-shell.js';
 import {
     cachedEl,
     markChecklist,
@@ -8,8 +8,8 @@ import {
     playToneNote,
     bindSoundsChange,
 } from './shared.js';
-import { isSoundEnabled } from '../utils/sound-state.js';
 import { setDisabled } from '../utils/dom-utils.js';
+import { isSoundEnabled, runIfSoundDisabled } from '../utils/sound-state.js';
 import {
     renderEarTrainerDots,
     setEarTrainerQuestion,
@@ -145,17 +145,18 @@ const { bind } = createGame({
         setQuestion(`Question 1 of ${rounds}`);
 
         const updateSoundState = () => {
-            const enabled = isSoundEnabled();
-            setDisabled(playButton, !enabled);
-            choices.forEach((choice) => {
-                choice.disabled = !enabled;
-            });
+            const shouldDisable = !isSoundEnabled();
+            setDisabled(playButton, shouldDisable);
+            for (const choice of choices) {
+                setDisabled(choice, shouldDisable);
+            }
         };
 
         gameState._onDeactivate = () => {
-            gameState.currentTone = null;
-            cueBank.stopAll();
             if (canvasEngine) canvasEngine.stop();
+            const hasCueBank = Boolean(cueBank);
+            if (hasCueBank) cueBank.stopAll();
+            gameState.currentTone = null;
         };
 
         const executePlayAction = () => {
@@ -183,10 +184,10 @@ const { bind } = createGame({
         updateSoundState();
 
         const soundsHandler = (event) => {
-            if (event.detail?.enabled === false) {
+            runIfSoundDisabled(event, () => {
                 setQuestion('Sounds are off. Turn on Sounds to play.');
                 cueBank.stopAll();
-            }
+            });
             updateSoundState();
         };
         bindSoundsChange(soundsHandler, registerCleanup);

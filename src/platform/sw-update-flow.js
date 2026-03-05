@@ -1,15 +1,21 @@
 export const createSwUpdateFlowController = ({ setStatus, showApply }) => {
     const boundRegistrations = new WeakSet();
+    const markReadyToApply = () => {
+        setStatus('Update ready to apply.');
+        showApply(true);
+    };
+    const markUpToDate = () => {
+        setStatus('App is up to date.');
+        showApply(false);
+    };
 
     const bindUpdateFlow = (registration) => {
         if (!registration) return;
 
         if (registration.waiting) {
-            setStatus('Update ready to apply.');
-            showApply(true);
+            markReadyToApply();
         } else {
-            setStatus('App is up to date.');
-            showApply(false);
+            markUpToDate();
         }
 
         if (boundRegistrations.has(registration)) return;
@@ -22,10 +28,10 @@ export const createSwUpdateFlowController = ({ setStatus, showApply }) => {
             newWorker.addEventListener('statechange', () => {
                 if (newWorker.state !== 'installed') return;
                 if (navigator.serviceWorker.controller) {
-                    setStatus('Update ready to apply.');
-                    showApply(true);
+                    markReadyToApply();
                 } else {
                     setStatus('App ready for offline use.');
+                    showApply(false);
                 }
             });
         });

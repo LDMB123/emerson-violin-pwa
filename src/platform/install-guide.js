@@ -114,12 +114,15 @@ const buildGuide = () => {
     return backdrop;
 };
 
+const hideHelpButtonIfNotIPadOS = () => {
+    if (isIPadOS()) return false;
+    setHidden(helpButton, true);
+    return true;
+};
+
 const showGuide = async (force = false) => {
     if (isAutomated()) return;
-    if (!isIPadOS()) {
-        setHidden(helpButton, true);
-        return;
-    }
+    if (hideHelpButtonIfNotIPadOS()) return;
 
     if (isStandalone() && !force) {
         setHidden(helpButton, true);
@@ -144,10 +147,7 @@ const initInstallGuide = () => {
         setHidden(helpButton, true);
         return;
     }
-    if (!isIPadOS()) {
-        setHidden(helpButton, true);
-        return;
-    }
+    if (hideHelpButtonIfNotIPadOS()) return;
 
     setRootDataset('platform', 'ipados');
 

@@ -8,12 +8,14 @@ import {
 } from './tools-view.js';
 import { attachTrainerGlobalListeners } from './tools-global-listeners.js';
 import {
+    createOnceBinder,
+} from '../utils/lifecycle-utils.js';
+import {
     isPracticeView as isPracticeViewUtil,
 } from './trainer-utils.js';
 
 let audioCards = [];
-
-let globalListenersBound = false;
+const claimGlobalListenersBinding = createOnceBinder();
 
 const metronomeController = createMetronomeController();
 const drillsController = createDrillsController();
@@ -48,6 +50,13 @@ const bindAudioCards = () => bindTrainerAudioCards({
     metronomeController,
 });
 
+const bindTrainerControls = () => {
+    bindRangeInputs();
+    metronomeController.bindControls();
+    bindAudioCards();
+    drillsController.bindControls();
+};
+
 const refreshMetronomeTuningState = ({ resetUserSet = false } = {}) => {
     metronomeController.refreshTuningState({ resetUserSet });
 };
@@ -66,9 +75,7 @@ const refreshTrainerTuningById = (id) => {
 };
 
 const bindGlobalListeners = () => {
-    if (globalListenersBound) return;
-    globalListenersBound = true;
-
+    if (!claimGlobalListenersBinding()) return;
     attachTrainerGlobalListeners({
         metronomeController,
         drillsController,
@@ -76,10 +83,7 @@ const bindGlobalListeners = () => {
         refreshTrainerTuningById,
         onMlReset: () => {
             resolveElements();
-            bindRangeInputs();
-            metronomeController.bindControls();
-            bindAudioCards();
-            drillsController.bindControls();
+            bindTrainerControls();
             refreshTrainerTuning({ resetMetronomeUserSet: true });
         },
     });
@@ -93,10 +97,7 @@ const initTrainerTools = () => {
         metronomeController.disableControls('Audio tools are not supported on this device.');
     }
 
-    bindRangeInputs();
-    metronomeController.bindControls();
-    bindAudioCards();
-    drillsController.bindControls();
+    bindTrainerControls();
 
     metronomeController.updateDisplay();
     metronomeController.syncRunningState();

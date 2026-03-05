@@ -21,8 +21,8 @@ export const playMelodyMakerSequence = async ({
         setStatus(soundsOffMessage);
         return;
     }
-    const player = getPlayer();
-    if (!player) {
+    const player = getPlayer?.();
+    if (player == null) {
         setStatus(unavailableMessage);
         return;
     }

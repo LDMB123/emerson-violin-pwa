@@ -1,5 +1,14 @@
 const hasSavedRecording = (recording) => Boolean(recording?.dataUrl || recording?.blobKey);
 
+const createUnavailableRecordingState = ({ title, sub, index }) => ({
+    title,
+    sub,
+    playDisabled: true,
+    playAvailable: false,
+    saveDisabled: true,
+    recordingIndex: String(index),
+});
+
 export const buildRecordingSlotState = ({ recording, item, index, soundEnabled, songMap }) => {
     if (hasSavedRecording(recording)) {
         return {
@@ -13,25 +22,19 @@ export const buildRecordingSlotState = ({ recording, item, index, soundEnabled, 
     }
 
     if (!item) {
-        return {
+        return createUnavailableRecordingState({
             title: 'Recording',
             sub: 'No recent play',
-            playDisabled: true,
-            playAvailable: false,
-            saveDisabled: true,
-            recordingIndex: String(index),
-        };
+            index,
+        });
     }
 
     const name = songMap?.get?.(item.id) || item.id;
-    return {
+    return createUnavailableRecordingState({
         title: 'Recent Play',
         sub: `${name} · ${Math.round(item.accuracy || 0)}%`,
-        playDisabled: true,
-        playAvailable: false,
-        saveDisabled: true,
-        recordingIndex: String(index),
-    };
+        index,
+    });
 };
 
 export const applyRecordingSlotState = (elements, state) => {

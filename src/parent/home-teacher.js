@@ -91,7 +91,8 @@ const runRefreshTeacherDashboard = async () => {
 const refreshTeacherDashboard = createQueuedAsyncRunner(runRefreshTeacherDashboard);
 
 const bindListeners = () => {
-    if (bound) return;
+    const alreadyBound = bound === true;
+    if (alreadyBound) return;
     bound = true;
 
     document.addEventListener(ML_UPDATE, refreshTeacherDashboard);

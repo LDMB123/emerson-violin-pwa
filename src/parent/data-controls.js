@@ -1,5 +1,8 @@
 import { confirmLocalDataDeletion, wipeAllLocalData } from './parent-data-reset.js';
-import { setDisabled, setTextContent } from '../utils/dom-utils.js';
+import {
+    createTextContentSetter,
+    setDisabled,
+} from '../utils/dom-utils.js';
 
 let wipeButton = null;
 let statusEl = null;
@@ -9,9 +12,8 @@ const resolveElements = () => {
     statusEl = document.querySelector('[data-parent-wipe-status]');
 };
 
-const setStatus = (message) => {
-    setTextContent(statusEl, message);
-};
+const resolveStatusElement = () => statusEl;
+const setStatus = createTextContentSetter(resolveStatusElement);
 
 const handleWipe = async () => {
     if (!confirmLocalDataDeletion()) {

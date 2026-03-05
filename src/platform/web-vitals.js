@@ -1,6 +1,7 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { WEB_VITALS_KEY } from '../persistence/storage-keys.js';
 import { emitEvent, WEB_VITALS_UPDATED } from '../utils/event-names.js';
+import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
 import { finiteOrNow, finiteOrZero } from '../utils/math.js';
 
 const SESSION_LIMIT = 40;
@@ -152,15 +153,13 @@ const persistSession = async (reason = 'unknown') => {
 const bindLifecyclePersistence = () => {
     if (globalsBound) return;
     globalsBound = true;
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
+    bindHiddenAndPagehide({
+        onHidden: () => {
             persistSession('hidden').catch(() => {});
-        }
-    });
-
-    window.addEventListener('pagehide', () => {
-        persistSession('pagehide').catch(() => {});
+        },
+        onPagehide: () => {
+            persistSession('pagehide').catch(() => {});
+        },
     });
 };
 

@@ -36,20 +36,22 @@ export const createProgressInputController = ({
     todayDay,
     practiceRecordedEventName,
     onEventsUpdated,
-}) => {
-    const recordPracticeEvent = async (input) => {
-        const events = await loadEvents();
-        const earned = collectEventIds(events, 'practice');
-        const allowRepeat = /^goal-step-focus-/.test(input.id);
-        if (!allowRepeat && earned.has(input.id)) return;
+    }) => {
+        const recordPracticeEvent = async (input) => {
+            const events = await loadEvents();
+            const earned = collectEventIds(events, 'practice');
+            const allowRepeat = /^goal-step-focus-/.test(input.id);
+            if (!allowRepeat && earned.has(input.id)) return;
+            const day = todayDay();
+            const timestamp = Date.now();
 
-        const entry = {
-            type: 'practice',
-            id: input.id,
-            minutes: minutesForInput(input),
-            day: todayDay(),
-            timestamp: Date.now(),
-        };
+            const entry = {
+                type: 'practice',
+                id: input.id,
+                minutes: minutesForInput(input),
+                day,
+                timestamp,
+            };
 
         events.push(entry);
         await saveEvents(events);
@@ -62,8 +64,10 @@ export const createProgressInputController = ({
         const events = await loadEvents();
         const already = collectEventIds(events, 'achievement');
         if (already.has(id)) return;
+        const timestamp = Date.now();
+        const day = todayDay();
 
-        events.push({ type: 'achievement', id, day: todayDay(), timestamp: Date.now() });
+        events.push({ type: 'achievement', id, timestamp, day });
         await saveEvents(events);
         await onEventsUpdated(events);
     };

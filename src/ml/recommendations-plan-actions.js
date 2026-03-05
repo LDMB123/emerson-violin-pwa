@@ -68,9 +68,9 @@ export const buildNextActions = ({
     mission,
     recommendedGameId,
     recommendedGameLabel,
+    dueReviewAction,
     weakestSkill,
     songLevel,
-    dueReviewAction,
 }) => {
     const actions = [];
 

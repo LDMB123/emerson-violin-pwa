@@ -9,7 +9,7 @@ import {
     bindSoundsChange,
     createStandardGameUpdate,
 } from './shared.js';
-import { isSoundEnabled, isSoundDisabledEvent } from '../utils/sound-state.js';
+import { isSoundEnabled, runIfSoundDisabled, resolveSoundEnabledValue } from '../utils/sound-state.js';
 import { setDisabled } from '../utils/dom-utils.js';
 import { resetMelodyMakerTrackState } from './melody-maker-state.js';
 import { playMelodyMakerSequence } from './melody-maker-playback.js';
@@ -104,8 +104,9 @@ const { bind } = createGame({
         };
 
         gameState._onDeactivate = () => {
-            if (!playback.playing) return;
-            stopPlayback();
+            if (playback.playing) {
+                stopPlayback();
+            }
         };
 
         const updateSoundState = () => {
@@ -143,10 +144,9 @@ const { bind } = createGame({
         gameState._setStatus = setStatus;
 
         const playTapPreview = (note) => {
-            if (!isSoundEnabled()) return;
-            const player = getTonePlayer();
+            const player = resolveSoundEnabledValue(() => getTonePlayer());
             if (!player) return;
-            player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => { });
+            player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => undefined);
         };
 
         const noteTapContext = {
@@ -191,9 +191,10 @@ const { bind } = createGame({
         });
 
         const soundsHandler = (event) => {
-            if (isSoundDisabledEvent(event)) {
+            const soundWasDisabled = runIfSoundDisabled(event, () => {
                 stopPlayback('Sounds are off. Enable Sounds to play your melody.');
-            } else if (event.detail?.enabled === true) {
+            });
+            if (!soundWasDisabled && event.detail?.enabled === true) {
                 setStatus('Sounds on. Tap Play to hear your melody.');
             }
             updateSoundState();

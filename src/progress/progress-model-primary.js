@@ -13,7 +13,15 @@ const supportsGetOrInsertComputed = 'getOrInsertComputed' in Map.prototype;
 
 const calculateStreakFromDays = (calculateStreak, uniqueDays) => calculateStreak(new Uint32Array(uniqueDays));
 
-const trackPracticeEvents = ({ practiceEvents, progress, skillProfile, calculateStreak, updateSkillProfile, currentDay, dailyMinutes }) => {
+const trackPracticeEvents = ({
+    practiceEvents,
+    progress,
+    skillProfile,
+    updateSkillProfile,
+    calculateStreak,
+    currentDay,
+    dailyMinutes,
+}) => {
     const uniqueDays = [];
     const seenDays = new Set();
     let totalMinutes = 0;
@@ -145,15 +153,16 @@ const snapshotSkills = (skillProfile) => ({
     reading: skillProfile.reading,
 });
 
-export const buildPrimaryProgressModel = ({
-    events,
-    PlayerProgress,
-    AchievementTracker,
-    SkillProfile,
-    SkillCategory,
-    calculateStreak,
-    updateSkillProfile,
-}) => {
+export const buildPrimaryProgressModel = (config) => {
+    const {
+        events,
+        updateSkillProfile,
+        calculateStreak,
+        SkillCategory,
+        SkillProfile,
+        AchievementTracker,
+        PlayerProgress,
+    } = config;
     const progress = new PlayerProgress();
     const tracker = new AchievementTracker();
     const skillProfile = new SkillProfile();

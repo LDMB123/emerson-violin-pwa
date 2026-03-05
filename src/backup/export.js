@@ -1,5 +1,6 @@
 import { getJSON, setJSON, getBlob, setBlob, removeBlob } from '../persistence/storage.js';
 import { dataUrlToBlob, blobToDataUrl, createBlobKey, downloadFile, tryShareFile } from '../utils/recording-export.js';
+import { withStoredRecordingBlob } from '../recordings/recording-blob-utils.js';
 import {
     EVENTS_KEY as EVENT_KEY,
     UI_STATE_KEY as UI_KEY,
@@ -44,17 +45,14 @@ const hydrateRecordingForImport = async (recording) => {
     if (!recording.dataUrl) return recording;
 
     try {
-        const blob = await dataUrlToBlob(recording.dataUrl);
-        const blobKey = createBlobKey(recording.id || 'import');
+        const sourceDataUrl = recording.dataUrl;
+        const blob = await dataUrlToBlob(sourceDataUrl);
+        const importBlobKey = createBlobKey(recording.id || 'import');
+        const blobKey = importBlobKey;
         const stored = await setBlob(blobKey, blob);
         if (!stored) return recording;
 
-        return {
-            ...recording,
-            dataUrl: null,
-            blobKey,
-            mimeType: blob.type || recording.mimeType || 'audio/webm',
-        };
+        return withStoredRecordingBlob(recording, blobKey, blob);
     } catch {
         return recording;
     }
@@ -104,9 +102,11 @@ const handleExport = async () => {
             title: 'Panda Violin Backup',
             text: 'Local backup file for Panda Violin.',
         });
-        if (!shared) {
-            downloadFile(file);
+        if (shared) {
+            updateStatus('Backup ready. Saved to Files or shared.');
+            return;
         }
+        downloadFile(file);
         updateStatus('Backup ready. Saved to Files or shared.');
     } catch {
         updateStatus('Unable to export backup. Try again.');
@@ -173,9 +173,7 @@ const handleImport = async () => {
         updateImportStatus('Importing backup…');
         await applyBackup(payload);
         updateImportStatus('Import complete. Reloading…');
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
+        window.setTimeout(() => window.location.reload(), 500);
     } catch {
         updateImportStatus('Backup import failed. Check the file and try again.');
     }

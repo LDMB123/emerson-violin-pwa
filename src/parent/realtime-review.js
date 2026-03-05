@@ -18,7 +18,7 @@ const bindGlobal = () => {
     });
 };
 
-export const init = () => {
+const initRealtimeReview = () => {
     const { section } = view.resolveElements();
     if (!section) return;
 
@@ -33,3 +33,5 @@ export const init = () => {
 
     refresh();
 };
+
+export const init = initRealtimeReview;

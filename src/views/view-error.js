@@ -3,17 +3,15 @@
  *
  * Displays user-friendly error UI when view loading fails.
  */
+import { getMainContentContainer } from './view-container.js';
 
 /**
  * Show error message when view loading fails
  * @param {string} message - Error message to display
  */
 export function showViewError(message) {
-    const container = document.getElementById('main-content');
-    if (!container) {
-        console.error('[ViewError] main-content container not found');
-        return;
-    }
+    const container = getMainContentContainer('ViewError');
+    if (!container) return;
 
     // Sanitize message by escaping HTML to prevent XSS
     const escapeHtml = (str) => {

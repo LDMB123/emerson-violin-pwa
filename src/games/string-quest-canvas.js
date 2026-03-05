@@ -130,28 +130,25 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
             this.ctx.beginPath();
 
             const amplitude = str.vibration * 30 * Math.sin(time * 50); // Fast vibration frequency
+            const traceStringWave = (length, mapPoint) => {
+                for (let position = 0; position <= length; position += 20) {
+                    // String fixed at ends, max vibration in middle
+                    const envelope = Math.sin((position / length) * Math.PI);
+                    const offset = amplitude * envelope * Math.sin((position / 100) + time * 20);
+                    const point = mapPoint(position, offset);
+                    this.ctx.lineTo(point.x, point.y);
+                }
+            };
 
             if (this.isHorizontal) {
                 const py = this.height * str.yPos;
                 this.ctx.moveTo(0, py);
-
-                // Draw bezier or sine segments
-                for (let x = 0; x <= this.width; x += 20) {
-                    // String fixed at ends, max vibration in middle
-                    const envelope = Math.sin((x / this.width) * Math.PI);
-                    const y = py + amplitude * envelope * Math.sin((x / 100) + time * 20);
-                    this.ctx.lineTo(x, y);
-                }
+                traceStringWave(this.width, (x, offset) => ({ x, y: py + offset }));
             } else {
                 // Vertical (Pizzicato)
                 const px = this.width * str.yPos;
                 this.ctx.moveTo(px, 0);
-
-                for (let y = 0; y <= this.height; y += 20) {
-                    const envelope = Math.sin((y / this.height) * Math.PI);
-                    const x = px + amplitude * envelope * Math.sin((y / 100) + time * 20);
-                    this.ctx.lineTo(x, y);
-                }
+                traceStringWave(this.height, (y, offset) => ({ x: px + offset, y }));
             }
 
             // String styling
@@ -162,9 +159,11 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
             // Draw String Label
             this.ctx.shadowBlur = 0;
             this.ctx.fillStyle = str.color;
-            this.ctx.font = 'bold 32px var(--font-primary, system-ui)';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
+            Object.assign(this.ctx, {
+                font: 'bold 32px var(--font-primary, system-ui)',
+                textAlign: 'center',
+                textBaseline: 'middle',
+            });
 
             if (this.isHorizontal) {
                 // Label on the left

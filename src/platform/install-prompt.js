@@ -14,8 +14,8 @@ const dispatchChange = () => {
 };
 
 const bindGlobals = () => {
-    if (globalsBound) return;
-    if (typeof window === 'undefined') return;
+    const hasWindow = typeof window !== 'undefined';
+    if (!hasWindow || globalsBound) return;
     globalsBound = true;
 
     window.addEventListener('beforeinstallprompt', (event) => {
@@ -24,10 +24,11 @@ const bindGlobals = () => {
         dispatchChange();
     });
 
-    window.addEventListener('appinstalled', () => {
+    const clearDeferredPrompt = () => {
         deferredPrompt = null;
         dispatchChange();
-    });
+    };
+    window.addEventListener('appinstalled', clearDeferredPrompt);
 };
 
 export const canPromptInstall = () => {

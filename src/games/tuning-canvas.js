@@ -44,9 +44,12 @@ export class TuningCanvasEngine extends BaseCanvasEngine {
     }
 
     render(time) {
-        const frame = this.beginFilledFrame(time, 'rgba(15, 20, 35, 0.4)');
-        if (!frame) return;
-        const { dt, ctx } = frame;
+        const frameFill = 'rgba(15, 20, 35, 0.4)';
+        const frame = this.beginFilledFrame(time, frameFill);
+        if (!frame) {
+            return;
+        }
+        const { ctx, dt } = frame;
 
         const cx = this.width / 2;
         const cy = this.height / 2;

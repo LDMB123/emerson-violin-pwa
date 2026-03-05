@@ -1,4 +1,4 @@
-import { updateSliderFill } from '../utils/dom-utils.js';
+import { syncAudioPlaybackClass, updateSliderFill } from '../utils/dom-utils.js';
 export const bindRangeFillInputs = () => {
     document.querySelectorAll('input[type="range"]').forEach((slider) => {
         updateSliderFill(slider);
@@ -15,7 +15,7 @@ export const bindTrainerAudioCards = ({ audioCards, metronomeController }) => {
 
         audio.dataset.trainerAudioBound = 'true';
         const update = () => {
-            card.classList.toggle('is-playing', !audio.paused);
+            syncAudioPlaybackClass({ element: card, audio });
         };
 
         audio.addEventListener('play', () => {

@@ -5,6 +5,14 @@
  *
  * @returns {{ audio: HTMLAudioElement, stop: () => void, setUrl: (url: string) => void }}
  */
+export const stopAndResetAudioElement = (audio) => {
+    if (!audio || typeof audio.pause !== 'function') return;
+    if (!audio.paused) {
+        audio.pause();
+    }
+    audio.currentTime = 0;
+};
+
 export const createAudioController = () => {
     const audio = new Audio();
     audio.preload = 'none';
@@ -16,10 +24,7 @@ export const createAudioController = () => {
     };
 
     const stop = () => {
-        if (!audio.paused) {
-            audio.pause();
-            audio.currentTime = 0;
-        }
+        stopAndResetAudioElement(audio);
         revokeCurrentUrl();
         currentUrl = '';
     };

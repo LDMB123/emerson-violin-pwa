@@ -1,5 +1,8 @@
 import { formatTimestamp } from '../utils/math.js';
 import { hasServiceWorkerSupport } from './sw-support.js';
+import {
+    createOnceBinder,
+} from '../utils/lifecycle-utils.js';
 import { setDisabled } from '../utils/dom-utils.js';
 import {
     defaultOfflineMetrics,
@@ -18,18 +21,19 @@ let checkButton = null;
 let selfTestButton = null;
 let selfTestStatusEl = null;
 let repairButton = null;
-let globalsBound = false;
+const claimGlobalListenersBinding = createOnceBinder();
 let metricMutationQueue = Promise.resolve();
 
 const resolveElements = () => {
-    statusEl = document.querySelector('[data-offline-status]');
-    assetsEl = document.querySelector('[data-offline-assets]');
-    missesEl = document.querySelector('[data-offline-misses]');
-    lastEl = document.querySelector('[data-offline-last]');
-    checkButton = document.querySelector('[data-offline-check]');
-    selfTestButton = document.querySelector('[data-offline-selftest]');
-    selfTestStatusEl = document.querySelector('[data-offline-selftest-status]');
-    repairButton = document.querySelector('[data-offline-repair]');
+    const select = (selector) => document.querySelector(selector);
+    statusEl = select('[data-offline-status]');
+    assetsEl = select('[data-offline-assets]');
+    missesEl = select('[data-offline-misses]');
+    lastEl = select('[data-offline-last]');
+    checkButton = select('[data-offline-check]');
+    selfTestButton = select('[data-offline-selftest]');
+    selfTestStatusEl = select('[data-offline-selftest-status]');
+    repairButton = select('[data-offline-repair]');
 };
 
 const updateUI = (metrics) => {
@@ -140,9 +144,8 @@ const bindLocalListeners = () => {
 };
 
 const bindGlobalListeners = () => {
-    if (globalsBound) return;
-    globalsBound = true;
-
+    const shouldBindListeners = claimGlobalListenersBinding();
+    if (!shouldBindListeners) return;
     navigator.serviceWorker.addEventListener('message', handleMessage);
 
     window.addEventListener('online', () => runCheck(), { passive: true });

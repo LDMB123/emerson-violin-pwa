@@ -44,11 +44,12 @@ const updatePracticeBadge = async () => {
 const initializeBadging = () => {
     if (!supportsBadging()) return;
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            updatePracticeBadge();
-        }
-    });
+    const handleVisibilityChange = () => {
+        const isHidden = document.visibilityState === 'hidden';
+        if (!isHidden) return;
+        updatePracticeBadge();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     document.addEventListener(PRACTICE_RECORDED, () => {
         updatePracticeBadge();

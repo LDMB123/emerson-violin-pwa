@@ -2,8 +2,8 @@ export { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 import {
     reviewIntervalDays,
     dayCounts,
-    buildDueReviewEntry,
-    selectDueReviewEntries,
+    buildDueReviewEntryFromSource,
+    mapAndSelectDueReviewEntries,
     DEFAULT_MASTERY_THRESHOLDS,
 } from '../utils/mastery-utils.js';
 import { gameViewHash, songViewHash } from '../utils/view-hash-utils.js';
@@ -127,22 +127,21 @@ const pickTopDueReview = (dueSongs = [], dueGames = []) => {
 };
 
 export const collectDueGameReviews = (state, { now = Date.now(), limit = 5 } = {}) => {
-    const entries = Object.entries(state?.games || {})
+    const games = Object.entries(state?.games || {})
         .map(([id, entry]) => ({ id, ...(entry || {}) }))
-        .filter((entry) => hasRecordedAttempts(entry.attempts))
-        .map((entry) => {
+        .filter((entry) => hasRecordedAttempts(entry.attempts));
+    return mapAndSelectDueReviewEntries({
+        sourceEntries: games,
+        mapEntry: (entry) => {
             const intervalDays = reviewIntervalDays(entry.tier);
             const updatedAt = finiteOrZero(entry.updatedAt);
             const dueAt = updatedAt + (intervalDays * DAY_MS);
-            return buildDueReviewEntry({
-                id: entry.id,
+            return buildDueReviewEntryFromSource({
+                entry,
                 dueAt,
-                tier: entry.tier || 'foundation',
-                attempts: entry.attempts || 0,
                 now,
             });
-        })
-    return selectDueReviewEntries(entries, {
+        },
         now,
         limit,
         requirePositiveDueAt: true,

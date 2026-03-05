@@ -4,9 +4,9 @@ import { updateSequenceTargets } from './sequence-game-targets.js';
 export const createSequenceGameViewRuntime = ({
     stage,
     prefix,
-    statusKey,
     buttonClass,
     targetDataAttr,
+    statusKey,
     comboTarget,
     getSequence,
     getSeqIndex,

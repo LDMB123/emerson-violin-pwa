@@ -18,6 +18,16 @@ const controls = createSessionUiControls({
     pauseSession,
     resumeSession,
 });
+const writeSessionStatus = (text, state) => {
+    controls.writeStatus(text, state);
+    controls.scheduleControlRefresh(true);
+};
+const refreshBindings = () => {
+    controls.ensureTopbarIndicator();
+    controls.invalidateControls();
+    controls.bindButtons();
+    controls.scheduleControlRefresh(true);
+};
 
 const exposeE2EHooks = () => {
     if (typeof window === 'undefined') return;
@@ -40,26 +50,17 @@ const bindGlobal = () => {
     });
 
     document.addEventListener(RT_SESSION_STARTED, () => {
-        controls.writeStatus('Listening now', 'listening');
-        controls.scheduleControlRefresh(true);
+        writeSessionStatus('Listening now', 'listening');
     });
 
     document.addEventListener(RT_SESSION_STOPPED, () => {
-        controls.writeStatus('Mic off', 'idle');
-        controls.scheduleControlRefresh(true);
+        writeSessionStatus('Mic off', 'idle');
     });
 
     document.addEventListener(RT_FALLBACK, (event) => {
         const reason = event.detail?.reason || 'Need grown-up help to continue.';
         controls.writeStatus(reason, 'fallback');
     });
-
-    const refreshBindings = () => {
-        controls.ensureTopbarIndicator();
-        controls.invalidateControls();
-        controls.bindButtons();
-        controls.scheduleControlRefresh(true);
-    };
 
     document.addEventListener(VIEW_RENDERED, refreshBindings);
     window.addEventListener('hashchange', refreshBindings, { passive: true });
@@ -68,9 +69,6 @@ const bindGlobal = () => {
 export const init = () => {
     initSessionController();
     exposeE2EHooks();
-    controls.ensureTopbarIndicator();
-    controls.invalidateControls();
-    controls.bindButtons();
+    refreshBindings();
     bindGlobal();
-    controls.scheduleControlRefresh(true);
 };

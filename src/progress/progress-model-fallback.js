@@ -1,7 +1,7 @@
 import { createSkillProfileUtils } from '../utils/skill-profile.js';
-import { buildPrimaryProgressModel } from './progress-model-primary.js';
+import { buildPrimaryProgressModel as buildFallbackPrimaryProgressModel } from './progress-model-primary.js';
 import {
-    composeProgressWithSupplemental,
+    composeProgressWithSupplemental as composeFallbackProgressWithSupplemental,
 } from './progress-model-result.js';
 
 // Keep fallback behavior aligned with wasm/panda-core/src/xp.rs.
@@ -273,7 +273,7 @@ export const buildFallbackProgress = async (events, error) => {
     }
 
     const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
-    const primary = buildPrimaryProgressModel({
+    const primary = buildFallbackPrimaryProgressModel({
         events,
         PlayerProgress: FallbackPlayerProgress,
         AchievementTracker: FallbackAchievementTracker,
@@ -282,5 +282,5 @@ export const buildFallbackProgress = async (events, error) => {
         calculateStreak,
         updateSkillProfile,
     });
-    return composeProgressWithSupplemental(primary);
+    return composeFallbackProgressWithSupplemental(primary);
 };

@@ -10,14 +10,24 @@ import {
     stopTonePlayer,
     bindSoundsChange,
 } from './shared.js';
-import { isSoundDisabledEvent } from '../utils/sound-state.js';
+import { runIfSoundDisabled } from '../utils/sound-state.js';
 import { shuffleNoteValues } from './note-memory-cards.js';
 import { createNoteMemoryTimer } from './note-memory-timer.js';
 import { NoteMemoryCanvasEngine } from './note-memory-canvas.js';
 import { renderNoteMemoryHud } from './note-memory-view.js';
+import { shouldSkipResetForActiveTimer } from './game-reset-guards.js';
 
 const memoryMatchesEl = cachedEl('[data-memory="matches"]');
 const memoryScoreEl = cachedEl('[data-memory="score"]');
+
+const computeNoteMemoryAccuracy = (state) => state._totalPairs
+    ? (state.matches / state._totalPairs) * 100
+    : 0;
+
+const resetNoteMemoryState = (gameState) => {
+    if (shouldSkipResetForActiveTimer(gameState)) return;
+    gameState._resetGame?.();
+};
 
 const updateNoteMemory = () => {
     // Legacy readout logic, safely exits if no canvas
@@ -40,13 +50,8 @@ const updateNoteMemory = () => {
 
 const { bind } = createGame({
     id: 'note-memory',
-    computeAccuracy: (state) => state._totalPairs
-        ? (state.matches / state._totalPairs) * 100
-        : 0,
-    onReset: (gameState) => {
-        if (gameState._timerId) return;
-        gameState._resetGame?.();
-    },
+    computeAccuracy: computeNoteMemoryAccuracy,
+    onReset: resetNoteMemoryState,
     onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
         const canvasEl = stage.querySelector('#note-memory-canvas');
         if (!canvasEl) return;
@@ -58,6 +63,13 @@ const { bind } = createGame({
         const resetButton = stage.querySelector('[data-memory="reset"]');
 
         const totalPairs = 6; // Fixed for 12 cards
+        const hudElements = {
+            matchesEl,
+            scoreEl,
+            streakEl,
+            timerEl,
+            totalPairs,
+        };
         const baseValues = ['G', 'D', 'A', 'E', 'C', 'B', 'G', 'D', 'A', 'E', 'C', 'B'];
 
         let flipped = [];
@@ -78,18 +90,11 @@ const { bind } = createGame({
         const engine = new NoteMemoryCanvasEngine(canvasEl);
         engine.start();
 
-        registerCleanup(() => {
-            engine.destroy();
-        });
+        registerCleanup(() => engine.destroy());
 
         const updateHud = () => {
-            renderNoteMemoryHud({
-                matchesEl,
-                scoreEl,
-                streakEl,
-                timerEl,
+            renderNoteMemoryHud(hudElements, {
                 matches,
-                totalPairs,
                 score,
                 matchStreak,
                 timeLeft,
@@ -113,11 +118,14 @@ const { bind } = createGame({
             setGameTimerId: (value) => { gameState._timerId = value; },
             isViewActive: () => isGameView(window.location.hash, 'note-memory'),
         });
+        const pauseRuntimeLoop = () => {
+            timer.pauseTimer();
+            engine.stop();
+        };
 
         gameState._onDeactivate = () => {
-            timer.pauseTimer();
+            pauseRuntimeLoop();
             stopTonePlayer();
-            engine.stop();
         };
 
         const resetGame = () => {
@@ -198,19 +206,14 @@ const { bind } = createGame({
         });
 
         const soundsHandler = (event) => {
-            if (isSoundDisabledEvent(event)) {
-                stopTonePlayer();
-            }
+            runIfSoundDisabled(event, stopTonePlayer);
         };
         bindSoundsChange(soundsHandler, registerCleanup);
 
         updateHud();
 
         bindVisibilityLifecycle({
-            onHidden: () => {
-                timer.pauseTimer();
-                engine.stop();
-            },
+            onHidden: pauseRuntimeLoop,
             onVisible: () => {
                 timer.resumeTimer();
                 engine.start();

@@ -13,8 +13,8 @@ const PRACTICE_VIEW_PREFIXES = [
 export const createRealtimeSessionState = () => ({
     sessionId: '',
     active: false,
-    paused: false,
     listening: false,
+    paused: false,
     starting: false,
     startedAt: 0,
     stoppedAt: 0,

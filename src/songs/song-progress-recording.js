@@ -23,15 +23,16 @@ export const recordSongEvent = async (
         ? accuracyOrPayload
         : { accuracy: accuracyOrPayload, duration, elapsed };
     const rounded = clampRounded(payload.accuracy || 0, 0, 100);
+    const now = Date.now();
     const entry = {
+        timestamp: now,
+        day: todayDay(),
         type: 'song',
         id: songId,
         accuracy: rounded,
         tier: tierFromAccuracy(rounded),
         duration: Number.isFinite(payload.duration) ? payload.duration : duration,
         elapsed: Number.isFinite(payload.elapsed) ? payload.elapsed : elapsed,
-        day: todayDay(),
-        timestamp: Date.now(),
     };
     if (typeof payload.sectionId === 'string' && payload.sectionId.trim()) {
         entry.sectionId = payload.sectionId.trim();

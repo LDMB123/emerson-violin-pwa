@@ -9,9 +9,9 @@ import {
     PRACTICE_STEP_COMPLETED,
     PRACTICE_STEP_STARTED,
 } from '../utils/event-names.js';
-import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
 import { finiteOrZero } from '../utils/math.js';
-import { speakMessage as speakVoiceMessage, cancelSpeech } from '../utils/speech-utils.js';
+import { cancelSpeech } from '../utils/speech-utils.js';
+import { speakVoiceCoachMessage } from '../utils/voice-coach-speech.js';
 import { getMatchingInputTarget } from '../utils/dom-utils.js';
 import {
     GAME_MESSAGES,
@@ -34,10 +34,7 @@ const resolveCoachElements = () => {
 };
 
 const speakMessage = (message) => {
-    speakVoiceMessage({
-        message,
-        enabled: isVoiceCoachEnabled(),
-        lang: 'en-US',
+    speakVoiceCoachMessage(message, {
         rate: 0.95,
         pitch: 1.1,
     });
@@ -70,18 +67,20 @@ const applyRecommendations = async () => {
 
 const handleAction = (action) => {
     if (!messages.length) return;
+    const announce = (message) => {
+        setMessage(message);
+        speakMessage(message);
+    };
     if (action === 'next') {
         index = (index + 1) % messages.length;
         const message = messages[index];
-        setMessage(message);
-        speakMessage(message);
+        announce(message);
         return;
     }
     if (action === 'retry') {
         const current = messages[index] || messages[0];
         const message = `One more time: ${current}`;
-        setMessage(message);
-        speakMessage(message);
+        announce(message);
         return;
     }
     if (action === 'hint') {
@@ -105,6 +104,13 @@ const bindCoachActions = () => {
     });
 };
 
+const applyCoachAnnouncement = (message, { speak = true } = {}) => {
+    if (!message) return;
+    bubble.dataset.coachAuto = 'false';
+    setMessage(message);
+    if (speak) speakMessage(message);
+};
+
 const handleLessonStep = (event) => {
     if (!resolveCoachElements()) return;
     const detail = event.detail || {};
@@ -121,18 +127,14 @@ const handleLessonStep = (event) => {
         message = `Paused on step ${stepIndex + 1}. Resume when you're ready.`;
     }
     if (message) {
-        bubble.dataset.coachAuto = 'false';
-        setMessage(message);
-        speakMessage(message);
+        applyCoachAnnouncement(message);
     }
 };
 
 const handleLessonComplete = () => {
     if (!resolveCoachElements()) return;
     const message = 'Lesson complete! Take a breath, then choose a new plan.';
-    bubble.dataset.coachAuto = 'false';
-    setMessage(message);
-    speakMessage(message);
+    applyCoachAnnouncement(message);
 };
 
 const handleMissionComplete = (event) => {
@@ -143,9 +145,7 @@ const handleMissionComplete = (event) => {
         ? `Mission complete! ${completed}/${total} goals done.`
         : 'Mission complete! All goals done.';
     const message = `${summary} Open Wins or share with a grown-up review.`;
-    bubble.dataset.coachAuto = 'false';
-    setMessage(message);
-    speakMessage(message);
+    applyCoachAnnouncement(message);
 };
 
 const handleMissionUpdated = (event) => {
@@ -157,8 +157,7 @@ const handleMissionUpdated = (event) => {
 
     const prefix = step.source === 'remediation' ? 'Remediation step' : 'Current mission step';
     const message = `${prefix}: ${step.label}.`;
-    bubble.dataset.coachAuto = 'false';
-    setMessage(message);
+    applyCoachAnnouncement(message, { speak: false });
 };
 
 const announcePracticeStep = (prefix, event) => {
@@ -193,9 +192,7 @@ document.addEventListener(GAME_RECORDED, (e) => {
 });
 
 document.addEventListener('change', (event) => {
-    const target = getMatchingInputTarget(event.target, { id: 'setting-voice' });
-    if (!target) return;
-    if (!target.checked) {
-        cancelSpeech();
-    }
+    const matched = getMatchingInputTarget(event.target, { id: 'setting-voice' });
+    if (!matched || matched.checked) return;
+    cancelSpeech();
 });

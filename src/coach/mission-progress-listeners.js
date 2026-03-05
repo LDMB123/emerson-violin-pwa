@@ -15,7 +15,8 @@ export const bindMissionProgressListeners = ({
     handleGoalFromActivity,
     maybeInsertRemediation,
 }) => {
-    if (listenersBound) return;
+    const shouldBindListeners = listenersBound !== true;
+    if (!shouldBindListeners) return;
     listenersBound = true;
 
     document.addEventListener(LESSON_STEP, (event) => {
@@ -26,16 +27,16 @@ export const bindMissionProgressListeners = ({
         updateMissionStatus();
     });
 
-    document.addEventListener(GAME_RECORDED, (event) => {
-        const goalId = inferGoalFromActivity(event);
-        handleGoalFromActivity(goalId);
-        maybeInsertRemediation(event).catch(() => {});
-    });
+    const bindRemediationGoalListener = (eventName, resolveGoalId) => {
+        document.addEventListener(eventName, (event) => {
+            const goalId = resolveGoalId(event);
+            handleGoalFromActivity(goalId);
+            maybeInsertRemediation(event).catch(() => {});
+        });
+    };
 
-    document.addEventListener(SONG_RECORDED, (event) => {
-        handleGoalFromActivity('goal-song');
-        maybeInsertRemediation(event).catch(() => {});
-    });
+    bindRemediationGoalListener(GAME_RECORDED, inferGoalFromActivity);
+    bindRemediationGoalListener(SONG_RECORDED, () => 'goal-song');
 
     document.addEventListener(PRACTICE_RECORDED, (event) => {
         const practiceId = event.detail?.id;

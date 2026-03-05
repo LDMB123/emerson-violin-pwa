@@ -10,8 +10,8 @@ import { setAriaPressed, setHidden } from '../utils/dom-utils.js';
 import { loadRealtimeEvents, loadRealtimeQuality } from '../realtime/event-log.js';
 import { setParentPreset } from '../realtime/session-controller.js';
 import { getPolicyState } from '../realtime/policy-engine.js';
-import { getLearningRecommendations } from '../ml/recommendations.js';
 import { loadCurriculumState } from '../curriculum/state.js';
+import { getLearningRecommendations } from '../ml/recommendations.js';
 
 const REVIEW_EVENT_TYPES = Object.freeze([
     RT_SESSION_STARTED,

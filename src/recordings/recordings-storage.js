@@ -3,6 +3,7 @@ import { loadRecordings } from '../persistence/loaders.js';
 import { dataUrlToBlob, blobToDataUrl, createBlobKey as createRecordingBlobKey } from '../utils/recording-export.js';
 import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 import { RECORDINGS_UPDATED } from '../utils/event-names.js';
+import { withStoredRecordingBlob } from './recording-blob-utils.js';
 
 const dispatchRecordingsUpdated = () => {
     window.dispatchEvent(new Event(RECORDINGS_UPDATED));
@@ -32,12 +33,7 @@ export const migrateRecordingsToBlobs = async () => {
             const blobKey = createRecordingBlobKey(recording.id || 'recording');
             const stored = await setBlob(blobKey, blob);
             if (!stored) continue;
-            next[i] = {
-                ...recording,
-                dataUrl: null,
-                blobKey,
-                mimeType: blob.type || recording.mimeType || 'audio/webm',
-            };
+            next[i] = withStoredRecordingBlob(recording, blobKey, blob);
             changed = true;
         } catch {
             // Ignore individual migration failures.

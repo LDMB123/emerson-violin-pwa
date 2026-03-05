@@ -10,6 +10,7 @@ import { isAudioAssetPath, prepareAudioElementSource } from './audio/format-dete
 import { ViewLoader } from './views/view-loader.js';
 import { getRouteMeta, getViewPath } from './views/view-paths.js';
 import { showViewError } from './views/view-error.js';
+import { getMainContentContainer } from './views/view-container.js';
 import {
     MODULE_LOADERS as moduleLoaders,
     EAGER_MODULES,
@@ -122,11 +123,8 @@ const showView = async (viewId, ctx = null) => {
     const renderToken = viewRenderGate.begin();
 
     try {
-        const container = document.getElementById('main-content');
-        if (!container) {
-            console.error('[App] main-content container not found');
-            return;
-        }
+        const container = getMainContentContainer('App');
+        if (!container) return;
 
         // Show skeleton while loading (only if view isn't cached)
         const viewPath = getViewPath(viewId);

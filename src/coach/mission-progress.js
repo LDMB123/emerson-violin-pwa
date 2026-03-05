@@ -132,7 +132,7 @@ const applyMissionResult = (result) => {
     if (!result?.mission) return false;
     missionContext.mission = result.mission;
     refreshMissionUi();
-    refreshRecommendationsCache().catch(() => {});
+    refreshRecommendationsCache().catch(() => undefined);
     return true;
 };
 

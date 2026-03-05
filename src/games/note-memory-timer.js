@@ -52,9 +52,11 @@ export const createNoteMemoryTimer = ({
     };
 
     const resumeTimer = () => {
-        if (!paused || getEnded()) return;
-        if (!isViewActive()) return;
-        if (getTimeLeft() <= 0) return;
+        const canResumeTimer = paused
+            && !getEnded()
+            && isViewActive()
+            && getTimeLeft() > 0;
+        if (!canResumeTimer) return;
         paused = false;
         startTimer();
     };

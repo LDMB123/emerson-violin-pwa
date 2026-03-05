@@ -22,11 +22,11 @@ const applyMelodySequenceProgress = ({
 
 const applyMelodyTargetMatch = ({
     gameState,
-    updateScore,
     setStatus,
     buildTarget,
-    reportSession,
+    updateScore,
     markChecklist,
+    reportSession,
 }) => {
     const targetMatch = computeMelodyTargetMatch({
         track: gameState._track,

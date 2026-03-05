@@ -119,11 +119,12 @@ export const createRecordingCaptureController = ({
             });
 
             if (playhead) {
-                playhead.addEventListener('animationend', () => {
+                const handlePlayheadEnd = () => {
                     if (recordingSongId === songId) {
                         stopRecording();
                     }
-                });
+                };
+                playhead.addEventListener('animationend', handlePlayheadEnd);
             }
 
             if (duration) {

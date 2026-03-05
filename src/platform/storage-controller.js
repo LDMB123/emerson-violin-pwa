@@ -6,7 +6,12 @@ import {
 } from './platform-utils.js';
 import { PERSIST_REQUEST_KEY } from '../persistence/storage-keys.js';
 import { OFFLINE_MODE_CHANGE } from '../utils/event-names.js';
-import { mergeControllerElements } from './controller-elements.js';
+import { createControllerElements } from './controller-elements.js';
+import { bindVisibleVisibilityChange } from '../utils/lifecycle-utils.js';
+import {
+    readJsonFromStorage,
+    writeJsonToStorage,
+} from '../utils/storage-utils.js';
 
 const createEmptyElements = () => ({
     statusEl: null,
@@ -15,25 +20,14 @@ const createEmptyElements = () => ({
     networkStatusEl: null,
 });
 
-const loadPersistRequest = () => {
-    try {
-        const raw = localStorage.getItem(PERSIST_REQUEST_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
-    }
-};
+const loadPersistRequest = () => readJsonFromStorage(PERSIST_REQUEST_KEY);
 
 const savePersistRequest = (state) => {
-    try {
-        localStorage.setItem(PERSIST_REQUEST_KEY, JSON.stringify(state));
-    } catch {
-        // Ignore storage failures
-    }
+    writeJsonToStorage(PERSIST_REQUEST_KEY, state);
 };
 
 export const createStorageController = () => {
-    let elements = createEmptyElements();
+    const { elements, setElements } = createControllerElements(createEmptyElements);
     let storageGlobalsBound = false;
     let networkGlobalsBound = false;
 
@@ -135,12 +129,10 @@ export const createStorageController = () => {
         if (storageGlobalsBound) return;
         storageGlobalsBound = true;
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                updateStorageEstimate();
-                updateStorageStatus();
-                maybeAutoPersist('visible');
-            }
+        bindVisibleVisibilityChange(() => {
+            updateStorageEstimate();
+            updateStorageStatus();
+            maybeAutoPersist('visible');
         });
         window.addEventListener('online', () => {
             updateStorageEstimate();
@@ -176,9 +168,7 @@ export const createStorageController = () => {
     };
 
     return {
-        setElements(nextElements) {
-            elements = mergeControllerElements(createEmptyElements, nextElements);
-        },
+        setElements,
         updateStorageStatus,
         maybeAutoPersist,
         bindStorageUI,

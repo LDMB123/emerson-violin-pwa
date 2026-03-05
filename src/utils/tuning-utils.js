@@ -21,7 +21,7 @@ export function createTuningHitDetector(options = {}) {
     const detectHit = (tuning, targetNote) => {
         if (!targetNote || !tuning) return false;
 
-        const cents = Math.round(tuning.cents || 0);
+        const cents = roundTuningCents(tuning);
         // Strip octave number since games usually only request string literal names
         const currentNote = tuning.note ? tuning.note.replace(/\\d+$/, '') : null;
 
@@ -66,3 +66,11 @@ export function createTuningHitDetector(options = {}) {
 export const createDefaultTuningHitDetector = () => (
     createTuningHitDetector({ centsMargin: 20, debounceMs: 300 })
 );
+
+export const roundTuningCents = (tuning) => Math.round(tuning?.cents || 0);
+
+export const getActiveTuningFeature = (event) => {
+    const tuning = event?.detail?.lastFeature;
+    if (!tuning || event?.detail?.paused) return null;
+    return tuning;
+};

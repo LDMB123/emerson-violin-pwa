@@ -21,13 +21,15 @@ const cleanupDevServiceWorkers = async () => {
     if ('caches' in window) {
         const keys = await caches.keys();
         const appKeys = keys.filter((key) => SW_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix)));
-        await Promise.all(appKeys.map((key) => caches.delete(key)));
+        const deleteTasks = appKeys.map((key) => caches.delete(key));
+        await Promise.allSettled(deleteTasks);
     }
 
     if (wasControlled) {
         const alreadyReloaded = window.sessionStorage.getItem(DEV_SW_RESET_FLAG) === '1';
         if (!alreadyReloaded) {
-            window.sessionStorage.setItem(DEV_SW_RESET_FLAG, '1');
+            const reloadFlag = '1';
+            window.sessionStorage.setItem(DEV_SW_RESET_FLAG, reloadFlag);
             window.location.reload();
         }
         return;

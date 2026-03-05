@@ -1,5 +1,5 @@
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
-import { traceLinePath } from '../utils/canvas-utils.js';
+import { traceLinePath, fillCanvas } from '../utils/canvas-utils.js';
 
 export class EchoGameCanvasEngine extends BaseCanvasEngine {
     constructor(canvasEl) {
@@ -41,41 +41,45 @@ export class EchoGameCanvasEngine extends BaseCanvasEngine {
     drawWaveform(buffer, yCenter, height, color, alpha = 1.0) {
         if (!buffer || buffer.length === 0) return;
 
-        this.ctx.beginPath();
-        this.ctx.strokeStyle = color;
-        this.ctx.lineWidth = 4;
-        this.ctx.globalAlpha = alpha;
+        const ctx = this.ctx;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
 
         const sliceWidth = this.width / buffer.length;
-        traceLinePath(this.ctx, buffer.length, (i, point) => {
+        traceLinePath(ctx, buffer.length, (i, point) => {
             // Buffer values are expected to be normalized 0.0 to 1.0 (e.g. onset strength)
             const v = buffer[i];
             point.x = i * sliceWidth;
             point.y = yCenter - (v * height / 2);
         });
 
-        this.ctx.stroke();
-        this.ctx.globalAlpha = 1.0;
+        ctx.stroke();
+        const opaqueAlpha = 1;
+        ctx.globalAlpha = opaqueAlpha;
     }
 
     drawPlayhead() {
+        const ctx = this.ctx;
         const { phase, playheadPosition } = this.gameState;
         if (phase === 'idle' || phase === 'evaluating') return;
 
         const x = this.width * playheadPosition;
+        const playheadColor = phase === 'teacher_playing' ? this.colors.accent : this.colors.tertiary;
 
-        this.ctx.beginPath();
-        this.ctx.strokeStyle = phase === 'teacher_playing' ? this.colors.accent : this.colors.tertiary;
-        this.ctx.lineWidth = 3;
-        this.ctx.moveTo(x, 0);
-        this.ctx.lineTo(x, this.height);
-        this.ctx.stroke();
+        ctx.beginPath();
+        ctx.strokeStyle = playheadColor;
+        ctx.lineWidth = 3;
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, this.height);
+        ctx.stroke();
 
         // Glow effect
-        this.ctx.shadowBlur = 15;
-        this.ctx.shadowColor = this.ctx.strokeStyle;
-        this.ctx.stroke();
-        this.ctx.shadowBlur = 0;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = ctx.strokeStyle;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
     }
 
     render() {
@@ -116,13 +120,13 @@ export class EchoGameCanvasEngine extends BaseCanvasEngine {
 
         // Draw Evaluation Overlay
         if (this.gameState.phase === 'evaluating') {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-            this.ctx.fillRect(0, 0, this.width, this.height);
+            fillCanvas(this.ctx, this.width, this.height, 'rgba(0, 0, 0, 0.4)');
 
             this.ctx.fillStyle = this.colors.text;
             this.ctx.font = 'bold 48px Inter, sans-serif';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
+            const overlayContext = this.ctx;
+            overlayContext.textAlign = 'center';
+            overlayContext.textBaseline = 'middle';
 
             const matchText = this.gameState.evaluationScore > 80 ? 'Perfect Echo!' : 'Try Again!';
             this.ctx.fillText(matchText, this.width / 2, this.height / 2);

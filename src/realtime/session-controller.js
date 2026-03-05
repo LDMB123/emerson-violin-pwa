@@ -47,9 +47,8 @@ const emitRealtimeEvent = async (eventName, payload, { log = true } = {}) => {
         return;
     }
     emitEvent(eventName, payload);
-    if (log) {
-        appendRealtimeEvent(eventName, payload).catch(() => { });
-    }
+    if (!log) return;
+    void appendRealtimeEvent(eventName, payload).catch(() => undefined);
 };
 
 const metricsProfile = createSessionMetricsProfile({

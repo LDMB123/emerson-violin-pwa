@@ -1,26 +1,28 @@
-import { isSoundEnabled, isSoundDisabledEvent } from '../utils/sound-state.js';
+import { isSoundEnabled, runIfSoundDisabled } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE, emitEvent } from '../utils/event-names.js';
 import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
-import { mergeControllerElements } from './controller-elements.js';
+import { stopAndResetAudioElement } from '../utils/audio-utils.js';
+import { createControllerElements } from './controller-elements.js';
 
-const createEmptyElements = () => ({
-    soundToggle: null,
-});
+function createEmptyElements() {
+    return {
+        soundToggle: null,
+    };
+}
 
 export const createMediaSoundController = () => {
-    let elements = createEmptyElements();
+    const { elements, setElements } = createControllerElements(createEmptyElements);
     let audioFocusGlobalsBound = false;
 
     const getAudioElements = () => Array.from(document.querySelectorAll('audio'));
 
     const pauseAudioElement = (audio, { reset = true } = {}) => {
         if (!audio) return;
-        if (!audio.paused) {
-            audio.pause();
-        }
         if (reset) {
-            audio.currentTime = 0;
+            stopAndResetAudioElement(audio);
+            return;
         }
+        if (!audio.paused) audio.pause();
     };
 
     const pauseOtherAudio = (current) => {
@@ -124,11 +126,8 @@ export const createMediaSoundController = () => {
         if (audioFocusGlobalsBound) return;
         audioFocusGlobalsBound = true;
 
-        document.addEventListener(SOUNDS_CHANGE, (event) => {
-            if (isSoundDisabledEvent(event)) {
-                pauseAllAudio();
-            }
-        });
+        const handleSoundsChange = (event) => runIfSoundDisabled(event, pauseAllAudio);
+        document.addEventListener(SOUNDS_CHANGE, handleSoundsChange);
 
         bindHiddenAndPagehide({
             onHidden: pauseAllAudio,
@@ -146,7 +145,7 @@ export const createMediaSoundController = () => {
         getAudioElements().forEach((audio) => {
             audio.muted = !enabled;
             if (!enabled && !audio.paused) {
-                pauseAudioElement(audio, { reset: true });
+                stopAndResetAudioElement(audio);
             }
         });
         emitEvent(SOUNDS_CHANGE, { enabled });
@@ -164,9 +163,7 @@ export const createMediaSoundController = () => {
     };
 
     return {
-        setElements(nextElements) {
-            elements = mergeControllerElements(createEmptyElements, nextElements);
-        },
+        setElements,
         bindMediaSession,
         bindAudioFocus,
         bindSoundToggle,

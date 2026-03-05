@@ -3,21 +3,25 @@ import { createSequenceCallbackState } from './sequence-game-callback-state.js';
 import { resetSequenceSessionState } from './sequence-game-reset.js';
 
 export const createSequenceGameSessionHandlers = ({
-    id,
-    comboTarget,
-    reportResult,
-    stage,
+    runtimeApi,
     difficulty,
     runtime,
-    runtimeApi,
+    stage,
+    reportResult,
+    comboTarget,
+    id,
     onReset,
-    markChecklist,
-    markChecklistIf,
     stopTonePlayer,
     buildSequence,
+    markChecklistIf,
+    markChecklist,
     updateTargets,
     updateScoreboard,
 }) => {
+    const setLastCorrectNote = (value) => {
+        runtimeApi.setLastCorrectNote(value);
+    };
+
     const reportSession = () => {
         reportSequenceSession({
             id,
@@ -39,9 +43,7 @@ export const createSequenceGameSessionHandlers = ({
         getSequence: () => runtime.sequence,
         hitNotes: runtime.hitNotes,
         getLastCorrectNote: () => runtime.lastCorrectNote,
-        setLastCorrectNote: (value) => {
-            runtimeApi.setLastCorrectNote(value);
-        },
+        setLastCorrectNote,
         markChecklist,
         markChecklistIf,
     });
@@ -53,9 +55,7 @@ export const createSequenceGameSessionHandlers = ({
                 runtimeApi.resetCoreState();
             },
             hitNotes: runtime.hitNotes,
-            setLastCorrectNote: (value) => {
-                runtimeApi.setLastCorrectNote(value);
-            },
+            setLastCorrectNote,
             setSessionStartedAt: (value) => {
                 runtimeApi.setSessionStartedAt(value);
             },

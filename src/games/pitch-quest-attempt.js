@@ -3,10 +3,10 @@ import { finiteOrZero } from '../utils/math.js';
 export const resolvePitchQuestAttempt = ({
     feature,
     targetNote,
-    tolerance,
-    streak,
     score,
     stars,
+    streak,
+    tolerance,
 }) => {
     const cents = finiteOrZero(feature.cents);
     const inTune = Math.abs(cents) <= tolerance;

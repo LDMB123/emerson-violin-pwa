@@ -26,3 +26,28 @@ export const bindHiddenAndPagehide = ({
         pagehideHandler,
     };
 };
+
+export const bindVisibleVisibilityChange = (onVisible) => {
+    const visibleHandler = () => {
+        if (document.visibilityState !== 'visible') return;
+        if (typeof onVisible === 'function') onVisible();
+    };
+    document.addEventListener('visibilitychange', visibleHandler);
+    return visibleHandler;
+};
+
+export const createOnceBinder = () => {
+    let isBound = false;
+    return () => {
+        if (isBound) return false;
+        isBound = true;
+        return true;
+    };
+};
+
+export const runOnceBinding = (claimBinding, callback) => {
+    if (typeof claimBinding !== 'function') return false;
+    if (!claimBinding()) return false;
+    if (typeof callback === 'function') callback();
+    return true;
+};

@@ -1,10 +1,15 @@
-import { updateParticles, drawGlowingParticles } from '../utils/canvas-utils.js';
+import {
+    updateParticles,
+    restoreAndDrawParticles,
+} from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 
 export class BowHeroCanvasEngine extends BaseCanvasEngine {
     constructor(canvas) {
-        super(canvas);
+        const canvasElement = canvas;
+        super(canvasElement);
         this.onStroke = null;
+        this.strokeCooldownMs = 0;
 
         // Bow state
         this.bowPosition = -this.width / 2; // Starts offscreen left
@@ -16,7 +21,7 @@ export class BowHeroCanvasEngine extends BaseCanvasEngine {
     }
 
     reset() {
-        this.particles = [];
+        this.particles.length = 0;
         this.bowPosition = -this.width / 2;
         this.targetBowPosition = this.bowPosition;
         this.isMovingRight = true;
@@ -76,8 +81,7 @@ export class BowHeroCanvasEngine extends BaseCanvasEngine {
     }
 
     draw() {
-        this.ctx.fillStyle = '#1a1a2e'; // Deep space blue/purple
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.fillBackground('#1a1a2e'); // Deep space blue/purple
 
         const cy = this.height / 2;
 
@@ -135,9 +139,6 @@ export class BowHeroCanvasEngine extends BaseCanvasEngine {
             this.ctx.fill();
         }
 
-        this.ctx.restore();
-
-        // Draw Particles
-        drawGlowingParticles(this.ctx, this.particles);
+        restoreAndDrawParticles(this.ctx, this.particles);
     }
 }

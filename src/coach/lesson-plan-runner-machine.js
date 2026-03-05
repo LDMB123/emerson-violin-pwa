@@ -14,6 +14,14 @@ const applyRunnerPosition = (state) => {
     state.currentIndex = position.currentIndex;
 };
 
+const updateRunnerStepState = (state, updater) => {
+    state.steps = updater(state.steps);
+    applyRunnerPosition(state);
+};
+const updateSingleRunnerStep = (state, step, timestamp, marker) => {
+    updateRunnerStepState(state, (steps) => marker(steps, step.id, timestamp));
+};
+
 export const createLessonRunnerState = () => ({
     steps: [],
     currentIndex: 0,
@@ -59,8 +67,7 @@ export const startCurrentRunnerStep = (state, timestamp = Date.now()) => {
         state.remainingSeconds = duration;
     }
 
-    state.steps = markRunnerStepInProgress(state.steps, step.id, timestamp);
-    applyRunnerPosition(state);
+    updateSingleRunnerStep(state, step, timestamp, markRunnerStepInProgress);
     return step;
 };
 
@@ -68,8 +75,7 @@ export const completeCurrentRunnerStep = (state, timestamp = Date.now()) => {
     const step = getCurrentRunnerStep(state);
     if (!step) return null;
     state.remainingSeconds = 0;
-    state.steps = markRunnerStepComplete(state.steps, step.id, timestamp);
-    applyRunnerPosition(state);
+    updateSingleRunnerStep(state, step, timestamp, markRunnerStepComplete);
     return step;
 };
 

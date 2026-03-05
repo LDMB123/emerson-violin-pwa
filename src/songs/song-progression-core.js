@@ -1,5 +1,10 @@
 import { clampRounded, DAY_MS, finiteOrNow, finiteOrZero, positiveRound } from '../utils/math.js';
-import { dayCounts, DEFAULT_MASTERY_THRESHOLDS, reviewIntervalDays } from '../utils/mastery-utils.js';
+import {
+    dayCounts,
+    DEFAULT_MASTERY_THRESHOLDS,
+    reviewIntervalDays,
+    tierFromDistinctDayCounts,
+} from '../utils/mastery-utils.js';
 
 const scoreFromEntry = (entry) => {
     const accuracy = finiteOrZero(entry?.bestAccuracy);
@@ -35,10 +40,7 @@ const normalizeDays = (entry) => {
 };
 
 export const tierFromCounts = (counts, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
-    if ((counts?.goldDays || 0) >= thresholds.distinctDays) return 'gold';
-    if ((counts?.silverDays || 0) >= thresholds.distinctDays) return 'silver';
-    if ((counts?.bronzeDays || 0) >= thresholds.distinctDays) return 'bronze';
-    return 'foundation';
+    return tierFromDistinctDayCounts(counts, thresholds);
 };
 
 export const normalizeSongEntry = (entry) => ({

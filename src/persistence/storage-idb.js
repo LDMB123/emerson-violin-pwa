@@ -8,6 +8,15 @@ const clearDBPromise = () => {
     dbPromise = null;
 };
 
+const runSafeOp = (operation, onError) => {
+    try {
+        return operation();
+    } catch (error) {
+        onError(error);
+        return null;
+    }
+};
+
 export const openDB = () => {
     if (dbPromise) return dbPromise;
     if (!('indexedDB' in globalThis)) {
@@ -68,26 +77,14 @@ export const idbOp = (db, storeName, mode, fn) => new Promise((resolve, reject) 
         resolve(value ?? null);
     };
 
-    let tx;
-    try {
-        tx = db.transaction(storeName, mode);
-    } catch (error) {
-        finishReject(error);
-        return;
-    }
+    const tx = runSafeOp(() => db.transaction(storeName, mode), finishReject);
+    if (!tx) return;
 
     tx.onabort = () => finishReject(tx.error);
     tx.onerror = () => finishReject(tx.error);
 
     const store = tx.objectStore(storeName);
-    let request;
-    try {
-        request = fn(store);
-    } catch (error) {
-        finishReject(error);
-        return;
-    }
-
+    const request = runSafeOp(() => fn(store), finishReject);
     if (!request) {
         finishReject(new Error(`[Storage] IndexedDB request missing for store "${storeName}"`));
         return;

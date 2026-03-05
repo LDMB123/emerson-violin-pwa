@@ -16,7 +16,7 @@ export const setEarTrainerQuestion = (questionEl, text) => {
 };
 
 export const clearEarTrainerChoices = (choices) => {
-    choices.forEach((choice) => {
+    for (const choice of choices) {
         choice.checked = false;
-    });
+    }
 };

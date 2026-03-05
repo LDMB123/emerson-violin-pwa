@@ -1,7 +1,7 @@
 import { loadRecordings } from '../persistence/loaders.js';
-import { isSoundEnabled, isSoundDisabledEvent } from '../utils/sound-state.js';
+import { isSoundEnabled, runIfSoundDisabled } from '../utils/sound-state.js';
 import { RECORDINGS_UPDATED, SOUNDS_CHANGE } from '../utils/event-names.js';
-import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
+import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
 import { getVisibleRecordings } from './parent-recordings-data.js';
 import { createParentRecordingsRenderer } from './parent-recordings-render.js';
 import { createParentRecordingsInteractions } from './parent-recordings-interactions.js';
@@ -44,7 +44,8 @@ const bindLocalListeners = () => {
 };
 
 const bindGlobalListeners = () => {
-    if (globalListenersBound) return;
+    const alreadyBound = globalListenersBound === true;
+    if (alreadyBound) return;
     globalListenersBound = true;
 
     const handleUpdate = () => {
@@ -54,17 +55,16 @@ const bindGlobalListeners = () => {
 
     window.addEventListener(RECORDINGS_UPDATED, handleUpdate);
     document.addEventListener(SOUNDS_CHANGE, (event) => {
-        if (isSoundDisabledEvent(event)) {
-            interactions.stop();
-        }
+        runIfSoundDisabled(event, () => interactions.stop());
         render();
     });
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) interactions.stop();
-    });
-    window.addEventListener('pagehide', (event) => {
-        if (isBfcachePagehide(event)) return;
-        interactions.stop();
+    bindHiddenAndPagehide({
+        onHidden: () => {
+            interactions.stop();
+        },
+        onPagehide: () => {
+            interactions.stop();
+        },
     });
 };
 

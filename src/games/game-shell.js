@@ -38,8 +38,8 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
 
     function update() {
         const stage = getStage();
-        if (!stage) return;
-        if (typeof computeUpdate === 'function') computeUpdate(stage, gameState);
+        if (!(stage && typeof computeUpdate === 'function')) return;
+        computeUpdate(stage, gameState);
     }
 
     function bind(difficulty = { speed: 1.0, complexity: 1 }) {
@@ -56,9 +56,7 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         reported = false;
         sessionStartedAt = Date.now();
         let hasReceivedInitialTuning = false;
-        if (reportResult?.dispose) {
-            reportResult.dispose();
-        }
+        reportResult?.dispose?.();
         // Clear gameState without replacing the reference (onBind captures the same object).
         Object.keys(gameState).forEach((key) => {
             delete gameState[key];
@@ -92,15 +90,15 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
         });
 
         const reportCurrentSession = ({ accuracy = 0, score = 0 } = {}) => reportFilteredSessionGameEvent({
-            id,
-            reportResult,
             stage,
             difficulty,
-            accuracy,
+            id,
             score,
+            accuracy,
+            reportResult,
             sessionStartedAt,
-            includeInput: isPrimarySessionObjectiveInput,
             mistakes: gameState.mistakes,
+            includeInput: isPrimarySessionObjectiveInput,
         });
 
         const reportSession = () => {
@@ -149,15 +147,17 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
                     keepPlayingBtn?.removeEventListener('click', onKeepPlaying);
                     exitGameBtn?.removeEventListener('click', onExitGame);
                 };
-
-                const onKeepPlaying = () => {
+                const closeModal = () => {
                     modal.close();
                     cleanupModal();
                 };
 
+                const onKeepPlaying = () => {
+                    closeModal();
+                };
+
                 const onExitGame = () => {
-                    modal.close();
-                    cleanupModal();
+                    closeModal();
                     window.location.hash = anchor.getAttribute('href');
                 };
 

@@ -3,23 +3,26 @@ import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { formatTimestamp } from '../utils/math.js';
 import { ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import { setDisabled } from '../utils/dom-utils.js';
+import { createOnceBinder } from '../utils/lifecycle-utils.js';
+import { createRunOnceDocumentBinder } from '../utils/event-handlers.js';
 
 let statusEl = null;
 let detailEl = null;
 let resetButton = null;
 let demoToggle = null;
 let simulateButton = null;
-let globalsBound = false;
+const claimGlobalListenersBinding = createOnceBinder();
 const boundResetButtons = new WeakSet();
 const boundDemoToggles = new WeakSet();
 const boundSimulateButtons = new WeakSet();
 
 const resolveElements = () => {
-    statusEl = document.querySelector('[data-ml-status]');
-    detailEl = document.querySelector('[data-ml-detail]');
-    resetButton = document.querySelector('[data-ml-reset]');
-    demoToggle = document.querySelector('[data-ml-demo]');
-    simulateButton = document.querySelector('[data-ml-simulate]');
+    const query = (selector, root = document) => root.querySelector(selector);
+    statusEl = query('[data-ml-status]');
+    detailEl = query('[data-ml-detail]');
+    resetButton = query('[data-ml-reset]');
+    demoToggle = query('[data-ml-demo]');
+    simulateButton = query('[data-ml-simulate]');
 };
 
 const updateSummary = async () => {
@@ -118,21 +121,16 @@ const bindLocalListeners = () => {
     }
 };
 
-const bindGlobalListeners = () => {
-    if (globalsBound) return;
-    globalsBound = true;
-    document.addEventListener(ML_UPDATE, () => {
-        updateSummary();
-    });
-    document.addEventListener(ML_RESET, () => {
-        updateSummary();
-    });
-};
+const bindGlobalListeners = createRunOnceDocumentBinder(
+    claimGlobalListenersBinding,
+    [ML_UPDATE, ML_RESET],
+    updateSummary,
+);
 
 const initAdaptiveUi = () => {
     resolveElements();
-    bindLocalListeners();
     bindGlobalListeners();
+    bindLocalListeners();
     updateSummary();
 };
 

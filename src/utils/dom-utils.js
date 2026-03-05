@@ -62,6 +62,19 @@ export const setTextContent = (el, value) => {
     if (el) el.textContent = value;
 };
 
+export const createTextContentSetter = (resolveElement) => (value) => {
+    setTextContent(resolveElement(), value);
+};
+
+export const syncAudioPlaybackClass = ({
+    element,
+    audio,
+    className = 'is-playing',
+} = {}) => {
+    if (!element || !audio) return;
+    element.classList.toggle(className, !audio.paused);
+};
+
 export const getCheckboxInput = (target, { requireChecked = false } = {}) => {
     if (!(target instanceof HTMLInputElement)) return null;
     if (target.type !== 'checkbox') return null;

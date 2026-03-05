@@ -1,7 +1,12 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { GAME_MASTERY_KEY } from '../persistence/storage-keys.js';
 import { clampRounded, clone, finiteOrNow, finiteOrZero, positiveRound } from '../utils/math.js';
-import { DEFAULT_MASTERY_THRESHOLDS, dayCounts, mergeDayHighScore } from '../utils/mastery-utils.js';
+import {
+    DEFAULT_MASTERY_THRESHOLDS,
+    dayCounts,
+    mergeDayHighScore,
+    tierFromDistinctDayCounts,
+} from '../utils/mastery-utils.js';
 
 const normalizeGameEntry = (entry) => ({
     id: entry?.id || '',
@@ -32,10 +37,7 @@ const normalizeState = (stored) => {
 };
 
 const tierFromDays = (entry, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
-    if ((entry.goldDays || 0) >= thresholds.distinctDays) return 'gold';
-    if ((entry.silverDays || 0) >= thresholds.distinctDays) return 'silver';
-    if ((entry.bronzeDays || 0) >= thresholds.distinctDays) return 'bronze';
-    return 'foundation';
+    return tierFromDistinctDayCounts(entry, thresholds);
 };
 
 export const getTierDays = (entry, tier) => {

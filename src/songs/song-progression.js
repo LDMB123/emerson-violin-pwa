@@ -1,6 +1,7 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { SONG_PROGRESS_KEY } from '../persistence/storage-keys.js';
 import { clampRounded, clone, DAY_MS, finiteOrZero, todayDay } from '../utils/math.js';
+import { asObjectOrFallback } from '../utils/storage-utils.js';
 import { loadCurriculumState } from '../curriculum/state.js';
 import {
     normalizeSongEntry,
@@ -16,7 +17,7 @@ const DEFAULT_STATE = {
 };
 
 const normalizeState = (stored) => {
-    const base = stored && typeof stored === 'object' ? stored : DEFAULT_STATE;
+    const base = asObjectOrFallback(stored, DEFAULT_STATE);
     const songs = base?.songs && typeof base.songs === 'object' ? base.songs : {};
     return {
         version: 2,

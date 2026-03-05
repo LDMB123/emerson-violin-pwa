@@ -1,9 +1,10 @@
 import { clamp, percentageRounded } from '../utils/math.js';
+import { getSongIdFromViewId } from '../utils/recording-export.js';
 
 export const parseViewSongId = (viewId) => {
     if (typeof viewId !== 'string') return null;
-    if (!viewId.startsWith('view-song-')) return null;
-    return viewId.replace('view-song-', '');
+    const songId = getSongIdFromViewId(viewId);
+    return songId || null;
 };
 
 export const createControls = ({ song, checkpoint }) => {

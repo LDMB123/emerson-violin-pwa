@@ -19,23 +19,22 @@ const deriveToggleState = (session) => {
     };
 };
 
-const deriveStatus = (session) => {
-    if (!session.active) {
+const deriveStatus = ({ active, paused }) => {
+    if (!active) {
         return {
             text: 'Mic off',
             state: 'idle',
         };
     }
-    if (session.paused) {
-        return {
+    return paused
+        ? {
             text: 'Listening paused',
             state: 'paused',
+        }
+        : {
+            text: 'Listening now',
+            state: 'listening',
         };
-    }
-    return {
-        text: 'Listening now',
-        state: 'listening',
-    };
 };
 
 export const createSessionUiControls = ({
@@ -150,26 +149,29 @@ export const createSessionUiControls = ({
 
     const bindButtons = () => {
         const { startButtons, stopButtons, toggleButtons } = resolveControls();
+        const runAndRefresh = (action) => {
+            action().then(() => updateControlStates(true));
+        };
 
         bindClickOnce(startButtons, () => {
-            startSession().then(() => updateControlStates(true));
+            runAndRefresh(startSession);
         });
 
         bindClickOnce(stopButtons, () => {
-            stopSession('manual-stop').then(() => updateControlStates(true));
+            runAndRefresh(() => stopSession('manual-stop'));
         });
 
         bindClickOnce(toggleButtons, () => {
             const session = getSessionState();
             if (!session.active) {
-                startSession().then(() => updateControlStates(true));
+                runAndRefresh(startSession);
                 return;
             }
             if (session.paused) {
-                resumeSession().then(() => updateControlStates(true));
+                runAndRefresh(resumeSession);
                 return;
             }
-            pauseSession().then(() => updateControlStates(true));
+            runAndRefresh(pauseSession);
         });
     };
 

@@ -1,8 +1,9 @@
 import {
     updateParticles,
-    drawGlowingParticles,
+    restoreAndDrawParticles,
     emitRadialParticles,
     traceLinePath,
+    fillCanvas,
 } from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 import { createAudioContext } from '../audio/audio-context.js';
@@ -72,10 +73,10 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
     emitParticles(intensity) {
         if (intensity < 0.1) return;
 
-        const count = Math.floor(intensity * 10);
+        const particleCount = Math.floor(intensity * 10);
         emitRadialParticles({
             particles: this.particles,
-            count,
+            count: particleCount,
             x: this.width / 2,
             y: this.height / 2,
             radiusOffset: 30,
@@ -124,16 +125,14 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
 
     draw() {
         // Deep space background with slight fade for trails
-        this.ctx.fillStyle = 'rgba(10, 10, 26, 0.4)';
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        fillCanvas(this.ctx, this.width, this.height, 'rgba(10, 10, 26, 0.4)');
 
-        const cx = this.width / 2;
-        const cy = this.height / 2;
+        const center = [this.width / 2, this.height / 2];
 
         // Draw Central Pulse Ring
         this.ctx.save();
         this.ctx.beginPath();
-        this.ctx.arc(cx, cy, 40 + (this.lastRMS * 200), 0, Math.PI * 2);
+        this.ctx.arc(center[0], center[1], 40 + (this.lastRMS * 200), 0, Math.PI * 2);
         this.ctx.strokeStyle = `rgba(0, 229, 255, ${this.lastRMS * 2})`;
         this.ctx.lineWidth = 4 + (this.lastRMS * 10);
         this.ctx.stroke();
@@ -141,19 +140,20 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
         // Draw Speaker/Ear Icon in center
         this.ctx.fillStyle = `rgba(0, 229, 255, ${0.5 + this.lastRMS})`;
         this.ctx.font = '60px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
+        const earContext = this.ctx;
+        earContext.textAlign = 'center';
+        earContext.textBaseline = 'middle';
 
         // Slightly scale icon based on volume
         const iconScale = 1 + this.lastRMS;
-        this.ctx.translate(cx, cy);
+        this.ctx.translate(center[0], center[1]);
         this.ctx.scale(iconScale, iconScale);
         this.ctx.fillText('👂', 0, 0);
         this.ctx.restore();
 
         // Draw Circular Waveform
         this.ctx.save();
-        this.ctx.translate(cx, cy);
+        this.ctx.translate(centerX, centerY);
         this.ctx.beginPath();
         this.ctx.strokeStyle = '#00e5ff';
         this.ctx.lineWidth = 3;
@@ -179,10 +179,7 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
         this.ctx.shadowBlur = 20;
         this.ctx.shadowColor = '#00e5ff';
         this.ctx.stroke();
-        this.ctx.restore();
-
-        // Draw Particles
-        drawGlowingParticles(this.ctx, this.particles);
+        restoreAndDrawParticles(this.ctx, this.particles);
     }
 
     destroy() {

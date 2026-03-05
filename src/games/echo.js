@@ -80,6 +80,21 @@ const runTimedPlayheadLoop = ({ durationMs, onFrame, onComplete } = {}) => new P
     requestAnimationFrame(loop);
 });
 
+const runEchoPlayheadLoop = ({ onFrame = null, onComplete = null } = {}) => {
+    if (!engine) return Promise.resolve();
+    return runTimedPlayheadLoop({
+        durationMs: 4000,
+        onFrame: (playheadPosition) => {
+            engine.updateState({ playheadPosition });
+            if (typeof onFrame === 'function') {
+                onFrame(playheadPosition);
+            }
+            engine.render();
+        },
+        onComplete,
+    });
+};
+
 const startGameSequence = async () => {
     if (curtain) curtain.style.display = 'none';
     if (!engine) return;
@@ -92,13 +107,7 @@ const startGameSequence = async () => {
 
     // 1. Teacher Plays
     // Note: The WASM synthesizer trigger will go here
-    await runTimedPlayheadLoop({
-        durationMs: 4000,
-        onFrame: (playheadPosition) => {
-            engine.updateState({ playheadPosition });
-            engine.render();
-        },
-    });
+    await runEchoPlayheadLoop();
 
     engine.updateState({ playheadPosition: 0, phase: 'student_playing' });
     engine.render();
@@ -110,14 +119,9 @@ const startStudentRecordingSequence = async () => {
     // 1. Tell WASM to clear its buffer and start recording
     postAudioMessage({ type: 'echo_record' });
 
-    await runTimedPlayheadLoop({
-        durationMs: 4000,
-        onFrame: (playheadPosition) => {
-            engine.updateState({ playheadPosition });
-
+    await runEchoPlayheadLoop({
+        onFrame: () => {
             // Note: Polling WASM for live envelope goes here
-
-            engine.render();
         },
         onComplete: () => {
             engine.updateState({ playheadPosition: 0, phase: 'evaluating' });
@@ -136,7 +140,7 @@ const startStudentRecordingSequence = async () => {
     });
 };
 
-export const init = () => {
+const initEcho = () => {
     resolveElements();
     if (!container) return;
 
@@ -168,6 +172,8 @@ export const init = () => {
         startBtn.addEventListener('click', startHandler);
     }
 };
+
+export const init = initEcho;
 
 export const dispose = () => {
     document.removeEventListener(MISSION_UPDATED, handleMissionUpdate);

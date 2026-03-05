@@ -66,11 +66,14 @@ export const createHomeCoachController = ({
         }
 
         if (continueBtn) {
-            setContinueHref(continueBtn, getContinueTarget());
+            const refreshContinueHref = () => {
+                setContinueHref(continueBtn, getContinueTarget());
+            };
+            refreshContinueHref();
             if (continueBtn.dataset.bound !== 'true') {
                 continueBtn.dataset.bound = 'true';
                 continueBtn.addEventListener('click', () => {
-                    setContinueHref(continueBtn, getContinueTarget());
+                    refreshContinueHref();
                 });
             }
             if (continueBtn.dataset.recommendationBound !== 'true') {
@@ -89,7 +92,7 @@ export const createHomeCoachController = ({
                         setContinueHref(continueBtn, recommended);
                     })
                     .catch(() => {
-                        setContinueHref(continueBtn, getContinueTarget());
+                        refreshContinueHref();
                     });
             }
         }

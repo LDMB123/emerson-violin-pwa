@@ -6,7 +6,8 @@ const formatClockValue = (totalSeconds, { padMinutes = false } = {}) => {
     const minutes = durationToMinutes(totalSeconds);
     const seconds = totalSeconds % 60;
     const minutesLabel = padMinutes ? String(minutes).padStart(2, '0') : String(minutes);
-    return `${minutesLabel}:${seconds.toString().padStart(2, '0')}`;
+    const secondsLabel = String(seconds).padStart(2, '0');
+    return `${minutesLabel}:${secondsLabel}`;
 };
 
 export const formatTime = (ms) => {

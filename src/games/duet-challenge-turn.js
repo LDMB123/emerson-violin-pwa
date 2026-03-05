@@ -1,10 +1,10 @@
 export const applyDuetCorrectTurn = ({
     combo,
     score,
-    seqIndex,
     sequence,
-    comboTarget,
+    seqIndex,
     round,
+    comboTarget,
 }) => {
     const nextCombo = combo + 1;
     const nextScore = score + 15 + nextCombo * 2;

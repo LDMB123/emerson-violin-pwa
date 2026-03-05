@@ -4,14 +4,14 @@ import {
 } from './duet-challenge-turn.js';
 
 export const resolveDuetChallengeTapTurn = ({
-    note,
-    sequence,
-    seqIndex,
-    combo,
-    score,
-    comboTarget,
     round,
+    comboTarget,
+    score,
+    combo,
     mistakes,
+    seqIndex,
+    sequence,
+    note,
 }) => {
     if (note === sequence[seqIndex]) {
         const nextState = applyDuetCorrectTurn({

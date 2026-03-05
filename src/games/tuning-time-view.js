@@ -1,4 +1,5 @@
 import { clamp } from '../utils/math.js';
+import { setTextContent } from '../utils/dom-utils.js';
 
 export const formatTuningProgressMessage = ({
     note,
@@ -10,9 +11,7 @@ export const formatTuningProgressMessage = ({
     return `Tuning ${note} · ${remaining} more string${remaining === 1 ? '' : 's'} to go.`;
 };
 
-export const setTuningStatusText = (statusEl, message) => {
-    if (statusEl) statusEl.textContent = message;
-};
+export const setTuningStatusText = setTextContent;
 
 export const renderTuningProgress = ({
     progressEl,

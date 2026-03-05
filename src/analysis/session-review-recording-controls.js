@@ -1,10 +1,10 @@
-import { resolveRecordingSource } from '../persistence/loaders.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import { getRecentEvents } from '../utils/session-review-utils.js';
-import { isSoundEnabled } from '../utils/sound-state.js';
 import { createAudioController } from '../utils/audio-utils.js';
+import { isSoundEnabled } from '../utils/sound-state.js';
 import { buildRecordingSlotState, applyRecordingSlotState } from '../utils/analysis-recordings-utils.js';
 import { runRecordingExportAction } from '../utils/recording-export-feedback.js';
+import { playRecordingWithSoundCheck } from '../utils/recording-playback-utils.js';
 
 export const createSessionReviewRecordingController = () => {
     const controller = createAudioController();
@@ -43,48 +43,54 @@ export const createSessionReviewRecordingController = () => {
         document.addEventListener(SOUNDS_CHANGE, soundChangeHandler);
     };
 
+    const withRecordingAtIndex = async (index, action) => {
+        const recording = getValidRecording(index);
+        if (!recording) return;
+        await action(recording);
+    };
+    const forEachRecordingEl = (action) => {
+        recordingEls.forEach((el, index) => {
+            action(el, index);
+        });
+    };
+
     const bindRecordingPlayback = () => {
         syncPlaybackSound();
         ensureSoundListener();
 
-        recordingEls.forEach((el, index) => {
+        forEachRecordingEl((el, index) => {
             const button = el.querySelector('.recording-play');
             if (!button || button.dataset.bound === 'true') return;
 
             button.dataset.bound = 'true';
             button.addEventListener('click', async () => {
                 if (!isSoundEnabled()) return;
-
-                const recording = getValidRecording(index);
-                if (!recording) return;
-
-                const source = await resolveRecordingSource(recording);
-                if (!source) return;
-
-                syncPlaybackSound();
-                if (!isSoundEnabled()) return;
-                await controller.playSource(source);
+                async function playSelectedRecording(recording) {
+                    await playRecordingWithSoundCheck({
+                        recording,
+                        controller,
+                        beforePlay: syncPlaybackSound,
+                    });
+                }
+                await withRecordingAtIndex(index, playSelectedRecording);
             });
         });
     };
 
     const bindRecordingExport = () => {
-        recordingEls.forEach((el, index) => {
+        forEachRecordingEl((el, index) => {
             const button = el.querySelector('.recording-save');
             if (!button || button.dataset.exportBound === 'true') return;
 
             button.dataset.exportBound = 'true';
             button.addEventListener('click', async () => {
                 if (button.disabled) return;
-
-                const recording = getValidRecording(index);
-                if (!recording) return;
-                await runRecordingExportAction({
-                    button,
-                    recording,
-                    index,
-                    resetDelayMs: 1200,
-                });
+                await withRecordingAtIndex(index, (recording) => runRecordingExportAction({
+                        button,
+                        recording,
+                        index,
+                        resetDelayMs: 1200,
+                    }));
             });
         });
     };
@@ -98,7 +104,7 @@ export const createSessionReviewRecordingController = () => {
         const recent = getRecentEvents(songEvents, 2);
         const soundEnabled = isSoundEnabled();
 
-        recordingEls.forEach((el, index) => {
+        forEachRecordingEl((el, index) => {
             const slotState = buildRecordingSlotState({
                 recording: recentRecordings[index],
                 item: recent[index],

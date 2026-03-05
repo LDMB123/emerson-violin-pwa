@@ -1,10 +1,4 @@
-const stopAudioElement = (audio) => {
-    if (!(audio instanceof HTMLMediaElement)) return;
-    if (!audio.paused) {
-        audio.pause();
-    }
-    audio.currentTime = 0;
-};
+import { stopAndResetAudioElement } from '../utils/audio-utils.js';
 
 const normalizeEntries = (source) => {
     if (!source) return [];
@@ -21,11 +15,11 @@ export const createAudioCueBank = (source) => {
 
     const stop = (key) => {
         const audio = get(key);
-        stopAudioElement(audio);
+        stopAndResetAudioElement(audio);
     };
 
     const stopAll = () => {
-        cues.forEach((audio) => stopAudioElement(audio));
+        cues.forEach((audio) => stopAndResetAudioElement(audio));
     };
 
     const play = async (key, { timeoutMs = 0, isCancelled = null } = {}) => {

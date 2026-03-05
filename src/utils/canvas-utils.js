@@ -60,6 +60,12 @@ export function drawGlowingParticles(ctx, particles) {
     ctx.restore();
 }
 
+export const restoreAndDrawParticles = (ctx, particles) => {
+    if (!ctx) return;
+    ctx.restore();
+    drawGlowingParticles(ctx, particles);
+};
+
 export const fillCanvas = (ctx, width, height, color) => {
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, width, height);

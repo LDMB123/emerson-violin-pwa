@@ -46,8 +46,11 @@ export class RhythmCanvasEngine extends BaseCanvasEngine {
 
     render(time) {
         const frame = this.beginFilledFrame(time, 'rgba(10, 5, 25, 0.3)');
-        if (!frame) return;
-        const { dt, ctx } = frame;
+        if (!frame) {
+            return;
+        }
+        const dt = frame.dt;
+        const { ctx } = frame;
 
         // Render highway grid
         ctx.strokeStyle = 'rgba(50, 0, 100, 0.5)';

@@ -1,6 +1,6 @@
 import { SOUNDS_CHANGE, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
-import { isSoundDisabledEvent } from '../utils/sound-state.js';
+import { runIfSoundDisabled } from '../utils/sound-state.js';
 
 export const attachTrainerGlobalListeners = ({
     metronomeController,
@@ -9,30 +9,33 @@ export const attachTrainerGlobalListeners = ({
     refreshTrainerTuningById,
     onMlReset,
 }) => {
+    const stopAndReportMetronome = () => {
+        metronomeController.report();
+        metronomeController.stop({ silent: true });
+    };
+
     bindHiddenAndPagehide({
         onHidden: () => {
             metronomeController.stop({ silent: true });
         },
         onPagehide: () => {
-            metronomeController.report();
-            metronomeController.stop({ silent: true });
+            stopAndReportMetronome();
             drillsController.handlePagehide();
         },
     });
 
     window.addEventListener('hashchange', () => {
         if (!isPracticeView()) {
-            metronomeController.report();
-            metronomeController.stop({ silent: true });
+            stopAndReportMetronome();
         }
         drillsController.handleHashChange(window.location.hash);
     }, { passive: true });
 
     document.addEventListener(SOUNDS_CHANGE, (event) => {
-        if (isSoundDisabledEvent(event)) {
+        runIfSoundDisabled(event, () => {
             metronomeController.stop({ silent: true });
             metronomeController.setStatus('Sounds are off.');
-        }
+        });
     });
 
     document.addEventListener(ML_UPDATE, (event) => {

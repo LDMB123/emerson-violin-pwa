@@ -8,7 +8,7 @@ const bindingState = createStartStopBindingState();
 
 const SCORE_WIN = 2000;
 
-export const init = () => {
+export function init() {
     const view = document.getElementById('view-game-stir-soup');
     if (!view) return;
 
@@ -49,4 +49,4 @@ export const init = () => {
             if (authEl) authEl.textContent = '100%';
         },
     });
-};
+}

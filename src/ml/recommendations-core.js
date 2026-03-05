@@ -10,8 +10,8 @@ import {
 } from '../utils/recommendations-utils.js';
 import { ensureCurrentMission } from '../curriculum/engine.js';
 import { collectDueSongReviews } from '../songs/song-progression.js';
-import { loadGameMasteryState } from '../games/game-mastery.js';
 import { getSongCatalog } from '../songs/song-library.js';
+import { loadGameMasteryState } from '../games/game-mastery.js';
 import {
     DEFAULT_MASTERY_THRESHOLDS,
     masteryFromEvents,

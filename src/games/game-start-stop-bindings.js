@@ -1,13 +1,15 @@
-export const bindGameStartStop = ({
-    startButton = null,
-    engine = null,
-    startLabel = 'Start',
-    stopLabel = 'Stop',
-    resetBeforeStart = null,
-    onStop = null,
-    isGameViewActive = () => true,
-    onViewExit = null,
-} = {}) => {
+const alwaysTrue = () => true;
+
+export const bindGameStartStop = (options = {}) => {
+    const startButton = options.startButton ?? null;
+    const engine = options.engine ?? null;
+    const startLabel = options.startLabel ?? 'Start';
+    const stopLabel = options.stopLabel ?? 'Stop';
+    const resetBeforeStart = options.resetBeforeStart ?? null;
+    const onStop = options.onStop ?? null;
+    const isGameViewActive = options.isGameViewActive ?? alwaysTrue;
+    const onViewExit = options.onViewExit ?? null;
+
     const applyStartLabel = () => {
         if (startButton) startButton.textContent = startLabel;
     };

@@ -1,6 +1,6 @@
 import { createGame } from './game-shell.js';
-import { isGameView } from '../utils/view-hash-utils.js';
 import { bindVisibilityLifecycle } from './game-interactive-runtime.js';
+import { isGameView } from '../utils/view-hash-utils.js';
 import {
     formatCountdown,
     setLiveNumber,
@@ -21,6 +21,7 @@ import {
 } from './bow-hero-state.js';
 import { createBowHeroTimerLifecycle } from './bow-hero-timer.js';
 import { BowHeroCanvasEngine } from './bow-hero-canvas.js';
+import { shouldSkipResetForActiveTimer } from './game-reset-guards.js';
 const updateBowHero = createStandardGameUpdate({
     viewId: '#view-game-bow-hero',
     inputPrefix: 'bh-step-',
@@ -30,11 +31,12 @@ const updateBowHero = createStandardGameUpdate({
 
 const { bind } = createGame({
     id: 'bow-hero',
-    computeAccuracy: (state) => state._stars && state._stars.length
-        ? (state.starCount / state._stars.length) * 100
-        : 0,
-    onReset: (gameState) => {
-        if (gameState._timerId) return;
+    computeAccuracy: (state) => {
+        if (!state._stars || state._stars.length === 0) return 0;
+        return (state.starCount / state._stars.length) * 100;
+    },
+    onReset(gameState) {
+        if (shouldSkipResetForActiveTimer(gameState)) return;
         gameState.starCount = 0;
         gameState.strokeCount = 0;
         if (gameState._stars) {
@@ -47,7 +49,7 @@ const { bind } = createGame({
 
         if (gameState._engine) gameState._engine.reset();
     },
-    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
+    onBind: (stage, difficultyProfile, { registerCleanup, reportSession, gameState }) => {
         const runToggle = stage.querySelector('#bow-hero-run');
         const timerEl = stage.querySelector('[data-bow="timer"]');
         const stars = Array.from(stage.querySelectorAll('.bow-star'));
@@ -59,8 +61,8 @@ const { bind } = createGame({
 
         let starCount = 0;
         let strokeCount = 0;
-        const targetTempo = Math.round(72 * difficulty.speed);
-        const timeLimit = Math.round(105 * difficulty.speed);
+        const targetTempo = Math.round(72 * difficultyProfile.speed);
+        const timeLimit = Math.round(105 * difficultyProfile.speed);
         let lastStrokeAt = 0;
         let smoothStreak = 0;
 
@@ -82,14 +84,17 @@ const { bind } = createGame({
         const updateTimer = (remaining) => {
             if (timerEl) timerEl.textContent = formatCountdown(remaining);
         };
+        const syncStarsUi = () => {
+            renderBowHeroStars({ stars, starCount });
+            setLiveNumber(starsEl, 'liveStars', starCount);
+        };
 
         const resetStars = () => {
             starCount = 0;
             strokeCount = 0;
             gameState.starCount = 0;
             gameState.strokeCount = 0;
-            renderBowHeroStars({ stars, starCount });
-            setLiveNumber(starsEl, 'liveStars', starCount);
+            syncStarsUi();
             engine.reset();
         };
 
@@ -126,20 +131,17 @@ const { bind } = createGame({
         });
 
         gameState._onDeactivate = () => {
-            timerLifecycle.pauseTimer();
-            stopTonePlayer();
             engine.stop();
+            stopTonePlayer();
+            timerLifecycle.pauseTimer();
         };
 
-        registerCleanup(() => {
-            engine.destroy();
-        });
+        registerCleanup(() => engine.destroy());
 
         const performBowStroke = () => {
             starCount = Math.min(stars.length, starCount + 1);
             strokeCount += 1;
-            renderBowHeroStars({ stars, starCount });
-            setLiveNumber(starsEl, 'liveStars', starCount);
+            syncStarsUi();
             const now = performance.now();
             const strokeFeedback = computeBowStrokeFeedback({
                 lastStrokeAt,

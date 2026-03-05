@@ -7,7 +7,7 @@ import { loadGameMasteryState } from '../games/game-mastery.js';
 import { getSongCatalog } from '../songs/song-library.js';
 import { formatRecentScore } from './progress-utils.js';
 
-const buildRecentGames = (gameEvents) => gameEvents
+const buildRecentGames = (gameEvents = []) => gameEvents
     .slice(-3)
     .reverse()
     .map((event) => ({
@@ -43,27 +43,18 @@ export const loadSupplementaryProgressData = async () => {
     };
 };
 
-export const composeProgressResult = ({
-    progress,
-    tracker,
-    streak,
-    weekMinutes,
-    dailyMinutes,
-    skills,
-    weakestSkill,
-    gameEvents,
-    supplemental,
-}) => ({
-    progress,
-    tracker,
-    streak,
-    weekMinutes,
-    dailyMinutes,
-    skills,
-    weakestSkill,
-    recentGames: buildRecentGames(gameEvents),
-    ...supplemental,
-});
+export const composeProgressResult = (model = {}) => {
+    const {
+        gameEvents,
+        supplemental,
+        ...base
+    } = model;
+    return {
+        ...base,
+        recentGames: buildRecentGames(gameEvents),
+        ...supplemental,
+    };
+};
 
 export const composeProgressWithSupplemental = async (model) => {
     const supplemental = await loadSupplementaryProgressData();

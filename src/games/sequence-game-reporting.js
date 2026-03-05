@@ -12,13 +12,13 @@ const computeAccuracy = ({ combo, comboTarget }) => (
 );
 
 export const reportSequenceSession = ({
-    id,
-    score,
-    combo,
-    comboTarget,
     reportResult,
-    stage,
+    comboTarget,
+    combo,
+    score,
     difficulty,
+    stage,
+    id,
     sessionStartedAt,
     misses,
 }) => {

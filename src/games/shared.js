@@ -2,10 +2,9 @@ import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { createTonePlayer } from '../audio/tone-player.js';
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
-import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
 import { durationToMinutes, positiveRound, todayDay } from '../utils/math.js';
 import { markCheckboxInputChecked } from '../utils/checkbox-utils.js';
-import { speakMessage as speakVoiceMessage } from '../utils/speech-utils.js';
+import { speakVoiceCoachMessage } from '../utils/voice-coach-speech.js';
 import { isGameView } from '../utils/view-hash-utils.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
@@ -41,9 +40,7 @@ export const getTonePlayer = () => {
 };
 
 export const stopTonePlayer = () => {
-    if (tonePlayer) {
-        tonePlayer.stopAll();
-    }
+    tonePlayer?.stopAll?.();
 };
 
 const playWithTonePlayer = (playback) => {
@@ -129,10 +126,7 @@ export const buildNoteSequence = (pool, length) => {
 };
 
 const speakReaction = (message) => {
-    speakVoiceMessage({
-        message,
-        enabled: isVoiceCoachEnabled(),
-        lang: 'en-US',
+    speakVoiceCoachMessage(message, {
         rate: 1.05,
         pitch: 1.2,
     });

@@ -19,6 +19,14 @@ import {
     updateControlState,
 } from './tuner-view.js';
 import { bindToneButtons } from './tuner-tone-controls.js';
+import {
+    createOnceBinder,
+    runOnceBinding,
+} from '../utils/lifecycle-utils.js';
+import {
+    createTargetedRefreshHandlers,
+    createResolveThenApplyHandler,
+} from '../utils/event-handlers.js';
 
 let livePanel = null;
 let startButton = null;
@@ -34,7 +42,7 @@ let refToneButtons = [];
 let tolerance = 8;
 let inTuneCount = 0;
 let detectCount = 0;
-let globalListenersBound = false;
+const claimGlobalListenersBinding = createOnceBinder();
 let pendingRealtimeFrame = 0;
 let pendingRealtimeState = null;
 let lastRenderedStateKey = '';
@@ -59,6 +67,17 @@ const getControlRefs = () => ({
 
 const setStatusText = (text) => {
     setStatus(statusEl, text);
+};
+
+const renderFeatureFrame = ({ frame, onDetection = () => {} }) => {
+    applyFrame({
+        frame,
+        tolerance,
+        viewRefs: getDisplayRefs(),
+        listeningStatusText: listeningStatusText(),
+        setStatusText,
+        onDetection,
+    });
 };
 
 const resolveElements = () => {
@@ -86,12 +105,8 @@ const applyRealtimeState = (detail) => {
     lastRenderedStateKey = key;
     const listening = Boolean(detail?.listening) && !detail?.paused;
     updateControlState(getControlRefs(), listening);
-    applyFrame({
+    renderFeatureFrame({
         frame: detail?.lastFeature,
-        tolerance,
-        viewRefs: getDisplayRefs(),
-        listeningStatusText: listeningStatusText(),
-        setStatusText,
         onDetection: (inTune) => {
             detectCount += 1;
             if (inTune) inTuneCount += 1;
@@ -172,45 +187,38 @@ const bindLocalListeners = () => {
     });
 };
 
-const applyTuning = async () => {
+async function applyTuning() {
     const tuning = await getGameTuning('tuner');
     tolerance = tuning.tolerance ?? tolerance;
     setDifficultyBadge(document.querySelector('#tuner-live .tuner-card-header'), tuning.difficulty);
     setStatusText(idleStatusText());
-};
+}
 
-const refreshTuningFromModel = () => {
-    resolveElements();
-    applyTuning();
-};
+const refreshTuningFromModel = createResolveThenApplyHandler(resolveElements, applyTuning);
 
-const handleMlUpdate = (event) => {
-    const id = event.detail?.id;
-    if (id !== 'tuner') return;
-    refreshTuningFromModel();
-};
+const {
+    handleUpdate: handleMlUpdate,
+    handleReset: handleMlReset,
+} = createTargetedRefreshHandlers('tuner', refreshTuningFromModel);
 
-const handleMlReset = () => {
-    refreshTuningFromModel();
-};
+const sessionRealtimeDetail = (
+    session,
+    { listening = isSessionListening(session), lastFeature = session.lastFeature } = {},
+) => ({
+    listening,
+    paused: session.paused,
+    lastFeature,
+});
 
-const bindGlobalListeners = () => {
-    if (globalListenersBound) return;
-    globalListenersBound = true;
-
+const bindGlobalListeners = () => runOnceBinding(claimGlobalListenersBinding, () => {
+    const hashChangeOptions = { passive: true };
     window.addEventListener('hashchange', () => {
         if (!isTunerView()) return;
         const session = getSessionState();
         const listening = isSessionListening(session);
-        applyRealtimeState({
-            listening,
-            paused: session.paused,
-            lastFeature: session.lastFeature,
-        });
-        if (!listening) {
-            setStatusText(idleStatusText());
-        }
-    }, { passive: true });
+        applyRealtimeState(sessionRealtimeDetail(session, { listening }));
+        if (!listening) setStatusText(idleStatusText());
+    }, hashChangeOptions);
 
     document.addEventListener(RT_STATE, (event) => {
         if (!isTunerView()) return;
@@ -220,6 +228,14 @@ const bindGlobalListeners = () => {
 
     document.addEventListener(ML_UPDATE, handleMlUpdate);
     document.addEventListener(ML_RESET, handleMlReset);
+});
+
+const updateLastRenderedStateKey = ({ listening, paused, lastFeature }) => {
+    lastRenderedStateKey = realtimeRenderKey({
+        listening,
+        paused,
+        lastFeature,
+    });
 };
 
 const initTuner = () => {
@@ -233,27 +249,15 @@ const initTuner = () => {
     lastRenderedStateKey = '';
     updateControlState(getControlRefs(), active);
     if (session.lastFeature && active) {
-        applyFrame({
+        renderFeatureFrame({
             frame: session.lastFeature,
-            tolerance,
-            viewRefs: getDisplayRefs(),
-            listeningStatusText: listeningStatusText(),
-            setStatusText,
             onDetection: () => {},
         });
-        lastRenderedStateKey = realtimeRenderKey({
-            listening: active,
-            paused: session.paused,
-            lastFeature: session.lastFeature,
-        });
+        updateLastRenderedStateKey(sessionRealtimeDetail(session, { listening: active }));
     } else {
         resetDisplay(getDisplayRefs());
         setStatusText(idleStatusText());
-        lastRenderedStateKey = realtimeRenderKey({
-            listening: active,
-            paused: session.paused,
-            lastFeature: null,
-        });
+        updateLastRenderedStateKey(sessionRealtimeDetail(session, { listening: active, lastFeature: null }));
     }
     applyTuning();
 };

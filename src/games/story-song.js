@@ -7,7 +7,7 @@ import {
     getTonePlayer,
     bindSoundsChange,
 } from './shared.js';
-import { isSoundEnabled } from '../utils/sound-state.js';
+import { isSoundEnabled, runIfSoundDisabled } from '../utils/sound-state.js';
 import { createStorySongView } from './story-song-view.js';
 import {
     syncStorySongGameState,
@@ -57,7 +57,7 @@ const { bind } = createGame({
         if (gameState._updatePage) gameState._updatePage(0);
         if (gameState._updateStatus) gameState._updateStatus('Press Play-Along to start.');
     },
-    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
+    onBind: (stage, difficultyProfile, { gameState, reportSession, registerCleanup }) => {
         const toggle = stage.querySelector('#story-play');
         const statusEl = stage.querySelector('[data-story="status"]');
         const titleEl = stage.querySelector('[data-story="title"]');
@@ -69,7 +69,7 @@ const { bind } = createGame({
         // difficulty.speed: scales playback tempo; speed=1.0 keeps tempo=92 BPM (current behavior)
         // difficulty.complexity: visual feedback only (pages are fixed); speed scales tempo
         const stageSeconds = 4;
-        const tempo = Math.round(92 * difficulty.speed);
+        const tempo = Math.round(92 * difficultyProfile.speed);
         let wasPlaying = false;
         let pageIndex = 0;
         let completedNotes = 0;
@@ -139,6 +139,9 @@ const { bind } = createGame({
         // Store helpers for onReset
         gameState._updatePage = updatePage;
         gameState._updateStatus = updateStatus;
+        const syncPlaybackState = (isPlaying) => {
+            syncStorySongGameState({ gameState, isPlaying });
+        };
 
         const playStory = async () => {
             const session = prepareStorySongPlayback({
@@ -151,9 +154,7 @@ const { bind } = createGame({
                 hasReported: Boolean(gameState._reported),
                 resetStoryProgress,
                 playback,
-                syncIsPlaying: (isPlaying) => {
-                    syncStorySongGameState({ gameState, isPlaying });
-                },
+                syncIsPlaying: syncPlaybackState,
                 markChecklist,
                 updateStatus,
             });
@@ -194,9 +195,7 @@ const { bind } = createGame({
             finalizeStorySongPlayback({
                 token: session.token,
                 playback,
-                syncIsPlaying: (isPlaying) => {
-                    syncStorySongGameState({ gameState, isPlaying });
-                },
+                syncIsPlaying: syncPlaybackState,
                 pageIndex,
                 storyPagesLength: storyPages.length,
                 toggle,
@@ -221,9 +220,12 @@ const { bind } = createGame({
         updateStatus();
 
         const soundsHandler = (event) => {
-            if (event.detail?.enabled === false) {
+            if (runIfSoundDisabled(event, () => {
                 stopPlayback({ message: 'Sounds are off. Enable Sounds to play along.' });
-            } else if (event.detail?.enabled === true) {
+            })) {
+                return;
+            }
+            if (event.detail?.enabled === true) {
                 updateStatus('Sounds on. Tap Play-Along to start.');
             }
         };

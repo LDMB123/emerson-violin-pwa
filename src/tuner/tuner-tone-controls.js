@@ -1,4 +1,5 @@
 import { isSoundEnabled } from '../utils/sound-state.js';
+import { stopAndResetAudioElement } from '../utils/audio-utils.js';
 
 const playToneSample = ({ tone, toneSamples, setStatus }) => {
     const sample = toneSamples.get(tone);
@@ -10,10 +11,7 @@ const playToneSample = ({ tone, toneSamples, setStatus }) => {
     }
 
     toneSamples.forEach((audio) => {
-        if (!audio.paused) {
-            audio.pause();
-            audio.currentTime = 0;
-        }
+        stopAndResetAudioElement(audio);
         audio.closest('.audio-card')?.classList.remove('is-playing');
     });
 
@@ -42,8 +40,7 @@ export const bindToneButtons = ({ toneButtons, refToneButtons, toneSamples, setS
             const sample = toneSamples.get(tone);
 
             if (sample && !sample.paused) {
-                sample.pause();
-                sample.currentTime = 0;
+                stopAndResetAudioElement(sample);
                 card?.classList.remove('is-playing');
                 return;
             }

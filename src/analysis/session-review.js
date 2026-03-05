@@ -19,7 +19,8 @@ const initSessionReview = async () => {
 
     if (!renderer.hasRecordingSlots()) return;
 
-    const { SkillProfile, SkillCategory } = await getCore();
+    const core = await getCore();
+    const { SkillProfile, SkillCategory } = core;
     const { updateSkillProfile } = createSkillProfileUtils(SkillCategory);
 
     const events = await loadEvents();

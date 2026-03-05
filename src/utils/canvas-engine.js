@@ -43,6 +43,12 @@ export class BaseCanvasEngine {
         // children can override if they need internal resolution changes
     }
 
+    fillBackground(color) {
+        if (!this.ctx) return;
+        this.ctx.fillStyle = color;
+        this.ctx.fillRect(0, 0, this.width, this.height);
+    }
+
     start() {
         if (this.isRunning) return;
         this.isRunning = true;
@@ -50,37 +56,48 @@ export class BaseCanvasEngine {
         this.loop();
     }
 
+    cancelScheduledFrame() {
+        if (this.rafId === null) return;
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+    }
+
+    scheduleNextFrame() {
+        if (this.rafId !== null) return;
+        this.rafId = requestAnimationFrame(() => this.loop());
+    }
+
     stop() {
         this.isRunning = false;
-        if (this.rafId !== null) {
-            cancelAnimationFrame(this.rafId);
-            this.rafId = null;
-        }
+        this.cancelScheduledFrame();
+    }
+
+    isPageHidden() {
+        return document.visibilityState === 'hidden';
+    }
+
+    skipFrameIfHidden(onHidden) {
+        if (!this.isPageHidden()) return false;
+        if (typeof onHidden === 'function') onHidden();
+        return true;
     }
 
     handleVisibilityChange() {
         if (!this.isRunning) return;
 
-        if (document.visibilityState === 'hidden') {
-            if (this.rafId !== null) {
-                cancelAnimationFrame(this.rafId);
-                this.rafId = null;
-            }
-            return;
-        }
+        if (this.skipFrameIfHidden(() => this.cancelScheduledFrame())) return;
 
         if (this.rafId === null) {
             this.lastTime = performance.now();
-            this.rafId = requestAnimationFrame(() => this.loop());
+            this.scheduleNextFrame();
         }
     }
 
     loop() {
         if (!this.isRunning) return;
-        if (document.visibilityState === 'hidden') {
+        if (this.skipFrameIfHidden(() => {
             this.rafId = null;
-            return;
-        }
+        })) return;
 
         const now = performance.now();
         const dt = Math.min((now - this.lastTime) / 1000, 0.1); // Cap delta to prevent huge jumps
@@ -90,7 +107,8 @@ export class BaseCanvasEngine {
         if (this.update) this.update(dt);
         if (this.draw) this.draw();
 
-        this.rafId = requestAnimationFrame(() => this.loop());
+        this.rafId = null;
+        this.scheduleNextFrame();
     }
 
     destroy() {

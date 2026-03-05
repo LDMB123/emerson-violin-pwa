@@ -28,6 +28,30 @@ const saveState = async (state) => {
     await setJSON(STORAGE_KEY, state);
 };
 
+const isNamedRadioInput = (input) => input.type === 'radio' && Boolean(input.name);
+
+const applyStoredRadioSelection = (input, state) => {
+    if (!isNamedRadioInput(input)) return;
+    const stored = state.radios[input.name];
+    if (!stored) return;
+    if (input.id && input.id === stored) {
+        input.checked = true;
+        return;
+    }
+    if (input.value && input.value === stored) {
+        input.checked = true;
+    }
+};
+
+const persistRadioSelection = (input, state) => {
+    if (!isNamedRadioInput(input)) return false;
+    const value = input.id || input.value;
+    if (!value) return false;
+    state.radios[input.name] = value;
+    saveState(state);
+    return true;
+};
+
 const applyState = (state) => {
     const inputs = document.querySelectorAll('input[type="checkbox"], input[type="radio"]');
     inputs.forEach((input) => {
@@ -39,17 +63,7 @@ const applyState = (state) => {
             return;
         }
 
-        if (input.type === 'radio' && input.name) {
-            const stored = state.radios[input.name];
-            if (!stored) return;
-            if (input.id && input.id === stored) {
-                input.checked = true;
-                return;
-            }
-            if (input.value && input.value === stored) {
-                input.checked = true;
-            }
-        }
+        applyStoredRadioSelection(input, state);
     });
     emitEvent(PERSIST_APPLIED, state);
 };
@@ -83,13 +97,7 @@ const initPersistence = async () => {
             return;
         }
 
-        if (input.type === 'radio' && input.name) {
-            const value = input.id || input.value;
-            if (value) {
-                state.radios[input.name] = value;
-                saveState(state);
-            }
-        }
+        persistRadioSelection(input, state);
     });
 };
 

@@ -1,8 +1,7 @@
 import { setLiveNumber } from './shared.js';
+import { setTextContent } from '../utils/dom-utils.js';
 
-export const setMelodyMakerStatus = (statusEl, message) => {
-    if (statusEl) statusEl.textContent = message;
-};
+export const setMelodyMakerStatus = setTextContent;
 
 export const renderMelodyMakerTrack = (trackEl, track) => {
     if (!trackEl) return;

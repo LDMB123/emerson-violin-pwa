@@ -1,7 +1,7 @@
 import { DragCanvasEngineBase } from './drag-canvas-engine-base.js';
 
 export class StirSoupCanvasEngine extends DragCanvasEngineBase {
-    constructor(canvas, onScoreUpdate) {
+    constructor(canvas, onScoreUpdate = null) {
         super(canvas, onScoreUpdate);
 
         this.isStirring = false;
@@ -9,9 +9,7 @@ export class StirSoupCanvasEngine extends DragCanvasEngineBase {
         this.targetAngle = 0;
         this.currentAngle = 0;
 
-        this.score = 0;
-        this.smoothness = 100;
-        this.laps = 0;
+        this.resetRunState();
 
         // Colors from liquid-glass spec
         this.soupColor = { r: 245, g: 107, b: 73 }; // Brand Orange
@@ -32,6 +30,12 @@ export class StirSoupCanvasEngine extends DragCanvasEngineBase {
                 this.isStirring = false;
             },
         });
+    }
+
+    resetRunState() {
+        this.score = 0;
+        this.smoothness = 100;
+        this.laps = 0;
     }
 
     evaluateStir() {
@@ -133,9 +137,7 @@ export class StirSoupCanvasEngine extends DragCanvasEngineBase {
     }
 
     start() {
-        this.score = 0;
-        this.smoothness = 100;
-        this.laps = 0;
+        this.resetRunState();
         this.isStirring = false;
         this.targetAngle = 0;
         super.start();

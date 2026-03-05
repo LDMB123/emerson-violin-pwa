@@ -12,8 +12,8 @@ const { bind } = createGame({
     id: 'dynamic-dojo',
     computeAccuracy,
     onReset: (gameState) => {
-        gameState.score = 0;
         gameState.totalTargets = 10; // e.g., 10 targets to win
+        gameState.score = 0;
         gameState.currentTarget = null;
         gameState.currentVisualVolume = 0;
         gameState.pianoFrames = 0;
@@ -27,7 +27,7 @@ const { bind } = createGame({
 
         hideAllTargets(gameState);
     },
-    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
+    onBind: (stage, runtimeDifficulty, { registerCleanup, gameState, reportSession }) => {
         // DOM Elements
         gameState._boardTarget = stage.querySelector('[data-dojo="board"]');
         gameState._tigerTarget = stage.querySelector('[data-dojo="tiger"]');
@@ -59,6 +59,10 @@ const { bind } = createGame({
         const onAudioData = (event) => {
             const data = event.detail?.lastFeature;
             if (!data || typeof data.rms !== 'number') return;
+            const completeTarget = () => {
+                document.removeEventListener(RT_STATE, onAudioData);
+                triggerWin(gameState, checkGameOver);
+            };
 
             // Map 0.0 - 0.25 RMS to 5% - 100% height
             const targetVisual = clamp((data.rms / 0.25) * 100, 5, 100);
@@ -71,13 +75,11 @@ const { bind } = createGame({
 
             // Check Win Conditions
             if (gameState.currentTarget === 'forte' && data.rms > gameState.targetVolumeThreshold) {
-                document.removeEventListener(RT_STATE, onAudioData);
-                triggerWin(gameState, checkGameOver);
+                completeTarget();
             } else if (gameState.currentTarget === 'piano' && data.rms > 0.005 && data.rms < gameState.targetVolumeThreshold) {
                 gameState.pianoFrames++;
                 if (gameState.pianoFrames > 30) {
-                    document.removeEventListener(RT_STATE, onAudioData);
-                    triggerWin(gameState, checkGameOver);
+                    completeTarget();
                     gameState.pianoFrames = 0;
                 }
             } else {

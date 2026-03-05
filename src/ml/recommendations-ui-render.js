@@ -67,10 +67,12 @@ export const renderLessonSteps = (container, steps = []) => {
         item.className = 'lesson-step';
         if (step?.status === 'complete') item.classList.add('is-complete');
         if (step?.status === 'in_progress') item.classList.add('is-active');
-        if (step?.source === 'remediation') item.classList.add('is-remediation');
+        const isRemediation = step?.source === 'remediation';
+        item.classList.toggle('is-remediation', isRemediation);
 
-        const time = document.createElement('span');
-        time.className = 'lesson-step-time';
+        const time = Object.assign(document.createElement('span'), {
+            className: 'lesson-step-time',
+        });
         time.textContent = formatMinutes(step.minutes || 0);
 
         const text = document.createElement('span');

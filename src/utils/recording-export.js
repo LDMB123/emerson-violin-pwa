@@ -1,3 +1,5 @@
+import { tryRunAsync } from './safe-execution.js';
+
 const safeFileName = (title) => {
     if (!title) return 'panda-violin-recording';
     const sanitized = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -28,7 +30,7 @@ const resolveRecordingBlob = async (recording, blobOverride) => {
 
 const saveWithFilePicker = async (file) => {
     if (!('showSaveFilePicker' in window)) return false;
-    try {
+    return tryRunAsync(async () => {
         const handle = await window.showSaveFilePicker({
             suggestedName: file.name,
             types: [
@@ -41,23 +43,17 @@ const saveWithFilePicker = async (file) => {
         const writable = await handle.createWritable();
         await writable.write(file);
         await writable.close();
-        return true;
-    } catch {
-        return false;
-    }
+    });
 };
 
 export const tryShareFile = async (file, { title = 'Panda Violin', text = '' } = {}) => {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
+        return tryRunAsync(async () => {
             const payload = { files: [file] };
             if (title) payload.title = title;
             if (text) payload.text = text;
             await navigator.share(payload);
-            return true;
-        } catch {
-            return false;
-        }
+        });
     }
     return false;
 };
@@ -97,14 +93,13 @@ export const exportRecording = async (recording, index = 0, blobOverride = null)
     const file = await buildRecordingFile(recording, index, blobOverride);
     if (!file) return false;
     const saved = await saveWithFilePicker(file);
-    if (!saved) {
-        const shared = await tryShareFile(file, {
-            title: 'Panda Violin Recording',
-            text: 'Practice recording',
-        });
-        if (!shared) {
-            downloadFile(file);
-        }
+    if (saved) return true;
+    const shared = await tryShareFile(file, {
+        title: 'Panda Violin Recording',
+        text: 'Practice recording',
+    });
+    if (!shared) {
+        downloadFile(file);
     }
     return true;
 };

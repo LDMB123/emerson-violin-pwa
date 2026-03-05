@@ -22,6 +22,12 @@ export const createSessionLifecycle = ({
 }) => {
     let globalBindingsReady = false;
     const shouldSimulateSessionStart = () => hasE2ERealtimeStartSimulation(globalThis.window);
+    const INACTIVE_LIFECYCLE_FLAGS = Object.freeze({
+        active: false,
+        paused: false,
+        listening: false,
+        starting: false,
+    });
 
     const setLifecycleFlags = ({
         active = state.active,
@@ -36,12 +42,10 @@ export const createSessionLifecycle = ({
     };
 
     const clearLifecycleFlags = () => {
-        setLifecycleFlags({
-            active: false,
-            paused: false,
-            listening: false,
-            starting: false,
-        });
+        setLifecycleFlags(INACTIVE_LIFECYCLE_FLAGS);
+    };
+    const runLifecycleAction = (promiseLike) => {
+        promiseLike.catch(() => {});
     };
 
     const resetSessionStartContext = () => {
@@ -174,28 +178,28 @@ export const createSessionLifecycle = ({
             window.addEventListener('hashchange', () => {
                 const hash = currentHash();
                 if (hash === '#view-parent') {
-                    lifecycle.pauseSession('parent-zone').catch(() => {});
+                    runLifecycleAction(lifecycle.pauseSession('parent-zone'));
                     return;
                 }
                 if (state.active && state.paused && isPracticeHash(hash)) {
-                    lifecycle.resumeSession().catch(() => {});
+                    runLifecycleAction(lifecycle.resumeSession());
                     return;
                 }
                 if (state.active && !isPracticeHash(hash)) {
-                    lifecycle.stopSession('leaving-practice').catch(() => {});
+                    runLifecycleAction(lifecycle.stopSession('leaving-practice'));
                 }
             }, { passive: true });
 
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden && state.active && !state.paused) {
-                    lifecycle.pauseSession('hidden').catch(() => {});
+                    runLifecycleAction(lifecycle.pauseSession('hidden'));
                 }
             });
 
             window.addEventListener('pagehide', (event) => {
                 if (isBfcachePagehide(event)) return;
                 if (state.active) {
-                    lifecycle.stopSession('pagehide').catch(() => {});
+                    runLifecycleAction(lifecycle.stopSession('pagehide'));
                 }
             });
         },

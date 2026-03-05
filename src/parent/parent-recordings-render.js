@@ -1,4 +1,7 @@
-import { setDisabled, setTextContent } from '../utils/dom-utils.js';
+import {
+    createTextContentSetter,
+    setDisabled,
+} from '../utils/dom-utils.js';
 import { durationToMinutes } from '../utils/math.js';
 
 export const createParentRecordingsRenderer = () => {
@@ -18,9 +21,10 @@ export const createParentRecordingsRenderer = () => {
         if (listEl) listEl.replaceChildren();
     };
 
-    const setStatus = (message) => {
-        setTextContent(statusEl, message);
-    };
+    function resolveStatusElement() {
+        return statusEl;
+    }
+    const setStatus = createTextContentSetter(resolveStatusElement);
 
     const setClearEnabled = (enabled) => {
         setDisabled(clearButton, !enabled);

@@ -1,3 +1,5 @@
+import { tryRun } from './safe-execution.js';
+
 export const speakMessage = ({
     message = '',
     enabled = true,
@@ -11,7 +13,7 @@ export const speakMessage = ({
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
     if (skipWhenHidden && document.hidden) return false;
 
-    try {
+    return tryRun(() => {
         if (cancelFirst) {
             window.speechSynthesis.cancel();
         }
@@ -20,10 +22,7 @@ export const speakMessage = ({
         utterance.rate = rate;
         utterance.pitch = pitch;
         window.speechSynthesis.speak(utterance);
-        return true;
-    } catch {
-        return false;
-    }
+    });
 };
 
 export const cancelSpeech = () => {
@@ -34,4 +33,3 @@ export const cancelSpeech = () => {
         // Ignore
     }
 };
-

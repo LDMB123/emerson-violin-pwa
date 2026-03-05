@@ -2,20 +2,23 @@ import { createCanvasSurface } from '../utils/canvas-surface.js';
 
 export class BaseCanvasEngine {
     constructor(canvas) {
-        Object.assign(this, createCanvasSurface(canvas));
-
+        const surface = createCanvasSurface(canvas);
+        Object.assign(this, surface);
         this.particles = [];
-        this.isRunning = false;
         this.lastTime = 0;
+        this.isRunning = false;
 
         this.render = this.render.bind(this);
     }
 
     start() {
         if (this.isRunning === true) return;
+        this.lastTime = performance.now();
         this.isRunning = true;
-        const now = performance.now();
-        this.lastTime = now;
+        this.scheduleRender();
+    }
+
+    scheduleRender() {
         requestAnimationFrame(this.render);
     }
 
@@ -66,8 +69,9 @@ export class BaseCanvasEngine {
     }
 
     fillCircle(ctx, x, y, radius) {
+        const fullArc = Math.PI * 2;
         ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.arc(x, y, radius, 0, fullArc);
         ctx.fill();
     }
 
@@ -106,6 +110,6 @@ export class BaseCanvasEngine {
     render(_time) {
         // To be overridden by subclasses
         if (!this.isRunning) return;
-        requestAnimationFrame(this.render);
+        this.scheduleRender();
     }
 }

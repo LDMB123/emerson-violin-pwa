@@ -1,6 +1,7 @@
 import { createGame } from './game-shell.js';
 import { createPlaybackRuntime } from './game-interactive-runtime.js';
 import { createAudioCueBank } from './game-audio-cues.js';
+import { RT_STATE } from '../utils/event-names.js';
 import {
     markChecklist,
     bindTap,
@@ -10,12 +11,11 @@ import {
     updateScoreCombo,
     bindSoundsChange,
     bindDocumentEvent,
-    createRealtimeFeatureStateHandler,
+    createRealtimeFeatureStateHandler as createRealtimeStateHandler,
     createStandardGameUpdate,
 } from './shared.js';
-import { RT_STATE } from '../utils/event-names.js';
-import { isSoundEnabled } from '../utils/sound-state.js';
-import { setDisabled } from '../utils/dom-utils.js';
+import { setDisabled as setControlDisabled } from '../utils/dom-utils.js';
+import { isSoundEnabled, runIfSoundDisabled } from '../utils/sound-state.js';
 import { playDuetPartnerSequence } from './duet-challenge-partner.js';
 import {
     setDuetChallengePrompt,
@@ -39,14 +39,16 @@ const updateDuetChallenge = createStandardGameUpdate({
 
 const { bind } = createGame({
     id: 'duet-challenge',
-    computeAccuracy: (state) => state._sequence?.length
-        ? (Math.max(0, state._sequence.length - (state._mistakes ?? 0)) / state._sequence.length) * 100
-        : 0,
+    computeAccuracy: (state) => {
+        if (!state._sequence?.length) return 0;
+        const mistakes = state._mistakes ?? 0;
+        return (Math.max(0, state._sequence.length - mistakes) / state._sequence.length) * 100;
+    },
     onReset: (gameState) => {
         if (gameState._stopPartnerPlayback) gameState._stopPartnerPlayback();
         if (gameState._resetSession) gameState._resetSession();
     },
-    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
+    onBind: (stage, difficultyProfile, { reportSession, registerCleanup, gameState }) => {
         const playButton = stage.querySelector('[data-duet="play"]');
         const buttons = Array.from(stage.querySelectorAll('.duet-btn'));
         const promptEl = stage.querySelector('[data-duet="prompt"]');
@@ -62,8 +64,8 @@ const { bind } = createGame({
         // difficulty.speed: scales partner playback timeout; speed=1.0 = 900ms per note (current behavior)
         // difficulty.complexity: adjusts sequence length; complexity=1 (medium) = length 4 (current behavior)
         const duetSeqLengths = [3, 4, 5];
-        const duetSeqLength = duetSeqLengths[difficulty.complexity] ?? 4;
-        const partnerNoteTimeout = Math.round(900 / difficulty.speed);
+        const duetSeqLength = duetSeqLengths[difficultyProfile.complexity] ?? 4;
+        const partnerNoteTimeout = Math.round(900 / difficultyProfile.speed);
         let seqIndex = 0;
         let combo = 0;
         let score = 0;
@@ -94,12 +96,12 @@ const { bind } = createGame({
         };
 
         const updateSoundState = () => {
-            setDisabled(playButton, !isSoundEnabled());
+            setControlDisabled(playButton, !isSoundEnabled());
         };
 
         const stopPartnerAudio = () => {
             cueBank.stopAll();
-            setDisabled(playButton, false);
+            setControlDisabled(playButton, false);
         };
         const partnerPlayback = createPlaybackRuntime({
             onStop: stopPartnerAudio,
@@ -212,29 +214,27 @@ const { bind } = createGame({
             }
             updateScoreboard();
         };
+        const canAcceptInput = (setPromptHandler) => ensureDuetChallengeReadyForTap({
+            isPartnerPlaying: partnerPlayback.playing,
+            active,
+            setPrompt: setPromptHandler,
+        });
 
-        buttons.forEach((button) => {
+        const bindDuetButton = (button) => {
             bindTap(button, () => {
-                if (!ensureDuetChallengeReadyForTap({
-                    isPartnerPlaying: partnerPlayback.playing,
-                    active,
-                    setPrompt,
-                })) {
+                if (!canAcceptInput(setPrompt)) {
                     return;
                 }
                 const note = button.dataset.duetNote;
                 if (note) handleTurn(note);
             });
-        });
+        };
+        buttons.forEach(bindDuetButton);
 
         const hitDetector = createDefaultTuningHitDetector();
 
-        const onRealtimeState = createRealtimeFeatureStateHandler('duet-challenge', (tuning) => {
-            if (!ensureDuetChallengeReadyForTap({
-                isPartnerPlaying: partnerPlayback.playing,
-                active,
-                setPrompt: () => { }, // Silent check
-            })) {
+        const onRealtimeState = createRealtimeStateHandler('duet-challenge', (tuning) => {
+            if (!canAcceptInput(() => { })) {
                 hitDetector.reset();
                 return;
             }
@@ -242,8 +242,8 @@ const { bind } = createGame({
             const targetNote = sequence[seqIndex];
             if (!targetNote) return;
 
-            // Use our new abstract detector!
-            if (!hitDetector.detectHit(tuning, targetNote)) {
+            const detectedHit = hitDetector.detectHit(tuning, targetNote);
+            if (detectedHit === false) {
                 return;
             }
 
@@ -253,13 +253,12 @@ const { bind } = createGame({
 
         bindDocumentEvent(RT_STATE, onRealtimeState, registerCleanup);
 
-        const soundsHandler = (event) => {
-            if (event.detail?.enabled === false) {
+        bindSoundsChange((event) => {
+            runIfSoundDisabled(event, () => {
                 stopPartnerPlayback({ stopTone: false });
-            }
+            });
             updateSoundState();
-        };
-        bindSoundsChange(soundsHandler, registerCleanup);
+        }, registerCleanup);
 
         updateSoundState();
         setButtonsDisabled(true);

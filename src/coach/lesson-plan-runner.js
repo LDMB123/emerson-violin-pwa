@@ -14,6 +14,7 @@ import {
     setRunnerPlanFromRecommendations,
 } from './lesson-plan-runner-machine.js';
 import { createLessonRunnerActions } from './lesson-plan-runner-actions.js';
+import { createTextContentSetter } from '../utils/dom-utils.js';
 
 const setupLessonPlan = () => {
     const planPanel = document.querySelector('[data-lesson-plan="coach"]');
@@ -44,9 +45,7 @@ const setupLessonPlan = () => {
 
     const runnerState = createLessonRunnerState();
 
-    const setStatus = (message) => {
-        if (statusEl) statusEl.textContent = message;
-    };
+    const setStatus = createTextContentSetter(() => statusEl);
 
     const getCurrentStep = () => getCurrentRunnerStep(runnerState);
 
@@ -62,6 +61,16 @@ const setupLessonPlan = () => {
         });
     };
 
+    const runnerViewState = {
+        stepEl,
+        cueEl,
+        timerEl,
+        startButton,
+        nextButton,
+        ctaButton,
+        updateProgress,
+    };
+
     const syncStepList = () => {
         syncRunnerStepList({
             stepsList,
@@ -72,32 +81,18 @@ const setupLessonPlan = () => {
     };
 
     const renderEmptyStep = () => {
-        renderEmptyRunnerStep({
-            stepEl,
-            cueEl,
-            timerEl,
-            startButton,
-            nextButton,
-            ctaButton,
-            updateProgress,
-        });
+        renderEmptyRunnerStep(runnerViewState);
     };
 
     const renderCurrentStep = (step) => {
         renderRunnerStep({
+            runnerView: runnerViewState,
             step,
             currentIndex: runnerState.currentIndex,
             stepsLength: runnerState.steps.length,
             recommendedGameId: runnerState.recommendedGameId,
             remainingSeconds: runnerState.remainingSeconds,
             completedSteps: runnerState.completedSteps,
-            stepEl,
-            cueEl,
-            timerEl,
-            startButton,
-            nextButton,
-            ctaButton,
-            updateProgress,
         });
     };
 
@@ -113,14 +108,18 @@ const setupLessonPlan = () => {
 
     const actions = createLessonRunnerActions({
         runnerState,
-        timerEl,
-        startButton,
-        nextButton,
-        ctaButton,
-        setStatus,
-        updateProgress,
-        syncStepList,
-        updateStepDetails,
+        controls: {
+            timerEl,
+            startButton,
+            nextButton,
+            ctaButton,
+        },
+        callbacks: {
+            setStatus,
+            updateProgress,
+            syncStepList,
+            updateStepDetails,
+        },
     });
 
     const refreshPlan = async ({ externalMission = null } = {}) => {
@@ -134,11 +133,9 @@ const setupLessonPlan = () => {
 
     refreshPlan();
 
-    const onMlUpdate = () => refreshPlan();
-    const onMlReset = () => refreshPlan();
-    const onMlRecs = () => refreshPlan();
+    const onRecommendationSignal = () => refreshPlan();
     const onMissionUpdated = (event) => {
-        refreshPlan({ externalMission: event?.detail?.mission }).catch(() => {});
+        refreshPlan({ externalMission: event?.detail?.mission }).catch(() => null);
     };
 
     const teardownLifecycle = setupLessonRunnerLifecycle({
@@ -147,9 +144,9 @@ const setupLessonPlan = () => {
         stopTimer: actions.stopTimer,
         pauseStep: actions.pauseStep,
         startButton,
-        onMlUpdate,
-        onMlReset,
-        onMlRecs,
+        onMlUpdate: onRecommendationSignal,
+        onMlReset: onRecommendationSignal,
+        onMlRecs: onRecommendationSignal,
         onMissionUpdated,
     });
 

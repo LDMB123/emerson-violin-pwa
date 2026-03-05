@@ -9,14 +9,17 @@ export const bindGameSessionLifecycle = ({
     onReport = null,
 } = {}) => {
     const expectedViewId = toViewId(hashId);
+    const runDeactivateAndReport = () => {
+        if (typeof onDeactivate === 'function') onDeactivate();
+        if (typeof onReport === 'function') onReport();
+    };
 
     const handleHashChange = () => {
         if (window.location.hash === hashId) {
             if (typeof onReset === 'function') onReset();
             return;
         }
-        if (typeof onDeactivate === 'function') onDeactivate();
-        if (typeof onReport === 'function') onReport();
+        runDeactivateAndReport();
     };
 
     const handlePlayAgain = (event) => {
@@ -31,8 +34,7 @@ export const bindGameSessionLifecycle = ({
         const currentViewId = window.location.hash.replace(/^#/, '');
         if (currentViewId !== expectedViewId) return;
         if (event?.persisted) return;
-        if (typeof onDeactivate === 'function') onDeactivate();
-        if (typeof onReport === 'function') onReport();
+        runDeactivateAndReport();
     };
 
     window.addEventListener('hashchange', handleHashChange, { passive: true });

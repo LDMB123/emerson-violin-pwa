@@ -132,7 +132,8 @@ export const prefetchLikelyViews = ({
     getViewPath,
     viewLoader,
 }) => {
-    if (navigator.connection?.saveData) return;
+    const saveDataMode = navigator.connection?.saveData === true;
+    if (saveDataMode) return;
 
     prefetchViewIds
         .filter((viewId) => viewId !== currentViewId)

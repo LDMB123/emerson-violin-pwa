@@ -99,13 +99,17 @@ const validateFallback = (payload, errors) => {
     pushError(errors, isString(payload.sessionId), 'sessionId must be a non-empty string');
     pushError(errors, isString(payload.reason), 'reason must be a non-empty string');
     pushError(errors, isString(payload.mode), 'mode must be a non-empty string');
+    pushFiniteAtError(payload, errors);
+};
+
+const pushFiniteAtError = (payload, errors) => {
     pushError(errors, isFiniteNumber(payload.at), 'at must be a finite number');
 };
 
 const validateParentOverride = (payload, errors) => {
     pushEnumError(errors, payload, 'preset', PARENT_PRESETS);
     pushEnumError(errors, payload, 'previousPreset', PARENT_PRESETS);
-    pushError(errors, isFiniteNumber(payload.at), 'at must be a finite number');
+    pushFiniteAtError(payload, errors);
     pushError(errors, isString(payload.source), 'source must be a non-empty string');
 };
 
@@ -115,8 +119,9 @@ const validateQuality = (payload, errors) => {
     pushError(errors, isFiniteNumber(payload.falseCorrectionRate), 'falseCorrectionRate must be a finite number');
     pushError(errors, isFiniteNumber(payload.fallbackRate), 'fallbackRate must be a finite number');
     pushError(errors, isFiniteNumber(payload.sampleCount), 'sampleCount must be a finite number');
-    pushError(errors, isFiniteNumber(payload.at), 'at must be a finite number');
+    pushFiniteAtError(payload, errors);
 };
+
 
 const EVENT_VALIDATORS = Object.freeze({
     [RT_SESSION_STARTED]: validateSessionStarted,

@@ -1,6 +1,6 @@
 import { setJSON, removeBlob } from '../persistence/storage.js';
-import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 import { RECORDINGS_UPDATED } from '../utils/event-names.js';
+import { RECORDINGS_KEY } from '../persistence/storage-keys.js';
 
 export const saveRecordings = async (recordings) => {
     await setJSON(RECORDINGS_KEY, recordings);

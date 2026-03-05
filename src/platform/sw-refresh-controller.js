@@ -33,10 +33,10 @@ export const createSwRefreshController = ({ setSyncStatus }) => {
 
         const triggerOnVisible = () => {
             if (document.visibilityState !== 'visible') return;
-            requestForegroundRefresh(registration, 'visible').catch(() => {});
+            void requestForegroundRefresh(registration, 'visible').catch(() => undefined);
         };
         const triggerOnOnline = () => {
-            requestForegroundRefresh(registration, 'online').catch(() => {});
+            void requestForegroundRefresh(registration, 'online').catch(() => undefined);
         };
 
         document.addEventListener('visibilitychange', triggerOnVisible);
@@ -70,7 +70,7 @@ export const createSwRefreshController = ({ setSyncStatus }) => {
         }
 
         bindForegroundRefreshFallback(registration);
-        requestForegroundRefresh(registration, 'startup').catch(() => {});
+        void requestForegroundRefresh(registration, 'startup').catch(() => undefined);
     };
 
     return {

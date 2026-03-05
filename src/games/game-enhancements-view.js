@@ -158,7 +158,7 @@ export const buildCoachPanel = (view, meta) => {
     }).join('');
 
     const panel = document.createElement('div');
-    panel.className = 'game-coach glass';
+    Object.assign(panel, { className: 'game-coach glass' });
     panel.dataset.gameCoach = 'true';
     panel.innerHTML = `
         <div class="game-coach-header">

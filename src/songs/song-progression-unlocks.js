@@ -24,20 +24,21 @@ const hasMetChallengePrerequisites = (song, curriculumState) => {
     return prerequisites.every((id) => completedUnitIds.includes(id));
 };
 
-const isSongUnlockedForState = (song, {
+const normalizeUnlockOptions = ({
     curriculumState = null,
     songProgressState = null,
-} = {}) => {
+} = {}) => ({ curriculumState, songProgressState });
+
+const isSongUnlockedForState = (song, options = {}) => {
+    const { curriculumState, songProgressState } = normalizeUnlockOptions(options);
     if (!song || !song.id) return false;
     if (song.tier !== 'challenge') return true;
     if (!hasMetChallengePrerequisites(song, curriculumState)) return false;
     return challengeReadinessCount(songProgressState) >= CHALLENGE_UNLOCK_REQUIRED;
 };
 
-export const buildUnlockMapForCatalog = (catalog, {
-    curriculumState = null,
-    songProgressState = null,
-} = {}) => {
+export const buildUnlockMapForCatalog = (catalog, options = {}) => {
+    const { curriculumState, songProgressState } = normalizeUnlockOptions(options);
     const songs = Array.isArray(catalog?.songs) ? catalog.songs : [];
     const unlockMap = {};
 

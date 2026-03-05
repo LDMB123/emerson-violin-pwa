@@ -14,6 +14,7 @@ import { deviationAccuracy } from '../utils/math.js';
 import { computeScalePracticeTapResult } from './scale-practice-tap.js';
 import { applyScalePracticeTempoUpdate } from './scale-practice-tempo.js';
 import { ScalePracticeCanvasEngine } from './scale-practice-canvas.js';
+import { roundTuningCents } from '../utils/tuning-utils.js';
 
 const updateScalePractice = createStandardGameUpdate({
     viewId: '#view-game-scale-practice',
@@ -41,7 +42,7 @@ const { bind } = createGame({
         if (ratingEl) ratingEl.textContent = 'Timing: --';
         if (gameState._updateHighlight) gameState._updateHighlight();
     },
-    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
+    onBind: (stage, difficultyProfile, { reportSession, gameState, registerCleanup }) => {
         const slider = stage.querySelector('[data-scale="slider"]');
         const tempoEl = stage.querySelector('[data-scale="tempo"]');
         const statusEl = stage.querySelector('[data-scale="status"]');
@@ -54,7 +55,7 @@ const { bind } = createGame({
 
         // difficulty.speed: scales targetTempo; speed=1.0 keeps targetTempo=85 (current behavior)
         // difficulty.complexity: visual feedback only for this game (single scale, no content pool to select)
-        const targetTempo = Math.round(85 * difficulty.speed);
+        const targetTempo = Math.round(85 * difficultyProfile.speed);
 
         // Store DOM refs and state on gameState
         gameState._scoreEl = scoreEl;
@@ -96,8 +97,14 @@ const { bind } = createGame({
         };
 
         gameState._onDeactivate = () => {
+            stopScalePracticeRuntime();
+        };
+
+        const stopScalePracticeRuntime = () => {
+            if (canvasEngine) {
+                canvasEngine.stop();
+            }
             stopTonePlayer();
-            if (canvasEngine) canvasEngine.stop();
         };
 
         const updateTempo = () => {
@@ -173,7 +180,7 @@ const { bind } = createGame({
             const targetNote = scaleNotes[gameState.scaleIndex];
             if (!targetNote) return;
 
-            const cents = Math.round(tuning.cents || 0);
+            const cents = roundTuningCents(tuning);
             const currentNote = tuning.note ? tuning.note.replace(/\d+$/, '') : null;
 
             if (!currentNote || Math.abs(cents) >= 20 || currentNote !== targetNote) {

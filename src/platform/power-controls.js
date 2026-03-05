@@ -3,7 +3,7 @@ import {
     getPreferredOrientation,
 } from './platform-utils.js';
 import { getViewId } from '../utils/app-utils.js';
-import { mergeControllerElements } from './controller-elements.js';
+import { createControllerElements } from './controller-elements.js';
 
 const createEmptyElements = () => ({
     wakeToggle: null,
@@ -13,7 +13,7 @@ const createEmptyElements = () => ({
 });
 
 export const createPowerControls = () => {
-    let elements = createEmptyElements();
+    const { elements, setElements } = createControllerElements(createEmptyElements);
     let wakeGlobalsBound = false;
     let orientationGlobalsBound = false;
     let wakeLock = null;
@@ -44,16 +44,20 @@ export const createPowerControls = () => {
         return false;
     };
 
+    const canRequestPowerSetting = async (onDenied = null) => {
+        if (document.hidden) return false;
+        return withWakeEligibleView(onDenied);
+    };
+
     const requestWakeLock = async () => {
-        if (!elements.wakeToggle) return;
-        if (!elements.wakeToggle.checked) {
+        const shouldKeepAwake = Boolean(elements.wakeToggle?.checked);
+        if (!shouldKeepAwake) {
+            if (!elements.wakeToggle) return;
             await releaseWakeLock();
             updateWakeStatus('Screen stays on during practice sessions.');
             return;
         }
-        if (document.hidden) return;
-
-        if (!(await withWakeEligibleView(async () => {
+        if (!(await canRequestPowerSetting(async () => {
             await releaseWakeLock();
             updateWakeStatus('Enable this while practicing to keep the screen awake.');
         }))) return;
@@ -72,25 +76,37 @@ export const createPowerControls = () => {
     };
 
     const bindWakeLock = () => {
-        if (!elements.wakeToggle) return;
+        const wakeToggle = elements.wakeToggle;
+        if (!wakeToggle) return;
 
-        if (elements.wakeToggle.dataset.nativeBound !== 'true') {
-            elements.wakeToggle.dataset.nativeBound = 'true';
-            elements.wakeToggle.addEventListener('change', requestWakeLock);
+        if (wakeToggle.dataset.nativeBound !== 'true') {
+            wakeToggle.dataset.nativeBound = 'true';
+            wakeToggle.addEventListener('change', requestWakeLock);
         }
+
+        const bindVisibilityHandlers = ({ onHidden, onVisible }) => {
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    onHidden();
+                } else {
+                    onVisible();
+                }
+            });
+            window.addEventListener('pagehide', () => {
+                onHidden();
+            });
+        };
 
         if (!wakeGlobalsBound) {
             wakeGlobalsBound = true;
             window.addEventListener('hashchange', requestWakeLock, { passive: true });
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) {
-                    releaseWakeLock();
-                } else {
-                    requestWakeLock();
-                }
-            });
-            window.addEventListener('pagehide', () => {
-                releaseWakeLock();
+            bindVisibilityHandlers({
+                onHidden: () => {
+                    void releaseWakeLock();
+                },
+                onVisible: () => {
+                    void requestWakeLock();
+                },
             });
         }
 
@@ -121,9 +137,7 @@ export const createPowerControls = () => {
             updateOrientationStatus('Orientation lock not available on this device.');
             return;
         }
-        if (document.hidden) return;
-
-        if (!(await withWakeEligibleView(() => {
+        if (!(await canRequestPowerSetting(() => {
             unlockOrientation();
             updateOrientationStatus('Enable this while practicing to keep the orientation fixed.');
         }))) return;
@@ -139,6 +153,11 @@ export const createPowerControls = () => {
 
     const bindOrientationLock = () => {
         if (!elements.orientationToggle) return;
+        const reapplyOrientationLock = () => {
+            if (elements.orientationToggle?.checked && orientationLocked) {
+                requestOrientationLock();
+            }
+        };
 
         if (elements.orientationToggle.dataset.nativeBound !== 'true') {
             elements.orientationToggle.dataset.nativeBound = 'true';
@@ -149,24 +168,16 @@ export const createPowerControls = () => {
             orientationGlobalsBound = true;
             window.addEventListener('hashchange', requestOrientationLock, { passive: true });
             if (screen.orientation) {
-                screen.orientation.addEventListener('change', () => {
-                    if (elements.orientationToggle?.checked && orientationLocked) {
-                        requestOrientationLock();
-                    }
-                });
+                screen.orientation.addEventListener('change', reapplyOrientationLock);
             } else {
-                window.addEventListener('orientationchange', () => {
-                    if (elements.orientationToggle?.checked && orientationLocked) {
-                        requestOrientationLock();
-                    }
-                }, { passive: true });
+                window.addEventListener('orientationchange', reapplyOrientationLock, { passive: true });
             }
             document.addEventListener('visibilitychange', () => {
                 if (document.hidden) {
                     unlockOrientation();
-                } else {
-                    requestOrientationLock();
+                    return;
                 }
+                void requestOrientationLock();
             });
             window.addEventListener('pagehide', () => {
                 unlockOrientation();
@@ -177,9 +188,7 @@ export const createPowerControls = () => {
     };
 
     return {
-        setElements(nextElements) {
-            elements = mergeControllerElements(createEmptyElements, nextElements);
-        },
+        setElements,
         bindWakeLock,
         bindOrientationLock,
         requestWakeLock,

@@ -5,13 +5,13 @@ import {
 } from '../utils/event-names.js';
 
 export const createMissionProgressHandlers = ({
-    missionContext,
-    applyMissionResult,
-    updateMissionStatus,
-    markGoal,
-    completeMissionStep,
-    startMissionStep,
     insertRemediationForSkill,
+    startMissionStep,
+    completeMissionStep,
+    markGoal,
+    updateMissionStatus,
+    applyMissionResult,
+    missionContext,
 }) => {
     const updateMissionStep = async ({ stepId, type }) => {
         if (!missionContext.mission?.id || !stepId) return;

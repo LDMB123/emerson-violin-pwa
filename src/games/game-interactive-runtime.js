@@ -1,4 +1,4 @@
-import { stopTonePlayer } from './shared.js';
+import { bindDocumentEvent, stopTonePlayer } from './shared.js';
 
 export const createPlaybackRuntime = ({
     onStop = null,
@@ -61,12 +61,5 @@ export const bindVisibilityLifecycle = ({
         if (typeof onVisible === 'function') onVisible();
     };
 
-    document.addEventListener('visibilitychange', handler);
-    const cleanup = () => {
-        document.removeEventListener('visibilitychange', handler);
-    };
-    if (typeof registerCleanup === 'function') {
-        registerCleanup(cleanup);
-    }
-    return cleanup;
+    return bindDocumentEvent('visibilitychange', handler, registerCleanup);
 };

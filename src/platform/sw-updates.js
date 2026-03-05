@@ -1,7 +1,11 @@
 import { hasServiceWorkerSupport } from './sw-support.js';
 import { createSwUpdateFlowController } from './sw-update-flow.js';
 import { createSwRefreshController } from './sw-refresh-controller.js';
-import { setHidden, setDisabled, setTextContent } from '../utils/dom-utils.js';
+import {
+    createTextContentSetter,
+    setHidden,
+    setDisabled,
+} from '../utils/dom-utils.js';
 
 let statusEl = null;
 let syncStatusEl = null;
@@ -16,13 +20,9 @@ const resolveElements = () => {
     applyButton = document.querySelector('[data-sw-apply]');
 };
 
-const setStatus = (message) => {
-    setTextContent(statusEl, message);
-};
-
-const setSyncStatus = (message) => {
-    setTextContent(syncStatusEl, message);
-};
+const getStatusEl = () => statusEl;
+const setStatus = createTextContentSetter(getStatusEl);
+const setSyncStatus = createTextContentSetter(() => syncStatusEl);
 
 const showApply = (show) => {
     setHidden(applyButton, !show);
@@ -36,28 +36,37 @@ const refreshController = createSwRefreshController({
     setSyncStatus,
 });
 
+const supportsServiceWorker = () => {
+    if (hasServiceWorkerSupport()) return true;
+    setStatus('Service worker not supported on this browser.');
+    return false;
+};
+
+const getServiceWorkerRegistration = async ({ onMissing } = {}) => {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration) return registration;
+    if (typeof onMissing === 'function') onMissing();
+    return null;
+};
+const handleMissingRegistration = () => {
+    setStatus('Service worker not ready yet.');
+};
+
 const applyUpdate = async () => {
-    if (!hasServiceWorkerSupport()) {
-        setStatus('Service worker not supported on this browser.');
-        return;
-    }
+    if (!supportsServiceWorker()) return;
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration?.waiting) return;
     registration.waiting.postMessage({ type: 'SKIP_WAITING' });
 };
 
 const checkForUpdates = async () => {
-    if (!hasServiceWorkerSupport()) {
-        setStatus('Service worker not supported on this browser.');
-        return;
-    }
+    if (!supportsServiceWorker()) return;
     setStatus('Checking for updates…');
     try {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (!registration) {
-            setStatus('Service worker not ready yet.');
-            return;
-        }
+        const registration = await getServiceWorkerRegistration({
+            onMissing: handleMissingRegistration,
+        });
+        if (!registration) return;
         await registration.update();
         updateFlowController.bindUpdateFlow(registration);
     } catch {
@@ -99,13 +108,14 @@ const initSwUpdates = async () => {
         setDisabled(applyButton, true);
         return;
     }
-    const registration = await navigator.serviceWorker.getRegistration();
-    if (!registration) {
-        setStatus('Service worker not ready yet.');
-        setSyncStatus('Background refresh will start once the app is installed.');
-        setDisabled(updateButton, true);
-        return;
-    }
+    const registration = await getServiceWorkerRegistration({
+        onMissing: () => {
+            setStatus('Service worker not ready yet.');
+            setSyncStatus('Background refresh will start once the app is installed.');
+            setDisabled(updateButton, true);
+        },
+    });
+    if (!registration) return;
 
     updateFlowController.bindUpdateFlow(registration);
     refreshController.registerBackgroundRefresh(registration);

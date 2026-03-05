@@ -1,9 +1,11 @@
-import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
+import { updateGameResult, getGameTuning } from '../ml/adaptive-engine.js';
 import { setDifficultyBadge } from '../games/shared.js';
 import {
     calculateBowingAccuracy,
     calculateBowingScore,
+    createTrainerDrillBaseController,
     formatBowingIntroText,
+    reportTrainerGameResult,
 } from './trainer-utils.js';
 
 export const createBowingDrillController = () => {
@@ -34,7 +36,7 @@ export const createBowingDrillController = () => {
         bowingReported = true;
         const accuracy = calculateBowingAccuracy(completed, bowingTarget);
         const score = calculateBowingScore(completed);
-        updateGameResult('bowing-coach', { accuracy, score }).catch(() => {});
+        reportTrainerGameResult(updateGameResult, 'bowing-coach', accuracy, score);
     };
 
     const bindControls = () => {
@@ -52,25 +54,25 @@ export const createBowingDrillController = () => {
         });
     };
 
-    const applyTuning = async () => {
-        const tuning = await getGameTuning('bowing-coach');
-        bowingTarget = tuning.targetSets ?? bowingTarget;
-        setDifficultyBadge(document.querySelector('#view-bowing .view-header'), tuning.difficulty, 'Bowing');
+    async function applyTuning() {
+        const bowingTuning = await getGameTuning('bowing-coach');
+        bowingTarget = bowingTuning.targetSets ?? bowingTarget;
+        setDifficultyBadge(document.querySelector('#view-bowing .view-header'), bowingTuning.difficulty, 'Bowing');
         updateBowingIntro();
-    };
+    }
 
     const refreshTuningState = () => {
         bowingReported = false;
-        applyTuning();
+        void applyTuning();
     };
 
     return {
-        setElements,
-        bindControls,
-        syncUi() {
-            updateBowingIntro();
-        },
-        refreshTuningState,
+        ...createTrainerDrillBaseController({
+            setElements,
+            bindControls,
+            syncUi: updateBowingIntro,
+            refreshTuningState,
+        }),
         handleHashChange(hash) {
             if (hash !== '#view-bowing') {
                 reportBowing();

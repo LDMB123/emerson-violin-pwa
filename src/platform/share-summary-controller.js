@@ -1,4 +1,6 @@
-import { mergeControllerElements } from './controller-elements.js';
+import {
+    createControllerElements,
+} from './controller-elements.js';
 
 const createEmptyElements = () => ({
     shareButton: null,
@@ -29,8 +31,8 @@ const buildShareSummary = () => {
     return lines.join('\n');
 };
 
-export const createShareSummaryController = () => {
-    let elements = createEmptyElements();
+export function createShareSummaryController() {
+    const { elements, setElements } = createControllerElements(createEmptyElements);
 
     const bind = () => {
         const shareButton = elements.shareButton;
@@ -65,9 +67,7 @@ export const createShareSummaryController = () => {
     };
 
     return {
-        setElements(nextElements) {
-            elements = mergeControllerElements(createEmptyElements, nextElements);
-        },
+        setElements,
         bind,
     };
-};
+}

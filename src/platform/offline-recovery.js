@@ -1,5 +1,6 @@
 import { isIPadOS } from './platform-utils.js';
 import { canRegisterServiceWorker, hasServiceWorkerSupport } from './sw-support.js';
+import { bindVisibleVisibilityChange } from '../utils/lifecycle-utils.js';
 
 const SW_PATH = './sw.js';
 const MIN_REFRESH_INTERVAL = isIPadOS() ? 3 * 60 * 1000 : 10 * 60 * 1000;
@@ -52,15 +53,14 @@ const refreshAssets = async (reason) => {
 
 const bindLifecycleRefresh = () => {
     if (!hasServiceWorkerSupport()) return;
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            refreshAssets('visible');
-        }
+    bindVisibleVisibilityChange(() => {
+        refreshAssets('visible');
     });
 
-    window.addEventListener('online', () => {
+    const handleOnline = () => {
         refreshAssets('online');
-    });
+    };
+    window.addEventListener('online', handleOnline);
 
     window.addEventListener('pageshow', (event) => {
         if (event.persisted) {

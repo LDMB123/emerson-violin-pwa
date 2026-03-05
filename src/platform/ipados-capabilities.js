@@ -1,10 +1,13 @@
 import { isIPadOS, isStandalone, setRootDataset } from './platform-utils.js';
 import { setDisabled } from '../utils/dom-utils.js';
+import {
+    createOnceBinder,
+} from '../utils/lifecycle-utils.js';
 
 let statusEl = null;
 let voiceToggle = null;
 let voiceNote = null;
-let globalsBound = false;
+const claimGlobalListenersBinding = createOnceBinder();
 
 const resolveElements = () => {
     statusEl = document.querySelector('[data-platform-status]');
@@ -45,18 +48,20 @@ const updateStatus = () => {
     statusEl.textContent = `iPadOS detected. Running in ${mode} mode.`;
 };
 
-const bindGlobalListeners = () => {
-    if (globalsBound) return;
-    globalsBound = true;
+const refreshStandaloneStatus = () => {
+    updateStandaloneState();
+    updateStatus();
+};
+
+function bindGlobalListeners() {
+    if (!claimGlobalListenersBinding()) return;
     window.matchMedia('(display-mode: standalone)').addEventListener('change', () => {
-        updateStandaloneState();
-        updateStatus();
+        refreshStandaloneStatus();
     });
     window.addEventListener('appinstalled', () => {
-        updateStandaloneState();
-        updateStatus();
+        refreshStandaloneStatus();
     });
-};
+}
 
 const initIpadosCapabilities = () => {
     resolveElements();

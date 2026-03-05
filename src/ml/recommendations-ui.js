@@ -15,17 +15,21 @@ import {
     resolveTotalMinutes,
 } from './recommendations-ui-render.js';
 import { createQueuedAsyncRunner } from '../utils/queued-async-runner.js';
+import {
+    createOnceBinder,
+} from '../utils/lifecycle-utils.js';
+import { createRunOnceDocumentBinder } from '../utils/event-handlers.js';
 
 let panels = [];
 let stepLists = [];
 let goalList = null;
-let globalsBound = false;
 
 const resolveElements = () => {
     panels = Array.from(document.querySelectorAll('[data-lesson-plan]'));
     stepLists = Array.from(document.querySelectorAll('[data-lesson-steps]'));
     goalList = document.querySelector('[data-goal-list]');
 };
+const claimGlobalListenersBinding = createOnceBinder();
 
 const hasConnectedTargets = () => (
     panels.some((panel) => panel?.isConnected)
@@ -64,14 +68,11 @@ const runRefreshPanels = async () => {
 
 const refreshPanels = createQueuedAsyncRunner(runRefreshPanels);
 
-const bindGlobalListeners = () => {
-    if (globalsBound) return;
-    globalsBound = true;
-    document.addEventListener(ML_UPDATE, refreshPanels);
-    document.addEventListener(ML_RESET, refreshPanels);
-    document.addEventListener(ML_RECS, refreshPanels);
-    document.addEventListener(MISSION_UPDATED, refreshPanels);
-};
+const bindGlobalListeners = createRunOnceDocumentBinder(
+    claimGlobalListenersBinding,
+    [ML_UPDATE, ML_RESET, ML_RECS, MISSION_UPDATED],
+    refreshPanels,
+);
 
 const initRecommendationsUi = () => {
     resolveElements();

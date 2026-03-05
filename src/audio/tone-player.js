@@ -81,7 +81,7 @@ export const createTonePlayer = () => {
             return false;
         }
         const ctx = await ensurePlayerContext(state);
-        if (!ctx) return false;
+        if (ctx == null) return false;
         const options = { duration, volume, type, startTime };
         const createVoiceConfig = () => ({
             state,
@@ -170,9 +170,8 @@ export const createTonePlayer = () => {
     };
 
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            releaseTonePlayerContext(state, stopAll);
-        }
+        if (!document.hidden) return;
+        releaseTonePlayerContext(state, stopAll);
     });
 
     document.addEventListener(SOUNDS_CHANGE, syncSoundState);

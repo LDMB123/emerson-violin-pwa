@@ -17,11 +17,8 @@ export const updateSequenceSummary = ({
     const liveCombo = readLiveNumber(comboEl, 'liveCombo');
 
     if (scoreEl) {
-        scoreEl.textContent = String(
-            Number.isFinite(liveScore)
-                ? liveScore
-                : checked * stepScore + (checked === inputs.length ? stepScore : 0),
-        );
+        const fallbackScore = checked * stepScore + (checked === inputs.length ? stepScore : 0);
+        scoreEl.textContent = String(Number.isFinite(liveScore) ? liveScore : fallbackScore);
     }
     if (comboEl) {
         const combo = Number.isFinite(liveCombo) ? liveCombo : checked;

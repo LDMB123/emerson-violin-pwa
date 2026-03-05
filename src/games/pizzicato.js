@@ -1,6 +1,6 @@
 import { createSequenceGame } from './sequence-game.js';
 
-const { update, bind } = createSequenceGame({
+const pizzicatoConfig = {
     id: 'pizzicato',
     prefix: 'pizzicato',
     viewId: '#view-game-pizzicato',
@@ -22,6 +22,8 @@ const { update, bind } = createSequenceGame({
         state.hitNotes.add(note);
         state.markChecklistIf(state.hitNotes.size >= 4, 'pz-step-1');
     },
-});
+};
+
+const { update, bind } = createSequenceGame(pizzicatoConfig);
 
 export { update, bind };

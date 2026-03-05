@@ -1,20 +1,17 @@
+import {
+    readJsonFromStorage,
+    writeJsonToStorage,
+} from '../utils/storage-utils.js';
+
 const FALLBACK_PREFIX = 'panda-violin:kv:';
 
 const fallbackKey = (key) => `${FALLBACK_PREFIX}${key}`;
 
-export const fallbackGetJSON = (key) => {
-    try {
-        const raw = window.localStorage.getItem(fallbackKey(key));
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        return null;
-    }
-};
+export const fallbackGetJSON = (key) => readJsonFromStorage(fallbackKey(key));
 
 export const fallbackSetJSON = (key, value) => {
-    try {
-        window.localStorage.setItem(fallbackKey(key), JSON.stringify(value));
-    } catch {
+    const saved = writeJsonToStorage(fallbackKey(key), value);
+    if (!saved) {
         // Ignore storage quota or privacy-mode failures.
     }
 };

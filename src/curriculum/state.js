@@ -4,6 +4,7 @@ import {
     MISSION_HISTORY_KEY,
 } from '../persistence/storage-keys.js';
 import { clampRounded, clone, finiteOrNow, percentageRounded } from '../utils/math.js';
+import { asObjectOrFallback, mapArrayEntries } from '../utils/storage-utils.js';
 
 const STATE_VERSION = 1;
 const MAX_HISTORY = 240;
@@ -86,16 +87,16 @@ const defaultState = () => ({
 });
 
 const normalizeState = (stored) => {
-    const base = stored && typeof stored === 'object' ? stored : {};
-    const mission = normalizeMission(base.currentMission);
+    const source = asObjectOrFallback(stored, {});
+    const mission = normalizeMission(source.currentMission);
     return {
         version: STATE_VERSION,
-        currentUnitId: typeof base.currentUnitId === 'string' ? base.currentUnitId : mission?.unitId || null,
-        activeMissionId: typeof base.activeMissionId === 'string' ? base.activeMissionId : mission?.id || null,
+        currentUnitId: typeof source.currentUnitId === 'string' ? source.currentUnitId : mission?.unitId || null,
+        activeMissionId: typeof source.activeMissionId === 'string' ? source.activeMissionId : mission?.id || null,
         currentMission: mission,
-        completedUnitIds: Array.isArray(base.completedUnitIds) ? base.completedUnitIds.filter(Boolean) : [],
-        unitProgress: base.unitProgress && typeof base.unitProgress === 'object' ? base.unitProgress : {},
-        lastUpdatedAt: finiteOrNow(base.lastUpdatedAt),
+        completedUnitIds: Array.isArray(source.completedUnitIds) ? source.completedUnitIds.filter(Boolean) : [],
+        unitProgress: source.unitProgress && typeof source.unitProgress === 'object' ? source.unitProgress : {},
+        lastUpdatedAt: finiteOrNow(source.lastUpdatedAt),
     };
 };
 
@@ -124,11 +125,7 @@ export const saveCurriculumState = async (state) => {
 
 const loadMissionHistory = async () => {
     const stored = await getJSON(MISSION_HISTORY_KEY);
-    if (!Array.isArray(stored)) return [];
-    return stored
-        .map(normalizeHistoryEntry)
-        .filter(Boolean)
-        .slice(-MAX_HISTORY);
+    return mapArrayEntries(stored, normalizeHistoryEntry).slice(-MAX_HISTORY);
 };
 
 export const appendMissionHistory = async (entry) => {

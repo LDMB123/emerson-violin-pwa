@@ -10,9 +10,10 @@ import {
     createStandardGameUpdate,
 } from './shared.js';
 import { clamp } from '../utils/math.js';
-import { isSoundEnabled } from '../utils/sound-state.js';
+import { isSoundEnabled, runIfSoundDisabled } from '../utils/sound-state.js';
 import { RT_STATE } from '../utils/event-names.js';
 import { TuningCanvasEngine } from './tuning-canvas.js';
+import { roundTuningCents } from '../utils/tuning-utils.js';
 import {
     formatTuningProgressMessage,
     setTuningStatusText,
@@ -45,7 +46,7 @@ const { bind } = createGame({
             targetStrings,
         });
     },
-    onBind: (stage, difficulty, { reportSession, gameState, registerCleanup }) => {
+    onBind: (stage, difficultyConfig, { reportSession, gameState, registerCleanup }) => {
         const statusEl = stage.querySelector('[data-tuning="status"]');
         const progressEl = stage.querySelector('[data-tuning="progress"]');
         const progressBar = progressEl?.parentElement;
@@ -66,7 +67,7 @@ const { bind } = createGame({
         // difficulty.speed: visual feedback only for this game (no time limit to scale)
         // difficulty.complexity: sets initial targetStrings; complexity=1 (medium) = 3 strings (current behavior)
         const complexityTargets = [2, 3, 4];
-        gameState.targetStrings = complexityTargets[difficulty.complexity] ?? 3;
+        gameState.targetStrings = complexityTargets[difficultyConfig.complexity] ?? 3;
         gameState.tunedNotes = new Set();
         gameState.tuningEnergy = 0.0;
 
@@ -102,11 +103,14 @@ const { bind } = createGame({
         gameState.holdStart = 0;
 
         let tuningActive = null;
+        const clearTuningActive = () => {
+            if (tuningActive) tuningActive.dispose();
+            tuningActive = null;
+        };
 
         gameState._onDeactivate = () => {
             cueBank.stopAll();
-            if (tuningActive) tuningActive.dispose();
-            tuningActive = null;
+            clearTuningActive();
             gameState.activeTarget = null;
             if (tuningEngine) tuningEngine.stop();
         };
@@ -115,8 +119,7 @@ const { bind } = createGame({
             renderProgress();
             if (gameState.tunedNotes.size >= targetStrings) {
                 setTuningStatusText(statusEl, 'All strings tuned! Great job.');
-                if (tuningActive) tuningActive.dispose();
-                tuningActive = null;
+                clearTuningActive();
                 reportSession();
                 return true;
             }
@@ -129,7 +132,7 @@ const { bind } = createGame({
             if (!gameState.activeTarget || gameState.tunedNotes.has(gameState.activeTarget)) return;
 
             const target = gameState.activeTarget;
-            const cents = Math.round(tuning.cents || 0);
+            const cents = roundTuningCents(tuning);
 
             // Build continuous tuning physics
             let matchesTarget = false;
@@ -251,10 +254,11 @@ const { bind } = createGame({
             });
         });
 
+        const showMutedStatus = () => {
+            setTuningStatusText(statusEl, 'Sounds are off. Enable Sounds to hear tones.');
+        };
         const soundsHandler = (event) => {
-            if (event.detail?.enabled === false) {
-                setTuningStatusText(statusEl, 'Sounds are off. Enable Sounds to hear tones.');
-            }
+            runIfSoundDisabled(event, showMutedStatus);
         };
         bindSoundsChange(soundsHandler, registerCleanup);
     },

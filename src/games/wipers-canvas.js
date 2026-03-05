@@ -106,10 +106,10 @@ export class WipersCanvasEngine extends DragCanvasEngineBase {
     }
 
     start() {
-        this.score = 0;
-        this.wipes = 0;
         this.armAngle = 0;
         this.lastPeak = 0;
+        this.wipes = 0;
+        this.score = 0;
         super.start();
     }
 }

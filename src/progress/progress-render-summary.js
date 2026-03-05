@@ -19,14 +19,8 @@ export const renderProgressSummary = ({
     learningContainers,
 }) => {
     const {
-        progress,
         tracker,
         streak,
-        weekMinutes,
-        dailyMinutes,
-        skills,
-        weakestSkill,
-        recentGames,
         curriculumState,
         curriculumContent,
         songProgressState,
@@ -37,13 +31,7 @@ export const renderProgressSummary = ({
 
     renderCoreProgressUi({
         elements,
-        progress,
-        streak,
-        weekMinutes,
-        dailyMinutes,
-        skills,
-        weakestSkill,
-        recentGames,
+        summary,
         dailyGoalTarget,
         weeklyGoalTarget,
     });

@@ -1,9 +1,15 @@
-import { updateParticles, drawGlowingParticles, emitRadialParticles, fillCanvas } from '../utils/canvas-utils.js';
+import {
+    updateParticles,
+    drawGlowingParticles,
+    emitRadialParticles,
+    fillCanvas,
+    traceLinePath,
+} from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 
 export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
-    constructor(canvas) {
-        super(canvas);
+    constructor(canvasElement) {
+        super(canvasElement);
         this.notes = ['G', 'A', 'B', 'C', 'D', 'E', 'F#', 'G', 'F#', 'E', 'D', 'C', 'B', 'A', 'G'];
         this.activeIndex = 0;
         this.notesState = this.notes.map(() => ({ highlight: 0, scale: 1, particleEmitTime: 0 }));
@@ -20,7 +26,7 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
     }
 
     emitParticles(x, y, color) {
-        const count = Math.floor(5 + Math.random() * 10);
+        const count = 5 + Math.floor(Math.random() * 10);
         emitRadialParticles({
             particles: this.particles,
             count,
@@ -42,6 +48,13 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
         const distanceFromStart = index <= 7 ? index : 14 - index;
         const elevationRatio = distanceFromStart / 7;
         return cy + 20 - (elevationRatio * 60);
+    }
+
+    getTrackPoint(index, noteSpacing, cy) {
+        return {
+            x: (index + 0.5) * noteSpacing,
+            y: this.getTrackY(index, cy),
+        };
     }
 
     getLayoutMetrics() {
@@ -69,8 +82,7 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
             // Continuous particle emission while active
             if (state.particleEmitTime > 0) {
                 state.particleEmitTime -= dt;
-                const px = (i + 0.5) * noteSpacing;
-                const py = this.getTrackY(i, cy);
+                const point = this.getTrackPoint(i, noteSpacing, cy);
 
                 // Determine color based on ascending vs descending
                 const isAscending = i < 7;
@@ -78,7 +90,7 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
                 let color = isApex ? '#ffeb3b' : (isAscending ? '#00e5ff' : '#ff4081');
 
                 if (Math.random() > 0.5) {
-                    this.emitParticles(px, py, color);
+                    this.emitParticles(point.x, point.y, color);
                 }
             }
         });
@@ -99,27 +111,22 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
         this.ctx.beginPath();
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
         this.ctx.lineWidth = 4;
-
-        for (let i = 0; i < totalNotes; i++) {
-            const px = (i + 0.5) * noteSpacing;
-            const py = this.getTrackY(i, cy);
-
-            if (i === 0) {
-                this.ctx.moveTo(px, py);
-            } else {
-                this.ctx.lineTo(px, py);
-            }
-        }
+        traceLinePath(this.ctx, totalNotes, (i, pathPoint) => {
+            const trackPoint = this.getTrackPoint(i, noteSpacing, cy);
+            pathPoint.x = trackPoint.x;
+            pathPoint.y = trackPoint.y;
+        });
         this.ctx.stroke();
+        this.ctx.closePath();
         this.ctx.restore();
 
         // Draw Sequence Nodes
         for (let i = 0; i < totalNotes; i++) {
             const state = this.notesState[i];
-            const px = (i + 0.5) * noteSpacing;
+            const point = this.getTrackPoint(i, noteSpacing, cy);
             // Add a subtle wave animation to the entire track
             const waveOffset = Math.sin(time * 2 + i * 0.5) * 5;
-            const py = this.getTrackY(i, cy) + waveOffset;
+            const py = point.y + waveOffset;
 
             const isAscending = i < 7;
             const isApex = i === 7;
@@ -128,7 +135,7 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
             const hexColor = isApex ? '#ffeb3b' : (isAscending ? '#00e5ff' : '#ff4081');
 
             this.ctx.save();
-            this.ctx.translate(px, py);
+            this.ctx.translate(point.x, py);
             this.ctx.scale(state.scale, state.scale);
 
             // Node Glow
@@ -170,8 +177,10 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
                 this.ctx.fillStyle = hexColor;
             }
             this.ctx.font = 'bold 16px var(--font-primary, system-ui)';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
+            Object.assign(this.ctx, {
+                textAlign: 'center',
+                textBaseline: 'middle',
+            });
             // Slight Y offset to perfectly center font baseline
             this.ctx.fillText(this.notes[i], 0, 1);
 
@@ -180,10 +189,5 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
 
         // Draw Particles
         drawGlowingParticles(this.ctx, this.particles);
-    }
-
-    destroy() {
-        this.stop();
-        window.removeEventListener('resize', this.handleResize);
     }
 }

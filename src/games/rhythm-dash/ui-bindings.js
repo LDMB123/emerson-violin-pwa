@@ -3,12 +3,12 @@ import { handleRhythmTapInput } from './helpers.js';
 
 export const bindRhythmDashUiControls = ({
     runToggle,
-    settingsButton,
-    setStatus,
     tapButton,
-    runtime,
-    suggestedEl,
     processBeat,
+    runtime,
+    setStatus,
+    suggestedEl,
+    settingsButton,
 }) => {
     settingsButton?.addEventListener('click', () => {
         setStatus('Tip: keep bows even and steady for cleaner rhythm.');

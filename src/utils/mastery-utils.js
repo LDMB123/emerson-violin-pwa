@@ -26,6 +26,13 @@ export const dayCounts = (days, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
     };
 };
 
+export const tierFromDistinctDayCounts = (counts = {}, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
+    if ((counts.goldDays || 0) >= thresholds.distinctDays) return 'gold';
+    if ((counts.silverDays || 0) >= thresholds.distinctDays) return 'silver';
+    if ((counts.bronzeDays || 0) >= thresholds.distinctDays) return 'bronze';
+    return 'foundation';
+};
+
 export const mergeDayHighScore = (days, dayKey, score) => {
     const normalizedDays = days && typeof days === 'object' ? days : {};
     const key = String(dayKey);
@@ -59,6 +66,22 @@ export const buildDueReviewEntry = ({
     attempts: Number(attempts) || 0,
 });
 
+export const buildDueReviewEntryFromSource = ({
+    entry,
+    dueAt,
+    now = Date.now(),
+    defaultTier = 'foundation',
+} = {}) => {
+    if (!entry?.id || !Number.isFinite(dueAt)) return null;
+    return buildDueReviewEntry({
+        id: entry.id,
+        dueAt,
+        tier: entry.tier || defaultTier,
+        attempts: entry.attempts || 0,
+        now,
+    });
+};
+
 export const selectDueReviewEntries = (
     entries,
     { now = Date.now(), limit = 5, requirePositiveDueAt = false } = {},
@@ -68,3 +91,21 @@ export const selectDueReviewEntries = (
     .filter((entry) => !requirePositiveDueAt || entry.dueAt > 0)
     .sort((left, right) => right.overdueMs - left.overdueMs)
     .slice(0, atLeast1(Math.round(limit)));
+
+export const mapAndSelectDueReviewEntries = ({
+    sourceEntries = [],
+    mapEntry = null,
+    now = Date.now(),
+    limit = 5,
+    requirePositiveDueAt = false,
+} = {}) => {
+    if (typeof mapEntry !== 'function') return [];
+    const mapped = sourceEntries
+        .map((entry) => mapEntry(entry))
+        .filter(Boolean);
+    return selectDueReviewEntries(mapped, {
+        now,
+        limit,
+        requirePositiveDueAt,
+    });
+};

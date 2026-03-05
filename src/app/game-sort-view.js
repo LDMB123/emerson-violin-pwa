@@ -19,8 +19,8 @@ const syncFavoriteButton = (card, favoriteIds) => {
     const active = favoriteIds.has(id);
     const title = card.querySelector('.game-title')?.textContent?.trim() || 'game';
     button.textContent = active ? '★' : '☆';
-    button.classList.toggle('is-active', active);
     setAriaPressed(button, active);
+    button.classList.toggle('is-active', active);
     button.setAttribute('aria-label', `${active ? 'Remove' : 'Add'} ${title} ${active ? 'from' : 'to'} favorites`);
     card.classList.toggle('is-favorite', active);
 };

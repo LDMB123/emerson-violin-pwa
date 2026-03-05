@@ -39,15 +39,15 @@ const selectOfflineCache = async () => {
     return latest ? caches.open(latest) : null;
 };
 
+const buildSelfTestResult = (selfTestPass) => ({
+    selfTestPass,
+    selfTestTotal: CRITICAL_OFFLINE_ASSETS.length,
+    selfTestAt: Date.now(),
+});
+
 export const runOfflineCacheCheck = async () => {
     const cache = await selectOfflineCache();
-    if (!cache) {
-        return {
-            cachedAssets: 0,
-            lastCheck: Date.now(),
-        };
-    }
-    const requests = await cache.keys();
+    const requests = cache ? await cache.keys() : [];
     return {
         cachedAssets: requests.length,
         lastCheck: Date.now(),
@@ -57,11 +57,7 @@ export const runOfflineCacheCheck = async () => {
 export const runOfflineAssetSelfTest = async ({ baseHref = window.location.href } = {}) => {
     const cache = await selectOfflineCache();
     if (!cache) {
-        return {
-            selfTestPass: 0,
-            selfTestTotal: CRITICAL_OFFLINE_ASSETS.length,
-            selfTestAt: Date.now(),
-        };
+        return buildSelfTestResult(0);
     }
 
     let passCount = 0;
@@ -73,9 +69,5 @@ export const runOfflineAssetSelfTest = async ({ baseHref = window.location.href 
         }
     }
 
-    return {
-        selfTestPass: passCount,
-        selfTestTotal: CRITICAL_OFFLINE_ASSETS.length,
-        selfTestAt: Date.now(),
-    };
+    return buildSelfTestResult(passCount);
 };

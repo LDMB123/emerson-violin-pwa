@@ -12,6 +12,11 @@ const createDefaultPinData = async () => {
     };
 };
 
+const persistPinData = async (pinKey, data) => {
+    await setJSON(pinKey, data);
+    return data;
+};
+
 export const normalizePin = (value) => (value || '').replace(/\D/g, '').slice(0, 4);
 
 export const isParentUnlocked = (unlockKey) => sessionStorage.getItem(unlockKey) === 'true';
@@ -33,13 +38,11 @@ export const loadPinData = async ({ pinKey, legacyPinKey }) => {
             ...migrated,
             migrated: true,
         };
-        await setJSON(pinKey, next);
-        return next;
+        return persistPinData(pinKey, next);
     }
 
     const created = await createDefaultPinData();
-    await setJSON(pinKey, created);
-    return created;
+    return persistPinData(pinKey, created);
 };
 
 export const savePinData = async ({ pinKey, pin }) => {
@@ -49,6 +52,5 @@ export const savePinData = async ({ pinKey, pin }) => {
         salt,
         updatedAt: Date.now(),
     };
-    await setJSON(pinKey, next);
-    return next;
+    return persistPinData(pinKey, next);
 };

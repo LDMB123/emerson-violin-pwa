@@ -1,6 +1,7 @@
 import { getJSON, setJSON, getBlob } from './storage.js';
 import { EVENTS_KEY, RECORDINGS_KEY } from './storage-keys.js';
 import { clampRounded, finiteOrNow, positiveRound, dayFromTimestamp } from '../utils/math.js';
+import { mapArrayEntries } from '../utils/storage-utils.js';
 
 const clampScore = (value, max = 100) => {
     const score = Number(value);
@@ -113,17 +114,14 @@ export const saveEvents = async (events) => {
 
 export const loadRecordings = async () => {
     const stored = await getJSON(RECORDINGS_KEY);
-    if (!Array.isArray(stored)) return [];
-    return stored
-        .map((recording) => {
-            if (!recording || typeof recording !== 'object') return null;
-            return {
-                ...recording,
-                id: recording.id || `recording-${recording.timestamp || Date.now()}`,
-                timestamp: finiteOrNow(recording.timestamp),
-            };
-        })
-        .filter(Boolean);
+    return mapArrayEntries(stored, (recording) => {
+        if (!recording || typeof recording !== 'object') return null;
+        return {
+            ...recording,
+            id: recording.id || `recording-${recording.timestamp || Date.now()}`,
+            timestamp: finiteOrNow(recording.timestamp),
+        };
+    });
 };
 
 export const resolveRecordingSource = async (recording) => {

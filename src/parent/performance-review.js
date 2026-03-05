@@ -1,13 +1,16 @@
 import { getLatestWebVitalsSession, getWebVitalsHistory } from '../platform/web-vitals.js';
 import { WEB_VITALS_UPDATED } from '../utils/event-names.js';
 
-let statusEl = null;
-let detailEl = null;
+const elements = {
+    statusEl: null,
+    detailEl: null,
+};
 let globalsBound = false;
 
 const resolveElements = () => {
-    statusEl = document.querySelector('[data-web-vitals-status]');
-    detailEl = document.querySelector('[data-web-vitals-detail]');
+    const statusNode = document.querySelector('[data-web-vitals-status]');
+    elements.statusEl = statusNode;
+    elements.detailEl = document.querySelector('[data-web-vitals-detail]');
 };
 
 const scoreLabel = (value, { good, needsWork, formatter = (v) => String(v) } = {}) => {
@@ -40,7 +43,26 @@ const summarizeP75 = (sessions) => {
     };
 };
 
+const buildLcpInpClsLabels = (metrics) => ({
+    lcp: scoreLabel(metrics?.lcp, {
+        good: 2500,
+        needsWork: 4000,
+        formatter: formatMs,
+    }),
+    inp: scoreLabel(metrics?.inp, {
+        good: 200,
+        needsWork: 500,
+        formatter: formatMs,
+    }),
+    cls: scoreLabel(metrics?.cls, {
+        good: 0.1,
+        needsWork: 0.25,
+        formatter: formatCls,
+    }),
+});
+
 const renderSession = ({ latest, history }) => {
+    const { statusEl, detailEl } = elements;
     if (!statusEl || !detailEl) return;
     if (!latest) {
         statusEl.textContent = 'Performance snapshots are empty. Use the app to collect local metrics.';
@@ -49,41 +71,13 @@ const renderSession = ({ latest, history }) => {
     }
 
     const latestMetrics = latest.metrics || {};
-    const latestLcp = scoreLabel(latestMetrics.lcp, {
-        good: 2500,
-        needsWork: 4000,
-        formatter: formatMs,
-    });
-    const latestInp = scoreLabel(latestMetrics.inp, {
-        good: 200,
-        needsWork: 500,
-        formatter: formatMs,
-    });
-    const latestCls = scoreLabel(latestMetrics.cls, {
-        good: 0.1,
-        needsWork: 0.25,
-        formatter: formatCls,
-    });
+    const latestLabels = buildLcpInpClsLabels(latestMetrics);
 
     const p75 = summarizeP75(history.sessions || []);
-    const p75Lcp = scoreLabel(p75.lcp, {
-        good: 2500,
-        needsWork: 4000,
-        formatter: formatMs,
-    });
-    const p75Inp = scoreLabel(p75.inp, {
-        good: 200,
-        needsWork: 500,
-        formatter: formatMs,
-    });
-    const p75Cls = scoreLabel(p75.cls, {
-        good: 0.1,
-        needsWork: 0.25,
-        formatter: formatCls,
-    });
+    const p75Labels = buildLcpInpClsLabels(p75);
 
-    statusEl.textContent = `p75 (${p75.count} sessions): LCP ${p75Lcp}, INP ${p75Inp}, CLS ${p75Cls}.`;
-    detailEl.textContent = `Latest: LCP ${latestLcp}, INP ${latestInp}, CLS ${latestCls}. Captured ${new Date(latest.timestamp).toLocaleString()} on ${latest.route || '#view-home'} after ${Math.round((latest.sessionMs || 0) / 1000)}s.`;
+    statusEl.textContent = `p75 (${p75.count} sessions): LCP ${p75Labels.lcp}, INP ${p75Labels.inp}, CLS ${p75Labels.cls}.`;
+    detailEl.textContent = `Latest: LCP ${latestLabels.lcp}, INP ${latestLabels.inp}, CLS ${latestLabels.cls}. Captured ${new Date(latest.timestamp).toLocaleString()} on ${latest.route || '#view-home'} after ${Math.round((latest.sessionMs || 0) / 1000)}s.`;
 };
 
 const refresh = async () => {
@@ -95,14 +89,14 @@ const refresh = async () => {
 };
 
 const bindGlobals = () => {
-    if (globalsBound) return;
+    if (globalsBound === true) return;
     document.addEventListener(WEB_VITALS_UPDATED, refresh);
     globalsBound = true;
 };
 
 const initPerformanceReview = () => {
     resolveElements();
-    if (!statusEl || !detailEl) return;
+    if (!elements.statusEl || !elements.detailEl) return;
     bindGlobals();
     refresh();
 };

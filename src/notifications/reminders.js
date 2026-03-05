@@ -1,12 +1,13 @@
 import { PERSIST_APPLIED } from '../utils/event-names.js';
 import { downloadFile, tryShareFile } from '../utils/recording-export.js';
+import { createOnceBinder } from '../utils/lifecycle-utils.js';
 
 let notificationToggle = null;
 let reminderToggle = null;
 let notificationStatusEl = null;
 let reminderStatusEl = null;
 let suppressNotificationChange = false;
-let globalsBound = false;
+const claimGlobalListenersBinding = createOnceBinder();
 
 const hasNotifications = () => 'Notification' in window;
 
@@ -23,6 +24,17 @@ const updateNotificationStatus = (message) => {
 
 const updateReminderStatus = (message) => {
     if (reminderStatusEl) reminderStatusEl.textContent = message;
+};
+
+const turnOffNotificationToggle = ({ disabled = false } = {}) => {
+    if (!notificationToggle) return;
+    notificationToggle.checked = false;
+    notificationToggle.disabled = disabled;
+};
+
+const blockNotifications = (message) => {
+    turnOffNotificationToggle({ disabled: true });
+    updateNotificationStatus(message);
 };
 
 const formatICSDate = (date) => {
@@ -91,8 +103,8 @@ const handleReminderToggle = async () => {
 
 const showNotification = async () => {
     if (!hasNotifications()) {
+        turnOffNotificationToggle();
         updateNotificationStatus('Notifications are unavailable on this device.');
-        if (notificationToggle) notificationToggle.checked = false;
         return;
     }
 
@@ -100,8 +112,8 @@ const showNotification = async () => {
     try {
         permission = await Notification.requestPermission();
     } catch {
+        turnOffNotificationToggle();
         updateNotificationStatus('Notification permission request failed.');
-        if (notificationToggle) notificationToggle.checked = false;
         return;
     }
     if (permission !== 'granted') {
@@ -143,9 +155,7 @@ const handleNotificationToggle = () => {
 const syncNotificationPermission = () => {
     if (!notificationToggle) return;
     if (!hasNotifications()) {
-        notificationToggle.checked = false;
-        notificationToggle.disabled = true;
-        updateNotificationStatus('Notifications are unavailable on this device.');
+        blockNotifications('Notifications are unavailable on this device.');
         return;
     }
 
@@ -155,9 +165,7 @@ const syncNotificationPermission = () => {
         return;
     }
     if (Notification.permission === 'denied') {
-        notificationToggle.checked = false;
-        notificationToggle.disabled = true;
-        updateNotificationStatus('Notifications are blocked. Enable them in Settings.');
+        blockNotifications('Notifications are blocked. Enable them in Settings.');
         return;
     }
     notificationToggle.disabled = false;
@@ -186,16 +194,12 @@ const bindLocalListeners = () => {
     }
 };
 
-const bindGlobalListeners = () => {
-    if (globalsBound) return;
-    globalsBound = true;
-    document.addEventListener(PERSIST_APPLIED, syncStatuses);
-};
-
 const initReminders = () => {
     resolveElements();
     bindLocalListeners();
-    bindGlobalListeners();
+    if (claimGlobalListenersBinding()) {
+        document.addEventListener(PERSIST_APPLIED, syncStatuses);
+    }
     syncStatuses();
 };
 

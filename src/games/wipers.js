@@ -12,11 +12,11 @@ export const init = () => {
     const view = document.getElementById('view-game-wipers');
     if (!view) return;
 
-    const canvas = document.getElementById('wipers-canvas');
+    const canvas = view.querySelector('#wipers-canvas');
     if (!canvas) return;
 
-    const scoreEl = document.getElementById('wipers-score');
-    const startBtn = document.getElementById('wipers-start-btn');
+    const scoreEl = view.querySelector('#wipers-score');
+    const startBtn = view.querySelector('#wipers-start-btn');
 
     if (!engine) {
         engine = new WipersCanvasEngine(canvas, (score, wipes) => {
@@ -36,10 +36,10 @@ export const init = () => {
     }
 
     bindHashViewGameStartStop({
-        gameId: GAME_ID_WIPERS,
         state: bindingState,
-        startButton: startBtn,
         engine,
+        startButton: startBtn,
+        gameId: GAME_ID_WIPERS,
         startLabel: 'Start Engine',
         stopLabel: 'Stop Engine',
         resetBeforeStart: () => {

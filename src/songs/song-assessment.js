@@ -17,7 +17,7 @@ const starsFromScores = (timing, intonation, overall) => {
     return 0;
 };
 
-const tierFromScore = (score) => {
+export const tierFromScore = (score) => {
     if (score >= DEFAULT_MASTERY_THRESHOLDS.gold) return 'gold';
     if (score >= DEFAULT_MASTERY_THRESHOLDS.silver) return 'silver';
     if (score >= DEFAULT_MASTERY_THRESHOLDS.bronze) return 'bronze';

@@ -83,13 +83,13 @@ export const syncRunnerStepList = ({
 };
 
 export const renderEmptyRunnerStep = ({
-    stepEl,
-    cueEl,
-    timerEl,
-    startButton,
-    nextButton,
-    ctaButton,
     updateProgress,
+    ctaButton,
+    nextButton,
+    startButton,
+    timerEl,
+    cueEl,
+    stepEl,
 }) => {
     if (stepEl) stepEl.textContent = formatStepLabel(0, 0);
     if (cueEl) cueEl.textContent = 'Practice a game to unlock a custom plan.';
@@ -107,24 +107,19 @@ export const renderRunnerStep = ({
     recommendedGameId,
     remainingSeconds,
     completedSteps,
-    stepEl,
-    cueEl,
-    timerEl,
-    startButton,
-    nextButton,
-    ctaButton,
-    updateProgress,
+    runnerView,
 }) => {
+    const {
+        stepEl,
+        cueEl,
+        timerEl,
+        startButton,
+        nextButton,
+        ctaButton,
+    } = runnerView || {};
+
     if (!step) {
-        renderEmptyRunnerStep({
-            stepEl,
-            cueEl,
-            timerEl,
-            startButton,
-            nextButton,
-            ctaButton,
-            updateProgress,
-        });
+        renderEmptyRunnerStep(runnerView || {});
         return;
     }
 

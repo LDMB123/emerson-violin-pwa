@@ -118,6 +118,33 @@ export const formatBowingIntroText = (baseText, target) => {
 };
 
 /**
+ * Reports trainer game results while intentionally ignoring non-critical network/storage failures.
+ * @param {(id: string, payload: {accuracy: number, score: number}) => Promise<unknown>} reportFn
+ * @param {string} gameId
+ * @param {number} accuracy
+ * @param {number} score
+ */
+export const reportTrainerGameResult = (reportFn, gameId, accuracy, score) => {
+    if (typeof reportFn !== 'function') return;
+    const result = reportFn(gameId, { accuracy, score });
+    if (result && typeof result.catch === 'function') {
+        result.catch(() => undefined);
+    }
+};
+
+export const createTrainerDrillBaseController = ({
+    setElements,
+    bindControls,
+    syncUi,
+    refreshTuningState,
+}) => ({
+    setElements,
+    bindControls,
+    syncUi,
+    refreshTuningState,
+});
+
+/**
  * Determines if tap times should be cleared based on time gap.
  * @param {number} lastTapTime - The timestamp of the last tap
  * @param {number} currentTime - The current timestamp

@@ -1,6 +1,6 @@
 import { handleSequenceGameTap } from './sequence-game-input.js';
 import { RT_STATE } from '../utils/event-names.js';
-import { createDefaultTuningHitDetector } from '../utils/tuning-utils.js';
+import { createDefaultTuningHitDetector, getActiveTuningFeature } from '../utils/tuning-utils.js';
 import { buildSequenceTapPayload } from './sequence-game-tap-context.js';
 
 
@@ -14,17 +14,18 @@ export const bindSequenceGameMicrophone = ({
 
     const onRealtimeState = (event) => {
         if (window.location.hash !== hashId) return;
-        const tuning = event.detail?.lastFeature;
-        if (!tuning || event.detail?.paused) return;
+        const tuningFeature = getActiveTuningFeature(event);
+        if (!tuningFeature) return;
 
         const runtimeState = getRuntimeState();
-        if (!runtimeState.sequence || runtimeState.sequence.length === 0) return;
+        const sequence = runtimeState.sequence;
+        if (!Array.isArray(sequence) || sequence.length === 0) return;
 
-        const targetNote = runtimeState.sequence[runtimeState.seqIndex];
+        const targetNote = sequence[runtimeState.seqIndex];
         if (!targetNote) return;
 
         // Delegate hit detection to our utility
-        if (!hitDetector.detectHit(tuning, targetNote)) {
+        if (!hitDetector.detectHit(tuningFeature, targetNote)) {
             return;
         }
 

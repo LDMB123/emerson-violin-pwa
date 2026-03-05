@@ -1,6 +1,6 @@
 import { isRecordingEnabled } from '../utils/feature-flags.js';
 import { getSongIdFromViewId, getSongIdFromHash, parseDuration } from '../utils/recording-export.js';
-import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
+import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
 import { createRecordingCaptureController } from './recordings-capture.js';
 import { migrateRecordingsToBlobs, saveRecording } from './recordings-storage.js';
 
@@ -43,12 +43,8 @@ const handlePermissionDenied = () => {
     resolveSettingsElements();
     if (!recordToggle) return;
     recordToggle.checked = false;
-    recordToggle.dispatchEvent(new Event('change', { bubbles: true }));
-};
-
-const stopRecordingOnPagehide = (event) => {
-    if (isBfcachePagehide(event)) return;
-    recordingController.stopRecording();
+    const changeEvent = new Event('change', { bubbles: true });
+    recordToggle.dispatchEvent(changeEvent);
 };
 
 const recordingController = createRecordingCaptureController({
@@ -114,13 +110,6 @@ const initRecordings = () => {
         updatePermissionState(true);
     });
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            recordingController.stopRecording();
-        }
-    });
-    window.addEventListener('pagehide', stopRecordingOnPagehide);
-
     window.addEventListener(
         'hashchange',
         () => {
@@ -132,6 +121,15 @@ const initRecordings = () => {
         },
         { passive: true },
     );
+
+    bindHiddenAndPagehide({
+        onHidden: () => {
+            recordingController.stopRecording();
+        },
+        onPagehide: () => {
+            recordingController.stopRecording();
+        },
+    });
 };
 
 export { initRecordings };

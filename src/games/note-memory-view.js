@@ -8,8 +8,9 @@ export const renderNoteMemoryHud = ({
     scoreEl,
     streakEl,
     timerEl,
-    matches,
     totalPairs,
+}, {
+    matches,
     score,
     matchStreak,
     timeLeft,

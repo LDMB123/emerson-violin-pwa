@@ -4,7 +4,7 @@ import { loadEvents } from '../persistence/loaders.js';
 import { clamp, clampRounded } from '../utils/math.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import { getSongIdFromViewId, parseDuration } from '../utils/recording-export.js';
-import { isSoundEnabled, isSoundDisabledEvent } from '../utils/sound-state.js';
+import { runIfSoundDisabled, resolveSoundEnabledValue } from '../utils/sound-state.js';
 import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
 import { assessSongAttempt } from './song-assessment.js';
 import { saveSongCheckpoint } from './song-progression.js';
@@ -30,9 +30,7 @@ const getTonePlayer = () => {
 
 const stopPlayAlongAudio = () => {
     playbackToken += 1;
-    if (tonePlayer) {
-        tonePlayer.stopAll();
-    }
+    tonePlayer?.stopAll?.();
 };
 
 const runs = new Map();
@@ -74,8 +72,7 @@ const getSongSequence = (view) => {
 const playAlong = async (toggle, sequence) => {
     if (!(toggle instanceof HTMLInputElement) || !toggle.checked) return;
     if (!Array.isArray(sequence) || !sequence.length) return;
-    if (!isSoundEnabled()) return;
-    const player = getTonePlayer();
+    const player = resolveSoundEnabledValue(() => getTonePlayer());
     if (!player) return;
 
     const token = ++playbackToken;
@@ -130,11 +127,12 @@ const bindGlobalPlaybackListeners = () => {
         },
     });
 
-    document.addEventListener(SOUNDS_CHANGE, (event) => {
-        if (isSoundDisabledEvent(event)) {
+    const handleSoundsChange = (event) => {
+        runIfSoundDisabled(event, () => {
             stopPlayAlongAudio();
-        }
-    });
+        });
+    };
+    document.addEventListener(SOUNDS_CHANGE, handleSoundsChange);
 };
 
 const startRun = (songId, duration, toggle) => {
@@ -242,7 +240,9 @@ const initSongProgress = () => {
         }
     });
 
-    loadEvents().then(updateBestAccuracyUI).catch(() => {});
+    loadEvents().then(updateBestAccuracyUI).catch((error) => {
+        void error;
+    });
 };
 
 export const init = initSongProgress;

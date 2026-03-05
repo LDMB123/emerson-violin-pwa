@@ -231,28 +231,32 @@ const resolveVoiceTimingAndPath = (
         now,
         safeDuration,
         ...createShapedVoicePath(ctx, {
+            frequency,
+            shaping,
             now,
             safeDuration,
             safeVolume,
-            frequency,
-            shaping,
         }),
     };
 };
 
-const resolveSynthVoicePath = (ctx, { frequency, options }) => resolveVoiceTimingAndPath(ctx, {
-    options,
-    frequency,
-    shaping: SYNTH_VOICE_SHAPING,
-    volume: { defaultValue: 0.18, min: 0.04, max: 0.55 },
-});
+const createVoicePathResolver = (shaping, volume) => (ctx, { frequency, options }) =>
+    resolveVoiceTimingAndPath(ctx, {
+        options,
+        frequency,
+        shaping,
+        volume,
+    });
 
-const resolveSampleVoicePath = (ctx, { frequency, options }) => resolveVoiceTimingAndPath(ctx, {
-    options,
-    frequency,
-    shaping: SAMPLE_VOICE_SHAPING,
-    volume: { defaultValue: 0.22, min: 0.04, max: 0.6 },
-});
+const resolveSynthVoicePath = createVoicePathResolver(
+    SYNTH_VOICE_SHAPING,
+    { defaultValue: 0.18, min: 0.04, max: 0.55 },
+);
+
+const resolveSampleVoicePath = createVoicePathResolver(
+    SAMPLE_VOICE_SHAPING,
+    { defaultValue: 0.22, min: 0.04, max: 0.6 },
+);
 
 const loadSampleBufferForRoot = async (state, ctx, root) => {
     if (state.samplerBlocked) return null;
@@ -358,11 +362,11 @@ export const createSampleVoice = async ({ state, ctx, frequency, options = {}, e
 
     const {
         now,
-        safeDuration,
-        voiceGain,
-        voiceTail,
-        filterNode,
         stopAt,
+        safeDuration,
+        voiceTail,
+        voiceGain,
+        filterNode,
     } = resolveSampleVoicePath(ctx, { frequency, options });
 
     const source = ctx.createBufferSource();

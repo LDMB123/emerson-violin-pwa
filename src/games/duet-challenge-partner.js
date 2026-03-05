@@ -2,12 +2,12 @@ import { setDisabled } from '../utils/dom-utils.js';
 
 export const playDuetPartnerSequence = async ({
     partnerPlayback,
+    sequence,
+    playButton,
+    partnerNoteTimeout,
+    cueBank,
     isSoundEnabled,
     setPrompt,
-    playButton,
-    sequence,
-    cueBank,
-    partnerNoteTimeout,
 }) => {
     if (partnerPlayback.playing) return;
     if (!isSoundEnabled()) {

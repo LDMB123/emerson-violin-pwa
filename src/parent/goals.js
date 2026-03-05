@@ -1,5 +1,8 @@
 import { GOAL_TARGET_CHANGE, emitEvent } from '../utils/event-names.js';
-import { setDisabled, setTextContent } from '../utils/dom-utils.js';
+import {
+    createTextContentSetter,
+    setDisabled,
+} from '../utils/dom-utils.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import {
     loadParentGoal,
@@ -24,9 +27,7 @@ const resolveElements = () => {
     rationaleEl = document.querySelector('[data-parent-goal-rationale]');
 };
 
-const setStatus = (message) => {
-    setTextContent(statusEl, message);
-};
+const setStatus = createTextContentSetter(() => statusEl);
 
 const setFormDisabled = (disabled) => {
     setDisabled(titleInput, disabled);

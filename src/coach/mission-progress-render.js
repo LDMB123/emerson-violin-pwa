@@ -1,7 +1,9 @@
 import { atLeast1 } from '../utils/math.js';
 
+const getCoachView = () => document.getElementById('view-coach');
+
 const ensureCoachMissionStatus = () => {
-    const coachView = document.getElementById('view-coach');
+    const coachView = getCoachView();
     if (!coachView) return null;
     let status = coachView.querySelector('[data-coach-mission-status]');
     if (status) return status;
@@ -21,10 +23,7 @@ const ensureCoachMissionStatus = () => {
 };
 
 const ensureCoachMissionTimeline = () => {
-    const coachView = document.getElementById('view-coach');
-    if (!coachView) return null;
-
-    let timeline = coachView.querySelector('[data-coach-mission-timeline]');
+    let timeline = getCoachView()?.querySelector('[data-coach-mission-timeline]');
     if (timeline) return timeline;
 
     const missionStatus = ensureCoachMissionStatus();
@@ -131,8 +130,9 @@ export const renderMissionGoalList = ({
         const label = document.createElement('label');
         label.setAttribute('for', goalId);
 
-        const chip = document.createElement('span');
-        chip.className = 'note-chip';
+        const chip = Object.assign(document.createElement('span'), {
+            className: 'note-chip',
+        });
         chip.dataset.goalChip = 'true';
         chip.textContent = `${atLeast1(Math.round(step?.minutes || defaults.minutes))} min`;
 

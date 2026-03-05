@@ -1,11 +1,11 @@
 export const applyScalePracticeTempoUpdate = ({
-    slider,
-    tempoEl,
-    statusEl,
-    targetTempo,
-    tempoTags,
-    markChecklist,
     markChecklistIf,
+    markChecklist,
+    tempoTags,
+    targetTempo,
+    statusEl,
+    tempoEl,
+    slider,
 }) => {
     if (!slider || !tempoEl) return;
     const tempo = Number.parseInt(slider.value, 10);

@@ -1,7 +1,7 @@
 import { normalizeSongEntry } from './song-progression-core.js';
 import {
     reviewIntervalDays,
-    buildDueReviewEntry,
+    buildDueReviewEntryFromSource,
     selectDueReviewEntries,
 } from '../utils/mastery-utils.js';
 import { DAY_MS } from '../utils/math.js';
@@ -14,11 +14,9 @@ export const collectDueSongReviewsFromState = ({ songs = {}, now = Date.now(), l
             const dueAt = Number.isFinite(entry.nextReviewAt)
                 ? entry.nextReviewAt
                 : entry.updatedAt + (reviewIntervalDays(entry.tier) * DAY_MS);
-            return buildDueReviewEntry({
-                id: entry.id,
+            return buildDueReviewEntryFromSource({
                 dueAt,
-                tier: entry.tier,
-                attempts: entry.attempts,
+                entry,
                 now,
             });
         })

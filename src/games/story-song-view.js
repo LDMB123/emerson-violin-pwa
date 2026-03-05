@@ -1,11 +1,11 @@
 export const createStorySongView = ({
-    titleEl,
-    pageEl,
-    notesEl,
-    promptEl,
-    statusEl,
-    toggle,
     storyPages,
+    toggle,
+    statusEl,
+    promptEl,
+    notesEl,
+    pageEl,
+    titleEl,
 }) => {
     const updateStatus = (message) => {
         if (!statusEl) return;

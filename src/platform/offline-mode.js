@@ -1,13 +1,17 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { OFFLINE_MODE_KEY as MODE_KEY } from '../persistence/storage-keys.js';
 import { OFFLINE_MODE_CHANGE, emitEvent } from '../utils/event-names.js';
-import { hasServiceWorkerSupport } from './sw-support.js';
 import { setDisabled } from '../utils/dom-utils.js';
+import {
+    createOnceBinder as createOfflineModeOnceBinder,
+    runOnceBinding as runOfflineModeBinding,
+} from '../utils/lifecycle-utils.js';
+import { hasServiceWorkerSupport } from './sw-support.js';
 
 let toggle = null;
 let statusEl = null;
 let currentEnabled = false;
-let globalsBound = false;
+const claimGlobalListenersBinding = createOfflineModeOnceBinder();
 let initialized = false;
 let pendingUserOverride = null;
 const SERVICE_WORKER_READY_TIMEOUT_MS = 1200;
@@ -86,21 +90,20 @@ const loadState = async () => {
     return Boolean(stored?.enabled);
 };
 
-const bindGlobalListeners = () => {
-    if (globalsBound) return;
-    globalsBound = true;
+const handleVisibleStateChange = () => {
+    if (document.hidden) return;
+    syncCurrentState();
+};
 
+const bindGlobalListeners = () => runOfflineModeBinding(claimGlobalListenersBinding, () => {
     if (hasServiceWorkerSupport()) {
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             syncCurrentState();
         });
     }
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState !== 'visible') return;
-        syncCurrentState();
-    });
-};
+    document.addEventListener('visibilitychange', handleVisibleStateChange);
+});
 
 const bindLocalListeners = () => {
     if (toggle && toggle.dataset.offlineModeBound !== 'true') {

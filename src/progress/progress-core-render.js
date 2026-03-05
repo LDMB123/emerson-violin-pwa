@@ -144,16 +144,20 @@ const renderPathLocks = (level) => {
 
 export const renderCoreProgressUi = ({
     elements,
-    progress,
-    streak,
-    weekMinutes,
-    dailyMinutes,
-    skills,
-    weakestSkill,
-    recentGames,
+    summary,
     dailyGoalTarget,
     weeklyGoalTarget,
 }) => {
+    const {
+        progress,
+        streak,
+        weekMinutes,
+        dailyMinutes,
+        skills,
+        weakestSkill,
+        recentGames,
+    } = summary;
+
     renderXpState(elements, progress);
     renderSummary(elements, streak, weekMinutes, weakestSkill);
     renderDailyGoal(elements, dailyMinutes, dailyGoalTarget);

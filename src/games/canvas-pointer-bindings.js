@@ -17,19 +17,15 @@ const resolveClientPoint = (event) => {
 const TRUE = () => true;
 const NOOP = () => {};
 
-const resolveRunningPointerOptions = ({
-    engine,
-    isTracking = TRUE,
-    onStart = NOOP,
-    onMove = NOOP,
-    onEnd = NOOP,
-} = {}) => ({
-    engine,
-    isTracking,
-    onStart,
-    onMove,
-    onEnd,
-});
+const resolveRunningPointerOptions = (options = {}) => {
+    return {
+        engine: options.engine,
+        isTracking: options.isTracking ?? TRUE,
+        onStart: options.onStart ?? NOOP,
+        onMove: options.onMove ?? NOOP,
+        onEnd: options.onEnd ?? NOOP,
+    };
+};
 
 export const bindCanvasPointerDrag = ({
     canvas,

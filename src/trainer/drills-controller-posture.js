@@ -1,9 +1,11 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { setDifficultyBadge } from '../games/shared.js';
 import {
+    createTrainerDrillBaseController,
     calculatePostureAccuracy,
     calculatePostureScore,
     formatPostureHint,
+    reportTrainerGameResult,
 } from './trainer-utils.js';
 
 export const createPostureDrillController = () => {
@@ -36,7 +38,7 @@ export const createPostureDrillController = () => {
         postureReported = true;
         const accuracy = calculatePostureAccuracy(postureCount, postureTarget);
         const score = calculatePostureScore(postureCount);
-        updateGameResult('trainer-posture', { accuracy, score }).catch(() => {});
+        reportTrainerGameResult(updateGameResult, 'trainer-posture', accuracy, score);
     };
 
     const clearPosturePreview = () => {
@@ -89,24 +91,26 @@ export const createPostureDrillController = () => {
     };
 
     const applyTuning = async () => {
-        const tuning = await getGameTuning('trainer-posture');
-        postureTarget = tuning.targetChecks ?? postureTarget;
-        setDifficultyBadge(document.querySelector('#view-posture .view-header'), tuning.difficulty, 'Posture');
+        const { targetChecks, difficulty } = await getGameTuning('trainer-posture');
+        if (Number.isFinite(targetChecks)) {
+            postureTarget = targetChecks;
+        }
+        setDifficultyBadge(document.querySelector('#view-posture .view-header'), difficulty, 'Posture');
         updatePostureHint();
     };
 
     const refreshTuningState = () => {
+        void applyTuning();
         postureReported = false;
-        applyTuning();
     };
 
     return {
-        setElements,
-        bindControls,
-        syncUi() {
-            updatePostureHint();
-        },
-        refreshTuningState,
+        ...createTrainerDrillBaseController({
+            syncUi: updatePostureHint,
+            refreshTuningState,
+            bindControls,
+            setElements,
+        }),
         handlePagehide() {
             reportPosture();
             clearPosturePreview();

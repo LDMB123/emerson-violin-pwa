@@ -1,10 +1,16 @@
 import { setRootDataset } from './platform-utils.js';
+import {
+    createOnceBinder,
+    runOnceBinding,
+} from '../utils/lifecycle-utils.js';
 
-let statusEl = null;
-let globalsBound = false;
+const claimGlobalListenersBinding = createOnceBinder();
+const elements = {
+    statusEl: null,
+};
 
 const resolveElements = () => {
-    statusEl = document.querySelector('[data-input-status]');
+    elements.statusEl = document.querySelector('[data-input-status]');
 };
 
 const inputLabels = {
@@ -14,9 +20,9 @@ const inputLabels = {
 };
 
 const setStatus = (type) => {
-    if (!statusEl) return;
+    if (!elements.statusEl) return;
     const label = inputLabels[type] || 'Touch';
-    statusEl.textContent = `Input: ${label}.`;
+    elements.statusEl.textContent = `Input: ${label}.`;
 };
 
 const updateHoverCapability = () => {
@@ -33,15 +39,15 @@ const updateInputType = (type) => {
 };
 
 const bindGlobalListeners = () => {
-    if (globalsBound) return;
-    globalsBound = true;
-    window.addEventListener('pointerdown', (event) => {
-        if (!event.pointerType) return;
-        updateInputType(event.pointerType);
-    }, { passive: true });
+    runOnceBinding(claimGlobalListenersBinding, () => {
+        window.addEventListener('pointerdown', (event) => {
+            if (!event.pointerType) return;
+            updateInputType(event.pointerType);
+        }, { passive: true });
 
-    window.matchMedia('(pointer: fine)').addEventListener('change', updateHoverCapability);
-    window.matchMedia('(hover: hover)').addEventListener('change', updateHoverCapability);
+        window.matchMedia('(pointer: fine)').addEventListener('change', updateHoverCapability);
+        window.matchMedia('(hover: hover)').addEventListener('change', updateHoverCapability);
+    });
 };
 
 const initInputCapabilities = () => {

@@ -1,4 +1,4 @@
-import { updateParticles, emitRadialParticles, mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
+import { updateParticles, drawGlowingParticles, emitRadialParticles, mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 
 export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
@@ -125,18 +125,30 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
             card.scale += (card.targetScale - card.scale) * 15 * dt;
         });
 
-        // Update particles
-        updateParticles(this.particles);
+        if (this.particles.length > 0) {
+            updateParticles(this.particles);
+        }
     }
 
     draw() {
-        this.ctx.fillStyle = '#2f1d16'; // Deep warm background
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        this.fillBackground('#2f1d16'); // Deep warm background
 
         const fillCardBody = (card) => {
             this.ctx.beginPath();
             this.ctx.roundRect(0, 0, card.width, card.height, 16);
             this.ctx.fill();
+        };
+        const drawCenteredCardText = ({
+            text,
+            font,
+            color,
+            card,
+        }) => {
+            this.ctx.fillStyle = color;
+            this.ctx.font = font;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(text, card.width / 2, card.height / 2);
         };
 
         // Draw cards
@@ -170,11 +182,12 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
                 this.ctx.stroke();
 
                 // Inner text ?
-                this.ctx.fillStyle = '#8d6e63';
-                this.ctx.font = 'bold 64px Fredoka, sans-serif';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText('?', card.width / 2, card.height / 2);
+                drawCenteredCardText({
+                    text: '?',
+                    font: 'bold 64px Fredoka, sans-serif',
+                    color: '#8d6e63',
+                    card,
+                });
             } else {
                 // Draw Card Face (Note)
                 this.ctx.save();
@@ -194,11 +207,12 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
                 this.ctx.shadowBlur = 0; // reset
 
                 // Text Note
-                this.ctx.fillStyle = card.isMatched ? '#a5d6a7' : '#d84315';
-                this.ctx.font = 'bold 72px Fredoka, sans-serif';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(card.note, card.width / 2, card.height / 2);
+                drawCenteredCardText({
+                    text: card.note,
+                    font: 'bold 72px Fredoka, sans-serif',
+                    color: card.isMatched ? '#a5d6a7' : '#d84315',
+                    card,
+                });
 
                 this.ctx.restore();
             }
@@ -206,22 +220,19 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
             this.ctx.restore();
         });
 
-        // Draw Particles
-        this.particles.forEach(p => {
-            this.ctx.save();
-            this.ctx.globalAlpha = p.life;
-            this.ctx.fillStyle = p.color;
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.restore();
-        });
+        // Draw particles
+        this.drawParticles();
     }
 
     handlePointerDown(e) {
-        const { x, y } = mapPointerToCanvasCoords(e, this.canvas, this.width, this.height);
+        const pointer = mapPointerToCanvasCoords(e, this.canvas, this.width, this.height);
+        const { x, y } = pointer;
         const card = this.cards.find(c => x >= c.x && x <= c.x + c.width && y >= c.y && y <= c.y + c.height);
         if (card && this.onCardTapped) this.onCardTapped(card);
+    }
+
+    drawParticles() {
+        drawGlowingParticles(this.ctx, this.particles);
     }
 
 }

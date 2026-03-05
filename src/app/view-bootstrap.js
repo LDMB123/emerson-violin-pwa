@@ -27,7 +27,8 @@ export const warmInitialViews = ({
     viewLoader,
     getViewPath,
 }) => {
-    if (navigator.connection?.saveData) return;
+    const saveDataEnabled = navigator.connection?.saveData === true;
+    if (saveDataEnabled) return;
 
     const candidateIds = new Set();
     const currentViewId = getCurrentViewId();

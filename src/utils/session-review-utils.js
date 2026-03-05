@@ -5,21 +5,16 @@ export const starString = (score) => {
     return '★★★★★'.slice(0, stars) + '☆☆☆☆☆'.slice(stars);
 };
 
+const COACH_MESSAGES = {
+    pitch: 'Great bowing arm! Try to keep your pitch steady through the middle section.',
+    rhythm: 'Keep the pulse steady. Tap the rhythm before you play.',
+    bow_control: 'Smooth bow path. Relax your hand and keep the bow straight.',
+    posture: 'Tall spine and relaxed shoulders. Keep your wrists soft.',
+    reading: 'Slow down and name each note before playing.',
+};
+
 export const coachMessageFor = (skill) => {
-    switch (skill) {
-        case 'pitch':
-            return 'Great bowing arm! Try to keep your pitch steady through the middle section.';
-        case 'rhythm':
-            return 'Keep the pulse steady. Tap the rhythm before you play.';
-        case 'bow_control':
-            return 'Smooth bow path. Relax your hand and keep the bow straight.';
-        case 'posture':
-            return 'Tall spine and relaxed shoulders. Keep your wrists soft.';
-        case 'reading':
-            return 'Slow down and name each note before playing.';
-        default:
-            return 'Nice work today! Keep your tempo steady.';
-    }
+    return COACH_MESSAGES[skill] || 'Nice work today! Keep your tempo steady.';
 };
 
 export const buildChart = (values) => {

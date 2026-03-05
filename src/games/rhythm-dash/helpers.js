@@ -1,4 +1,5 @@
 import { atLeast1, clamp } from '../../utils/math.js';
+import { setTextContent } from '../../utils/dom-utils.js';
 import { GAME_META } from '../game-config.js';
 import {
     computeAverageFromHistory,
@@ -48,9 +49,7 @@ export const getObjectiveSummary = (stage, difficulty) => {
     return { objectiveTier, objectiveTotal, objectivesCompleted };
 };
 
-export const updateStatusText = (statusEl, message) => {
-    if (statusEl) statusEl.textContent = message;
-};
+export const updateStatusText = setTextContent;
 
 export const updateMeter = (meterFill, meterTrack, scoreValue) => {
     const percent = clamp(scoreValue * 100, 0, 100);
