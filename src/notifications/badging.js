@@ -41,23 +41,26 @@ const updatePracticeBadge = async () => {
     }
 };
 
+const handleVisibilityChange = () => {
+    const isHidden = document.visibilityState === 'hidden';
+    if (!isHidden) return;
+    updatePracticeBadge();
+};
+
+const addListener = ([target, eventName, listener]) => {
+    target.addEventListener(eventName, listener);
+};
+
+const badgeRefreshListeners = [
+    [document, 'visibilitychange', handleVisibilityChange],
+    [document, PRACTICE_RECORDED, updatePracticeBadge],
+    [document, LESSON_STEP, updatePracticeBadge],
+];
+
 const initializeBadging = () => {
     if (!supportsBadging()) return;
 
-    const handleVisibilityChange = () => {
-        const isHidden = document.visibilityState === 'hidden';
-        if (!isHidden) return;
-        updatePracticeBadge();
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    document.addEventListener(PRACTICE_RECORDED, () => {
-        updatePracticeBadge();
-    });
-
-    document.addEventListener(LESSON_STEP, () => {
-        updatePracticeBadge();
-    });
+    badgeRefreshListeners.forEach(addListener);
 
     if (document.visibilityState === 'visible') {
         setBadge(0);
