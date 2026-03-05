@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    installWindowIntervalMocks,
+    setDocumentVisibility,
+} from '../utils/test-lifecycle-mocks.js';
 
 const rhythmUtilsMocks = vi.hoisted(() => ({
     getMetronomeNote: vi.fn(() => 'A'),
@@ -9,21 +13,16 @@ vi.mock('../../src/utils/rhythm-dash-utils.js', () => rhythmUtilsMocks);
 
 import { createRhythmDashMetronome } from '../../src/games/rhythm-dash/metronome.js';
 
-const setVisibility = (value) => {
-    Object.defineProperty(document, 'visibilityState', {
-        configurable: true,
-        value,
-    });
-};
+const createDefaultMetronome = () => createRhythmDashMetronome({
+    isEnabled: () => true,
+    getPlayer: () => ({ playNote: vi.fn(() => Promise.resolve()) }),
+    getBeatInterval: () => 500,
+});
 
 describe('games/rhythm-dash/metronome visibility behavior', () => {
-    let nextIntervalId;
-
     beforeEach(() => {
-        setVisibility('visible');
-        nextIntervalId = 1;
-        window.setInterval = vi.fn(() => nextIntervalId++);
-        window.clearInterval = vi.fn();
+        setDocumentVisibility('visible');
+        installWindowIntervalMocks();
     });
 
     afterEach(() => {
@@ -45,11 +44,11 @@ describe('games/rhythm-dash/metronome visibility behavior', () => {
         expect(window.setInterval).toHaveBeenCalledWith(expect.any(Function), 240);
         expect(player.playNote).toHaveBeenCalledTimes(1);
 
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         document.dispatchEvent(new Event('visibilitychange'));
         expect(window.clearInterval).toHaveBeenCalledWith(1);
 
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         document.dispatchEvent(new Event('visibilitychange'));
         expect(window.setInterval).toHaveBeenCalledTimes(2);
         expect(player.playNote).toHaveBeenCalledTimes(1);
@@ -59,33 +58,25 @@ describe('games/rhythm-dash/metronome visibility behavior', () => {
     });
 
     it('defers interval start when launched in a hidden tab', () => {
-        const metronome = createRhythmDashMetronome({
-            isEnabled: () => true,
-            getPlayer: () => ({ playNote: vi.fn(() => Promise.resolve()) }),
-            getBeatInterval: () => 500,
-        });
+        const metronome = createDefaultMetronome();
 
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         metronome.start();
         expect(window.setInterval).not.toHaveBeenCalled();
 
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         document.dispatchEvent(new Event('visibilitychange'));
         expect(window.setInterval).toHaveBeenCalledTimes(1);
     });
 
     it('does not resume if explicitly stopped while hidden', () => {
-        const metronome = createRhythmDashMetronome({
-            isEnabled: () => true,
-            getPlayer: () => ({ playNote: vi.fn(() => Promise.resolve()) }),
-            getBeatInterval: () => 500,
-        });
+        const metronome = createDefaultMetronome();
 
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         metronome.start();
         metronome.stop();
 
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         document.dispatchEvent(new Event('visibilitychange'));
         expect(window.setInterval).not.toHaveBeenCalled();
     });

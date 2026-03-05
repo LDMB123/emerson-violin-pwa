@@ -18,13 +18,14 @@ import {
     bindMetronomeToggleControl,
     bindMetronomeTapControl,
 } from './metronome-controller-bindings.js';
+import { createIntervalTicker } from '../utils/interval-ticker.js';
 
 const DEFAULT_BPM = 100;
 
 export const createMetronomeController = () => {
     let elements = createEmptyMetronomeElements();
     let metronomeBpm = DEFAULT_BPM;
-    let metronomeTimer = null;
+    let metronomeTicker = null;
     let metronomePlayer = null;
     let tapTimes = [];
     let targetBpm = 90;
@@ -38,8 +39,10 @@ export const createMetronomeController = () => {
         }
     };
 
+    const isMetronomeRunning = () => Boolean(metronomeTicker?.isRunning?.());
+
     const syncRunningState = () => {
-        syncMetronomeRunningState({ elements, running: Boolean(metronomeTimer) });
+        syncMetronomeRunningState({ elements, running: isMetronomeRunning() });
     };
 
     const updateDisplay = () => {
@@ -77,15 +80,15 @@ export const createMetronomeController = () => {
     };
 
     const clearMetronomeLoop = () => {
-        if (metronomeTimer) {
-            clearInterval(metronomeTimer);
-            metronomeTimer = null;
+        if (metronomeTicker) {
+            metronomeTicker.stop();
+            metronomeTicker = null;
         }
         syncRunningState();
     };
 
     const startMetronomeLoop = ({ announce = true } = {}) => {
-        if (metronomeTimer) return true;
+        if (isMetronomeRunning()) return true;
         if (!isSoundEnabled()) {
             if (announce) {
                 setStatus('Sounds are off. Turn on Sounds to hear the click.');
@@ -94,7 +97,13 @@ export const createMetronomeController = () => {
         }
         const interval = calculateMetronomeInterval(metronomeBpm);
         playClick();
-        metronomeTimer = window.setInterval(playClick, interval);
+        metronomeTicker = createIntervalTicker({
+            onTick: playClick,
+            intervalMs: interval,
+            setIntervalFn: window.setInterval,
+            clearIntervalFn: window.clearInterval,
+        });
+        metronomeTicker.start();
         syncRunningState();
         if (announce) {
             setStatus(`Running at ${metronomeBpm} BPM.`);
@@ -103,7 +112,7 @@ export const createMetronomeController = () => {
     };
 
     const pauseForVisibility = () => {
-        if (!metronomeTimer) return false;
+        if (!isMetronomeRunning()) return false;
         pausedByVisibility = true;
         clearMetronomeLoop();
         return true;
@@ -138,7 +147,7 @@ export const createMetronomeController = () => {
     };
 
     const refreshMetronome = () => {
-        if (metronomeTimer) {
+        if (isMetronomeRunning()) {
             stop({ silent: true });
             start();
             return;
@@ -170,7 +179,7 @@ export const createMetronomeController = () => {
         if (elements.slider && !elements.slider.dataset.userSet) {
             updateBpm(targetBpm);
         }
-        if (!metronomeTimer) {
+        if (!isMetronomeRunning()) {
             setStatus(`Suggested tempo: ${targetBpm} BPM.`);
         }
     };
@@ -185,7 +194,7 @@ export const createMetronomeController = () => {
 
         bindMetronomeToggleControl({
             toggle: elements.toggle,
-            isRunning: () => Boolean(metronomeTimer),
+            isRunning: isMetronomeRunning,
             stop,
             start,
             markTouched,
@@ -234,8 +243,6 @@ export const createMetronomeController = () => {
         stop,
         pauseForVisibility,
         resumeForVisibility,
-        isRunning() {
-            return Boolean(metronomeTimer);
-        },
+        isRunning: isMetronomeRunning,
     };
 };

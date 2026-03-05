@@ -3,21 +3,24 @@ import {
     getMetronomeVolume,
 } from '../../utils/rhythm-dash-utils.js';
 import { createVisibilityListener } from '../../utils/lifecycle-utils.js';
+import { createIntervalTicker } from '../../utils/interval-ticker.js';
 
 export const createRhythmDashMetronome = ({
     isEnabled,
     getPlayer,
     getBeatInterval,
 } = {}) => {
-    let metronomeId = null;
+    let metronomeTicker = null;
     let metronomeBeat = 0;
     let isActive = false;
     let pausedByVisibility = false;
 
+    const isMetronomeRunning = () => Boolean(metronomeTicker?.isRunning?.());
+
     const clearMetronomeInterval = () => {
-        if (!metronomeId) return;
-        clearInterval(metronomeId);
-        metronomeId = null;
+        if (!metronomeTicker) return;
+        metronomeTicker.stop();
+        metronomeTicker = null;
     };
 
     const playLeadIn = (player) => {
@@ -26,17 +29,24 @@ export const createRhythmDashMetronome = ({
     };
 
     const startMetronomeInterval = ({ playLead = false } = {}) => {
-        if (metronomeId) return true;
+        if (isMetronomeRunning()) return true;
         if (!isEnabled()) return false;
         const player = getPlayer();
         if (!player) return false;
         const interval = Math.max(240, getBeatInterval());
-        metronomeId = window.setInterval(() => {
+        const playBeat = () => {
             const note = getMetronomeNote(metronomeBeat);
             const volume = getMetronomeVolume(metronomeBeat);
             player.playNote(note, { duration: 0.08, volume, type: 'square' }).catch(() => {});
             metronomeBeat += 1;
-        }, interval);
+        };
+        metronomeTicker = createIntervalTicker({
+            onTick: playBeat,
+            intervalMs: interval,
+            setIntervalFn: window.setInterval,
+            clearIntervalFn: window.clearInterval,
+        });
+        metronomeTicker.start();
         if (playLead) {
             playLeadIn(player);
         }
@@ -46,7 +56,7 @@ export const createRhythmDashMetronome = ({
     function handleVisibilityChange() {
         if (!isActive) return;
         if (document.visibilityState === 'hidden') {
-            if (!metronomeId) return;
+            if (!isMetronomeRunning()) return;
             pausedByVisibility = true;
             clearMetronomeInterval();
             return;

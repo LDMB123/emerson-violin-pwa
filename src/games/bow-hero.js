@@ -126,8 +126,6 @@ const { bind } = createGame({
             canResume: () => Boolean(runToggle?.checked)
                 && isGameView(window.location.hash, 'bow-hero'),
             now: () => Date.now(),
-            setIntervalFn: (callback, delay) => window.setInterval(callback, delay),
-            clearIntervalFn: (timerId) => window.clearInterval(timerId),
         });
 
         gameState._onDeactivate = () => {
@@ -163,7 +161,7 @@ const { bind } = createGame({
         const testTrigger = () => {
             // Forcefully enable timer state for headless test bypass
             if (!timerLifecycle.isRunning()) {
-                timerLifecycle.startTimer(Date.now());
+                timerLifecycle.startTimer();
             }
             performBowStroke();
             engine.triggerStroke();

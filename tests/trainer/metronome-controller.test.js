@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    installWindowIntervalMocks,
+    setDocumentVisibility,
+} from '../utils/test-lifecycle-mocks.js';
 
 const adaptiveEngineMocks = vi.hoisted(() => ({
     getGameTuning: vi.fn(async () => ({ targetBpm: 90, difficulty: 'medium' })),
@@ -52,21 +56,10 @@ vi.mock('../../src/trainer/metronome-controller-bindings.js', () => metronomeBin
 
 import { createMetronomeController } from '../../src/trainer/metronome-controller.js';
 
-const setVisibility = (value) => {
-    Object.defineProperty(document, 'visibilityState', {
-        configurable: true,
-        value,
-    });
-};
-
 describe('trainer/metronome-controller visibility pause + resume', () => {
-    let nextIntervalId;
-
     beforeEach(() => {
-        setVisibility('visible');
-        nextIntervalId = 1;
-        window.setInterval = vi.fn(() => nextIntervalId++);
-        window.clearInterval = vi.fn();
+        setDocumentVisibility('visible');
+        installWindowIntervalMocks();
     });
 
     afterEach(() => {
@@ -84,14 +77,14 @@ describe('trainer/metronome-controller visibility pause + resume', () => {
             expect.objectContaining({ running: true }),
         );
 
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         expect(controller.pauseForVisibility()).toBe(true);
         expect(window.clearInterval).toHaveBeenCalledWith(1);
         expect(metronomeViewMocks.syncMetronomeRunningState).toHaveBeenLastCalledWith(
             expect.objectContaining({ running: false }),
         );
 
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         expect(controller.resumeForVisibility()).toBe(true);
         expect(window.setInterval).toHaveBeenCalledTimes(2);
 
@@ -105,11 +98,11 @@ describe('trainer/metronome-controller visibility pause + resume', () => {
         const toggleBindings = metronomeBindingsMocks.bindMetronomeToggleControl.mock.calls[0][0];
 
         toggleBindings.start();
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         controller.pauseForVisibility();
         controller.stop({ silent: true });
 
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         expect(controller.resumeForVisibility()).toBe(false);
         expect(window.setInterval).toHaveBeenCalledTimes(1);
     });

@@ -1,15 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BaseCanvasEngine } from '../../src/games/canvas-engine-base.js';
+import {
+    installRafMocks,
+    setDocumentVisibility,
+} from '../utils/test-lifecycle-mocks.js';
 
 describe('games/canvas-engine-base BaseCanvasEngine', () => {
-    let nextRafId;
-    let rafCallbacks;
-    const setVisibility = (value) => {
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            value,
-        });
-    };
+    let rafMocks;
 
     const createEngine = () => {
         const parent = document.createElement('div');
@@ -44,31 +41,19 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
     };
 
     beforeEach(() => {
-        nextRafId = 1;
-        rafCallbacks = new Map();
-        setVisibility('visible');
+        setDocumentVisibility('visible');
+        rafMocks = installRafMocks();
 
         Object.defineProperty(window, 'devicePixelRatio', {
             configurable: true,
             value: 1,
-        });
-
-        globalThis.requestAnimationFrame = vi.fn((callback) => {
-            const id = nextRafId++;
-            rafCallbacks.set(id, callback);
-            return id;
-        });
-
-        globalThis.cancelAnimationFrame = vi.fn((id) => {
-            rafCallbacks.delete(id);
         });
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
         document.body.innerHTML = '';
-        delete globalThis.requestAnimationFrame;
-        delete globalThis.cancelAnimationFrame;
+        rafMocks.teardown();
     });
 
     it('starts once and cancels the scheduled frame when stopped', () => {
@@ -97,12 +82,12 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
     it('pauses scheduling while hidden and resumes when visible', () => {
         const { engine } = createEngine();
 
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         engine.start();
         expect(requestAnimationFrame).toHaveBeenCalledTimes(0);
         expect(engine.rafId).toBeNull();
 
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         document.dispatchEvent(new Event('visibilitychange'));
         expect(requestAnimationFrame).toHaveBeenCalledTimes(1);
         expect(engine.rafId).toBe(1);
@@ -114,7 +99,7 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
         engine.start();
         expect(engine.rafId).toBe(1);
 
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         document.dispatchEvent(new Event('visibilitychange'));
 
         expect(cancelAnimationFrame).toHaveBeenCalledWith(1);
@@ -153,11 +138,11 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
 
         engine.isRunning = true;
         engine.lastTime = 0;
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         expect(engine.beginFrame(50)).toBeNull();
         expect(requestAnimationFrame).toHaveBeenCalledTimes(0);
 
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         const frame = engine.beginFrame(500);
         expect(frame).toEqual({ dt: 0.1, ctx });
         expect(engine.lastTime).toBe(500);

@@ -1,5 +1,6 @@
 import { atLeast1, durationToMinutes, percentageRounded } from '../utils/math.js';
 import { createIntervalTicker } from '../utils/interval-ticker.js';
+import { toCountdownSeconds } from '../utils/countdown-utils.js';
 
 export const formatMinutes = (value) => `${atLeast1(Math.round(value || 0))} min`;
 
@@ -18,7 +19,7 @@ export const formatTime = (ms) => {
 
 /** Countdown variant — uses Math.ceil so display never shows 0:00 prematurely. */
 export const formatCountdown = (ms) => {
-    const total = Math.max(0, Math.ceil(ms / 1000));
+    const total = toCountdownSeconds(ms);
     return formatClockValue(total);
 };
 

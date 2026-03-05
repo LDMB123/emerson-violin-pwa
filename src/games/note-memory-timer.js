@@ -1,4 +1,8 @@
 import { createIntervalTicker } from '../utils/interval-ticker.js';
+import {
+    COUNTDOWN_TICK_MS,
+    toRemainingCountdownSeconds,
+} from '../utils/countdown-utils.js';
 
 export const createNoteMemoryTimer = ({
     getTimeLeft,
@@ -11,14 +15,15 @@ export const createNoteMemoryTimer = ({
     setGameTimerId,
     isViewActive,
 }) => {
-    const TIMER_TICK_MS = 500;
     let endTime = null;
     let paused = false;
     let lastRenderedTimeLeft = null;
 
+    const getRemainingTimeLeft = () => toRemainingCountdownSeconds(endTime, Date.now());
+
     const tick = () => {
         if (!endTime) return;
-        const nextTimeLeft = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        const nextTimeLeft = getRemainingTimeLeft();
         if (nextTimeLeft <= 0) {
             publishTimeLeft(0);
             setEnded(true);
@@ -31,7 +36,7 @@ export const createNoteMemoryTimer = ({
     };
     const ticker = createIntervalTicker({
         onTick: tick,
-        intervalMs: TIMER_TICK_MS,
+        intervalMs: COUNTDOWN_TICK_MS,
     });
 
     const stopTimer = () => {
@@ -50,7 +55,7 @@ export const createNoteMemoryTimer = ({
     const pauseTimer = () => {
         if (!ticker.isRunning()) return;
         if (endTime) {
-            publishTimeLeft(Math.max(0, Math.ceil((endTime - Date.now()) / 1000)));
+            publishTimeLeft(getRemainingTimeLeft());
         }
         stopTimer();
         paused = true;

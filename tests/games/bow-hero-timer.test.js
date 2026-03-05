@@ -63,7 +63,9 @@ describe('games/bow-hero-timer', () => {
     it('updates timer only when seconds change and stops at zero', () => {
         const h = createHarness({ timeLimit: 3 });
 
+        expect(h.lifecycle.isRunning()).toBe(false);
         h.lifecycle.startTimer();
+        expect(h.lifecycle.isRunning()).toBe(true);
         expect(h.setIntervalFn.lastDelay).toBe(500);
         expect(h.updateTimer).toHaveBeenCalledTimes(1);
         expect(h.updateTimer).toHaveBeenLastCalledWith(3);
@@ -85,6 +87,7 @@ describe('games/bow-hero-timer', () => {
         expect(h.onTimeElapsed).toHaveBeenCalledTimes(1);
         expect(h.runToggle.checked).toBe(false);
         expect(h.clearIntervalFn).toHaveBeenCalledTimes(1);
+        expect(h.lifecycle.isRunning()).toBe(false);
     });
 
     it('fires thirty-second marker only once per run', () => {

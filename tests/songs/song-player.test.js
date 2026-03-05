@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setDocumentVisibility } from '../utils/test-lifecycle-mocks.js';
 
 import { SONG_SECTION_COMPLETED } from '../../src/utils/event-names.js';
 
@@ -41,13 +42,6 @@ const flush = async () => {
     await Promise.resolve();
 };
 
-const setVisibility = (value) => {
-    Object.defineProperty(document, 'visibilityState', {
-        configurable: true,
-        value,
-    });
-};
-
 const mountSongView = (id = 'twinkle', { withSheet = false } = {}) => {
     const sheetMarkup = withSheet
         ? `
@@ -73,7 +67,7 @@ describe('songs/song-player', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         document.body.innerHTML = '';
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         songLibraryMocks.getSongById.mockClear();
         songLibraryMocks.getSongSections.mockClear();
         progressionMocks.getSongCheckpoint.mockClear();
@@ -174,12 +168,12 @@ describe('songs/song-player', () => {
         playToggle.checked = true;
         playToggle.dispatchEvent(new Event('change', { bubbles: true }));
 
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         document.dispatchEvent(new Event('visibilitychange'));
         await vi.advanceTimersByTimeAsync(1500);
         expect(emitted).toHaveLength(0);
 
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         document.dispatchEvent(new Event('visibilitychange'));
         await vi.advanceTimersByTimeAsync(1100);
         expect(emitted.length).toBeGreaterThan(0);

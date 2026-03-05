@@ -26,6 +26,15 @@ const createHarness = (overrides = {}) => {
     };
 };
 
+const createSingleModuleLoadHarness = () => {
+    const module = { init: vi.fn() };
+    const load = vi.fn(async () => module);
+    const { loader } = createHarness({
+        moduleLoaders: { test: load },
+    });
+    return { module, load, loader };
+};
+
 describe('app/module-loader', () => {
     it('returns null for unknown modules', async () => {
         const { loader } = createHarness();
@@ -33,11 +42,7 @@ describe('app/module-loader', () => {
     });
 
     it('coalesces concurrent loads into a single in-flight promise', async () => {
-        const module = { init: vi.fn() };
-        const load = vi.fn(async () => module);
-        const { loader } = createHarness({
-            moduleLoaders: { test: load },
-        });
+        const { module, load, loader } = createSingleModuleLoadHarness();
 
         const [first, second] = await Promise.all([
             loader.loadModule('test'),
@@ -50,11 +55,7 @@ describe('app/module-loader', () => {
     });
 
     it('returns cached module on subsequent loads without re-importing', async () => {
-        const module = { init: vi.fn() };
-        const load = vi.fn(async () => module);
-        const { loader } = createHarness({
-            moduleLoaders: { test: load },
-        });
+        const { module, load, loader } = createSingleModuleLoadHarness();
 
         const first = await loader.loadModule('test');
         const second = await loader.loadModule('test');

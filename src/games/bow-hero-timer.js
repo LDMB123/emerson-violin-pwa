@@ -1,5 +1,8 @@
-const toWholeSeconds = (milliseconds) => Math.max(0, Math.ceil(milliseconds / 1000));
-const TIMER_TICK_MS = 500;
+import { createIntervalTicker } from '../utils/interval-ticker.js';
+import {
+    COUNTDOWN_TICK_MS,
+    toRemainingCountdownSeconds,
+} from '../utils/countdown-utils.js';
 
 export const createBowHeroTimerLifecycle = ({
     timeLimit,
@@ -17,7 +20,6 @@ export const createBowHeroTimerLifecycle = ({
     clearIntervalFn,
 }) => {
     let remaining = timeLimit;
-    let timerId = null;
     let endTime = null;
     let runStartedAt = 0;
     let paused = false;
@@ -25,15 +27,39 @@ export const createBowHeroTimerLifecycle = ({
     let thirtySecondsMarked = false;
     let lastRenderedSecond = null;
 
+    const tick = () => {
+        if (!endTime) return;
+        const currentNow = now();
+        remaining = toRemainingCountdownSeconds(endTime, currentNow);
+        publishRemaining(remaining);
+        if (remaining <= 0) {
+            stopTimer();
+            if (runToggle) runToggle.checked = false;
+            setStatus('Time! Tap Start to begin another round.');
+            onTimeElapsed();
+            return;
+        }
+        if (!thirtySecondsMarked && runStartedAt && currentNow - runStartedAt >= 30000) {
+            thirtySecondsMarked = true;
+            onThirtySeconds();
+        }
+    };
+    const ticker = createIntervalTicker({
+        onTick: tick,
+        intervalMs: COUNTDOWN_TICK_MS,
+        setIntervalFn,
+        clearIntervalFn,
+    });
+
     const publishTimerHandle = () => {
-        setTimerHandle(timerId);
+        if (!setTimerHandle) return;
+        setTimerHandle(ticker.getId());
     };
 
+    const isRunning = () => ticker.isRunning();
+
     const stopTimer = () => {
-        if (timerId !== null) {
-            clearIntervalFn(timerId);
-            timerId = null;
-        }
+        ticker.stop();
         endTime = null;
         publishTimerHandle();
     };
@@ -45,7 +71,7 @@ export const createBowHeroTimerLifecycle = ({
     };
 
     const startTimer = () => {
-        if (timerId !== null) return;
+        if (isRunning()) return;
         paused = false;
         if (remaining <= 0) remaining = timeLimit;
         if (remaining === timeLimit) {
@@ -57,32 +83,16 @@ export const createBowHeroTimerLifecycle = ({
         }
         if (!runStartedAt) runStartedAt = now();
         endTime = now() + remaining * 1000;
-        timerId = setIntervalFn(() => {
-            if (!endTime) return;
-            const currentNow = now();
-            remaining = toWholeSeconds(endTime - currentNow);
-            publishRemaining(remaining);
-            if (remaining <= 0) {
-                stopTimer();
-                if (runToggle) runToggle.checked = false;
-                setStatus('Time! Tap Start to begin another round.');
-                onTimeElapsed();
-                return;
-            }
-            if (!thirtySecondsMarked && runStartedAt && currentNow - runStartedAt >= 30000) {
-                thirtySecondsMarked = true;
-                onThirtySeconds();
-            }
-        }, TIMER_TICK_MS);
+        ticker.start();
         publishTimerHandle();
         publishRemaining(remaining);
         setStatus('Timer running. Keep bow strokes steady.');
     };
 
     const pauseTimer = () => {
-        if (timerId === null) return;
+        if (!isRunning()) return;
         if (endTime) {
-            remaining = toWholeSeconds(endTime - now());
+            remaining = toRemainingCountdownSeconds(endTime, now());
         }
         stopTimer();
         paused = true;
@@ -122,5 +132,6 @@ export const createBowHeroTimerLifecycle = ({
         resumeTimer,
         resetPauseState,
         renderTimer,
+        isRunning,
     };
 };

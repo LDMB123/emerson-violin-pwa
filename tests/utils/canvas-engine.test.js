@@ -1,12 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BaseCanvasEngine } from '../../src/utils/canvas-engine.js';
-
-const setVisibility = (value) => {
-    Object.defineProperty(document, 'visibilityState', {
-        configurable: true,
-        value,
-    });
-};
+import {
+    installRafMocks,
+    setDocumentVisibility,
+} from './test-lifecycle-mocks.js';
 
 class TestCanvasEngine extends BaseCanvasEngine {
     constructor(canvas) {
@@ -25,14 +22,11 @@ class TestCanvasEngine extends BaseCanvasEngine {
 }
 
 describe('utils/canvas-engine BaseCanvasEngine', () => {
-    let rafCallbacks;
-    let nextRafId;
+    let rafMocks;
     let engines;
 
     const runNextFrame = (time = performance.now()) => {
-        const entries = [...rafCallbacks.entries()];
-        rafCallbacks.clear();
-        entries.forEach(([, callback]) => callback(time));
+        rafMocks.runQueuedFrames(time);
     };
 
     const createStartedEngine = () => {
@@ -47,26 +41,15 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
     };
 
     beforeEach(() => {
-        setVisibility('visible');
-        rafCallbacks = new Map();
-        nextRafId = 1;
+        setDocumentVisibility('visible');
+        rafMocks = installRafMocks();
         engines = [];
-
-        globalThis.requestAnimationFrame = vi.fn((callback) => {
-            const id = nextRafId++;
-            rafCallbacks.set(id, callback);
-            return id;
-        });
-        globalThis.cancelAnimationFrame = vi.fn((id) => {
-            rafCallbacks.delete(id);
-        });
     });
 
     afterEach(() => {
         engines.forEach((engine) => engine.destroy());
         vi.restoreAllMocks();
-        delete globalThis.requestAnimationFrame;
-        delete globalThis.cancelAnimationFrame;
+        rafMocks.teardown();
     });
 
     it('starts loop and calls update/draw each frame', () => {
@@ -83,12 +66,12 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
     it('pauses frames while hidden and resumes when visible again', () => {
         const engine = createStartedEngine();
 
-        setVisibility('hidden');
+        setDocumentVisibility('hidden');
         document.dispatchEvent(new Event('visibilitychange'));
 
         expect(cancelAnimationFrame).toHaveBeenCalledTimes(1);
 
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         document.dispatchEvent(new Event('visibilitychange'));
 
         expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
@@ -101,7 +84,7 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
         engine.destroy();
 
         const rafCallsBefore = requestAnimationFrame.mock.calls.length;
-        setVisibility('visible');
+        setDocumentVisibility('visible');
         document.dispatchEvent(new Event('visibilitychange'));
 
         expect(requestAnimationFrame.mock.calls.length).toBe(rafCallsBefore);
