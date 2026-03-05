@@ -1,7 +1,14 @@
 import { createGame } from './game-shell.js';
-import { isGameView } from '../utils/view-hash-utils.js';
 import { createAudioCueBank } from './game-audio-cues.js';
-import { markChecklist, bindTap, bindSoundsChange, attachTuning, createStandardGameUpdate } from './shared.js';
+import {
+    markChecklist,
+    bindTap,
+    bindSoundsChange,
+    bindDocumentEvent,
+    attachTuning,
+    createRealtimeFeatureStateHandler,
+    createStandardGameUpdate,
+} from './shared.js';
 import { clamp } from '../utils/math.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { RT_STATE } from '../utils/event-names.js';
@@ -69,6 +76,14 @@ const { bind } = createGame({
         gameState._progressBar = null;
 
         const { targetStrings } = gameState;
+        const renderProgress = () => {
+            renderTuningProgress({
+                progressEl,
+                progressBar,
+                tunedCount: gameState.tunedNotes.size,
+                targetStrings,
+            });
+        };
 
         const canvasEl = stage.querySelector('#tuning-time-canvas');
         let tuningEngine = null;
@@ -80,12 +95,7 @@ const { bind } = createGame({
         if (statusEl && gameState.tunedNotes.size === 0) {
             setTuningStatusText(statusEl, `Tune ${targetStrings} strings to warm up.`);
         }
-        renderTuningProgress({
-            progressEl,
-            progressBar,
-            tunedCount: gameState.tunedNotes.size,
-            targetStrings,
-        });
+        renderProgress();
 
         // Initialize mic state
         gameState.activeTarget = null;
@@ -102,12 +112,7 @@ const { bind } = createGame({
         };
 
         const checkWinState = () => {
-            renderTuningProgress({
-                progressEl,
-                progressBar,
-                tunedCount: gameState.tunedNotes.size,
-                targetStrings,
-            });
+            renderProgress();
             if (gameState.tunedNotes.size >= targetStrings) {
                 setTuningStatusText(statusEl, 'All strings tuned! Great job.');
                 if (tuningActive) tuningActive.dispose();
@@ -120,11 +125,7 @@ const { bind } = createGame({
 
         tuningActive = attachTuning('tuning-time', () => { });
 
-        const onRealtimeState = (event) => {
-            if (!isGameView(window.location.hash, 'tuning-time')) return;
-            const tuning = event.detail?.lastFeature;
-            if (!tuning || event.detail?.paused) return;
-
+        const onRealtimeState = createRealtimeFeatureStateHandler('tuning-time', (tuning) => {
             if (!gameState.activeTarget || gameState.tunedNotes.has(gameState.activeTarget)) return;
 
             const target = gameState.activeTarget;
@@ -211,11 +212,9 @@ const { bind } = createGame({
             } else if (tuning.note && tuning.hasSignal) {
                 setTuningStatusText(statusEl, `Hearing ${tuning.note}. Play ${target} loudly!`);
             }
-        };
-
-        document.addEventListener(RT_STATE, onRealtimeState);
+        });
+        bindDocumentEvent(RT_STATE, onRealtimeState, registerCleanup);
         registerCleanup(() => {
-            document.removeEventListener(RT_STATE, onRealtimeState);
             if (tuningEngine) tuningEngine.stop();
         });
 

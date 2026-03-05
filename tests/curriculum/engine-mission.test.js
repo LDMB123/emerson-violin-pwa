@@ -41,6 +41,13 @@ const createMission = () => ({
     ],
 });
 
+const createMutationArgs = (mission, stepId) => ({
+    stepId,
+    mission,
+    unit: { id: mission.unitId },
+    state: { session: 'state' },
+});
+
 describe('curriculum/engine-mission', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -49,12 +56,7 @@ describe('curriculum/engine-mission', () => {
 
     it('completes a mission step and persists mission history', async () => {
         const mission = createMission();
-        const result = await completeMissionStep({
-            stepId: 'step-1',
-            mission,
-            unit: { id: mission.unitId },
-            state: { session: 'state' },
-        });
+        const result = await completeMissionStep(createMutationArgs(mission, 'step-1'));
 
         expect(result.mission.steps[0].status).toBe('complete');
         expect(result.mission.currentStepId).toBe('step-2');
@@ -68,12 +70,7 @@ describe('curriculum/engine-mission', () => {
 
     it('starts a mission step and resets previous in-progress step', async () => {
         const mission = createMission();
-        const result = await startMissionStep({
-            stepId: 'step-2',
-            mission,
-            unit: { id: mission.unitId },
-            state: { session: 'state' },
-        });
+        const result = await startMissionStep(createMutationArgs(mission, 'step-2'));
 
         expect(result.mission.steps[0].status).toBe('not_started');
         expect(result.mission.steps[1].status).toBe('in_progress');

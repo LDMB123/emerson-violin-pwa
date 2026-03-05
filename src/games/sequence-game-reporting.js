@@ -1,5 +1,5 @@
 import { recordGameEvent } from './shared.js';
-import { resolveGameObjectiveProgress } from './game-objectives.js';
+import { resolveSessionObjectiveProgress } from './game-objectives.js';
 
 const resolveDifficultyLabel = (complexity = 0) => (
     complexity >= 2 ? 'hard' : complexity >= 1 ? 'medium' : 'easy'
@@ -24,10 +24,10 @@ export const reportSequenceSession = ({
 
     const accuracy = computeAccuracy({ combo, comboTarget });
     reportResult({ accuracy, score });
-    const objectiveProgress = resolveGameObjectiveProgress({
+    const objectiveProgress = resolveSessionObjectiveProgress({
         stage,
         gameId: id,
-        difficultyComplexity: difficulty?.complexity || 0,
+        difficulty,
         includeInput: (input) => /(-step-|set-)/.test(input.id),
     });
     const sessionMs = Math.max(0, Date.now() - sessionStartedAt);

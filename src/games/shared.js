@@ -4,10 +4,14 @@ import { getJSON, setJSON } from '../persistence/storage.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
 import { durationToMinutes, positiveRound, todayDay } from '../utils/math.js';
+import { markCheckboxInputChecked } from '../utils/checkbox-utils.js';
+import { speakMessage as speakVoiceMessage } from '../utils/speech-utils.js';
+import { isGameView } from '../utils/view-hash-utils.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
 import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
 import { GAME_RECORDED, GAME_MASTERY_UPDATED, ML_RESET, SOUNDS_CHANGE, emitEvent } from '../utils/event-names.js';
 import { updateGameMastery } from './game-mastery.js';
+import { bindGameStartStop } from './game-start-stop-bindings.js';
 
 export const formatStars = (count, total) => '★'.repeat(count) + '☆'.repeat(Math.max(0, total - count));
 export const cachedEl = (selector) => {
@@ -96,9 +100,7 @@ export const setLiveNumber = (el, key, value, formatter) => {
 export const markChecklist = (id) => {
     if (!id) return;
     const input = document.getElementById(id);
-    if (!input || input.checked) return;
-    input.checked = true;
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    markCheckboxInputChecked(input);
 };
 
 export const markChecklistIf = (condition, id) => {
@@ -127,17 +129,13 @@ export const buildNoteSequence = (pool, length) => {
 };
 
 const speakReaction = (message) => {
-    if (!isVoiceCoachEnabled() || document.hidden) return;
-    try {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(message);
-        utterance.lang = 'en-US';
-        utterance.rate = 1.05;
-        utterance.pitch = 1.2;
-        window.speechSynthesis.speak(utterance);
-    } catch {
-        // Ignore
-    }
+    speakVoiceMessage({
+        message,
+        enabled: isVoiceCoachEnabled(),
+        lang: 'en-US',
+        rate: 1.05,
+        pitch: 1.2,
+    });
 };
 
 export const triggerMiniConfetti = (el) => {
@@ -244,16 +242,117 @@ export const recordGameEvent = async (id, payload = {}) => {
     }
 };
 
+export const stopEngineAndRecordGameEvent = (engine, id, payload = {}) => {
+    engine?.stop?.();
+    recordGameEvent(id, payload);
+};
+
+export const maybeStopEngineAndRecordThreshold = ({
+    engine,
+    value,
+    threshold,
+    id,
+    payload = {},
+} = {}) => {
+    if (!Number.isFinite(value) || value < threshold) return false;
+    stopEngineAndRecordGameEvent(engine, id, payload);
+    return true;
+};
+
+export const ensureGameStartStopBindings = ({
+    state = null,
+    bound = false,
+    cleanupBindings = null,
+    setBound = null,
+    setCleanupBindings = null,
+    startButton = null,
+    engine = null,
+    startLabel = 'Start',
+    stopLabel = 'Stop',
+    resetBeforeStart = null,
+    isGameViewActive = () => true,
+} = {}) => {
+    const currentBound = state ? Boolean(state.bound) : bound;
+    const currentCleanup = state ? state.cleanupBindings : cleanupBindings;
+    if (currentBound) return currentCleanup;
+    currentCleanup?.();
+    const nextCleanup = bindGameStartStop({
+        startButton,
+        engine,
+        startLabel,
+        stopLabel,
+        resetBeforeStart,
+        isGameViewActive,
+        onViewExit: () => {
+            if (state) {
+                state.bound = false;
+                state.cleanupBindings = null;
+            }
+            if (typeof setBound === 'function') {
+                setBound(false);
+            }
+            if (typeof setCleanupBindings === 'function') {
+                setCleanupBindings(null);
+            }
+        },
+    });
+    if (state) {
+        state.bound = true;
+        state.cleanupBindings = nextCleanup;
+    }
+    if (typeof setCleanupBindings === 'function') {
+        setCleanupBindings(nextCleanup);
+    }
+    if (typeof setBound === 'function') {
+        setBound(true);
+    }
+    return nextCleanup;
+};
+
+export const createStartStopBindingState = () => ({
+    bound: false,
+    cleanupBindings: null,
+});
+
+export const bindHashViewGameStartStop = ({
+    gameId = '',
+    ...options
+} = {}) => {
+    if (!gameId) {
+        return ensureGameStartStopBindings(options);
+    }
+    return ensureGameStartStopBindings({
+        ...options,
+        isGameViewActive: () => isGameView(window.location.hash, gameId),
+    });
+};
+
 export const bindSoundsChange = (handler, registerCleanup = null) => {
-    if (typeof handler !== 'function') return () => { };
-    document.addEventListener(SOUNDS_CHANGE, handler);
+    return bindDocumentEvent(SOUNDS_CHANGE, handler, registerCleanup);
+};
+
+export const bindDocumentEvent = (eventName, handler, registerCleanup = null) => {
+    if (!eventName || typeof handler !== 'function') return () => { };
+    document.addEventListener(eventName, handler);
     const cleanup = () => {
-        document.removeEventListener(SOUNDS_CHANGE, handler);
+        document.removeEventListener(eventName, handler);
     };
     if (typeof registerCleanup === 'function') {
         registerCleanup(cleanup);
     }
     return cleanup;
+};
+
+export const createRealtimeFeatureStateHandler = (gameId, onFeature) => {
+    if (typeof onFeature !== 'function') {
+        return () => { };
+    }
+    return (event) => {
+        if (!isGameView(window.location.hash, gameId)) return;
+        const feature = event.detail?.lastFeature;
+        if (!feature || event.detail?.paused) return;
+        onFeature(feature, event);
+    };
 };
 
 

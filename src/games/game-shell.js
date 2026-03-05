@@ -4,7 +4,7 @@ import {
     setDifficultyBadge,
 } from './shared.js';
 import { bindGameSessionLifecycle } from './game-session-lifecycle.js';
-import { resolveGameObjectiveProgress } from './game-objectives.js';
+import { resolveSessionObjectiveProgress } from './game-objectives.js';
 import { positiveRound } from '../utils/math.js';
 
 /**
@@ -99,10 +99,10 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             reported = true;
             reportResult({ accuracy, score: gameState.score || 0 });
 
-            const objectiveProgress = resolveGameObjectiveProgress({
+            const objectiveProgress = resolveSessionObjectiveProgress({
                 stage,
                 gameId: id,
-                difficultyComplexity: difficulty?.complexity || 0,
+                difficulty,
                 includeInput: (input) => (
                     !input.id.startsWith('setting-')
                     && !input.id.includes('parent-')

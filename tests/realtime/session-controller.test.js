@@ -227,6 +227,36 @@ const emitFeatureFrame = (FakeAudioWorkletNode, feature) => {
 };
 
 const loadSessionController = async () => import('../../src/realtime/session-controller.js');
+const flushTicks = async (count = 2) => {
+    for (let i = 0; i < count; i += 1) {
+        await nextTick();
+    }
+};
+const startHarnessedSession = async ({
+    workerMode = 'none',
+    withInit = false,
+    initialFeature = null,
+    flushCount = 0,
+} = {}) => {
+    const harness = createFakeAudioHarness({ workerMode });
+    const controller = await loadSessionController();
+    if (withInit && typeof controller.init === 'function') {
+        controller.init();
+    }
+    await controller.startSession();
+    if (initialFeature) {
+        emitFeatureFrame(harness.FakeAudioWorkletNode, initialFeature);
+    }
+    if (flushCount > 0) {
+        await flushTicks(flushCount);
+    }
+    return { ...harness, ...controller };
+};
+const expectInactiveSessionState = (state) => {
+    expect(state.active).toBe(false);
+    expect(state.paused).toBe(false);
+    expect(state.listening).toBe(false);
+};
 
 describe('realtime session controller interface', () => {
     let warnSpy;
@@ -318,14 +348,10 @@ describe('realtime session controller interface', () => {
     });
 
     it('does not persist high-frequency realtime state events to the event log', async () => {
-        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
-        const { startSession, stopSession } = await loadSessionController();
-
-        await startSession();
+        const { FakeAudioWorkletNode, stopSession } = await startHarnessedSession({ workerMode: 'none' });
         emitFeatureFrame(FakeAudioWorkletNode, { cents: 12, confidence: 0.55 });
         emitFeatureFrame(FakeAudioWorkletNode, { cents: 5, confidence: 0.62 });
-        await nextTick();
-        await nextTick();
+        await flushTicks();
 
         const stateLogCalls = eventLogMocks.appendRealtimeEvent.mock.calls
             .filter(([eventName]) => eventName === RT_STATE);
@@ -335,14 +361,13 @@ describe('realtime session controller interface', () => {
     });
 
     it('falls back to in-thread policy evaluation when Worker is unavailable', async () => {
-        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
-        const { startSession, stopSession } = await loadSessionController();
-
-        await startSession();
-        emitFeatureFrame(FakeAudioWorkletNode, {
-            cents: 18,
-            rhythmOffsetMs: -40,
-            confidence: 0.5,
+        const { stopSession } = await startHarnessedSession({
+            workerMode: 'none',
+            initialFeature: {
+                cents: 18,
+                rhythmOffsetMs: -40,
+                confidence: 0.5,
+            },
         });
 
         expect(policyMocks.evaluateFrame).toHaveBeenCalledTimes(1);
@@ -366,16 +391,15 @@ describe('realtime session controller interface', () => {
             return null;
         });
 
-        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
-        const { startSession, stopSession } = await loadSessionController();
-
-        await startSession();
-        emitFeatureFrame(FakeAudioWorkletNode, {
-            cents: 20,
-            rhythmOffsetMs: 100,
-            confidence: 0.92,
+        const { stopSession } = await startHarnessedSession({
+            workerMode: 'none',
+            initialFeature: {
+                cents: 20,
+                rhythmOffsetMs: 100,
+                confidence: 0.92,
+            },
+            flushCount: 1,
         });
-        await nextTick();
 
         const profileWrites = storageMocks.setJSON.mock.calls
             .filter(([key]) => key === RT_PROFILE_KEY)
@@ -391,10 +415,7 @@ describe('realtime session controller interface', () => {
     });
 
     it('throttles profile persistence during active sampling and flushes on stop', async () => {
-        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
-        const { startSession, stopSession } = await loadSessionController();
-
-        await startSession();
+        const { FakeAudioWorkletNode, stopSession } = await startHarnessedSession({ workerMode: 'none' });
         emitFeatureFrame(FakeAudioWorkletNode, {
             cents: 8,
             rhythmOffsetMs: 20,
@@ -405,8 +426,7 @@ describe('realtime session controller interface', () => {
             rhythmOffsetMs: 22,
             confidence: 0.92,
         });
-        await nextTick();
-        await nextTick();
+        await flushTicks();
 
         const writesDuringSession = storageMocks.setJSON.mock.calls
             .filter(([key]) => key === RT_PROFILE_KEY)
@@ -422,18 +442,16 @@ describe('realtime session controller interface', () => {
     });
 
     it('pauses for parent entry and resumes on return to child practice views', async () => {
-        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
-        const { init, startSession, getSessionState, stopSession } = await loadSessionController();
-
-        init();
-        await startSession();
-        emitFeatureFrame(FakeAudioWorkletNode, { cents: 10, confidence: 0.6 });
-        await nextTick();
+        const { getSessionState, stopSession } = await startHarnessedSession({
+            workerMode: 'none',
+            withInit: true,
+            initialFeature: { cents: 10, confidence: 0.6 },
+            flushCount: 1,
+        });
 
         window.location.hash = '#view-parent';
         window.dispatchEvent(new Event('hashchange'));
-        await nextTick();
-        await nextTick();
+        await flushTicks();
 
         let state = getSessionState();
         expect(state.active).toBe(true);
@@ -442,8 +460,7 @@ describe('realtime session controller interface', () => {
 
         window.location.hash = '#view-games';
         window.dispatchEvent(new Event('hashchange'));
-        await nextTick();
-        await nextTick();
+        await flushTicks();
 
         state = getSessionState();
         expect(state.active).toBe(true);
@@ -454,56 +471,46 @@ describe('realtime session controller interface', () => {
     });
 
     it('stops safely when navigating away from practice surfaces', async () => {
-        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
-        const { init, startSession, getSessionState } = await loadSessionController();
-
-        init();
-        await startSession();
-        emitFeatureFrame(FakeAudioWorkletNode, { cents: 8, confidence: 0.65 });
-        await nextTick();
+        const { getSessionState } = await startHarnessedSession({
+            workerMode: 'none',
+            withInit: true,
+            initialFeature: { cents: 8, confidence: 0.65 },
+            flushCount: 1,
+        });
 
         window.location.hash = '#view-settings';
         window.dispatchEvent(new Event('hashchange'));
-        await nextTick();
-        await nextTick();
+        await flushTicks();
 
         const state = getSessionState();
-        expect(state.active).toBe(false);
-        expect(state.paused).toBe(false);
-        expect(state.listening).toBe(false);
+        expectInactiveSessionState(state);
     });
 
     it('stops active sessions on non-persisted pagehide', async () => {
-        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
-        const { init, startSession, getSessionState } = await loadSessionController();
-
-        init();
-        await startSession();
-        emitFeatureFrame(FakeAudioWorkletNode, { cents: 9, confidence: 0.62 });
-        await nextTick();
+        const { getSessionState } = await startHarnessedSession({
+            workerMode: 'none',
+            withInit: true,
+            initialFeature: { cents: 9, confidence: 0.62 },
+            flushCount: 1,
+        });
 
         window.dispatchEvent(new Event('pagehide'));
-        await nextTick();
-        await nextTick();
+        await flushTicks();
 
         const state = getSessionState();
-        expect(state.active).toBe(false);
-        expect(state.paused).toBe(false);
-        expect(state.listening).toBe(false);
+        expectInactiveSessionState(state);
     });
 
     it('keeps active sessions during persisted bfcache pagehide snapshots', async () => {
-        const { FakeAudioWorkletNode } = createFakeAudioHarness({ workerMode: 'none' });
-        const { init, startSession, getSessionState, stopSession } = await loadSessionController();
-
-        init();
-        await startSession();
-        emitFeatureFrame(FakeAudioWorkletNode, { cents: 11, confidence: 0.66 });
-        await nextTick();
+        const { getSessionState, stopSession } = await startHarnessedSession({
+            workerMode: 'none',
+            withInit: true,
+            initialFeature: { cents: 11, confidence: 0.66 },
+            flushCount: 1,
+        });
 
         window.dispatchEvent(createPersistedPagehideEvent());
-        await nextTick();
-        await nextTick();
+        await flushTicks();
 
         const state = getSessionState();
         expect(state.active).toBe(true);

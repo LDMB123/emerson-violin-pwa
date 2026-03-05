@@ -64,3 +64,11 @@ export const composeProgressResult = ({
     recentGames: buildRecentGames(gameEvents),
     ...supplemental,
 });
+
+export const composeProgressWithSupplemental = async (model) => {
+    const supplemental = await loadSupplementaryProgressData();
+    return composeProgressResult({
+        ...model,
+        supplemental,
+    });
+};

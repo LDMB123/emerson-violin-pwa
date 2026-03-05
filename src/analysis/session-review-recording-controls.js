@@ -1,11 +1,10 @@
-import { getBlob } from '../persistence/storage.js';
 import { resolveRecordingSource } from '../persistence/loaders.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import { getRecentEvents } from '../utils/session-review-utils.js';
-import { exportRecording } from '../utils/recording-export.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { createAudioController } from '../utils/audio-utils.js';
 import { buildRecordingSlotState, applyRecordingSlotState } from '../utils/analysis-recordings-utils.js';
+import { runRecordingExportAction } from '../utils/recording-export-feedback.js';
 
 export const createSessionReviewRecordingController = () => {
     const controller = createAudioController();
@@ -74,23 +73,12 @@ export const createSessionReviewRecordingController = () => {
 
                 const recording = currentRecordings[index];
                 if (!recording?.dataUrl && !recording?.blobKey) return;
-
-                button.disabled = true;
-                const original = button.textContent;
-                button.textContent = '…';
-
-                try {
-                    const blob = recording.blobKey ? await getBlob(recording.blobKey) : null;
-                    await exportRecording(recording, index, blob);
-                    button.textContent = '✓';
-                } catch {
-                    button.textContent = '!';
-                } finally {
-                    setTimeout(() => {
-                        button.textContent = original || '⬇';
-                        button.disabled = false;
-                    }, 1200);
-                }
+                await runRecordingExportAction({
+                    button,
+                    recording,
+                    index,
+                    resetDelayMs: 1200,
+                });
             });
         });
     };

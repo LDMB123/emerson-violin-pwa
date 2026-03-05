@@ -1,11 +1,8 @@
-import { BaseCanvasEngine } from './canvas-engine-base.js';
-import { bindRunningCanvasPointerDrag } from './canvas-pointer-bindings.js';
-import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
+import { DragCanvasEngineBase } from './drag-canvas-engine-base.js';
 
-export class StirSoupCanvasEngine extends BaseCanvasEngine {
+export class StirSoupCanvasEngine extends DragCanvasEngineBase {
     constructor(canvas, onScoreUpdate) {
-        super(canvas);
-        this.onScoreUpdate = onScoreUpdate;
+        super(canvas, onScoreUpdate);
 
         this.isStirring = false;
         this.pointer = { x: 0, y: 0 };
@@ -21,19 +18,12 @@ export class StirSoupCanvasEngine extends BaseCanvasEngine {
         this.activeColor = { r: 52, g: 199, b: 89 }; // Success Green
         this.splashColor = { r: 255, g: 59, b: 48 }; // Error Red
 
-        this.bindEvents();
-    }
-
-    bindEvents() {
-        this.cleanupEvents = bindRunningCanvasPointerDrag({
-            engine: this,
+        this.bindMappedDrag({
             isTracking: () => this.isStirring,
             onStart: () => {
                 this.isStirring = true;
             },
-            onMove: ({ clientX, clientY }) => {
-                // Map pointer to internal resolution (1200x800)
-                const { x, y } = mapPointerToCanvasCoords({ clientX, clientY }, this.canvas, this.width, this.height);
+            onMove: ({ x, y }) => {
                 this.pointer.x = x;
                 this.pointer.y = y;
                 this.evaluateStir();
@@ -83,17 +73,11 @@ export class StirSoupCanvasEngine extends BaseCanvasEngine {
             this.score += 100; // Lap bonus
         }
 
-        if (this.onScoreUpdate) {
-            this.onScoreUpdate(this.score, this.smoothness);
-        }
+        this.notifyScoreUpdate(this.score, this.smoothness);
     }
 
     render(ctx) {
-        ctx.fillStyle = '#fff8f1'; // Background matches app
-        ctx.fillRect(0, 0, this.width, this.height);
-
-        const centerX = this.width / 2;
-        const centerY = this.height / 2;
+        const { centerX, centerY } = this.fillBackgroundAndGetCenter(ctx, '#fff8f1');
         const radius = Math.min(this.width, this.height) * 0.35;
 
         // Draw Soup Pot

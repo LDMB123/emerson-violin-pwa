@@ -69,6 +69,10 @@ import { cleanupSequenceGameBinding } from './sequence-game-lifecycle.js';
 import { bindSequenceGameMicrophone } from './sequence-game-button-bindings.js';
 import { attachSequenceGameTuning } from './sequence-game-tuning.js';
 import { StringQuestCanvasEngine } from './string-quest-canvas.js';
+import {
+    buildSequenceTapPayload,
+    pickSequenceRuntimeState,
+} from './sequence-game-tap-context.js';
 
 const NOTE_POOL = ['G', 'D', 'A', 'E'];
 const COMPLEXITY_SEQ_LENGTHS = [3, 4, 5];
@@ -207,6 +211,27 @@ export function createSequenceGame(config) {
             updateScoreboard,
         });
 
+        const tapContext = {
+            noteOptions,
+            playToneNote,
+            baseScore,
+            comboMult,
+            missPenalty,
+            onCorrectHit,
+            callbackState,
+            completionChecklistId,
+            comboChecklistId,
+            comboTarget,
+            markChecklist,
+            markChecklistIf,
+            reportSession,
+            buildSequence,
+            playToneSequence,
+            seqOptions,
+            updateTargets: patchedUpdateTargets,
+            updateScoreboard,
+        };
+
         patchedUpdateTargets();
 
         const applyButtonTap = (note) => {
@@ -214,32 +239,13 @@ export function createSequenceGame(config) {
                 canvasEngine.pluck(note);
             }
 
-            const nextState = handleSequenceGameTap({
-                note,
-                noteOptions,
-                playToneNote,
-                sequence: runtime.sequence,
-                seqIndex: runtime.seqIndex,
-                combo: runtime.combo,
-                score: runtime.score,
-                misses: runtime.misses,
-                baseScore,
-                comboMult,
-                missPenalty,
-                onCorrectHit,
-                callbackState,
-                completionChecklistId,
-                comboChecklistId,
-                comboTarget,
-                markChecklist,
-                markChecklistIf,
-                reportSession,
-                buildSequence,
-                playToneSequence,
-                seqOptions,
-                updateTargets: patchedUpdateTargets,
-                updateScoreboard,
-            });
+            const nextState = handleSequenceGameTap(
+                buildSequenceTapPayload({
+                    note,
+                    runtimeState: runtime,
+                    tapContext,
+                }),
+            );
 
             runtimeApi.applyTapResult(nextState);
         };
@@ -273,31 +279,8 @@ export function createSequenceGame(config) {
 
         const cleanupMic = bindSequenceGameMicrophone({
             hashId,
-            noteOptions,
-            playToneNote,
-            getRuntimeState: () => ({
-                sequence: runtime.sequence,
-                seqIndex: runtime.seqIndex,
-                combo: runtime.combo,
-                score: runtime.score,
-                misses: runtime.misses,
-            }),
-            baseScore,
-            comboMult,
-            missPenalty,
-            onCorrectHit,
-            callbackState,
-            completionChecklistId,
-            comboChecklistId,
-            comboTarget,
-            markChecklist,
-            markChecklistIf,
-            reportSession,
-            buildSequence,
-            playToneSequence,
-            seqOptions,
-            updateTargets: patchedUpdateTargets,
-            updateScoreboard,
+            getRuntimeState: () => pickSequenceRuntimeState(runtime),
+            tapContext,
             applyTapResult: (nextState) => {
                 // Visualize mic hits in canvas
                 if (canvasEngine) {

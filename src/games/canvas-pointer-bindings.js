@@ -1,3 +1,5 @@
+import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
+
 const resolveClientPoint = (event) => {
     if (event.touches && event.touches.length > 0) {
         return {
@@ -12,13 +14,16 @@ const resolveClientPoint = (event) => {
     };
 };
 
+const TRUE = () => true;
+const NOOP = () => {};
+
 export const bindCanvasPointerDrag = ({
     canvas,
-    canStart = () => true,
-    isTracking = () => true,
-    onStart = () => {},
-    onMove = () => {},
-    onEnd = () => {},
+    canStart = TRUE,
+    isTracking = TRUE,
+    onStart = NOOP,
+    onMove = NOOP,
+    onEnd = NOOP,
 } = {}) => {
     if (!canvas) return () => {};
 
@@ -59,15 +64,42 @@ export const bindCanvasPointerDrag = ({
 
 export const bindRunningCanvasPointerDrag = ({
     engine,
-    isTracking = () => true,
-    onStart = () => {},
-    onMove = () => {},
-    onEnd = () => {},
+    isTracking = TRUE,
+    onStart = NOOP,
+    onMove = NOOP,
+    onEnd = NOOP,
 } = {}) => bindCanvasPointerDrag({
     canvas: engine?.canvas,
     canStart: () => Boolean(engine?.isRunning),
     isTracking,
     onStart,
     onMove,
+    onEnd,
+});
+
+export const bindRunningMappedCanvasPointerDrag = ({
+    engine,
+    isTracking = TRUE,
+    onStart = NOOP,
+    onMove = NOOP,
+    onEnd = NOOP,
+} = {}) => bindRunningCanvasPointerDrag({
+    engine,
+    isTracking,
+    onStart,
+    onMove: ({ clientX, clientY, event }) => {
+        const point = mapPointerToCanvasCoords(
+            { clientX, clientY },
+            engine?.canvas,
+            engine?.width,
+            engine?.height
+        );
+        onMove({
+            ...point,
+            clientX,
+            clientY,
+            event,
+        });
+    },
     onEnd,
 });

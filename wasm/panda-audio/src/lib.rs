@@ -79,6 +79,29 @@ fn compute_rms(buffer: &[f32]) -> f32 {
     (sum / buffer.len() as f32).sqrt()
 }
 
+fn empty_pitch_result(volume: f32, confidence: f32) -> PitchResult {
+    PitchResult {
+        frequency: 0.0,
+        note: String::new(),
+        cents: 0,
+        volume,
+        confidence,
+        in_tune: false,
+    }
+}
+
+fn compute_acf_div(samples: &[f32], tau: usize, limit: usize) -> (f32, f32) {
+    let mut acf = 0.0f32;
+    let mut div = 0.0f32;
+    for j in 0..limit {
+        let s1 = samples[j];
+        let s2 = samples[j + tau];
+        acf += s1 * s2;
+        div += s1 * s1 + s2 * s2;
+    }
+    (acf, div)
+}
+
 /// Pitch detector using autocorrelation algorithm
 #[wasm_bindgen]
 pub struct PitchDetector {
@@ -139,14 +162,7 @@ impl PitchDetector {
 
         // If volume is too low, return no pitch
         if volume < self.volume_threshold {
-            return PitchResult {
-                frequency: 0.0,
-                note: String::new(),
-                cents: 0,
-                volume,
-                confidence: 0.0,
-                in_tune: false,
-            };
+            return empty_pitch_result(volume, 0.0);
         }
 
         // Perform optimized autocorrelation pitch detection
@@ -154,14 +170,7 @@ impl PitchDetector {
 
         // If no valid pitch found
         if frequency < self.min_freq || frequency > self.max_freq || confidence < 0.75 { // Slightly lower threshold for downsampled
-            return PitchResult {
-                frequency: 0.0,
-                note: String::new(),
-                cents: 0,
-                volume,
-                confidence,
-                in_tune: false,
-            };
+            return empty_pitch_result(volume, confidence);
         }
 
         // Apply smoothing
@@ -226,17 +235,8 @@ impl PitchDetector {
         for x in self.nsdf.iter_mut() { *x = 0.0; }
 
         for tau in ds_min_lag..ds_max_lag {
-            let mut acf = 0.0f32;
-            let mut div = 0.0f32;
             let limit = ds_len - tau;
-            
-            // Vectorizable loop
-            for j in 0..limit {
-                let s1 = self.downsampled[j];
-                let s2 = self.downsampled[j + tau];
-                acf += s1 * s2;
-                div += s1 * s1 + s2 * s2;
-            }
+            let (acf, div) = compute_acf_div(&self.downsampled, tau, limit);
 
             if div > 0.0 {
                 self.nsdf[tau - ds_min_lag] = 2.0 * acf / div;
@@ -283,18 +283,8 @@ impl PitchDetector {
 
         // Only calculate NSDF for lags in the narrow refinement window
         for (i, tau) in (fine_min_lag..=fine_max_lag).enumerate() {
-            let mut acf = 0.0f32;
-            let mut div = 0.0f32;
             let limit = n - tau;
-
-            // Full resolution autocorrelation for just this lag
-            // Optimization: We could use SIMD here if enabled, but loop unrolling helps
-            for j in 0..limit {
-                let s1 = buffer[j];
-                let s2 = buffer[j + tau];
-                acf += s1 * s2;
-                div += s1 * s1 + s2 * s2;
-            }
+            let (acf, div) = compute_acf_div(buffer, tau, limit);
 
             if div > 0.0 {
                 let val = 2.0 * acf / div;

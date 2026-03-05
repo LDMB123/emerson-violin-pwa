@@ -44,13 +44,9 @@ export class TuningCanvasEngine extends BaseCanvasEngine {
     }
 
     render(time) {
-        const frame = this.beginFrame(time);
+        const frame = this.beginFilledFrame(time, 'rgba(15, 20, 35, 0.4)');
         if (!frame) return;
         const { dt, ctx } = frame;
-
-        // Fade background (motion blur effect)
-        ctx.fillStyle = 'rgba(15, 20, 35, 0.4)';
-        ctx.fillRect(0, 0, this.width, this.height);
 
         const cx = this.width / 2;
         const cy = this.height / 2;
@@ -75,9 +71,7 @@ export class TuningCanvasEngine extends BaseCanvasEngine {
             ctx.shadowColor = targetColor;
 
             ctx.fillStyle = targetColor;
-            ctx.beginPath();
-            ctx.arc(cx, cy, 15 + this.energy * 10, 0, Math.PI * 2);
-            ctx.fill();
+            this.fillCircle(ctx, cx, cy, 15 + this.energy * 10);
             ctx.shadowBlur = 0;
 
             // Draw animated fluid waveform connecting pointer to center
@@ -104,13 +98,9 @@ export class TuningCanvasEngine extends BaseCanvasEngine {
 
             // Draw the pitch cursor
             ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(pointerX, cy, 8, 0, Math.PI * 2);
-            ctx.fill();
+            this.fillCircle(ctx, pointerX, cy, 8);
             ctx.fillStyle = `rgba(255, 255, 255, 0.3)`;
-            ctx.beginPath();
-            ctx.arc(pointerX, cy, 20, 0, Math.PI * 2);
-            ctx.fill();
+            this.fillCircle(ctx, pointerX, cy, 20);
 
             if (this.energy > 0) {
                 // Spawn resting particles based on energy
@@ -129,23 +119,19 @@ export class TuningCanvasEngine extends BaseCanvasEngine {
 
         // Render Particles
         ctx.globalCompositeOperation = 'screen';
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const pt = this.particles[i];
-            pt.life -= dt * 2.0; // half second life
-            if (pt.life <= 0) {
-                this.particles.splice(i, 1);
-                continue;
-            }
-
-            pt.x += pt.vx;
-            pt.y += pt.vy;
-
-            ctx.fillStyle = pt.color;
-            ctx.globalAlpha = pt.life;
-            ctx.beginPath();
-            ctx.arc(pt.x, pt.y, atLeast1(4 * pt.life), 0, Math.PI * 2);
-            ctx.fill();
-        }
+        this.forEachLiveParticle({
+            dt,
+            lifeDecay: 2.0, // half second life
+            update: (pt) => {
+                pt.x += pt.vx;
+                pt.y += pt.vy;
+            },
+            draw: (pt) => {
+                ctx.fillStyle = pt.color;
+                ctx.globalAlpha = pt.life;
+                this.fillCircle(ctx, pt.x, pt.y, atLeast1(4 * pt.life));
+            },
+        });
         ctx.globalAlpha = 1.0;
         ctx.globalCompositeOperation = 'source-over';
     }

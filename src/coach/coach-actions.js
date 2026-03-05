@@ -11,6 +11,7 @@ import {
 } from '../utils/event-names.js';
 import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
 import { finiteOrZero } from '../utils/math.js';
+import { speakMessage as speakVoiceMessage, cancelSpeech } from '../utils/speech-utils.js';
 import {
     GAME_MESSAGES,
     buildCoachMessages,
@@ -31,21 +32,14 @@ const resolveCoachElements = () => {
     return Boolean(bubble && textSpan);
 };
 
-const canSpeak = () => isVoiceCoachEnabled() && 'speechSynthesis' in window;
-
 const speakMessage = (message) => {
-    if (!message || !canSpeak()) return;
-    if (document.hidden) return;
-    try {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(message);
-        utterance.lang = 'en-US';
-        utterance.rate = 0.95;
-        utterance.pitch = 1.1;
-        window.speechSynthesis.speak(utterance);
-    } catch {
-        // Ignore speech failures
-    }
+    speakVoiceMessage({
+        message,
+        enabled: isVoiceCoachEnabled(),
+        lang: 'en-US',
+        rate: 0.95,
+        pitch: 1.1,
+    });
 };
 
 const setMessage = (message) => {
@@ -207,6 +201,6 @@ document.addEventListener('change', (event) => {
     if (!(target instanceof HTMLInputElement)) return;
     if (target.id !== 'setting-voice') return;
     if (!target.checked) {
-        window.speechSynthesis.cancel();
+        cancelSpeech();
     }
 });

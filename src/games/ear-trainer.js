@@ -28,19 +28,23 @@ const updateEarTrainer = () => {
     }
 };
 
+const resetEarTrainerSessionState = (gameState) => {
+    gameState.currentIndex = 0;
+    gameState.currentTone = null;
+    gameState.correctStreak = 0;
+    gameState.correctCount = 0;
+    gameState.totalAnswered = 0;
+    gameState.incorrectGuesses = 0;
+    gameState.lives = 3;
+};
+
 const { bind } = createGame({
     id: 'ear-trainer',
     computeAccuracy: (state) => state.totalAnswered
         ? (state.correctCount / state.totalAnswered) * 100
         : 0,
     onReset: (gameState) => {
-        gameState.currentIndex = 0;
-        gameState.currentTone = null;
-        gameState.correctStreak = 0;
-        gameState.correctCount = 0;
-        gameState.totalAnswered = 0;
-        gameState.incorrectGuesses = 0;
-        gameState.lives = 3;
+        resetEarTrainerSessionState(gameState);
         const rounds = gameState._rounds || 0;
         if (gameState._dots) {
             gameState._dots.forEach((dot) => {
@@ -92,12 +96,7 @@ const { bind } = createGame({
         const rounds = dots.length;
 
         // Initialize state
-        gameState.currentIndex = 0;
-        gameState.currentTone = null;
-        gameState.correctStreak = 0;
-        gameState.correctCount = 0;
-        gameState.totalAnswered = 0;
-        gameState.lives = 3;
+        resetEarTrainerSessionState(gameState);
         gameState._rounds = rounds;
         gameState._dots = dots;
         gameState._choices = choices;

@@ -1,20 +1,19 @@
 import { clampRounded } from '../utils/math.js';
 import { formatPitchQuestFeedback } from './pitch-quest-feedback.js';
 
-export const applyPitchQuestLiveFeature = ({
-    feature,
-    targetNote,
-    tolerance,
-    stabilityStreak,
-    lastStableAt,
-    offsetEl,
-    noteEl,
-    gauge,
-    bambooFillEl,
-    stabilityEl,
-    feedbackEl,
-    markChecklist,
-}) => {
+export const applyPitchQuestLiveFeature = (state) => {
+    const feature = state.feature;
+    const targetNote = state.targetNote;
+    const tolerance = state.tolerance;
+    const stabilityStreak = state.stabilityStreak;
+    const lastStableAt = state.lastStableAt;
+    const offsetEl = state.offsetEl;
+    const noteEl = state.noteEl;
+    const gauge = state.gauge;
+    const bambooFillEl = state.bambooFillEl;
+    const stabilityEl = state.stabilityEl;
+    const feedbackEl = state.feedbackEl;
+    const markChecklist = state.markChecklist;
     const cents = clampRounded(feature.cents || 0, -50, 50);
     if (offsetEl) offsetEl.textContent = `${cents > 0 ? '+' : ''}${cents} cents`;
     if (noteEl) noteEl.textContent = feature.note || '--';

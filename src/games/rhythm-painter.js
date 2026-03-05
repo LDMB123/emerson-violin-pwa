@@ -57,6 +57,14 @@ const refreshDisplay = (stage, gameState) => {
     }
 };
 
+const resetRhythmPainterSessionState = (gameState) => {
+    gameState.score = 0;
+    gameState.creativity = 0;
+    gameState.tapCount = 0;
+    gameState.rounds = 0;
+    gameState.flourishPlayed = false;
+};
+
 const { bind } = createGame({
     id: 'rhythm-painter',
     computeAccuracy: (state) => state.creativityTarget
@@ -64,11 +72,7 @@ const { bind } = createGame({
         : 0,
     computeUpdate: refreshDisplay,
     onReset: (gameState) => {
-        gameState.score = 0;
-        gameState.creativity = 0;
-        gameState.tapCount = 0;
-        gameState.rounds = 0;
-        gameState.flourishPlayed = false;
+        resetRhythmPainterSessionState(gameState);
         if (gameState._tappedDots) gameState._tappedDots.clear();
         if (gameState._dots) {
             gameState._dots.forEach((dot) => dot.classList.remove('is-hit'));
@@ -89,11 +93,7 @@ const { bind } = createGame({
         const flourishTempo = Math.round(180 * difficulty.speed);
         const complexityCreativityTargets = [50, 70, 90];
 
-        gameState.score = 0;
-        gameState.creativity = 0;
-        gameState.tapCount = 0;
-        gameState.rounds = 0;
-        gameState.flourishPlayed = false;
+        resetRhythmPainterSessionState(gameState);
         gameState.creativityTarget = complexityCreativityTargets[difficulty.complexity] ?? 70;
         gameState._tappedDots = new Set();
         gameState._dots = dots;

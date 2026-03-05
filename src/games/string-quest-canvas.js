@@ -99,12 +99,23 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
                 p.vx *= 0.95;
             }
         });
+        this.updateParticlePhysics();
+    }
+
+    updateParticlePhysics() {
         updateParticles(this.particles);
     }
 
-    draw() {
-        // Deep background
+    drawBackground() {
         fillCanvas(this.ctx, this.width, this.height, '#0a0a1a');
+    }
+
+    getPointerCoords(event) {
+        return mapPointerToCanvasCoords(event, this.canvas, this.width, this.height);
+    }
+
+    draw() {
+        this.drawBackground();
 
         const time = performance.now() / 1000;
 
@@ -172,7 +183,8 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
     }
 
     handlePointerDown(e) {
-        const { x, y } = mapPointerToCanvasCoords(e, this.canvas, this.width, this.height);
+        const pointer = this.getPointerCoords(e);
+        const { x, y } = pointer;
         let closest = null;
         let minDist = Infinity;
         this.strings.forEach(str => {

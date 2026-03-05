@@ -55,6 +55,53 @@ export class BaseCanvasEngine {
         return { dt, ctx: this.ctx };
     }
 
+    beginFilledFrame(time, fillStyle) {
+        const frame = this.beginFrame(time);
+        if (!frame) return null;
+        const { ctx } = frame;
+        ctx.fillStyle = fillStyle;
+        ctx.fillRect(0, 0, this.width, this.height);
+        return frame;
+    }
+
+    fillCircle(ctx, x, y, radius) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    fillBackgroundAndGetCenter(ctx, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, this.width, this.height);
+        return {
+            centerX: this.width / 2,
+            centerY: this.height / 2,
+        };
+    }
+
+    forEachLiveParticle({
+        dt,
+        lifeDecay = 1,
+        update = null,
+        draw = null,
+    } = {}) {
+        if (!Number.isFinite(dt) || dt <= 0) return;
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const particle = this.particles[i];
+            particle.life -= dt * lifeDecay;
+            if (particle.life <= 0) {
+                this.particles.splice(i, 1);
+                continue;
+            }
+            if (typeof update === 'function') {
+                update(particle, i);
+            }
+            if (typeof draw === 'function') {
+                draw(particle, i);
+            }
+        }
+    }
+
     render(_time) {
         // To be overridden by subclasses
         if (!this.isRunning) return;

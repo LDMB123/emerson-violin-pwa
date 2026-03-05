@@ -7,6 +7,7 @@ import {
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import { isParentUnlocked } from './pin-state.js';
 import { PARENT_UNLOCK_KEY } from '../persistence/storage-keys.js';
+import { createQueuedAsyncRunner } from '../utils/queued-async-runner.js';
 
 let container = null;
 let focusTitleEl = null;
@@ -14,8 +15,6 @@ let checklistEl = null;
 let completeBtn = null;
 let statusEl = null;
 
-let refreshInFlight = null;
-let refreshQueued = false;
 let bound = false;
 
 const resolveElements = () => {
@@ -89,25 +88,7 @@ const runRefreshTeacherDashboard = async () => {
     }
 };
 
-const refreshTeacherDashboard = async () => {
-    if (refreshInFlight) {
-        refreshQueued = true;
-        return refreshInFlight;
-    }
-
-    refreshInFlight = runRefreshTeacherDashboard()
-        .catch(() => { })
-        .finally(() => {
-            refreshInFlight = null;
-        });
-    await refreshInFlight;
-
-    if (refreshQueued) {
-        refreshQueued = false;
-        return refreshTeacherDashboard();
-    }
-    return null;
-};
+const refreshTeacherDashboard = createQueuedAsyncRunner(runRefreshTeacherDashboard);
 
 const bindListeners = () => {
     if (bound) return;

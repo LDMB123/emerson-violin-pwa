@@ -1,13 +1,11 @@
 import { LESSON_STEP, emitEvent } from '../utils/event-names.js';
+import { markCheckboxInputChecked } from '../utils/checkbox-utils.js';
 
 export const markRunnerGoalComplete = (stepId) => {
     if (!stepId) return;
     const input = document.getElementById(stepId)
         || document.querySelector(`#view-coach [data-goal-list] input[data-step-id="${stepId}"]`);
-    if (!(input instanceof HTMLInputElement)) return;
-    if (input.checked) return;
-    input.checked = true;
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    markCheckboxInputChecked(input);
 };
 
 export const dispatchLessonRunnerEvent = ({ state, step, index, total }) => {

@@ -149,25 +149,26 @@ const { bind } = createGame({
             player.playNote(note, { duration: 0.3, volume: 0.2, type: 'triangle' }).catch(() => { });
         };
 
+        const noteTapContext = {
+            gameState,
+            playback,
+            stopPlayback,
+            playTapPreview,
+            updateTrack,
+            updateScore,
+            lengthTarget,
+            setStatus,
+            buildTarget,
+            reportSession,
+            markChecklist,
+            markChecklistIf,
+        };
+
         buttons.forEach((button) => {
             bindTap(button, () => {
                 const note = button.dataset.melodyNote;
                 if (!note) return;
-                handleMelodyMakerNoteTap({
-                    note,
-                    gameState,
-                    playback,
-                    stopPlayback,
-                    playTapPreview,
-                    updateTrack,
-                    updateScore,
-                    lengthTarget,
-                    setStatus,
-                    buildTarget,
-                    reportSession,
-                    markChecklist,
-                    markChecklistIf,
-                });
+                handleMelodyMakerNoteTap(note, noteTapContext);
             });
         });
 

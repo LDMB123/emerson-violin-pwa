@@ -10,6 +10,7 @@ import {
     buildNoteSequence,
     updateScoreCombo,
     bindSoundsChange,
+    bindDocumentEvent,
     createStandardGameUpdate,
 } from './shared.js';
 import { RT_STATE } from '../utils/event-names.js';
@@ -254,10 +255,7 @@ const { bind } = createGame({
             handleTurn(targetNote);
         };
 
-        document.addEventListener(RT_STATE, onRealtimeState);
-        registerCleanup(() => {
-            document.removeEventListener(RT_STATE, onRealtimeState);
-        });
+        bindDocumentEvent(RT_STATE, onRealtimeState, registerCleanup);
 
         const soundsHandler = (event) => {
             if (event.detail?.enabled === false) {

@@ -1,4 +1,5 @@
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
+import { traceLinePath } from '../utils/canvas-utils.js';
 
 export class EchoGameCanvasEngine extends BaseCanvasEngine {
     constructor(canvasEl) {
@@ -46,20 +47,12 @@ export class EchoGameCanvasEngine extends BaseCanvasEngine {
         this.ctx.globalAlpha = alpha;
 
         const sliceWidth = this.width / buffer.length;
-        let x = 0;
-
-        for (let i = 0; i < buffer.length; i++) {
+        traceLinePath(this.ctx, buffer.length, (i, point) => {
             // Buffer values are expected to be normalized 0.0 to 1.0 (e.g. onset strength)
             const v = buffer[i];
-            const y = yCenter - (v * height / 2);
-
-            if (i === 0) {
-                this.ctx.moveTo(x, y);
-            } else {
-                this.ctx.lineTo(x, y);
-            }
-            x += sliceWidth;
-        }
+            point.x = i * sliceWidth;
+            point.y = yCenter - (v * height / 2);
+        });
 
         this.ctx.stroke();
         this.ctx.globalAlpha = 1.0;

@@ -1,4 +1,9 @@
-import { updateParticles, drawGlowingParticles, emitRadialParticles } from '../utils/canvas-utils.js';
+import {
+    updateParticles,
+    drawGlowingParticles,
+    emitRadialParticles,
+    traceLinePath,
+} from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 import { createAudioContext } from '../audio/audio-context.js';
 
@@ -156,19 +161,12 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
         // Draw a clean segment mapped around the circle.
         const sliceWidth = (Math.PI * 2) / 256;
 
-        for (let i = 0; i < 256; i++) {
+        traceLinePath(this.ctx, 256, (i, point) => {
             const v = this.dataArray[i] / 128.0; // 0 to 2
             const r = radius + (v * 40 - 40); // Baseline radius + amplitude
-
-            const x = r * Math.cos(i * sliceWidth);
-            const y = r * Math.sin(i * sliceWidth);
-
-            if (i === 0) {
-                this.ctx.moveTo(x, y);
-            } else {
-                this.ctx.lineTo(x, y);
-            }
-        }
+            point.x = r * Math.cos(i * sliceWidth);
+            point.y = r * Math.sin(i * sliceWidth);
+        });
 
         this.ctx.closePath();
         this.ctx.stroke();

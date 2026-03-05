@@ -45,13 +45,9 @@ export class RhythmCanvasEngine extends BaseCanvasEngine {
     }
 
     render(time) {
-        const frame = this.beginFrame(time);
+        const frame = this.beginFilledFrame(time, 'rgba(10, 5, 25, 0.3)');
         if (!frame) return;
         const { dt, ctx } = frame;
-
-        // Clear background with neon gradient trail
-        ctx.fillStyle = 'rgba(10, 5, 25, 0.3)';
-        ctx.fillRect(0, 0, this.width, this.height);
 
         // Render highway grid
         ctx.strokeStyle = 'rgba(50, 0, 100, 0.5)';
@@ -94,9 +90,7 @@ export class RhythmCanvasEngine extends BaseCanvasEngine {
             ctx.shadowBlur = 20 * p.scale;
             ctx.shadowColor = ctx.fillStyle;
 
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
-            ctx.fill();
+            this.fillCircle(ctx, p.x, p.y, size);
             ctx.shadowBlur = 0;
 
             // Glass flare
@@ -107,28 +101,22 @@ export class RhythmCanvasEngine extends BaseCanvasEngine {
         }
 
         // Update and render particles
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            const pt = this.particles[i];
-            pt.life -= dt * 1.5;
-
-            if (pt.life <= 0) {
-                this.particles.splice(i, 1);
-                continue;
-            }
-
-            pt.xOffset += pt.vx;
-            pt.yOffset += pt.vy;
-            pt.z += pt.vz;
-
-            const p = this.project3D(pt.lane, pt.z, pt.xOffset, pt.yOffset);
-
-            ctx.fillStyle = pt.color;
-            ctx.globalAlpha = pt.life;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, atLeast1(8 * p.scale * pt.life), 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1.0;
-        }
+        this.forEachLiveParticle({
+            dt,
+            lifeDecay: 1.5,
+            update: (pt) => {
+                pt.xOffset += pt.vx;
+                pt.yOffset += pt.vy;
+                pt.z += pt.vz;
+            },
+            draw: (pt) => {
+                const p = this.project3D(pt.lane, pt.z, pt.xOffset, pt.yOffset);
+                ctx.fillStyle = pt.color;
+                ctx.globalAlpha = pt.life;
+                this.fillCircle(ctx, p.x, p.y, atLeast1(8 * p.scale * pt.life));
+                ctx.globalAlpha = 1.0;
+            },
+        });
 
         // Clean up inactive notes
         this.notes = this.notes.filter(n => n.active);

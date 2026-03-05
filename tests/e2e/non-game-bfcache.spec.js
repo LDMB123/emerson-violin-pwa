@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { seedKVValue } from './helpers/seed-kv.js';
+import { gotoAndExpectView, setParentUnlocked } from './helpers/view-navigation.js';
 
 const RECORDINGS_KEY = 'panda-violin:recordings:v1';
 const SAMPLE_RECORDING = {
@@ -133,49 +135,6 @@ const installRealtimeAndAudioDoubles = async (page) => {
     });
 };
 
-const seedKVValue = async (page, key, value) => {
-    await page.evaluate(async ({ targetKey, targetValue }) => {
-        const fallbackKey = `panda-violin:kv:${targetKey}`;
-        localStorage.setItem(targetKey, JSON.stringify(targetValue));
-        localStorage.setItem(fallbackKey, JSON.stringify(targetValue));
-
-        await new Promise((resolve, reject) => {
-            const request = indexedDB.open('panda-violin-db', 2);
-
-            request.onupgradeneeded = () => {
-                const db = request.result;
-                if (!db.objectStoreNames.contains('kv')) {
-                    db.createObjectStore('kv');
-                }
-                if (!db.objectStoreNames.contains('blobs')) {
-                    db.createObjectStore('blobs');
-                }
-            };
-
-            request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
-            request.onsuccess = () => {
-                const db = request.result;
-                const tx = db.transaction('kv', 'readwrite');
-                tx.objectStore('kv').put(targetValue, targetKey);
-                tx.oncomplete = () => {
-                    db.close();
-                    resolve();
-                };
-                tx.onerror = () => {
-                    const err = tx.error;
-                    db.close();
-                    reject(err || new Error('IndexedDB write failed'));
-                };
-                tx.onabort = () => {
-                    const err = tx.error;
-                    db.close();
-                    reject(err || new Error('IndexedDB write aborted'));
-                };
-            };
-        });
-    }, { targetKey: key, targetValue: value });
-};
-
 const dispatchPagehide = async (page, persisted) => {
     await page.evaluate((isPersisted) => {
         const event = new Event('pagehide');
@@ -193,19 +152,7 @@ const getProbe = async (page) =>
         rtStartedEvents: window.__bfcacheProbe.rtStartedEvents,
         rtStoppedEvents: window.__bfcacheProbe.rtStoppedEvents,
     }));
-
-test('session review recordings ignore persisted pagehide and stop on unload pagehide', async ({ page }) => {
-    await installRealtimeAndAudioDoubles(page);
-    await openHome(page);
-
-    await seedKVValue(page, RECORDINGS_KEY, [SAMPLE_RECORDING]);
-    await page.goto('/#view-analysis');
-    await expect(page.locator('#view-analysis')).toBeVisible();
-
-    const playButton = page.locator('#view-analysis .analysis-recording .recording-play').first();
-    await expect(page.locator('#view-analysis [data-analysis=\"recording-title\"]').first()).toContainText('Session Clip');
-    await expect.poll(async () => playButton.getAttribute('data-bound')).toBe('true');
-    await expect(playButton).toHaveAttribute('data-recording-available', 'true');
+const playRecordingAndAssertPagehideBehavior = async (page, playButton) => {
     await expect(playButton).toBeEnabled();
     await playButton.evaluate((button) => {
         button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -219,6 +166,20 @@ test('session review recordings ignore persisted pagehide and stop on unload pag
     await dispatchPagehide(page, false);
     const afterUnload = await getProbe(page);
     expect(afterUnload.audioPauseCalls).toBeGreaterThan(afterPersisted.audioPauseCalls);
+};
+
+test('session review recordings ignore persisted pagehide and stop on unload pagehide', async ({ page }) => {
+    await installRealtimeAndAudioDoubles(page);
+    await openHome(page);
+
+    await seedKVValue(page, RECORDINGS_KEY, [SAMPLE_RECORDING]);
+    await gotoAndExpectView(page, '#view-analysis');
+
+    const playButton = page.locator('#view-analysis .analysis-recording .recording-play').first();
+    await expect(page.locator('#view-analysis [data-analysis=\"recording-title\"]').first()).toContainText('Session Clip');
+    await expect.poll(async () => playButton.getAttribute('data-bound')).toBe('true');
+    await expect(playButton).toHaveAttribute('data-recording-available', 'true');
+    await playRecordingAndAssertPagehideBehavior(page, playButton);
 });
 
 test('parent recordings ignore persisted pagehide and stop on unload pagehide', async ({ page }) => {
@@ -226,26 +187,10 @@ test('parent recordings ignore persisted pagehide and stop on unload pagehide', 
     await openHome(page);
 
     await seedKVValue(page, RECORDINGS_KEY, [SAMPLE_RECORDING]);
-    await page.evaluate(() => {
-        sessionStorage.setItem('panda-violin:parent-unlocked', 'true');
-    });
-
-    await page.goto('/#view-parent');
-    await expect(page.locator('#view-parent')).toBeVisible();
+    await setParentUnlocked(page, true);
+    await gotoAndExpectView(page, '#view-parent');
     await expect(page.locator('#view-parent [data-parent-recordings] .recording-title').first()).toContainText('Session Clip');
 
     const playButton = page.locator('#view-parent [data-parent-recordings] .recording-play').first();
-    await expect(playButton).toBeEnabled();
-    await playButton.evaluate((button) => {
-        button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    });
-
-    const beforePersisted = await getProbe(page);
-    await dispatchPagehide(page, true);
-    const afterPersisted = await getProbe(page);
-    expect(afterPersisted.audioPauseCalls).toBe(beforePersisted.audioPauseCalls);
-
-    await dispatchPagehide(page, false);
-    const afterUnload = await getProbe(page);
-    expect(afterUnload.audioPauseCalls).toBeGreaterThan(afterPersisted.audioPauseCalls);
+    await playRecordingAndAssertPagehideBehavior(page, playButton);
 });

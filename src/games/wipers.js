@@ -1,13 +1,10 @@
 import { WipersCanvasEngine } from './wipers-canvas.js';
-import { bindGameStartStop } from './game-start-stop-bindings.js';
-import { recordGameEvent } from './shared.js';
-import { isGameView } from '../utils/view-hash-utils.js';
+import { bindHashViewGameStartStop, createStartStopBindingState, maybeStopEngineAndRecordThreshold } from './shared.js';
 
 const GAME_ID_WIPERS = 'wipers';
 
 let engine = null;
-let bound = false;
-let cleanupBindings = null;
+const bindingState = createStartStopBindingState();
 
 const WIPES_WIN = 20;
 
@@ -25,34 +22,28 @@ export const init = () => {
         engine = new WipersCanvasEngine(canvas, (score, wipes) => {
             if (scoreEl) scoreEl.textContent = `${wipes} / ${WIPES_WIN}`;
 
-            // Win condition:
-            if (wipes >= WIPES_WIN) {
-                engine.stop();
-                recordGameEvent(GAME_ID_WIPERS, {
+            maybeStopEngineAndRecordThreshold({
+                engine,
+                value: wipes,
+                threshold: WIPES_WIN,
+                id: GAME_ID_WIPERS,
+                payload: {
                     score,
-                    accuracy: Math.floor((wipes / WIPES_WIN) * 100)
-                });
-            }
+                    accuracy: Math.floor((wipes / WIPES_WIN) * 100),
+                },
+            });
         });
     }
 
-    if (!bound) {
-        cleanupBindings?.();
-        cleanupBindings = bindGameStartStop({
-            startButton: startBtn,
-            engine,
-            startLabel: 'Start Engine',
-            stopLabel: 'Stop Engine',
-            resetBeforeStart: () => {
-                if (scoreEl) scoreEl.textContent = `0 / ${WIPES_WIN}`;
-            },
-            isGameViewActive: () => isGameView(window.location.hash, 'wipers'),
-            onViewExit: () => {
-                bound = false;
-                cleanupBindings = null;
-            },
-        });
-
-        bound = true;
-    }
+    bindHashViewGameStartStop({
+        gameId: GAME_ID_WIPERS,
+        state: bindingState,
+        startButton: startBtn,
+        engine,
+        startLabel: 'Start Engine',
+        stopLabel: 'Stop Engine',
+        resetBeforeStart: () => {
+            if (scoreEl) scoreEl.textContent = `0 / ${WIPES_WIN}`;
+        },
+    });
 };

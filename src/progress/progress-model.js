@@ -3,8 +3,7 @@ import { createSkillProfileUtils } from '../utils/skill-profile.js';
 import { buildFallbackProgress } from './progress-model-fallback.js';
 import { buildPrimaryProgressModel } from './progress-model-primary.js';
 import {
-    composeProgressResult,
-    loadSupplementaryProgressData,
+    composeProgressWithSupplemental,
 } from './progress-model-result.js';
 import { collectEventIds } from './progress-model-events.js';
 
@@ -23,11 +22,7 @@ export const buildProgress = async (events) => {
             calculateStreak,
             updateSkillProfile,
         });
-        const supplemental = await loadSupplementaryProgressData();
-        return composeProgressResult({
-            ...primary,
-            supplemental,
-        });
+        return composeProgressWithSupplemental(primary);
     } catch (error) {
         return buildFallbackProgress(events, error);
     }

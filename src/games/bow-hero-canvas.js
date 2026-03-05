@@ -140,8 +140,4 @@ export class BowHeroCanvasEngine extends BaseCanvasEngine {
         // Draw Particles
         drawGlowingParticles(this.ctx, this.particles);
     }
-
-    destroy() {
-        super.destroy();
-    }
 }

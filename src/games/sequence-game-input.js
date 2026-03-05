@@ -2,32 +2,15 @@ import { applySequenceTap } from './sequence-game-logic.js';
 
 export const handleSequenceGameTap = ({
     note,
-    noteOptions,
-    playToneNote,
     sequence,
     seqIndex,
     combo,
     score,
     misses,
-    baseScore,
-    comboMult,
-    missPenalty,
-    onCorrectHit,
-    callbackState,
-    completionChecklistId,
-    comboChecklistId,
-    comboTarget,
-    markChecklist,
-    markChecklistIf,
-    reportSession,
-    buildSequence,
-    playToneSequence,
-    seqOptions,
-    updateTargets,
-    updateScoreboard,
+    tapContext,
 }) => {
     if (note) {
-        playToneNote(note, noteOptions);
+        tapContext.playToneNote(note, tapContext.noteOptions);
     }
     const targetNote = sequence[seqIndex];
     const nextTapState = applySequenceTap({
@@ -38,31 +21,36 @@ export const handleSequenceGameTap = ({
         combo,
         score,
         misses,
-        baseScore,
-        comboMult,
-        missPenalty,
+        baseScore: tapContext.baseScore,
+        comboMult: tapContext.comboMult,
+        missPenalty: tapContext.missPenalty,
     });
 
     let nextSequence = sequence;
     let nextSeqIndex = nextTapState.seqIndex;
     if (nextTapState.isCorrect) {
-        if (onCorrectHit) onCorrectHit(note, callbackState);
+        if (tapContext.onCorrectHit) {
+            tapContext.onCorrectHit(note, tapContext.callbackState);
+        }
 
         if (nextTapState.completedSequence) {
             const completedSequence = sequence.slice();
-            markChecklist(completionChecklistId);
-            reportSession();
-            const rebuiltState = buildSequence();
+            tapContext.markChecklist(tapContext.completionChecklistId);
+            tapContext.reportSession();
+            const rebuiltState = tapContext.buildSequence();
             nextSequence = rebuiltState.sequence;
             nextSeqIndex = rebuiltState.seqIndex;
-            playToneSequence(completedSequence, seqOptions);
+            tapContext.playToneSequence(completedSequence, tapContext.seqOptions);
         }
-        updateTargets();
+        tapContext.updateTargets();
     } else {
-        updateTargets(`Missed. Aim for ${targetNote} next.`);
+        tapContext.updateTargets(`Missed. Aim for ${targetNote} next.`);
     }
-    updateScoreboard(nextTapState.score, nextTapState.combo);
-    markChecklistIf(nextTapState.combo >= comboTarget, comboChecklistId);
+    tapContext.updateScoreboard(nextTapState.score, nextTapState.combo);
+    tapContext.markChecklistIf(
+        nextTapState.combo >= tapContext.comboTarget,
+        tapContext.comboChecklistId,
+    );
 
     return {
         sequence: nextSequence,

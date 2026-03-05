@@ -1,18 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 import { bindGameStartStop } from '../../src/games/game-start-stop-bindings.js';
 
+const createEngineMock = ({ isRunning = false } = {}) => {
+    const engine = {
+        isRunning,
+        start: vi.fn(() => {
+            engine.isRunning = true;
+        }),
+        stop: vi.fn(() => {
+            engine.isRunning = false;
+        }),
+    };
+    return engine;
+};
+
 describe('games/game-start-stop-bindings', () => {
     it('starts and stops engine through start button with proper labels', () => {
         const button = document.createElement('button');
-        const engine = {
-            isRunning: false,
-            start: vi.fn(() => {
-                engine.isRunning = true;
-            }),
-            stop: vi.fn(() => {
-                engine.isRunning = false;
-            }),
-        };
+        const engine = createEngineMock();
         const resetBeforeStart = vi.fn();
         const onStop = vi.fn();
 
@@ -41,13 +46,7 @@ describe('games/game-start-stop-bindings', () => {
 
     it('auto-stops on hash change when the view is no longer active', () => {
         const button = document.createElement('button');
-        const engine = {
-            isRunning: true,
-            start: vi.fn(),
-            stop: vi.fn(() => {
-                engine.isRunning = false;
-            }),
-        };
+        const engine = createEngineMock({ isRunning: true });
         const onViewExit = vi.fn();
 
         bindGameStartStop({
@@ -68,15 +67,7 @@ describe('games/game-start-stop-bindings', () => {
 
     it('cleanup detaches listeners', () => {
         const button = document.createElement('button');
-        const engine = {
-            isRunning: false,
-            start: vi.fn(() => {
-                engine.isRunning = true;
-            }),
-            stop: vi.fn(() => {
-                engine.isRunning = false;
-            }),
-        };
+        const engine = createEngineMock();
         const cleanup = bindGameStartStop({
             startButton: button,
             engine,

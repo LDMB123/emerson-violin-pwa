@@ -1,48 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
-
-const seedKVValue = async (page, key, value) => {
-    await page.evaluate(async ({ targetKey, targetValue }) => {
-        const fallbackKey = `panda-violin:kv:${targetKey}`;
-        localStorage.setItem(targetKey, JSON.stringify(targetValue));
-        localStorage.setItem(fallbackKey, JSON.stringify(targetValue));
-
-        await new Promise((resolve, reject) => {
-            const request = indexedDB.open('panda-violin-db', 2);
-
-            request.onupgradeneeded = () => {
-                const db = request.result;
-                if (!db.objectStoreNames.contains('kv')) {
-                    db.createObjectStore('kv');
-                }
-                if (!db.objectStoreNames.contains('blobs')) {
-                    db.createObjectStore('blobs');
-                }
-            };
-
-            request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
-            request.onsuccess = () => {
-                const db = request.result;
-                const tx = db.transaction('kv', 'readwrite');
-                tx.objectStore('kv').put(targetValue, targetKey);
-                tx.oncomplete = () => {
-                    db.close();
-                    resolve();
-                };
-                tx.onerror = () => {
-                    const err = tx.error;
-                    db.close();
-                    reject(err || new Error('IndexedDB write failed'));
-                };
-                tx.onabort = () => {
-                    const err = tx.error;
-                    db.close();
-                    reject(err || new Error('IndexedDB write aborted'));
-                };
-            };
-        });
-    }, { targetKey: key, targetValue: value });
-};
+import { seedKVValue } from './helpers/seed-kv.js';
+import { gotoAndExpectView } from './helpers/view-navigation.js';
 
 const seedSongEvents = async (page, events) => {
     await seedKVValue(page, 'panda-violin:events:v1', events);
@@ -56,15 +15,41 @@ const seedSongEvents = async (page, events) => {
         }));
     });
 };
+const goToSongsWithFilter = async (page, filterValue) => {
+    await gotoAndExpectView(page, '#view-songs');
+    await page.locator(`label:has(input[name="song-filter"][value="${filterValue}"]) .filter-chip`).click({ force: true });
+};
+const goHome = async (page) => gotoAndExpectView(page, '#view-home');
+const ODE_PROGRESS = {
+    attempts: 1,
+    bestAccuracy: 82,
+    bestTiming: 82,
+    bestIntonation: 80,
+    bestStars: 3,
+};
+const MINUET_PROGRESS = {
+    attempts: 1,
+    bestAccuracy: 88,
+    bestTiming: 88,
+    bestIntonation: 87,
+    bestStars: 4,
+};
+const withTimingMetadata = (progress, updatedAt) => ({
+    ...progress,
+    sectionProgress: {},
+    checkpoint: null,
+    updatedAt,
+});
+const withUpdatedAt = (progress, updatedAt) => ({
+    ...progress,
+    updatedAt,
+});
 
 
 test('songs filtering and continue-last-song stay functional after navigation', async ({ page }) => {
     await openHome(page);
 
-    await page.goto('/#view-songs');
-    await expect(page.locator('#view-songs')).toBeVisible();
-
-    await page.locator('label:has(input[name="song-filter"][value="challenge"]) .filter-chip').click({ force: true });
+    await goToSongsWithFilter(page, 'challenge');
     await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(6);
 
     await page.locator('label:has(input[name="song-filter"][value="easy"]) .filter-chip').click({ force: true });
@@ -89,8 +74,7 @@ test('songs filtering and continue-last-song stay functional after navigation', 
 test('games hub surfaces the full implemented game catalog', async ({ page }) => {
     await openHome(page);
 
-    await page.goto('/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
+    await gotoAndExpectView(page, '#view-games');
 
     const gameIds = await page.evaluate(() => {
         return Array.from(document.querySelectorAll('#view-games .game-card[data-game-id]'))
@@ -124,8 +108,7 @@ test('games hub surfaces the full implemented game catalog', async ({ page }) =>
 test('games favorites filter uses persisted player favorites', async ({ page }) => {
     await openHome(page);
 
-    await page.goto('/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
+    await gotoAndExpectView(page, '#view-games');
 
     const targetCard = page.locator('#view-games .game-card[data-game-id="tuning-time"]');
     const targetFavorite = targetCard.locator('[data-game-favorite]');
@@ -139,11 +122,9 @@ test('games favorites filter uses persisted player favorites', async ({ page }) 
     await page.locator('label:has(input[name="game-sort"][value="favorites"]) .filter-chip').click({ force: true });
     await expect(targetCard).not.toHaveClass(/is-hidden/);
 
-    await page.goto('/#view-home');
-    await expect(page.locator('#view-home')).toBeVisible();
+    await goHome(page);
 
-    await page.goto('/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
+    await gotoAndExpectView(page, '#view-games');
     await page.locator('label:has(input[name="game-sort"][value="favorites"]) .filter-chip').click({ force: true });
     await expect(page.locator('#view-games .game-card[data-game-id="tuning-time"]')).not.toHaveClass(/is-hidden/);
     await expect(page.locator('#view-games .game-card[data-game-id="tuning-time"] [data-game-favorite]'))
@@ -155,9 +136,7 @@ test('challenge songs stay locked until curriculum prerequisites are met', async
     page.on('console', msg => console.log('BROWSER_LOG:', msg.text()));
     page.on('pageerror', err => console.log('BROWSER_ERR:', err));
 
-    await page.goto('/#view-songs');
-    await expect(page.locator('#view-songs')).toBeVisible();
-    await page.locator('label:has(input[name="song-filter"][value="challenge"]) .filter-chip').click({ force: true });
+    await goToSongsWithFilter(page, 'challenge');
 
     const challengeCard = page.locator('#view-songs .song-card[data-song="perpetual_motion"]');
     const challengeHint = challengeCard.locator('.song-lock-hint');
@@ -177,11 +156,8 @@ test('challenge songs stay locked until curriculum prerequisites are met', async
         { type: 'song', id: 'minuet_1', accuracy: 88, day, timestamp: now - 2000 },
     ]);
 
-    await page.goto('/#view-home');
-    await expect(page.locator('#view-home')).toBeVisible();
-    await page.goto('/#view-songs');
-    await expect(page.locator('#view-songs')).toBeVisible();
-    await page.locator('label:has(input[name="song-filter"][value="challenge"]) .filter-chip').click({ force: true });
+    await goHome(page);
+    await goToSongsWithFilter(page, 'challenge');
     await expect(page.locator('#view-songs .song-card[data-song="perpetual_motion"]')).toHaveClass(/song-soft-lock/);
 
 
@@ -198,48 +174,16 @@ test('challenge songs stay locked until curriculum prerequisites are met', async
     await seedKVValue(page, 'panda-violin:song-progress-v2', {
         version: 2,
         songs: {
-            ode_to_joy: {
-                attempts: 1,
-                bestAccuracy: 82,
-                bestTiming: 82,
-                bestIntonation: 80,
-                bestStars: 3,
-                sectionProgress: {},
-                checkpoint: null,
-                updatedAt: now - 3000,
-            },
-            minuet_1: {
-                attempts: 1,
-                bestAccuracy: 88,
-                bestTiming: 88,
-                bestIntonation: 87,
-                bestStars: 4,
-                sectionProgress: {},
-                checkpoint: null,
-                updatedAt: now - 2000,
-            },
+            ode_to_joy: withTimingMetadata(ODE_PROGRESS, now - 3000),
+            minuet_1: withTimingMetadata(MINUET_PROGRESS, now - 2000),
         },
     });
 
     await seedKVValue(page, 'panda-violin:song-progress-v2', {
         version: 2,
         songs: {
-            ode_to_joy: {
-                attempts: 1,
-                bestAccuracy: 82,
-                bestTiming: 82,
-                bestIntonation: 80,
-                bestStars: 3,
-                updatedAt: now - 3000,
-            },
-            minuet_1: {
-                attempts: 1,
-                bestAccuracy: 88,
-                bestTiming: 88,
-                bestIntonation: 87,
-                bestStars: 4,
-                updatedAt: now - 2000,
-            },
+            ode_to_joy: withUpdatedAt(ODE_PROGRESS, now - 3000),
+            minuet_1: withUpdatedAt(MINUET_PROGRESS, now - 2000),
             gavotte: {
                 attempts: 1,
                 bestAccuracy: 91,
@@ -251,11 +195,8 @@ test('challenge songs stay locked until curriculum prerequisites are met', async
         },
     });
 
-    await page.goto('/#view-home');
-    await expect(page.locator('#view-home')).toBeVisible();
-    await page.goto('/#view-songs');
-    await expect(page.locator('#view-songs')).toBeVisible();
-    await page.locator('label:has(input[name="song-filter"][value="challenge"]) .filter-chip').click({ force: true });
+    await goHome(page);
+    await goToSongsWithFilter(page, 'challenge');
     await expect(page.locator('#view-songs .song-card[data-song="perpetual_motion"]')).not.toHaveClass(/song-soft-lock/);
     await expect(challengeHint).toContainText('Unlocked');
 
@@ -264,4 +205,3 @@ test('challenge songs stay locked until curriculum prerequisites are met', async
     await expect(gavotteCard.locator('.song-progress-meta')).toContainText('Best 91%');
     await expect(gavotteCard).toHaveClass(/is-mastered/);
 });
-

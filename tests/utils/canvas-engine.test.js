@@ -35,6 +35,17 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
         entries.forEach(([, callback]) => callback(time));
     };
 
+    const createStartedEngine = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 100;
+        canvas.getContext = vi.fn(() => ({ clearRect: vi.fn() }));
+        const engine = new TestCanvasEngine(canvas);
+        engines.push(engine);
+        engine.start();
+        return engine;
+    };
+
     beforeEach(() => {
         setVisibility('visible');
         rafCallbacks = new Map();
@@ -59,14 +70,7 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
     });
 
     it('starts loop and calls update/draw each frame', () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 200;
-        canvas.height = 100;
-        canvas.getContext = vi.fn(() => ({ clearRect: vi.fn() }));
-
-        const engine = new TestCanvasEngine(canvas);
-        engines.push(engine);
-        engine.start();
+        const engine = createStartedEngine();
 
         expect(requestAnimationFrame).toHaveBeenCalledTimes(1);
         runNextFrame(1000);
@@ -77,14 +81,7 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
     });
 
     it('pauses frames while hidden and resumes when visible again', () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 200;
-        canvas.height = 100;
-        canvas.getContext = vi.fn(() => ({ clearRect: vi.fn() }));
-
-        const engine = new TestCanvasEngine(canvas);
-        engines.push(engine);
-        engine.start();
+        const engine = createStartedEngine();
 
         setVisibility('hidden');
         document.dispatchEvent(new Event('visibilitychange'));
@@ -100,14 +97,7 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
     });
 
     it('removes listeners and stops scheduling after destroy', () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 200;
-        canvas.height = 100;
-        canvas.getContext = vi.fn(() => ({ clearRect: vi.fn() }));
-
-        const engine = new TestCanvasEngine(canvas);
-        engines.push(engine);
-        engine.start();
+        const engine = createStartedEngine();
         engine.destroy();
 
         const rafCallsBefore = requestAnimationFrame.mock.calls.length;

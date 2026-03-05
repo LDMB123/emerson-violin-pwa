@@ -14,13 +14,12 @@ import {
     resolveMissionSteps,
     resolveTotalMinutes,
 } from './recommendations-ui-render.js';
+import { createQueuedAsyncRunner } from '../utils/queued-async-runner.js';
 
 let panels = [];
 let stepLists = [];
 let goalList = null;
 let globalsBound = false;
-let refreshInFlight = null;
-let refreshQueued = false;
 
 const resolveElements = () => {
     panels = Array.from(document.querySelectorAll('[data-lesson-plan]'));
@@ -63,25 +62,7 @@ const runRefreshPanels = async () => {
     }
 };
 
-const refreshPanels = async () => {
-    if (refreshInFlight) {
-        refreshQueued = true;
-        return refreshInFlight;
-    }
-
-    refreshInFlight = runRefreshPanels()
-        .catch(() => {})
-        .finally(() => {
-            refreshInFlight = null;
-        });
-    await refreshInFlight;
-
-    if (refreshQueued) {
-        refreshQueued = false;
-        return refreshPanels();
-    }
-    return null;
-};
+const refreshPanels = createQueuedAsyncRunner(runRefreshPanels);
 
 const bindGlobalListeners = () => {
     if (globalsBound) return;

@@ -65,6 +65,21 @@ export const fillCanvas = (ctx, width, height, color) => {
     ctx.fillRect(0, 0, width, height);
 };
 
+export const traceLinePath = (ctx, pointCount, pointResolver) => {
+    if (!ctx || !Number.isFinite(pointCount) || pointCount <= 0 || typeof pointResolver !== 'function') {
+        return;
+    }
+    const point = { x: 0, y: 0 };
+    for (let i = 0; i < pointCount; i += 1) {
+        pointResolver(i, point);
+        if (i === 0) {
+            ctx.moveTo(point.x, point.y);
+        } else {
+            ctx.lineTo(point.x, point.y);
+        }
+    }
+};
+
 /**
  * Maps a pointer event's client coordinates to canvas logical coordinates,
  * accounting for CSS scaling between the canvas's display size and its logical resolution.

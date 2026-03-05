@@ -1,57 +1,18 @@
 import { expect } from '@playwright/test';
+import { seedKVValue } from './seed-kv.js';
 
 export const openHome = async (page) => {
     await page.goto('/#view-home', { waitUntil: 'domcontentloaded', timeout: 10000 });
     await page.waitForSelector('#main-content', { timeout: 10000 });
 
-    await page.evaluate(async () => {
-        const key = 'onboarding-complete';
-        const uiStateKey = 'panda-violin:ui-state:v1';
-        const fallbackKey = `panda-violin:kv:${key}`;
-        const uiStateFallbackKey = `panda-violin:kv:${uiStateKey}`;
-        localStorage.setItem(fallbackKey, JSON.stringify(true));
-        localStorage.setItem(uiStateFallbackKey, JSON.stringify({
-            checks: { 'setting-sounds': true },
-            radios: {},
-        }));
+    const uiState = {
+        checks: { 'setting-sounds': true },
+        radios: {},
+    };
+    await seedKVValue(page, 'onboarding-complete', true).catch(() => {});
+    await seedKVValue(page, 'panda-violin:ui-state:v1', uiState).catch(() => {});
 
-        await new Promise((resolve) => {
-            const request = indexedDB.open('panda-violin-db', 2);
-
-            request.onupgradeneeded = () => {
-                const db = request.result;
-                if (!db.objectStoreNames.contains('kv')) {
-                    db.createObjectStore('kv');
-                }
-                if (!db.objectStoreNames.contains('blobs')) {
-                    db.createObjectStore('blobs');
-                }
-            };
-
-            request.onerror = () => resolve();
-            request.onsuccess = () => {
-                const db = request.result;
-                const tx = db.transaction('kv', 'readwrite');
-                tx.objectStore('kv').put(true, key);
-                tx.objectStore('kv').put({
-                    checks: { 'setting-sounds': true },
-                    radios: {},
-                }, uiStateKey);
-                tx.oncomplete = () => {
-                    db.close();
-                    resolve();
-                };
-                tx.onerror = () => {
-                    db.close();
-                    resolve();
-                };
-                tx.onabort = () => {
-                    db.close();
-                    resolve();
-                };
-            };
-        });
-
+    await page.evaluate(() => {
         document.documentElement.dataset.sounds = 'on';
         document.dispatchEvent(new CustomEvent('panda:sounds-change', { detail: { enabled: true } }));
     });

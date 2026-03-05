@@ -35,3 +35,17 @@ export const resolveGameObjectiveProgress = ({
         objectivesCompleted,
     };
 };
+
+export const resolveSessionObjectiveProgress = ({
+    stage,
+    gameId,
+    difficulty = null,
+    includeInput = null,
+} = {}) => (
+    resolveGameObjectiveProgress({
+        stage,
+        gameId,
+        difficultyComplexity: difficulty?.complexity || 0,
+        includeInput,
+    })
+);

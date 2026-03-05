@@ -1,11 +1,12 @@
 import { createGame } from './game-shell.js';
-import { isGameView } from '../utils/view-hash-utils.js';
 import {
     markChecklist,
     markChecklistIf,
     bindTap,
     playToneNote,
     stopTonePlayer,
+    bindDocumentEvent,
+    createRealtimeFeatureStateHandler,
     createStandardGameUpdate,
 } from './shared.js';
 import { RT_STATE } from '../utils/event-names.js';
@@ -21,15 +22,19 @@ const updateScalePractice = createStandardGameUpdate({
     scoreMultiplier: 28,
 });
 
+const resetScalePracticeSessionState = (gameState) => {
+    gameState.score = 0;
+    gameState.accuracy = 0;
+    gameState.lastTap = 0;
+    gameState.scaleIndex = 0;
+    gameState.timingScores = [];
+};
+
 const { bind } = createGame({
     id: 'scale-practice',
     computeAccuracy: (state) => state.accuracy ?? 0,
     onReset: (gameState) => {
-        gameState.score = 0;
-        gameState.accuracy = 0;
-        gameState.lastTap = 0;
-        gameState.scaleIndex = 0;
-        gameState.timingScores = [];
+        resetScalePracticeSessionState(gameState);
         const scoreEl = gameState._scoreEl;
         const ratingEl = gameState._ratingEl;
         if (scoreEl) scoreEl.textContent = '0';
@@ -54,11 +59,7 @@ const { bind } = createGame({
         // Store DOM refs and state on gameState
         gameState._scoreEl = scoreEl;
         gameState._ratingEl = ratingEl;
-        gameState.score = 0;
-        gameState.accuracy = 0;
-        gameState.lastTap = 0;
-        gameState.scaleIndex = 0;
-        gameState.timingScores = [];
+        resetScalePracticeSessionState(gameState);
 
         // Initialize Canvas Engine
         let canvasEngine = null;
@@ -168,11 +169,7 @@ const { bind } = createGame({
 
         let lastPlayedNote = null;
 
-        const onRealtimeState = (event) => {
-            if (!isGameView(window.location.hash, 'scale-practice')) return;
-            const tuning = event.detail?.lastFeature;
-            if (!tuning || event.detail?.paused) return;
-
+        const onRealtimeState = createRealtimeFeatureStateHandler('scale-practice', (tuning) => {
             const targetNote = scaleNotes[gameState.scaleIndex];
             if (!targetNote) return;
 
@@ -193,12 +190,8 @@ const { bind } = createGame({
             lastPlayedNote = currentNote;
 
             triggerTap(); // They played the correct note on the violin!
-        };
-
-        document.addEventListener(RT_STATE, onRealtimeState);
-        registerCleanup(() => {
-            document.removeEventListener(RT_STATE, onRealtimeState);
         });
+        bindDocumentEvent(RT_STATE, onRealtimeState, registerCleanup);
 
         updateTempo();
         gameState._updateHighlight();

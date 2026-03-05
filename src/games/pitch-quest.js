@@ -7,6 +7,7 @@ import {
     setLiveNumber,
     markChecklist,
     bindTap,
+    bindDocumentEvent,
     playToneNote,
     stopTonePlayer,
 } from './shared.js';
@@ -137,10 +138,7 @@ const { bind } = createGame({
             updateLiveFeature(feature);
         };
 
-        document.addEventListener(RT_STATE, onRealtimeState);
-        registerCleanup(() => {
-            document.removeEventListener(RT_STATE, onRealtimeState);
-        });
+        bindDocumentEvent(RT_STATE, onRealtimeState, registerCleanup);
 
         targets.forEach((radio) => {
             radio.addEventListener('change', () => {

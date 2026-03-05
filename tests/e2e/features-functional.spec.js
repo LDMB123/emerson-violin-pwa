@@ -1,49 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { seedKVValue } from './helpers/seed-kv.js';
+import { gotoAndExpectView, setParentUnlocked } from './helpers/view-navigation.js';
 
 const seedEvents = async (page, events) => {
-    await page.evaluate(async ({ seededEvents }) => {
-        const key = 'panda-violin:events:v1';
-        const fallbackKey = `panda-violin:kv:${key}`;
-
-        localStorage.setItem(key, JSON.stringify(seededEvents));
-        localStorage.setItem(fallbackKey, JSON.stringify(seededEvents));
-
-        await new Promise((resolve, reject) => {
-            const request = indexedDB.open('panda-violin-db', 2);
-
-            request.onupgradeneeded = () => {
-                const db = request.result;
-                if (!db.objectStoreNames.contains('kv')) {
-                    db.createObjectStore('kv');
-                }
-                if (!db.objectStoreNames.contains('blobs')) {
-                    db.createObjectStore('blobs');
-                }
-            };
-
-            request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
-            request.onsuccess = () => {
-                const db = request.result;
-                const tx = db.transaction('kv', 'readwrite');
-                tx.objectStore('kv').put(seededEvents, key);
-                tx.oncomplete = () => {
-                    db.close();
-                    resolve();
-                };
-                tx.onerror = () => {
-                    const err = tx.error;
-                    db.close();
-                    reject(err || new Error('IndexedDB write failed'));
-                };
-                tx.onabort = () => {
-                    const err = tx.error;
-                    db.close();
-                    reject(err || new Error('IndexedDB write aborted'));
-                };
-            };
-        });
-    }, { seededEvents: events });
+    await seedKVValue(page, 'panda-violin:events:v1', events);
 };
 
 const saveParentGoal = async (page, { title, minutes }) => {
@@ -139,6 +100,36 @@ const waitForBoundFlag = async (page, selector, attribute) => {
         return page.locator(selector).getAttribute(attribute).catch(() => '');
     }, { timeout: 10000 }).toBe('true');
 };
+const goHome = async (page) => gotoAndExpectView(page, '#view-home');
+const goParent = async (page) => gotoAndExpectView(page, '#view-parent');
+const openBackupViewReady = async (page) => {
+    await gotoAndExpectView(page, '#view-backup');
+    await waitForBoundFlag(page, '[data-export-json]', 'data-backup-bound');
+};
+const openParentGoalViewReady = async (page) => {
+    await goParent(page);
+    await expect(page.locator('[data-parent-goal-save]')).toBeEnabled();
+    await waitForBoundFlag(page, '[data-parent-goal-save]', 'data-parent-goal-bound');
+};
+const prepareParentAdvancedControls = async (page) => {
+    await goParent(page);
+    await expect.poll(async () => page.locator('[data-input-status]').innerText()).toContain('Input:');
+    await waitForBoundFlag(page, '#setting-offline-mode', 'data-offline-mode-bound');
+};
+const setOfflineMode = async (page, enabled) => {
+    await page.locator('#setting-offline-mode').evaluate((input, value) => {
+        input.checked = value;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }, Boolean(enabled));
+    await expect(page.locator('[data-offline-mode-status]')).toContainText(enabled ? 'Offline mode is on' : 'Offline mode is off');
+};
+const enableMlDemo = async (page) => {
+    await page.locator('[data-ml-demo]').evaluate((input) => {
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('[data-ml-simulate]')).toBeEnabled();
+};
 
 test('progress cards remain functional across navigation', async ({ page }) => {
     await openHome(page);
@@ -163,8 +154,7 @@ test('progress cards remain functional across navigation', async ({ page }) => {
         return page.locator('[data-recent-game][hidden]').count();
     }).toBeLessThan(3);
 
-    await page.goto('/#view-home');
-    await expect(page.locator('#view-home')).toBeVisible();
+    await goHome(page);
 
     await page.goto('/#view-progress');
     await expect(page.locator('#view-progress')).toBeVisible();
@@ -174,18 +164,13 @@ test('progress cards remain functional across navigation', async ({ page }) => {
 test('backup export remains wired after revisiting backup view', async ({ page }) => {
     await openHome(page);
 
-    await page.goto('/#view-backup');
-    await expect(page.locator('#view-backup')).toBeVisible();
-    await waitForBoundFlag(page, '[data-export-json]', 'data-backup-bound');
+    await openBackupViewReady(page);
 
     await triggerBackupExportAndWaitForStatus(page);
 
-    await page.goto('/#view-home');
-    await expect(page.locator('#view-home')).toBeVisible();
+    await goHome(page);
 
-    await page.goto('/#view-backup');
-    await expect(page.locator('#view-backup')).toBeVisible();
-    await waitForBoundFlag(page, '[data-export-json]', 'data-backup-bound');
+    await openBackupViewReady(page);
 
     await triggerBackupExportAndWaitForStatus(page);
 });
@@ -193,24 +178,15 @@ test('backup export remains wired after revisiting backup view', async ({ page }
 test('parent goals remain editable after revisiting parent view', async ({ page }) => {
     await openHome(page);
 
-    await page.evaluate(() => {
-        sessionStorage.setItem('panda-violin:parent-unlocked', 'true');
-    });
+    await setParentUnlocked(page, true);
 
-    await page.goto('/#view-parent');
-    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('[data-parent-goal-save]')).toBeEnabled();
-    await waitForBoundFlag(page, '[data-parent-goal-save]', 'data-parent-goal-bound');
+    await openParentGoalViewReady(page);
 
     await saveParentGoal(page, { title: 'Recital Etude', minutes: 120 });
 
-    await page.goto('/#view-home');
-    await expect(page.locator('#view-home')).toBeVisible();
+    await goHome(page);
 
-    await page.goto('/#view-parent');
-    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('[data-parent-goal-save]')).toBeEnabled();
-    await waitForBoundFlag(page, '[data-parent-goal-save]', 'data-parent-goal-bound');
+    await openParentGoalViewReady(page);
 
     await saveParentGoal(page, { title: 'Spring Concert', minutes: 140 });
 });
@@ -218,12 +194,9 @@ test('parent goals remain editable after revisiting parent view', async ({ page 
 test('parent PIN gate remains functional after re-render', async ({ page }) => {
     await openHome(page);
 
-    await page.evaluate(() => {
-        sessionStorage.removeItem('panda-violin:parent-unlocked');
-    });
+    await setParentUnlocked(page, false);
 
-    await page.goto('/#view-parent');
-    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
+    await goParent(page);
     const dialog = page.locator('[data-pin-dialog]');
     await expect.poll(async () => page.locator('[data-pin-dialog]').count(), { timeout: 10000 }).toBe(1);
     await expect(dialog).toBeVisible();
@@ -232,15 +205,11 @@ test('parent PIN gate remains functional after re-render', async ({ page }) => {
     await page.locator('[data-pin-dialog] button[value="confirm"]').click();
     await expect(dialog).toBeHidden({ timeout: 10000 });
 
-    await page.goto('/#view-home');
-    await expect(page.locator('#view-home')).toBeVisible();
+    await goHome(page);
 
-    await page.evaluate(() => {
-        sessionStorage.removeItem('panda-violin:parent-unlocked');
-    });
+    await setParentUnlocked(page, false);
 
-    await page.goto('/#view-parent');
-    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
+    await goParent(page);
     await expect.poll(async () => page.locator('[data-pin-dialog]').count(), { timeout: 10000 }).toBe(1);
     await expect(dialog).toBeVisible();
 
@@ -252,48 +221,20 @@ test('parent PIN gate remains functional after re-render', async ({ page }) => {
 test('parent advanced controls stay interactive after revisiting parent view', async ({ page }) => {
     await openHome(page);
 
-    await page.evaluate(() => {
-        sessionStorage.setItem('panda-violin:parent-unlocked', 'true');
-    });
-
-    await page.goto('/#view-parent');
-    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
-    await expect.poll(async () => page.locator('[data-input-status]').innerText()).toContain('Input:');
-    await waitForBoundFlag(page, '#setting-offline-mode', 'data-offline-mode-bound');
+    await setParentUnlocked(page, true);
+    await prepareParentAdvancedControls(page);
 
     await runOfflineCheckAndWaitForAssets(page);
 
-    await page.locator('#setting-offline-mode').evaluate((input) => {
-        input.checked = true;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await expect(page.locator('[data-offline-mode-status]')).toContainText('Offline mode is on');
+    await setOfflineMode(page, true);
+    await enableMlDemo(page);
 
-    await page.locator('[data-ml-demo]').evaluate((input) => {
-        input.checked = true;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await expect(page.locator('[data-ml-simulate]')).toBeEnabled();
+    await goHome(page);
 
-    await page.goto('/#view-home');
-    await expect(page.locator('#view-home')).toBeVisible();
-
-    await page.goto('/#view-parent');
-    await expect(page.locator('#view-parent')).toBeVisible({ timeout: 10000 });
-    await expect.poll(async () => page.locator('[data-input-status]').innerText()).toContain('Input:');
-    await waitForBoundFlag(page, '#setting-offline-mode', 'data-offline-mode-bound');
+    await prepareParentAdvancedControls(page);
 
     await runOfflineCheckAndWaitForAssets(page);
 
-    await page.locator('#setting-offline-mode').evaluate((input) => {
-        input.checked = false;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await expect(page.locator('[data-offline-mode-status]')).toContainText('Offline mode is off');
-
-    await page.locator('[data-ml-demo]').evaluate((input) => {
-        input.checked = true;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await expect(page.locator('[data-ml-simulate]')).toBeEnabled();
+    await setOfflineMode(page, false);
+    await enableMlDemo(page);
 });

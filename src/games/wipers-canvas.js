@@ -1,12 +1,9 @@
-import { BaseCanvasEngine } from './canvas-engine-base.js';
-import { bindRunningCanvasPointerDrag } from './canvas-pointer-bindings.js';
-import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
+import { DragCanvasEngineBase } from './drag-canvas-engine-base.js';
 import { clamp } from '../utils/math.js';
 
-export class WipersCanvasEngine extends BaseCanvasEngine {
+export class WipersCanvasEngine extends DragCanvasEngineBase {
     constructor(canvas, onScoreUpdate) {
-        super(canvas);
-        this.onScoreUpdate = onScoreUpdate;
+        super(canvas, onScoreUpdate);
 
         this.score = 0;
         this.wipes = 0;
@@ -16,18 +13,12 @@ export class WipersCanvasEngine extends BaseCanvasEngine {
 
         this.pointer = { x: 0, y: 0, isDown: false };
 
-        this.bindEvents();
-    }
-
-    bindEvents() {
-        this.cleanupEvents = bindRunningCanvasPointerDrag({
-            engine: this,
+        this.bindMappedDrag({
             isTracking: () => this.pointer.isDown,
             onStart: () => {
                 this.pointer.isDown = true;
             },
-            onMove: ({ clientX }) => {
-                const { x } = mapPointerToCanvasCoords({ clientX, clientY: 0 }, this.canvas, this.width, this.height);
+            onMove: ({ x }) => {
                 this.pointer.x = x;
                 this.evaluateWipe();
             },
@@ -68,16 +59,11 @@ export class WipersCanvasEngine extends BaseCanvasEngine {
             this.score += 10;
         }
 
-        if (this.onScoreUpdate) {
-            this.onScoreUpdate(this.score, this.wipes);
-        }
+        this.notifyScoreUpdate(this.score, this.wipes);
     }
 
     render(ctx) {
-        ctx.fillStyle = '#fff8f1';
-        ctx.fillRect(0, 0, this.width, this.height);
-
-        const centerX = this.width / 2;
+        const { centerX } = this.fillBackgroundAndGetCenter(ctx, '#fff8f1');
         const centerY = this.height * 0.8;
         const armLength = Math.min(this.width, this.height) * 0.6;
 

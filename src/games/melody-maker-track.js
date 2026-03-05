@@ -45,21 +45,19 @@ const applyMelodyTargetMatch = ({
     buildTarget();
 };
 
-export const handleMelodyMakerNoteTap = ({
-    note,
-    gameState,
-    playback,
-    stopPlayback,
-    playTapPreview,
-    updateTrack,
-    updateScore,
-    lengthTarget,
-    setStatus,
-    buildTarget,
-    reportSession,
-    markChecklist,
-    markChecklistIf,
-}) => {
+export const handleMelodyMakerNoteTap = (note, context) => {
+    const gameState = context.gameState;
+    const playback = context.playback;
+    const stopPlayback = context.stopPlayback;
+    const playTapPreview = context.playTapPreview;
+    const updateTrack = context.updateTrack;
+    const updateScore = context.updateScore;
+    const lengthTarget = context.lengthTarget;
+    const setStatus = context.setStatus;
+    const buildTarget = context.buildTarget;
+    const reportSession = context.reportSession;
+    const markChecklist = context.markChecklist;
+    const markChecklistIf = context.markChecklistIf;
     if (playback.playing) {
         stopPlayback('Editing melody. Tap Play to hear it.');
     }

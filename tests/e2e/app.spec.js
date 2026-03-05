@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { gotoAndExpectView, setParentUnlocked } from './helpers/view-navigation.js';
 
 test.describe('Kid-first flows', () => {
   test.beforeEach(async ({ page }) => {
@@ -62,10 +63,8 @@ test.describe('Kid-first flows', () => {
     await page.locator('[data-pin-dialog] button[value="confirm"]').click();
     await expect(dialog).toBeVisible();
 
-    await page.evaluate(() => {
-      sessionStorage.setItem('panda-violin:parent-unlocked', 'true');
-    });
-    await page.goto('/#view-parent');
+    await setParentUnlocked(page, true);
+    await gotoAndExpectView(page, '#view-parent');
     await expect(dialog).toBeHidden({ timeout: 10000 });
 
     await expect(page.locator('[data-parent-advanced-controls]')).toBeVisible();

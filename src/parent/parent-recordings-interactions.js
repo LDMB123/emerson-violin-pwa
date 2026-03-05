@@ -1,6 +1,5 @@
-import { getBlob } from '../persistence/storage.js';
 import { loadRecordings, resolveRecordingSource } from '../persistence/loaders.js';
-import { exportRecording } from '../utils/recording-export.js';
+import { runRecordingExportAction } from '../utils/recording-export-feedback.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { createAudioController } from '../utils/audio-utils.js';
 import { removeRecordingAtIndex, clearRecordingBlobs, saveRecordings } from './parent-recordings-data.js';
@@ -23,22 +22,13 @@ export const createParentRecordingsInteractions = ({ requestRender, setStatus })
             });
 
             saveBtn.addEventListener('click', async () => {
-                if (!hasSource) return;
-                saveBtn.disabled = true;
-                const original = saveBtn.textContent;
-                saveBtn.textContent = '…';
-                try {
-                    const blob = recording.blobKey ? await getBlob(recording.blobKey) : null;
-                    await exportRecording(recording, index, blob);
-                    saveBtn.textContent = '✓';
-                } catch {
-                    saveBtn.textContent = '!';
-                } finally {
-                    setTimeout(() => {
-                        saveBtn.textContent = original || '⬇';
-                        saveBtn.disabled = false;
-                    }, 800);
-                }
+                if (!hasSource || saveBtn.disabled) return;
+                await runRecordingExportAction({
+                    button: saveBtn,
+                    recording,
+                    index,
+                    resetDelayMs: 800,
+                });
             });
 
             deleteBtn.addEventListener('click', async () => {
