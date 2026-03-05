@@ -10,6 +10,7 @@ sw.js
 sw-assets.js
 wasm/target/
 node_modules/
+.tmp/
 .claude/*
 !.claude/agents
 .worktrees/
@@ -26,3 +27,11 @@ firebase-debug.log
 dead_css_report.json
 unused_css.txt
 unused_css_classes.txt
+.jscpd/
+.jscpd-local-*/
+.jscpd-src-*/
+.jscpd-t*/
+
+# Generated QA screenshots
+qa/screenshots/
+qa/ui-pass2/
