@@ -1,5 +1,18 @@
 import { tryRun } from './safe-execution.js';
 
+/**
+ * Speaks a message with the Web Speech API when available and enabled.
+ *
+ * @param {Object} [options={}]
+ * @param {string} [options.message='']
+ * @param {boolean} [options.enabled=true]
+ * @param {number} [options.rate=1]
+ * @param {number} [options.pitch=1]
+ * @param {string} [options.lang='en-US']
+ * @param {boolean} [options.skipWhenHidden=true]
+ * @param {boolean} [options.cancelFirst=true]
+ * @returns {boolean}
+ */
 export const speakMessage = ({
     message = '',
     enabled = true,
@@ -25,6 +38,11 @@ export const speakMessage = ({
     });
 };
 
+/**
+ * Cancels queued or active speech synthesis.
+ *
+ * @returns {void}
+ */
 export const cancelSpeech = () => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     try {

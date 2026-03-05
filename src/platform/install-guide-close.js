@@ -53,4 +53,9 @@ const initInstallGuideClose = () => {
     bindObserver();
 };
 
+/**
+ * Adds close buttons to install-guide dialogs and watches for new ones.
+ *
+ * @returns {void}
+ */
 export const init = initInstallGuideClose;

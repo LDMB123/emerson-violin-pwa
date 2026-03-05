@@ -4,6 +4,19 @@ const toFiniteDelay = (value, fallback = 0) => {
     return Math.max(0, numeric);
 };
 
+/**
+ * Schedules a task using `scheduler.postTask`, `requestIdleCallback`, or a
+ * timeout fallback.
+ *
+ * @param {() => void} task
+ * @param {Object} [options={}]
+ * @param {string} [options.priority='background']
+ * @param {number} [options.delay=0]
+ * @param {number} [options.idleTimeout=1500]
+ * @param {number} [options.fallbackDelay=0]
+ * @param {boolean} [options.delayBeforeIdle=false]
+ * @returns {void}
+ */
 export const scheduleBackgroundTask = (
     task,
     {

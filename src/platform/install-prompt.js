@@ -1,6 +1,11 @@
 import { isAutomated, isStandalone } from './platform-utils.js';
 import { emitEvent } from '../utils/event-names.js';
 
+/**
+ * Fired when install prompt availability changes.
+ *
+ * @type {string}
+ */
 export const INSTALL_PROMPT_CHANGE_EVENT = 'panda:install-prompt-change';
 
 let deferredPrompt = null;
@@ -31,12 +36,22 @@ const bindGlobals = () => {
     window.addEventListener('appinstalled', clearDeferredPrompt);
 };
 
+/**
+ * Returns whether the app can currently show the browser install prompt.
+ *
+ * @returns {boolean}
+ */
 export const canPromptInstall = () => {
     if (isAutomated()) return false;
     if (isStandalone()) return false;
     return Boolean(deferredPrompt);
 };
 
+/**
+ * Shows the saved install prompt when available and reports the outcome.
+ *
+ * @returns {Promise<{ prompted: boolean, accepted: boolean, outcome: string }>}
+ */
 export const promptInstall = async () => {
     if (!canPromptInstall()) {
         return {
@@ -79,6 +94,11 @@ const initInstallPrompt = () => {
     dispatchChange();
 };
 
+/**
+ * Initializes install-prompt listeners and emits the current availability.
+ *
+ * @returns {void}
+ */
 export const init = initInstallPrompt;
 
 initInstallPrompt();

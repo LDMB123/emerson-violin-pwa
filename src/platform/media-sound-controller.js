@@ -10,6 +10,17 @@ function createEmptyElements() {
     };
 }
 
+/**
+ * Creates the shared sound and media-session controller for page audio.
+ *
+ * @returns {{
+ *   setElements: (nextElements: Partial<{ soundToggle: HTMLInputElement | null }>) => { soundToggle: HTMLInputElement | null },
+ *   bindMediaSession: () => void,
+ *   bindAudioFocus: () => void,
+ *   bindSoundToggle: () => void,
+ *   updateSoundState: () => void
+ * }}
+ */
 export const createMediaSoundController = () => {
     const { elements, setElements } = createControllerElements(createEmptyElements);
     let audioFocusGlobalsBound = false;

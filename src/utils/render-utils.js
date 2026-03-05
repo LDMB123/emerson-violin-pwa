@@ -1,3 +1,12 @@
+/**
+ * Renders up to three next-action items into a list element.
+ *
+ * @param {HTMLElement | null | undefined} target
+ * @param {Array<{ href?: string, label?: string, rationale?: string }>} actions
+ * @param {string} [defaultLabel='Next action']
+ * @param {string} [fallbackText='Complete one mission step to get next teaching actions.']
+ * @returns {void}
+ */
 export const renderNextActionsList = (target, actions, defaultLabel = 'Next action', fallbackText = 'Complete one mission step to get next teaching actions.') => {
     if (!target) return;
     target.replaceChildren();

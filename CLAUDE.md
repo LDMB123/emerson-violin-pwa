@@ -61,7 +61,7 @@ npm run handoff:verify # audit:full + E2E
 - View visibility is controlled with `.view.is-active` (JS-applied on render)
 - Persistence is IndexedDB-first (`src/persistence/storage.js`) with localStorage fallback
 
-## Worktree Notes (2026-02-28)
+## Worktree Notes
 
 - AudioContext can enter `'interrupted'` state on iOS (phone calls, system audio) — handle alongside `'suspended'` in `src/audio/tone-player/context-manager.js`.
 - Safari 26+ removed `window.orientationchange` — use `screen.orientation.addEventListener('change', ...)` with `{ passive: true }` fallback for older browsers.
@@ -83,7 +83,8 @@ npm run handoff:verify # audit:full + E2E
 - Perf budget workflow consistency is validated by `scripts/audit-performance-budget-config.mjs`.
 - CI quality guard is defined in `.github/workflows/quality.yml`.
 - Zero-context pickup runbook is in `docs/HANDOFF.md`.
-- 18 games in `src/games/`: Bow Hero, Duet Challenge, Dynamic Dojo, Ear Trainer, Echo, Melody Maker, Note Memory, Pitch Quest, Pizzicato, Rhythm Dash, Rhythm Painter, Scale Practice, Sequence Game, Stir Soup, Story Song, String Quest, Tuning Time, Wipers — all use `src/games/canvas-engine-base.js` as shared base.
+- Shipped game views live under `public/views/games/`: Bow Hero, Duet Challenge, Dynamic Dojo, Ear Trainer, Echo, Melody Maker, Note Memory, Pitch Quest, Pizzicato, Rhythm Dash, Rhythm Painter, Scale Practice, Stir Soup, Story Song, String Quest, Tuning Time, Wipers.
+- `src/games/sequence-game.js` is a shared runtime factory used by sequence-style games such as `pizzicato.js` and `string-quest.js`; it is not a standalone shipped game view.
 - Song library expanded: 21 playable song sheets under `public/views/songs/`.
 - CSS dead code pass removed unused variables/classes; remaining CSS is auditable via `scripts/find-dead-css-vars.mjs`.
 - All game views use full-bleed immersive layout (no bottom-nav overlap).

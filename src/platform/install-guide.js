@@ -161,6 +161,16 @@ const initInstallGuide = () => {
     showGuide(false);
 };
 
+/**
+ * Opens the install guide immediately.
+ *
+ * @returns {Promise<void>}
+ */
 export const openInstallGuide = () => showGuide(true);
 
+/**
+ * Initializes the install guide and help button.
+ *
+ * @returns {void}
+ */
 export const init = initInstallGuide;

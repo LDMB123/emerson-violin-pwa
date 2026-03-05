@@ -1,9 +1,8 @@
 /**
- * Creates a controller for a single HTMLAudioElement playback slot.
- * Manages the audio element and any associated object URL that must be
- * revoked when playback stops.
+ * Stops an audio element and rewinds it to the beginning.
  *
- * @returns {{ audio: HTMLAudioElement, stop: () => void, setUrl: (url: string) => void }}
+ * @param {HTMLMediaElement | null | undefined} audio
+ * @returns {void}
  */
 export const stopAndResetAudioElement = (audio) => {
     if (!audio || typeof audio.pause !== 'function') return;
@@ -13,6 +12,16 @@ export const stopAndResetAudioElement = (audio) => {
     audio.currentTime = 0;
 };
 
+/**
+ * Creates a controller for a single audio playback slot.
+ *
+ * @returns {{
+ *   audio: HTMLAudioElement,
+ *   stop: () => void,
+ *   setUrl: (url: string) => void,
+ *   playSource: (source: { url?: string, revoke?: boolean }) => Promise<void>
+ * }}
+ */
 export const createAudioController = () => {
     const audio = new Audio();
     audio.preload = 'none';

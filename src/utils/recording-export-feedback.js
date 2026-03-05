@@ -31,6 +31,16 @@ const runRecordingExportWithFeedback = async ({
     }
 };
 
+/**
+ * Runs recording export with temporary button feedback.
+ *
+ * @param {Object} [options={}]
+ * @param {HTMLButtonElement | null} [options.button=null]
+ * @param {Object | null} [options.recording=null]
+ * @param {number} [options.index=0]
+ * @param {number} [options.resetDelayMs=1000]
+ * @returns {Promise<boolean>}
+ */
 export const runRecordingExportAction = async (options = {}) => {
     const {
         button = null,

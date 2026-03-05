@@ -45,6 +45,11 @@ const buildSelfTestResult = (selfTestPass) => ({
     selfTestAt: Date.now(),
 });
 
+/**
+ * Counts cached assets in the latest offline cache.
+ *
+ * @returns {Promise<{ cachedAssets: number, lastCheck: number }>}
+ */
 export const runOfflineCacheCheck = async () => {
     const cache = await selectOfflineCache();
     const requests = cache ? await cache.keys() : [];
@@ -54,6 +59,13 @@ export const runOfflineCacheCheck = async () => {
     };
 };
 
+/**
+ * Verifies that critical offline assets exist in the latest offline cache.
+ *
+ * @param {Object} [options={}]
+ * @param {string} [options.baseHref=window.location.href]
+ * @returns {Promise<{ selfTestPass: number, selfTestTotal: number, selfTestAt: number }>}
+ */
 export const runOfflineAssetSelfTest = async ({ baseHref = window.location.href } = {}) => {
     const cache = await selectOfflineCache();
     if (!cache) {

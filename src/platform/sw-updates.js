@@ -123,4 +123,9 @@ const initSwUpdates = async () => {
     bindGlobalListeners();
 };
 
+/**
+ * Initializes service-worker update UI and background refresh wiring.
+ *
+ * @returns {Promise<void>}
+ */
 export const init = initSwUpdates;

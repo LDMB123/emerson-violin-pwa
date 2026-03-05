@@ -87,7 +87,7 @@ console.log('PIN stored securely:', pinData);
 ### 2. IndexedDB Persistence
 
 **Test data persistence**:
-1. Navigate to Practice section
+1. Navigate to **Practice Coach** (`#view-coach`)
 2. Mark a task complete
 3. **Quit and restart simulator**:
    ```bash
@@ -95,7 +95,7 @@ console.log('PIN stored securely:', pinData);
    xcrun simctl boot <DEVICE_UDID>
    xcrun simctl openurl booted "http://localhost:5173"
    ```
-4. Navigate back to Practice
+4. Navigate back to **Practice Coach**
 5. **Expected**: Task still marked complete
 
 **Console check**:
@@ -145,7 +145,7 @@ console.log('SW active:', regs[0]?.active?.state);
 // Check caches
 const cacheKeys = await caches.keys();
 console.log('Caches:', cacheKeys);
-// Expected: Array with cache names like "panda-violin-v1-static"
+// Expected: Array with cache names prefixed by "panda-violin-" or "workbox-"
 ```
 
 ### 5. Touch Targets (Click Simulation)

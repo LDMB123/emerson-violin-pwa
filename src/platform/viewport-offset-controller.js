@@ -1,5 +1,16 @@
 import { positiveRound } from '../utils/math.js';
 
+/**
+ * Keeps the CSS keyboard offset variable in sync with the visual viewport.
+ *
+ * @param {Object} [options={}]
+ * @param {CSSStyleDeclaration | null | undefined} [options.rootStyle=document.documentElement.style]
+ * Style declaration that receives `--keyboard-offset`.
+ * @returns {{
+ *   bind: () => void,
+ *   update: () => void
+ * }}
+ */
 export const createViewportOffsetController = ({ rootStyle = document.documentElement.style } = {}) => {
     let visualViewportGlobalsBound = false;
 

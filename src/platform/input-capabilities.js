@@ -59,4 +59,9 @@ const initInputCapabilities = () => {
     bindGlobalListeners();
 };
 
+/**
+ * Initializes input-capability detection and status display.
+ *
+ * @returns {void}
+ */
 export const init = initInputCapabilities;

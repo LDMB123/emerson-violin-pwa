@@ -4,7 +4,7 @@ import { isPracticeViewId } from '../utils/view-id-utils.js';
 /**
  * Determines if the given view ID represents a practice view.
  * Practice views include games, songs, and trainer/coach views.
- * @param {string} viewId - The view identifier (e.g., 'view-home', 'view-game-scales')
+ * @param {string} viewId - The view identifier (e.g., 'view-home', 'view-game-scale-practice')
  * @returns {boolean} True if the view is a practice view
  */
 export const isPracticeView = (viewId) => {

@@ -64,16 +64,17 @@ const { bind } = createGame({
             E: 'tt-step-4',
         };
 
-        // difficulty.speed: visual feedback only for this game (no time limit to scale)
-        // difficulty.complexity: sets initial targetStrings; complexity=1 (medium) = 3 strings (current behavior)
+        // difficulty.speed only affects the feedback feel in this game; there is
+        // no countdown timer to scale up or down.
+        // difficulty.complexity controls how many strings count toward a win.
         const complexityTargets = [2, 3, 4];
         gameState.targetStrings = complexityTargets[difficultyConfig.complexity] ?? 3;
         gameState.tunedNotes = new Set();
         gameState.tuningEnergy = 0.0;
 
-        // Store DOM refs so onReset can access them
+        // Store DOM refs so onReset can reuse the same status/progress surfaces.
         gameState._statusEl = statusEl;
-        gameState._progressEl = null; // Removed CSS bar
+        gameState._progressEl = null; // This game renders progress through its own view helpers.
         gameState._progressBar = null;
 
         const { targetStrings } = gameState;

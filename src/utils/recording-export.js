@@ -6,11 +6,23 @@ const safeFileName = (title) => {
     return sanitized.slice(0, 48) || 'panda-violin-recording';
 };
 
+/**
+ * Converts a data URL into a Blob.
+ *
+ * @param {string} dataUrl
+ * @returns {Promise<Blob>}
+ */
 export const dataUrlToBlob = async (dataUrl) => {
     const response = await fetch(dataUrl);
     return response.blob();
 };
 
+/**
+ * Serializes a Blob as a data URL.
+ *
+ * @param {Blob} blob
+ * @returns {Promise<string | ArrayBuffer>}
+ */
 export const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -46,6 +58,15 @@ const saveWithFilePicker = async (file) => {
     });
 };
 
+/**
+ * Attempts to share a recording file through the Web Share API.
+ *
+ * @param {File} file
+ * @param {Object} [options={}]
+ * @param {string} [options.title='Panda Violin']
+ * @param {string} [options.text='']
+ * @returns {Promise<boolean>}
+ */
 export const tryShareFile = async (file, { title = 'Panda Violin', text = '' } = {}) => {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
         return tryRunAsync(async () => {
@@ -58,6 +79,12 @@ export const tryShareFile = async (file, { title = 'Panda Violin', text = '' } =
     return false;
 };
 
+/**
+ * Triggers a browser download for a file.
+ *
+ * @param {File} file
+ * @returns {void}
+ */
 export const downloadFile = (file) => {
     const url = URL.createObjectURL(file);
     const link = document.createElement('a');
@@ -89,6 +116,14 @@ const buildRecordingFile = async (recording, index = 0, blobOverride = null) => 
     return new File([blob], fileName, { type });
 };
 
+/**
+ * Exports a recording via file picker, share sheet, or download fallback.
+ *
+ * @param {Object | null | undefined} recording
+ * @param {number} [index=0]
+ * @param {Blob | null} [blobOverride=null]
+ * @returns {Promise<boolean>}
+ */
 export const exportRecording = async (recording, index = 0, blobOverride = null) => {
     const file = await buildRecordingFile(recording, index, blobOverride);
     if (!file) return false;
@@ -104,18 +139,42 @@ export const exportRecording = async (recording, index = 0, blobOverride = null)
     return true;
 };
 
+/**
+ * Extracts a song id from a song view id.
+ *
+ * @param {string} viewId
+ * @returns {string}
+ */
 export const getSongIdFromViewId = (viewId) => {
     if (!viewId || !viewId.startsWith('view-song-')) return '';
     return viewId.replace('view-song-', '');
 };
 
+/**
+ * Extracts a song id from a hash.
+ *
+ * @param {string} hash
+ * @returns {string}
+ */
 export const getSongIdFromHash = (hash) => {
     if (!hash || !hash.startsWith('#view-song-')) return '';
     return hash.replace('#view-song-', '');
 };
 
+/**
+ * Builds a unique storage key for a recording blob.
+ *
+ * @param {string} songId
+ * @returns {string}
+ */
 export const createBlobKey = (songId) => `recording:${songId}:${crypto.randomUUID()}`;
 
+/**
+ * Reads the CSS-defined song duration from a sheet element.
+ *
+ * @param {HTMLElement | null | undefined} sheet
+ * @returns {number}
+ */
 export const parseDuration = (sheet) => {
     if (!sheet) return 0;
     const raw = sheet.style.getPropertyValue('--song-duration') || getComputedStyle(sheet).getPropertyValue('--song-duration');

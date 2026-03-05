@@ -1,5 +1,5 @@
 # Safari 26.2 / iPadOS 26.2 Testing Guide
-**Emerson Violin PWA - iPad mini (6th Generation)**
+**Panda Violin - iPad mini (6th Generation)**
 
 ## Device Specs
 - **Device**: iPad mini (6th generation)
@@ -33,7 +33,7 @@ npm run preview
 
 Before running individual tests, confirm:
 
-1. **App loads**: Navigate to deployed URL — home/tuner screen appears, no console errors
+1. **App loads**: Navigate to deployed URL — onboarding or the home screen appears, and the tuner is reachable from Home with no console errors
 2. **Onboarding**: If first launch, complete onboarding flow before testing other views
 3. **Microphone permission**: Grant when prompted (required for tuner tests)
 4. **DevTools connected**: Safari on Mac > Develop > [iPad name] > localhost
@@ -70,7 +70,7 @@ console.log('SW active:', regs[0]?.active?.state); // Expected: "activated"
 4. Navigate to **#view-parent** again
 5. Enter default PIN `1001`
 6. **Expected**: Access granted to parent section
-7. In parent section, find "Change Parent PIN" section
+7. In parent section, find the **Parent PIN** card
 8. Enter new PIN: `5678`
 9. Click "Save PIN" button
 10. **Expected**: Status shows "PIN updated (secure)."
@@ -107,13 +107,13 @@ JSON.parse(localStorage.getItem('panda-violin:parent-pin-v2'))
 1. **Setup**: Add app to Home Screen for badge testing
    - In Safari, tap Share button
    - Tap "Add to Home Screen"
-   - Name: "Emerson Violin"
+   - Confirm the suggested iOS title matches the current build (currently `Panda Violin`)
    - Tap "Add"
 2. Close Safari, return to Home Screen
 3. **Expected**: App icon appears with NO badge initially
-4. Open Emerson Violin PWA from Home Screen
-5. Navigate to practice section
-6. Mark a practice task as incomplete (if not already)
+4. Open Panda Violin from Home Screen
+5. Navigate to **Practice Coach** (`#view-coach`)
+6. Leave at least one lesson step incomplete
 7. Press Home button (or swipe up) to minimize app
 8. **Expected**: App badge shows count of incomplete tasks (e.g., "3")
 9. Reopen app from Home Screen
@@ -190,7 +190,7 @@ window.visualViewport.addEventListener('resize', (e) => {
 **What to test**: Touch targets sized appropriately for iPad (44px minimum)
 
 **Steps**:
-1. Navigate through all sections (Home, Practice, Games, Parent)
+1. Navigate through the primary views (Home, Practice Coach, Games, Songs, Tuner, Parent Zone)
 2. Try tapping all buttons, toggles, links
 3. **Check**:
    - All interactive elements easily tappable
@@ -263,7 +263,7 @@ console.log('Wake lock released:', wakeLock.released);
 **What to test**: Real-time pitch detection (<50ms latency) on iPad A15
 
 **Steps**:
-1. Navigate to Tuner view (home screen)
+1. Open the Tuner from Home, or jump directly to `#view-tuner`
 2. Grant microphone permission if prompted
 3. Play a violin note (or hum a pitch near mic)
 4. **Check**:
@@ -298,18 +298,19 @@ console.log('Base latency:', audioContext.baseLatency); // Expected: <0.01 (10ms
 **What to test**: Recordings and progress persist across sessions
 
 **Steps**:
-1. Navigate to Practice section
-2. Record a short clip (5-10 seconds)
-3. Complete a practice task
-4. **Force quit app**:
+1. Open **Parent Zone** and make sure **Practice recordings** are enabled
+2. Navigate to a song view such as **Twinkle Twinkle Little Star** (`#view-song-twinkle`)
+3. Record a short clip (5-10 seconds)
+4. Complete a practice step or song interaction so progress changes
+5. **Force quit app**:
    - Swipe up from bottom, pause in middle of screen
    - Swipe app preview up to close
-5. Reopen app from Home Screen
-6. Navigate to Recordings section
-7. **Expected**: Recording from step 2 still present
-8. Navigate to Practice section
-9. **Expected**: Practice progress retained (completed task still marked done)
-10. **Airplane mode test**:
+6. Reopen app from Home Screen
+7. Navigate to **Parent Zone > Practice Recordings**
+8. **Expected**: Recording from step 3 still present
+9. Navigate to **Practice Coach** (`#view-coach`) or back to the song you used
+10. **Expected**: Practice progress from step 4 is retained
+11. **Airplane mode test**:
     - Enable Airplane Mode
     - Close and reopen app
     - Navigate to all sections
@@ -351,8 +352,8 @@ console.log('Quota:', (estimate.quota / 1024 / 1024).toFixed(2), 'MB');
 2. Tap Share button (square with arrow up)
 3. Scroll and tap "Add to Home Screen"
 4. **Check**:
-   - App name appears correctly: "Emerson Violin"
-   - App icon displays (should be violin icon, not Safari generic)
+   - App name uses current build metadata (currently `Panda Violin` on iOS Home Screen)
+   - App icon shows the app branding, not the Safari generic icon
    - Option to edit name/icon before adding
 5. Tap "Add" button
 6. Return to Home Screen
@@ -369,7 +370,7 @@ console.log('Quota:', (estimate.quota / 1024 / 1024).toFixed(2), 'MB');
 **Web App Manifest Check** (before adding):
 ```javascript
 // In Safari console
-fetch('/manifest.json')
+fetch('./manifest.webmanifest')
     .then(r => r.json())
     .then(manifest => {
         console.log('App name:', manifest.name);
@@ -377,7 +378,8 @@ fetch('/manifest.json')
         console.log('Display mode:', manifest.display);
         console.log('Icons:', manifest.icons.length);
     });
-// Expected: name, icons array, display: "standalone"
+// Expected: name: "Emerson's Violin Studio", short_name: "ViolinPanda",
+// display: "standalone", icons: a non-zero count
 ```
 
 **Success Criteria**:
@@ -396,20 +398,22 @@ fetch('/manifest.json')
 **Steps**:
 1. With app already installed (from Test 8)
 2. **Enable Airplane Mode** (swipe down from top-right, tap airplane icon)
-3. Close Emerson Violin app completely
+3. Close Panda Violin completely
 4. Reopen app from Home Screen
 5. **Expected**: App loads successfully offline
 6. Navigate through all sections:
-   - Home (Tuner)
-   - Practice
+   - Home
+   - Practice Coach
    - Games
-   - Recordings
-   - Parent
+   - Songs
+   - Tuner
+   - Parent Zone
+   - Backup
 7. **Check**:
    - All UI elements load
    - Tuner functionality works (microphone access)
    - Practice tasks display
-   - Recordings play back
+   - Parent Zone recordings remain available
    - Games function
 8. Try recording a new clip offline
 9. **Expected**: Recording saves locally

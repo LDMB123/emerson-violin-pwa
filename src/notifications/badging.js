@@ -5,8 +5,8 @@ import { getJSON } from '../persistence/storage.js';
 /**
  * Badging API
  *
- * Shows app icon badge for incomplete practice tasks
- * Safari 26.2 / iOS 26.2: SUPPORTED since Safari 17.0
+ * Shows an app icon badge when no practice time has been logged for today.
+ * Availability is always checked via feature detection before use.
  */
 
 const supportsBadging = () => {

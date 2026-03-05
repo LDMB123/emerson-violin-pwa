@@ -4,6 +4,33 @@ import {
     toRemainingCountdownSeconds,
 } from './countdown-utils.js';
 
+/**
+ * Creates a reusable countdown lifecycle with publish, pause, and resume
+ * behavior shared across timers.
+ *
+ * @param {Object} options
+ * @param {() => number} options.getRemainingSeconds
+ * @param {(seconds: number) => void} options.setRemainingSeconds
+ * @param {(seconds: number) => void} options.onPublish
+ * @param {(() => void) | undefined} [options.onElapsed]
+ * @param {((now: number, remainingSeconds: number) => void) | undefined} [options.onTick]
+ * @param {(() => void) | undefined} [options.onStart]
+ * @param {(() => void) | undefined} [options.onPause]
+ * @param {() => boolean} [options.canResume=() => true]
+ * @param {() => number} [options.now=() => Date.now()]
+ * @param {((timerId: number | null) => void) | undefined} [options.setTimerHandle]
+ * @param {typeof setInterval | undefined} [options.setIntervalFn]
+ * @param {typeof clearInterval | undefined} [options.clearIntervalFn]
+ * @returns {{
+ *   start: (options?: { resetPublished?: boolean }) => boolean,
+ *   stop: () => void,
+ *   pause: () => boolean,
+ *   resume: (options?: { beforeStart?: (() => void), resetPublished?: boolean }) => boolean,
+ *   isRunning: () => boolean,
+ *   resetPublished: () => void,
+ *   clearPaused: () => void
+ * }}
+ */
 export const createCountdownLifecycle = ({
     getRemainingSeconds,
     setRemainingSeconds,

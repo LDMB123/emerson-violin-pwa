@@ -6,6 +6,11 @@ const isCheckedToggle = (selector) => {
 
 const isDatasetOn = (key) => document.documentElement.dataset[key] === 'on';
 
+/**
+ * Returns whether voice-coach speech is enabled.
+ *
+ * @returns {boolean}
+ */
 export const isVoiceCoachEnabled = () => {
     if (document.documentElement.dataset.voiceCoach) {
         return isDatasetOn('voiceCoach');
@@ -14,6 +19,11 @@ export const isVoiceCoachEnabled = () => {
     return Boolean(toggleValue);
 };
 
+/**
+ * Returns whether recording features are enabled.
+ *
+ * @returns {boolean}
+ */
 export const isRecordingEnabled = () => {
     if (document.documentElement.dataset.recordings) {
         return isDatasetOn('recordings');

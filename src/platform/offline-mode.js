@@ -129,4 +129,9 @@ const initOfflineMode = async () => {
     setDisabled(toggle, false);
 };
 
+/**
+ * Initializes offline-only mode state and UI binding.
+ *
+ * @returns {Promise<void>}
+ */
 export const init = initOfflineMode;

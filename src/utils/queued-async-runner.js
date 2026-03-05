@@ -1,3 +1,13 @@
+/**
+ * Creates a runner that allows only one async task execution at a time.
+ * Calls made while the task is in flight are collapsed into one trailing rerun.
+ * Task failures are intentionally swallowed so callers can fire-and-forget.
+ *
+ * @param {(() => Promise<unknown> | unknown) | null | undefined} task
+ * @returns {() => Promise<unknown | null | undefined>} Runner that starts work
+ * and resolves when its invocation settles. Calls made mid-flight join the
+ * current run and request one trailing rerun.
+ */
 export const createQueuedAsyncRunner = (task) => {
     if (typeof task !== 'function') {
         return async () => null;
@@ -29,4 +39,3 @@ export const createQueuedAsyncRunner = (task) => {
 
     return run;
 };
-

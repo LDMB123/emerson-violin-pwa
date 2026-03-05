@@ -2,6 +2,17 @@ import { DAY_MS } from '../utils/math.js';
 
 const FOREGROUND_REFRESH_MIN_INTERVAL = 5 * 60 * 1000;
 
+/**
+ * Creates the background/foreground asset refresh controller for the service
+ * worker.
+ *
+ * @param {Object} options
+ * @param {(message: string) => void} options.setSyncStatus Updates the visible
+ * sync status message.
+ * @returns {{
+ *   registerBackgroundRefresh: (registration: ServiceWorkerRegistration | null | undefined) => Promise<void>
+ * }}
+ */
 export const createSwRefreshController = ({ setSyncStatus }) => {
     let foregroundFallbackBound = false;
     let lastForegroundRefreshAt = 0;

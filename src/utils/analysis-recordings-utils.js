@@ -9,6 +9,17 @@ const createUnavailableRecordingState = ({ title, sub, index }) => ({
     recordingIndex: String(index),
 });
 
+/**
+ * Builds the display state for one analysis recording slot.
+ *
+ * @param {Object} options
+ * @param {Object | null | undefined} options.recording
+ * @param {Object | null | undefined} options.item
+ * @param {number} options.index
+ * @param {boolean} options.soundEnabled
+ * @param {Map<string, string> | null | undefined} options.songMap
+ * @returns {{ title: string, sub: string, playDisabled: boolean, playAvailable: boolean, saveDisabled: boolean, recordingIndex: string }}
+ */
 export const buildRecordingSlotState = ({ recording, item, index, soundEnabled, songMap }) => {
     if (hasSavedRecording(recording)) {
         return {
@@ -37,6 +48,13 @@ export const buildRecordingSlotState = ({ recording, item, index, soundEnabled, 
     });
 };
 
+/**
+ * Applies a recording slot state to its DOM elements.
+ *
+ * @param {{ playButton?: HTMLElement | null, saveButton?: HTMLElement | null, titleEl?: HTMLElement | null, subEl?: HTMLElement | null }} elements
+ * @param {{ title: string, sub: string, playDisabled: boolean, playAvailable: boolean, saveDisabled: boolean, recordingIndex: string }} state
+ * @returns {void}
+ */
 export const applyRecordingSlotState = (elements, state) => {
     const { playButton, saveButton, titleEl, subEl } = elements;
 

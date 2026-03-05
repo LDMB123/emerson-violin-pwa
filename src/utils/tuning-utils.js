@@ -63,12 +63,29 @@ function createTuningHitDetector(options = {}) {
     return { detectHit, reset };
 }
 
+/**
+ * Creates the default tuning hit detector used by note-based tuning games.
+ *
+ * @returns {{ detectHit: (tuning: any, targetNote: string) => boolean, reset: () => void }}
+ */
 export const createDefaultTuningHitDetector = () => (
     createTuningHitDetector({ centsMargin: 20, debounceMs: 300 })
 );
 
+/**
+ * Rounds tuning cents to the nearest whole number.
+ *
+ * @param {{ cents?: number } | null | undefined} tuning
+ * @returns {number}
+ */
 export const roundTuningCents = (tuning) => Math.round(tuning?.cents || 0);
 
+/**
+ * Returns the active tuning feature from an audio event when available.
+ *
+ * @param {{ detail?: { lastFeature?: any, paused?: boolean } } | null | undefined} event
+ * @returns {any}
+ */
 export const getActiveTuningFeature = (event) => {
     const tuning = event?.detail?.lastFeature;
     if (!tuning || event?.detail?.paused) return null;

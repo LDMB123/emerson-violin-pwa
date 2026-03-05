@@ -1,5 +1,10 @@
 import { average, clamp, DAY_MS, todayDay } from './math.js';
 
+/**
+ * Maps activity IDs to the skill area they train.
+ *
+ * @type {Record<string, string>}
+ */
 export const SKILL_BY_GAME = {
     'pitch-quest': 'pitch',
     'ear-trainer': 'pitch',
@@ -23,6 +28,11 @@ export const SKILL_BY_GAME = {
     'bowing-coach': 'bow_control',
 };
 
+/**
+ * Maps skill areas to their default recommendation target.
+ *
+ * @type {Record<string, string>}
+ */
 export const GAME_BY_SKILL = {
     pitch: 'pitch-quest',
     rhythm: 'rhythm-dash',
@@ -31,6 +41,11 @@ export const GAME_BY_SKILL = {
     posture: 'view-posture',
 };
 
+/**
+ * Human-readable labels for game and tool IDs.
+ *
+ * @type {Record<string, string>}
+ */
 export const GAME_LABELS = {
     'pitch-quest': 'Pitch Quest',
     'rhythm-dash': 'Rhythm Dash',
@@ -50,6 +65,11 @@ export const GAME_LABELS = {
     'view-posture': 'Posture Mirror',
 };
 
+/**
+ * Human-readable labels for skill IDs.
+ *
+ * @type {Record<string, string>}
+ */
 export const SKILL_LABELS = {
     pitch: 'Pitch',
     rhythm: 'Rhythm',
@@ -59,12 +79,27 @@ export const SKILL_LABELS = {
     focus: 'Focus',
 };
 
+/**
+ * Returns a decaying weight that favors recent activity.
+ *
+ * @param {number | null | undefined} timestamp
+ * @returns {number}
+ */
 export const recencyWeight = (timestamp) => {
     if (!timestamp) return 1;
     const daysAgo = Math.max(0, (Date.now() - timestamp) / DAY_MS);
     return 1 / (1 + daysAgo * 0.35);
 };
 
+/**
+ * Calculates a weighted average from a list of items.
+ *
+ * @template T
+ * @param {T[]} items
+ * @param {(item: T) => number} getValue
+ * @param {(item: T) => number} getWeight
+ * @returns {number}
+ */
 export const weightedAverage = (items, getValue, getWeight) => {
     if (!items.length) return 0;
     let total = 0;
@@ -81,6 +116,12 @@ export const weightedAverage = (items, getValue, getWeight) => {
     return total / weightSum;
 };
 
+/**
+ * Aggregates adaptive log entries into per-skill scores.
+ *
+ * @param {Array<{ id: string, accuracy?: number, score?: number, timestamp?: number }>} adaptiveLog
+ * @returns {Record<string, number>}
+ */
 export const computeSkillScores = (adaptiveLog) => {
     const skillTotals = new Map();
     const skillCounts = new Map();
@@ -103,6 +144,12 @@ export const computeSkillScores = (adaptiveLog) => {
     return skillScores;
 };
 
+/**
+ * Returns the lowest-scoring tracked skill, defaulting to pitch.
+ *
+ * @param {Record<string, number>} skillScores
+ * @returns {string}
+ */
 export const findWeakestSkill = (skillScores) => {
     const skillCandidates = ['pitch', 'rhythm', 'bow_control', 'reading', 'posture'];
     const weakest = skillCandidates.reduce((weakest, skill) => {
@@ -113,6 +160,13 @@ export const findWeakestSkill = (skillScores) => {
     return weakest?.skill || 'pitch';
 };
 
+/**
+ * Maps recent song performance into a beginner/intermediate/advanced level.
+ *
+ * @param {Array<{ accuracy?: number, timestamp?: number }>} songEvents
+ * @param {(timestamp?: number) => number} [recencyWeightFn=recencyWeight]
+ * @returns {string}
+ */
 export const computeSongLevel = (songEvents, recencyWeightFn = recencyWeight) => {
     const recentSongEvents = songEvents.slice(-8);
     const averageSong = weightedAverage(
@@ -123,10 +177,16 @@ export const computeSongLevel = (songEvents, recencyWeightFn = recencyWeight) =>
     return averageSong >= 85 ? 'advanced' : averageSong >= 65 ? 'intermediate' : 'beginner';
 };
 
+/**
+ * Picks a stable daily item from a list using the current day and an optional seed.
+ *
+ * @param {string[]} list
+ * @param {number} [seed=0]
+ * @returns {string}
+ */
 export const pickDailyCue = (list, seed = 0) => {
     if (!Array.isArray(list) || !list.length) return '';
     const day = todayDay();
     const index = Math.abs(day + seed) % list.length;
     return list[index] || list[0];
 };
-

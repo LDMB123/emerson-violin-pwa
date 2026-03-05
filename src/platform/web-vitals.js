@@ -163,11 +163,21 @@ const bindLifecyclePersistence = () => {
     });
 };
 
+/**
+ * Loads normalized web-vitals history from persistence.
+ *
+ * @returns {Promise<{ version: number, sessions: Array<any> }>}
+ */
 export const getWebVitalsHistory = async () => {
     const stored = await getJSON(WEB_VITALS_KEY);
     return normalizeHistory(stored);
 };
 
+/**
+ * Returns the latest stored web-vitals session, if any.
+ *
+ * @returns {Promise<any | null>}
+ */
 export const getLatestWebVitalsSession = async () => {
     const history = await getWebVitalsHistory();
     return history.sessions[history.sessions.length - 1] || null;
@@ -180,4 +190,9 @@ const initWebVitals = () => {
     bindLifecyclePersistence();
 };
 
+/**
+ * Starts web-vitals measurement and persistence.
+ *
+ * @returns {void}
+ */
 export const init = initWebVitals;

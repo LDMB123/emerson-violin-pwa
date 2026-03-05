@@ -54,8 +54,8 @@ const { bind } = createGame({
         const playButton = stage.querySelector('[data-melody="play"]');
         const playTargetButton = stage.querySelector('[data-melody="play-target"]');
         const clearButton = stage.querySelector('[data-melody="clear"]');
-        // difficulty.speed: scales playback tempo; speed=1.0 keeps tempo=92 BPM (current behavior)
-        // difficulty.complexity: adjusts lengthTarget; complexity=1 (medium) = 4 notes (current behavior)
+        // difficulty.speed scales playback tempo from a 92 BPM baseline.
+        // difficulty.complexity controls the target phrase length.
         const complexityLengthTargets = [3, 4, 6];
         const lengthTarget = complexityLengthTargets[difficulty.complexity] ?? 4;
         const tempo = Math.round(92 * difficulty.speed);

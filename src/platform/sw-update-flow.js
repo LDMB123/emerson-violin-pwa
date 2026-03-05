@@ -1,3 +1,16 @@
+/**
+ * Creates the UI controller for service-worker update status and apply flow.
+ *
+ * @param {Object} options
+ * @param {(message: string) => void} options.setStatus Updates the visible
+ * update status message.
+ * @param {(visible: boolean) => void} options.showApply Shows or hides the
+ * "apply update" affordance.
+ * @returns {{
+ *   bindUpdateFlow: (registration: ServiceWorkerRegistration | null | undefined) => void,
+ *   handleControllerChange: () => void
+ * }}
+ */
 export const createSwUpdateFlowController = ({ setStatus, showApply }) => {
     const boundRegistrations = new WeakSet();
     const markReadyToApply = () => {

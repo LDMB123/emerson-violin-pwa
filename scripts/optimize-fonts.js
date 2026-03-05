@@ -9,7 +9,7 @@
  * Uses pyftsubset (requires: pip install fonttools)
  * Archives originals to _archived/original-assets/fonts/
  *
- * Expected savings: ~21% (48 KB → 38 KB)
+ * Savings depend on the source fonts and retained Unicode ranges.
  */
 
 import { execSync } from 'child_process';

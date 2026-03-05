@@ -71,4 +71,9 @@ const initNativeApis = () => {
     bindGlobalListeners();
 };
 
+/**
+ * Initializes the shared native-platform controllers.
+ *
+ * @returns {void}
+ */
 export const init = initNativeApis;

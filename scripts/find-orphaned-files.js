@@ -31,8 +31,8 @@ const orphaned = [];
 for (const file of filesToCheck) {
     const basename = path.basename(file);
 
-    // We skip index.html, sw.js as entry points, and manifest configs
-    if (['index.html', 'sw.js', 'manifest.json', 'site.webmanifest', 'favicon.ico', 'apple-touch-icon.png'].includes(basename)) {
+    // We skip entry points and current manifest assets that are referenced indirectly.
+    if (['index.html', 'sw.js', 'manifest.webmanifest', 'favicon.ico', 'apple-touch-icon.png'].includes(basename)) {
         continue;
     }
 

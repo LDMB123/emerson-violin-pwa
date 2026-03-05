@@ -1,4 +1,5 @@
-// Safari 26.2+, Chrome 133+
+// Prefer Map.getOrInsertComputed when the runtime supports it; fall back to
+// explicit cache checks in browsers that do not expose the method yet.
 const supportsGetOrInsertComputed = 'getOrInsertComputed' in Map.prototype;
 
 export class ViewLoader {

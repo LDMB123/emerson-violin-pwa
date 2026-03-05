@@ -26,6 +26,17 @@ const savePersistRequest = (state) => {
     writeJsonToStorage(PERSIST_REQUEST_KEY, state);
 };
 
+/**
+ * Creates the storage status and persistence controller.
+ *
+ * @returns {{
+ *   setElements: (nextElements: Partial<{ statusEl: HTMLElement | null, estimateEl: HTMLElement | null, requestButton: HTMLElement | null, networkStatusEl: HTMLElement | null }>) => any,
+ *   updateStorageStatus: (request?: boolean) => Promise<{ persisted: boolean }>,
+ *   maybeAutoPersist: (reason: string) => Promise<void>,
+ *   bindStorageUI: () => void,
+ *   bindNetworkStatus: () => void
+ * }}
+ */
 export const createStorageController = () => {
     const { elements, setElements } = createControllerElements(createEmptyElements);
     let storageGlobalsBound = false;

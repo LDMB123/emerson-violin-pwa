@@ -84,4 +84,9 @@ const initIpadosCapabilities = () => {
     bindGlobalListeners();
 };
 
+/**
+ * Initializes iPadOS capability flags and platform status UI.
+ *
+ * @returns {void}
+ */
 export const init = initIpadosCapabilities;

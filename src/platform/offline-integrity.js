@@ -179,4 +179,9 @@ const initOfflineIntegrity = async () => {
     runSelfTest();
 };
 
+/**
+ * Initializes offline integrity status, controls, and self-tests.
+ *
+ * @returns {Promise<void>}
+ */
 export const init = initOfflineIntegrity;

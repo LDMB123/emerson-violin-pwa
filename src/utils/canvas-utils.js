@@ -60,17 +60,41 @@ export function drawGlowingParticles(ctx, particles) {
     ctx.restore();
 }
 
+/**
+ * Restores the canvas state and then draws particles.
+ *
+ * @param {CanvasRenderingContext2D | null | undefined} ctx
+ * @param {Array<any>} particles
+ * @returns {void}
+ */
 export const restoreAndDrawParticles = (ctx, particles) => {
     if (!ctx) return;
     ctx.restore();
     drawGlowingParticles(ctx, particles);
 };
 
+/**
+ * Fills a canvas-sized rectangle with the given color.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} width
+ * @param {number} height
+ * @param {string} color
+ * @returns {void}
+ */
 export const fillCanvas = (ctx, width, height, color) => {
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, width, height);
 };
 
+/**
+ * Traces a line path by resolving points one at a time.
+ *
+ * @param {CanvasRenderingContext2D | null | undefined} ctx
+ * @param {number} pointCount
+ * @param {(index: number, point: { x: number, y: number }) => void} pointResolver
+ * @returns {void}
+ */
 export const traceLinePath = (ctx, pointCount, pointResolver) => {
     if (!ctx || !Number.isFinite(pointCount) || pointCount <= 0 || typeof pointResolver !== 'function') {
         return;

@@ -4,6 +4,15 @@ import {
 } from './platform-utils.js';
 import { INSTALL_PROMPT_CHANGE_EVENT, canPromptInstall } from './install-prompt.js';
 
+/**
+ * Creates the controller that keeps install status UI in sync with app state.
+ *
+ * @returns {{
+ *   setElement: (element: HTMLElement | null | undefined) => void,
+ *   bind: (storageController: { updateStorageStatus: (installed: boolean) => void, maybeAutoPersist: (reason: string) => void }) => void,
+ *   update: (storageController: { updateStorageStatus: (installed: boolean) => void, maybeAutoPersist: (reason: string) => void }) => void
+ * }}
+ */
 export const createInstallStateController = () => {
     let installStatusEl = null;
     let installGlobalsBound = false;

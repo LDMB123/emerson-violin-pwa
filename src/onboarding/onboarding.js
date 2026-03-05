@@ -34,8 +34,8 @@ if (carousel && dots.length) {
         });
     });
 
-    // Update active dot on scroll — scrollend (Safari 26.2 / Chrome 114 / FF 109)
-    // gives exact snap position; IO threshold:0.6 fallback for older engines.
+    // Use scrollend when available for exact snap alignment; otherwise fall back
+    // to IntersectionObserver so the active dot still tracks the visible slide.
     if ('onscrollend' in window) {
         carousel.addEventListener('scrollend', () => {
             const index = String(Math.round(carousel.scrollLeft / (carousel.offsetWidth || 1)));

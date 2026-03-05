@@ -16,6 +16,11 @@ node_modules/
 .worktrees/
 *.log
 _archived/
+!_archived/
+_archived/*
+!_archived/plans/
+_archived/plans/*
+!_archived/plans/README.md
 _mockups/
 dist-build/
 native/

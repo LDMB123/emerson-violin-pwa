@@ -2,12 +2,12 @@
 
 Local-first violin practice app for iPad-focused use, with an onboarding flow, practice tools, games, coach guidance, and offline behavior.
 
-## Current Status (March 1, 2026)
+## Health Check
 
-- `npm run lint:all`: passing
-- `npm run test:coverage`: passing (567 tests)
-- `npm run test:e2e`: passing (45 tests)
-- `npm run handoff:verify`: passing (`audit:full` + E2E)
+Avoid relying on dated snapshots in docs. Verify repo health from the current checkout:
+
+- `npm run handoff:status`
+- `npm run handoff:verify`
 
 ## Stack
 
@@ -102,7 +102,8 @@ If either command hangs or intermittently times out, step down by one worker.
 src/            App logic, styles, platform/audio/game modules
 public/         Runtime static assets (including lazy-loaded view HTML)
 tests/          Unit and E2E tests
-docs/           Guides and implementation plans
+docs/           Guides and handoff runbook
+_archived/      Historical plans and archived source material
 scripts/        Build/precache/optimization utilities
 wasm/           Rust source for WASM modules
 ```

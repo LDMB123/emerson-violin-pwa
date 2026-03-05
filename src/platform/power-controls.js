@@ -12,6 +12,17 @@ const createEmptyElements = () => ({
     orientationStatusEl: null,
 });
 
+/**
+ * Creates the wake-lock and orientation-lock controller set.
+ *
+ * @returns {{
+ *   setElements: (nextElements: Partial<{ wakeToggle: HTMLInputElement | null, wakeStatusEl: HTMLElement | null, orientationToggle: HTMLInputElement | null, orientationStatusEl: HTMLElement | null }>) => any,
+ *   bindWakeLock: () => void,
+ *   bindOrientationLock: () => void,
+ *   requestWakeLock: () => Promise<void>,
+ *   requestOrientationLock: () => Promise<void>
+ * }}
+ */
 export const createPowerControls = () => {
     const { elements, setElements } = createControllerElements(createEmptyElements);
     let wakeGlobalsBound = false;
