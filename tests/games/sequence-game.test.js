@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    createDisposableReport,
+    createPersistedPagehideEvent,
+    resetMockCollection,
+} from './test-lifecycle-helpers.js';
 
 const sharedMocks = vi.hoisted(() => ({
     cachedEl: vi.fn((selector) => () => document.querySelector(selector)),
@@ -66,17 +71,8 @@ describe('sequence-game lifecycle guards', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
         window.location.hash = '';
-        Object.values(sharedMocks).forEach((mock) => {
-            if (typeof mock?.mockClear === 'function') {
-                mock.mockClear();
-            }
-        });
-        sharedMocks.attachTuning.mockImplementation((_id, onUpdate) => {
-            const report = vi.fn();
-            report.dispose = vi.fn();
-            onUpdate?.({ difficulty: 'medium' });
-            return report;
-        });
+        resetMockCollection(sharedMocks);
+        sharedMocks.attachTuning.mockImplementation((_id, onUpdate) => createDisposableReport({ onUpdate }));
         sharedMocks.buildNoteSequence.mockReturnValue(['A', 'D']);
     });
 
@@ -105,20 +101,7 @@ describe('sequence-game lifecycle guards', () => {
 
         game.bind();
         document.querySelector('.unitseqb-btn')?.dispatchEvent(new Event('pointerdown'));
-        const pagehideEvent = typeof PageTransitionEvent === 'function'
-            ? new PageTransitionEvent('pagehide', { persisted: true })
-            : new Event('pagehide');
-        if (!('persisted' in pagehideEvent) || pagehideEvent.persisted !== true) {
-            try {
-                Object.defineProperty(pagehideEvent, 'persisted', {
-                    configurable: true,
-                    get: () => true,
-                });
-            } catch {
-                // no-op; test falls back to the platform-provided persisted value
-            }
-        }
-        window.dispatchEvent(pagehideEvent);
+        window.dispatchEvent(createPersistedPagehideEvent());
 
         expect(sharedMocks.stopTonePlayer).not.toHaveBeenCalled();
         expect(sharedMocks.recordGameEvent).not.toHaveBeenCalled();

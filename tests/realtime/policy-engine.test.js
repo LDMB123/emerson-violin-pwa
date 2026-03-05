@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createStorageMocks, resetStorageMocks } from './test-helpers.js';
 
-const storageMocks = vi.hoisted(() => ({
-    getJSON: vi.fn(async () => null),
-    setJSON: vi.fn(async () => {}),
-}));
+const storageMocks = createStorageMocks();
 
 vi.mock('../../src/persistence/storage.js', () => storageMocks);
 
@@ -12,9 +10,7 @@ const loadPolicy = async () => import('../../src/realtime/policy-engine.js');
 describe('realtime policy engine', () => {
     beforeEach(() => {
         vi.resetModules();
-        storageMocks.getJSON.mockClear();
-        storageMocks.getJSON.mockResolvedValue(null);
-        storageMocks.setJSON.mockClear();
+        resetStorageMocks(storageMocks);
     });
 
     it('enforces cooldown for one-cue-at-a-time behavior', async () => {

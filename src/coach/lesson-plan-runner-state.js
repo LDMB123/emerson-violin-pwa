@@ -1,23 +1,37 @@
 import { atLeast1 } from '../utils/math.js';
 
-const toRunnerStep = (step, index) => ({
-    id: step?.id || `runner-step-${index + 1}`,
+const toStepBase = ({
+    step,
+    index,
+    stepPrefix,
+    defaultCta,
+}) => ({
+    id: step?.id || `${stepPrefix}-${index + 1}`,
     label: step?.label || `Practice step ${index + 1}`,
     cue: step?.cue || '',
-    cta: step?.cta || step?.target || 'view-games',
+    cta: step?.cta || defaultCta,
     ctaLabel: step?.ctaLabel || 'Open activity',
     minutes: atLeast1(Math.round(step?.minutes || 3)),
+});
+
+const toRunnerStep = (step, index) => ({
+    ...toStepBase({
+        step,
+        index,
+        stepPrefix: 'runner-step',
+        defaultCta: step?.target || 'view-games',
+    }),
     status: step?.status || 'not_started',
     source: step?.source || 'plan',
 });
 
 const toLessonRunnerStep = (step, index, recommendedGameId) => ({
-    id: step?.id || `lesson-step-${index + 1}`,
-    label: step?.label || `Practice step ${index + 1}`,
-    cue: step?.cue || '',
-    cta: step?.cta || recommendedGameId,
-    ctaLabel: step?.ctaLabel || 'Open activity',
-    minutes: atLeast1(Math.round(step?.minutes || 3)),
+    ...toStepBase({
+        step,
+        index,
+        stepPrefix: 'lesson-step',
+        defaultCta: recommendedGameId,
+    }),
     status: 'not_started',
     source: 'plan',
 });

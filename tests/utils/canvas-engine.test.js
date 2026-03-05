@@ -106,4 +106,17 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
 
         expect(requestAnimationFrame.mock.calls.length).toBe(rafCallsBefore);
     });
+
+    it('cleans up canvas listeners registered via base helper', () => {
+        const engine = createStartedEngine();
+        const onPointerDown = vi.fn();
+        engine.bindCanvasPointerDown(onPointerDown);
+
+        engine.canvas.dispatchEvent(new Event('pointerdown'));
+        expect(onPointerDown).toHaveBeenCalledTimes(1);
+
+        engine.destroy();
+        engine.canvas.dispatchEvent(new Event('pointerdown'));
+        expect(onPointerDown).toHaveBeenCalledTimes(1);
+    });
 });

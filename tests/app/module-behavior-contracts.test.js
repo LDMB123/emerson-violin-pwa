@@ -1,8 +1,14 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MODULE_LOADERS } from '../../src/app/module-registry.js';
+import {
+    gameModuleRows,
+    GAME_COMPLETE_MODAL_HTML,
+    installAudioStub,
+    installMatchMediaStub,
+    installRequestAnimationFrameStub,
+    loadModuleOrRecordFailure,
+    MockIntersectionObserver,
+} from './module-test-helpers.js';
 
 vi.mock('../../src/utils/dom-ready.js', () => ({
     whenReady: (callback) => {
@@ -136,32 +142,6 @@ vi.mock('../../src/wasm/load-core.js', () => {
     };
 });
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const gameMetricsPath = path.join(repoRoot, 'src/games/game-metrics.js');
-const gameMetricsSource = fs.readFileSync(gameMetricsPath, 'utf8');
-const gameModuleRows = [
-    ...new Map(
-        [...gameMetricsSource.matchAll(/'([^']+)'\s*:\s*\(\)\s*=>\s*import\('([^']+)'\)/g)].map((match) => [
-            match[1],
-            match[2].replace('./', '../../src/games/'),
-        ])
-    ).entries(),
-].map(([viewId, importSpec]) => ({ viewId, importSpec }));
-
-class MockIntersectionObserver {
-    observe() {
-        return undefined;
-    }
-
-    unobserve() {
-        return undefined;
-    }
-
-    disconnect() {
-        return undefined;
-    }
-}
-
 class MockMutationObserver {
     constructor(callback = () => {}) {
         this.callback = callback;
@@ -180,48 +160,11 @@ class MockMutationObserver {
     }
 }
 
-const ensureMatchMedia = () => {
-    window.matchMedia = vi.fn().mockImplementation((query) => ({
-        matches: query === '(prefers-reduced-data: reduce)',
-        media: query,
-        onchange: null,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-        addListener: () => undefined,
-        removeListener: () => undefined,
-        dispatchEvent: () => false,
-    }));
-};
+const ensureMatchMedia = () => installMatchMediaStub({
+    matchesResolver: (query) => query === '(prefers-reduced-data: reduce)',
+});
 
-const ensureAudio = () => {
-    globalThis.Audio = class MockAudio {
-        constructor() {
-            this.currentTime = 0;
-            this.duration = 0;
-            this.volume = 1;
-            this.loop = false;
-            this.paused = true;
-            this.src = '';
-        }
-
-        play() {
-            this.paused = false;
-            return Promise.resolve();
-        }
-
-        pause() {
-            this.paused = true;
-        }
-
-        addEventListener() {
-            return undefined;
-        }
-
-        removeEventListener() {
-            return undefined;
-        }
-    };
-};
+const ensureAudio = () => installAudioStub();
 
 const ensureServiceWorker = () => {
     const registration = {
@@ -342,17 +285,7 @@ const installBaseDom = () => {
         <span data-parent-pin-display></span>
         <input data-parent-pin-input />
         <span data-parent-pin-status></span>
-        <dialog id="game-complete-modal">
-            <span id="game-complete-score"></span>
-            <span id="game-complete-accuracy"></span>
-            <div id="game-complete-stars">
-                <span class="game-complete-star"></span>
-                <span class="game-complete-star"></span>
-                <span class="game-complete-star"></span>
-            </div>
-            <button id="game-complete-play-again" type="button"></button>
-            <button id="game-complete-back" type="button"></button>
-        </dialog>
+        ${GAME_COMPLETE_MODAL_HTML}
     `;
 
     gameModuleRows.forEach(({ viewId }) => {
@@ -401,7 +334,7 @@ const installEnvironment = () => {
     globalThis.IntersectionObserver = MockIntersectionObserver;
     window.MutationObserver = MockMutationObserver;
     globalThis.MutationObserver = MockMutationObserver;
-    window.requestAnimationFrame = (callback) => window.setTimeout(() => callback(performance.now()), 0);
+    installRequestAnimationFrameStub();
     Element.prototype.scrollIntoView = Element.prototype.scrollIntoView || (() => undefined);
     if (typeof HTMLDialogElement !== 'undefined') {
         HTMLDialogElement.prototype.showModal = HTMLDialogElement.prototype.showModal || (() => undefined);
@@ -431,36 +364,37 @@ describe('module behavior contracts', () => {
         const failures = [];
 
         for (const [moduleKey, loader] of Object.entries(MODULE_LOADERS)) {
-            try {
-                const loadedModule = await loader();
-                expect(loadedModule).toBeTypeOf('object');
+            const loadedModule = await loadModuleOrRecordFailure({
+                failures,
+                label: `runtime:${moduleKey}`,
+                load: loader,
+            });
+            if (!loadedModule) continue;
+            expect(loadedModule).toBeTypeOf('object');
 
-                if (moduleKey !== 'progress') {
-                    await invokeMaybeAsync(loadedModule.init);
-                }
-                if (moduleKey === 'progress') {
-                    const probe = document.createElement('input');
-                    probe.id = 'progress-branch-probe';
-                    probe.type = 'checkbox';
-                    probe.checked = false;
-                    document.body.appendChild(probe);
-                    probe.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-                if (moduleKey === 'badging' && typeof loadedModule.setBadge === 'function') {
-                    await loadedModule.setBadge(0);
-                }
-                if (moduleKey === 'audioPlayer') {
-                    expect(document.querySelector('.audio-card .tone-play-btn')).not.toBeNull();
-                }
-                if (moduleKey === 'dataSaver') {
-                    const audio = document.querySelector('.audio-card audio');
-                    expect(audio?.getAttribute('preload')).toBe('none');
-                }
-                if (moduleKey === 'gameEnhancements') {
-                    expect(document.querySelector('.game-view[data-game-enhanced="true"]')).not.toBeNull();
-                }
-            } catch (error) {
-                failures.push(`runtime:${moduleKey} -> ${error instanceof Error ? error.message : String(error)}`);
+            if (moduleKey !== 'progress') {
+                await invokeMaybeAsync(loadedModule.init);
+            }
+            if (moduleKey === 'progress') {
+                const probe = document.createElement('input');
+                probe.id = 'progress-branch-probe';
+                probe.type = 'checkbox';
+                probe.checked = false;
+                document.body.appendChild(probe);
+                probe.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (moduleKey === 'badging' && typeof loadedModule.setBadge === 'function') {
+                await loadedModule.setBadge(0);
+            }
+            if (moduleKey === 'audioPlayer') {
+                expect(document.querySelector('.audio-card .tone-play-btn')).not.toBeNull();
+            }
+            if (moduleKey === 'dataSaver') {
+                const audio = document.querySelector('.audio-card audio');
+                expect(audio?.getAttribute('preload')).toBe('none');
+            }
+            if (moduleKey === 'gameEnhancements') {
+                expect(document.querySelector('.game-view[data-game-enhanced="true"]')).not.toBeNull();
             }
         }
 
@@ -472,25 +406,26 @@ describe('module behavior contracts', () => {
         const failures = [];
 
         for (const { viewId, importSpec } of gameModuleRows) {
-            try {
-                const loadedModule = await import(importSpec);
-                expect(loadedModule).toBeTypeOf('object');
-                expect(typeof loadedModule.bind).toBe('function');
-                expect(typeof loadedModule.update).toBe('function');
+            const loadedModule = await loadModuleOrRecordFailure({
+                failures,
+                label: `game:${viewId} (${importSpec})`,
+                load: () => import(importSpec),
+            });
+            if (!loadedModule) continue;
+            expect(loadedModule).toBeTypeOf('object');
+            expect(typeof loadedModule.bind).toBe('function');
+            expect(typeof loadedModule.update).toBe('function');
 
-                window.location.hash = `#${viewId}`;
+            window.location.hash = `#${viewId}`;
+            await invokeMaybeAsync(() => loadedModule.bind({ speed: 1, complexity: 1 }));
+            if (viewId === 'view-game-string-quest') {
+                const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
                 await invokeMaybeAsync(() => loadedModule.bind({ speed: 1, complexity: 1 }));
-                if (viewId === 'view-game-string-quest') {
-                    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
-                    await invokeMaybeAsync(() => loadedModule.bind({ speed: 1, complexity: 1 }));
-                    const trigger = document.querySelector('#view-game-string-quest .string-btn[data-string-btn="G"]');
-                    trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
-                    randomSpy.mockRestore();
-                }
-                await invokeMaybeAsync(loadedModule.update);
-            } catch (error) {
-                failures.push(`game:${viewId} (${importSpec}) -> ${error instanceof Error ? error.message : String(error)}`);
+                const trigger = document.querySelector('#view-game-string-quest .string-btn[data-string-btn="G"]');
+                trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
+                randomSpy.mockRestore();
             }
+            await invokeMaybeAsync(loadedModule.update);
         }
 
         await vi.advanceTimersByTimeAsync(500);

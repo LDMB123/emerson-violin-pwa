@@ -21,6 +21,27 @@ const ensureServiceWorkerControl = async (page) => {
     }
 };
 
+const fetchAssetChecks = (page, assets) => page.evaluate(async (assetPaths) => {
+    const results = [];
+    for (const asset of assetPaths) {
+        try {
+            const response = await fetch(`/${asset}`, { method: 'GET' });
+            results.push({
+                asset,
+                status: response.status,
+                ok: response.ok,
+                type: response.type,
+            });
+        } catch (error) {
+            results.push({
+                asset,
+                error: String(error),
+            });
+        }
+    }
+    return results;
+}, assets);
+
 test('progress path has no BigInt conversion errors and can serve critical audio offline', async ({ page, context }, testInfo) => {
     const errors = [];
 
@@ -42,51 +63,13 @@ test('progress path has no BigInt conversion errors and can serve critical audio
         || location.hostname.endsWith('.local')
     ));
 
-    const onlineChecks = await page.evaluate(async (assets) => {
-        const results = [];
-        for (const asset of assets) {
-            try {
-                const response = await fetch(`/${asset}`, { method: 'GET' });
-                results.push({
-                    asset,
-                    status: response.status,
-                    ok: response.ok,
-                    type: response.type,
-                });
-            } catch (error) {
-                results.push({
-                    asset,
-                    error: String(error),
-                });
-            }
-        }
-        return results;
-    }, CRITICAL_AUDIO_ASSETS);
+    const onlineChecks = await fetchAssetChecks(page, CRITICAL_AUDIO_ASSETS);
 
     await ensureServiceWorkerControl(page);
 
     await context.setOffline(true);
 
-    const offlineChecks = await page.evaluate(async (assets) => {
-        const results = [];
-        for (const asset of assets) {
-            try {
-                const response = await fetch(`/${asset}`, { method: 'GET' });
-                results.push({
-                    asset,
-                    status: response.status,
-                    ok: response.ok,
-                    type: response.type,
-                });
-            } catch (error) {
-                results.push({
-                    asset,
-                    error: String(error),
-                });
-            }
-        }
-        return results;
-    }, CRITICAL_AUDIO_ASSETS);
+    const offlineChecks = await fetchAssetChecks(page, CRITICAL_AUDIO_ASSETS);
 
     const hasBigIntError = errors.some((entry) => entry.includes('Cannot convert') && entry.includes('to a BigInt'));
     const hasTrackerError = errors.some((entry) => entry.includes('achievementtracker') || entry.includes('check_progress'));

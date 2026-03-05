@@ -8,8 +8,7 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
         this.onCardTapped = null;
 
         this.initCards();
-        this.handlePointerDown = this.handlePointerDown.bind(this);
-        canvas.addEventListener('pointerdown', this.handlePointerDown);
+        this.bindCanvasPointerDownMethod('handlePointerDown');
     }
 
     initCards() {
@@ -223,8 +222,4 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
         if (card && this.onCardTapped) this.onCardTapped(card);
     }
 
-    destroy() {
-        super.destroy();
-        this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
-    }
 }

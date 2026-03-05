@@ -1,4 +1,5 @@
 import { setAriaCurrent } from '../utils/dom-utils.js';
+import { prefetchViewIfMissing } from './view-prefetch.js';
 
 export const setupNavigationController = ({
     ctx,
@@ -95,24 +96,21 @@ export const bindHashViewController = ({
     showView,
     onAfterViewChange,
 }) => {
+    const showCurrentView = async () => {
+        const viewId = getCurrentViewId() || 'view-home';
+        await showView(viewId);
+        onAfterViewChange?.(viewId);
+    };
+
     if (supportsNavigationAPI) {
         navigation.addEventListener('navigate', (event) => {
             if (!event.canIntercept || !event.destination.sameDocument) return;
             event.intercept({
-                async handler() {
-                    const viewId = getCurrentViewId() || 'view-home';
-                    await showView(viewId);
-                    onAfterViewChange?.(viewId);
-                },
+                handler: showCurrentView,
             });
         });
     } else {
-        const onHashChange = async () => {
-            const viewId = getCurrentViewId() || 'view-home';
-            await showView(viewId);
-            onAfterViewChange?.(viewId);
-        };
-        window.addEventListener('hashchange', onHashChange, { passive: true });
+        window.addEventListener('hashchange', showCurrentView, { passive: true });
     }
 
     const syncInitialView = async (initialViewId) => {
@@ -141,10 +139,7 @@ export const prefetchLikelyViews = ({
         .slice(0, prefetchLimit)
         .forEach((viewId, index) => {
             queueIdleTask(() => {
-                const viewPath = getViewPath(viewId);
-                if (!viewLoader.has(viewPath)) {
-                    viewLoader.prefetch(viewPath);
-                }
+                prefetchViewIfMissing({ viewId, getViewPath, viewLoader });
             }, 400 + index * 250);
         });
 };

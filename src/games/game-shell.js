@@ -1,11 +1,9 @@
 import {
-    recordGameEvent,
     attachTuning,
     setDifficultyBadge,
 } from './shared.js';
+import { isPrimarySessionObjectiveInput, reportFilteredSessionGameEvent } from './game-session-reporting.js';
 import { bindGameSessionLifecycle } from './game-session-lifecycle.js';
-import { resolveSessionObjectiveProgress } from './game-objectives.js';
-import { positiveRound } from '../utils/math.js';
 
 /**
  * createGame — factory for universal game boilerplate.
@@ -30,6 +28,7 @@ import { positiveRound } from '../utils/math.js';
  */
 export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate } = {}) {
     const viewId = `#view-game-${id}`;
+    const getStage = () => document.querySelector(viewId);
     let reportResult = null;
     let reported = false;
     let sessionStartedAt = 0;
@@ -38,13 +37,13 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
     const gameState = {};
 
     function update() {
-        const stage = document.querySelector(viewId);
+        const stage = getStage();
         if (!stage) return;
         if (typeof computeUpdate === 'function') computeUpdate(stage, gameState);
     }
 
     function bind(difficulty = { speed: 1.0, complexity: 1 }) {
-        const stage = document.querySelector(viewId);
+        const stage = getStage();
         if (!stage) return;
 
         if (typeof gameState._disposeBindings === 'function') {
@@ -92,41 +91,25 @@ export function createGame({ id, onBind, computeAccuracy, onReset, computeUpdate
             if (typeof onReset === 'function') onReset(gameState);
         });
 
+        const reportCurrentSession = ({ accuracy = 0, score = 0 } = {}) => reportFilteredSessionGameEvent({
+            id,
+            reportResult,
+            stage,
+            difficulty,
+            accuracy,
+            score,
+            sessionStartedAt,
+            includeInput: isPrimarySessionObjectiveInput,
+            mistakes: gameState.mistakes,
+        });
+
         const reportSession = () => {
             if (reported) return;
             const accuracy = typeof computeAccuracy === 'function' ? computeAccuracy(gameState) : 0;
             if (accuracy <= 0 && !gameState.score) return;
             reported = true;
-            reportResult({ accuracy, score: gameState.score || 0 });
-
-            const objectiveProgress = resolveSessionObjectiveProgress({
-                stage,
-                gameId: id,
-                difficulty,
-                includeInput: (input) => (
-                    !input.id.startsWith('setting-')
-                    && !input.id.includes('parent-')
-                    && /(-step-|set-)/.test(input.id)
-                ),
-            });
-            const mistakes = Number.isFinite(gameState.mistakes)
-                ? positiveRound(gameState.mistakes)
-                : Math.max(0, objectiveProgress.objectiveTotal - objectiveProgress.objectivesCompleted);
-            const sessionMs = Math.max(0, Date.now() - (sessionStartedAt || Date.now()));
-            const difficultyLevel = stage.querySelector('.difficulty-badge')?.dataset?.level
-                || stage.dataset.gameDifficulty
-                || 'medium';
-
-            recordGameEvent(id, {
-                accuracy,
-                score: gameState.score || 0,
-                difficulty: difficultyLevel,
-                tier: objectiveProgress.tier,
-                sessionMs,
-                objectiveTotal: objectiveProgress.objectiveTotal,
-                objectivesCompleted: objectiveProgress.objectivesCompleted,
-                mistakes,
-            });
+            const score = gameState.score || 0;
+            reportCurrentSession({ accuracy, score });
         };
 
         const resetSession = () => {

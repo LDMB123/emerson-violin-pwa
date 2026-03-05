@@ -1,6 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
 
+const startSongPlayMode = async (page, viewId) => {
+    const toggle = page.locator(`#${viewId} .song-play-toggle`);
+    await page.locator(`#${viewId} label.btn-start`).click();
+    await expect(toggle).toBeChecked();
+    return toggle;
+};
+
+const stopSongPlayMode = async (page, viewId) => {
+    const toggle = page.locator(`#${viewId} .song-play-toggle`);
+    await page.locator(`#${viewId} label.btn-stop`).click();
+    await expect(toggle).not.toBeChecked();
+};
+
 test('utility routes are reachable from home links', async ({ page }) => {
     await openHome(page);
 
@@ -39,12 +52,8 @@ test('all song detail routes load and playhead controls toggle', async ({ page }
         await page.goto(`/${route}`);
         await expect(page.locator(`#${viewId}`)).toBeVisible();
 
-        const toggle = page.locator(`#${viewId} .song-play-toggle`);
-        await page.locator(`#${viewId} label.btn-start`).click();
-        await expect(toggle).toBeChecked();
-
-        await page.locator(`#${viewId} label.btn-stop`).click();
-        await expect(toggle).not.toBeChecked();
+        await startSongPlayMode(page, viewId);
+        await stopSongPlayMode(page, viewId);
     }
 });
 
@@ -56,9 +65,7 @@ test('song play mode auto-stops when the run duration completes', async ({ page 
     await page.goto('/#view-song-twinkle');
     await expect(page.locator(`#${viewId}`)).toBeVisible();
 
-    const toggle = page.locator(`#${viewId} .song-play-toggle`);
-    await page.locator(`#${viewId} label.btn-start`).click();
-    await expect(toggle).toBeChecked();
+    const toggle = await startSongPlayMode(page, viewId);
 
     await expect(toggle).not.toBeChecked({ timeout: 38000 });
 });

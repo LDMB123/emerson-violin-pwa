@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RT_PROFILE_KEY } from '../../src/persistence/storage-keys.js';
 import { RT_STATE } from '../../src/utils/event-names.js';
+import { createPersistedPagehideEvent } from '../games/test-lifecycle-helpers.js';
+import { createStorageMocks } from './test-helpers.js';
 
-const storageMocks = vi.hoisted(() => ({
-    getJSON: vi.fn(async () => null),
-    setJSON: vi.fn(async () => {}),
-}));
+const storageMocks = createStorageMocks();
 
 const eventLogMocks = vi.hoisted(() => ({
     appendRealtimeEvent: vi.fn(async () => {}),
@@ -31,23 +30,6 @@ vi.mock('../../src/realtime/event-log.js', () => eventLogMocks);
 vi.mock('../../src/realtime/policy-engine.js', () => policyMocks);
 
 const nextTick = () => new Promise((resolve) => setTimeout(resolve, 0));
-
-const createPersistedPagehideEvent = () => {
-    const event = typeof PageTransitionEvent === 'function'
-        ? new PageTransitionEvent('pagehide', { persisted: true })
-        : new Event('pagehide');
-    if (!('persisted' in event) || event.persisted !== true) {
-        try {
-            Object.defineProperty(event, 'persisted', {
-                configurable: true,
-                value: true,
-            });
-        } catch {
-            // Ignore if persisted is non-configurable on this platform.
-        }
-    }
-    return event;
-};
 
 const createFakeAudioHarness = ({ workerMode = 'auto' } = {}) => {
     class FakeAudioNode {

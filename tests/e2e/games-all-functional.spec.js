@@ -1,120 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
-import { navigateToView } from './helpers/navigate-view.js';
-
-const openGamesHub = async (page) => {
-    await page.locator('.bottom-nav a[href="#view-games"]').click();
-    await navigateToView(page, 'view-games', { timeout: 10000 });
-};
-
-const ensureGamesHubVisible = async (page) => {
-    const gamesView = page.locator('#view-games');
-    if (await gamesView.isVisible().catch(() => false)) return;
-    await openGamesHub(page).catch(() => { });
-    if (await gamesView.isVisible().catch(() => false)) return;
-    await page.goto('/#view-games', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => { });
-    await expect(gamesView).toBeVisible({ timeout: 10000 });
-};
-
-const dismissGameCompleteIfOpen = async (page) => {
-    await page.evaluate(() => document.getElementById('exit-confirm-modal')?.close());
-    const completeModal = page.locator('#game-complete-modal');
-    if (!(await completeModal.isVisible().catch(() => false))) return;
-    const playAgain = page.locator('#game-complete-play-again');
-    if (await playAgain.isVisible().catch(() => false)) {
-        await playAgain.click();
-    } else {
-        await page.keyboard.press('Escape');
-    }
-    await expect(completeModal).not.toBeVisible();
-};
-
-const openGame = async (page, gameId) => {
-    const targetViewId = `view-game-${gameId}`;
-    const targetView = page.locator(`#${targetViewId}`);
-    const gameLink = page.locator(`a[href="#${targetViewId}"]`).first();
-
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-        await dismissGameCompleteIfOpen(page);
-        await ensureGamesHubVisible(page).catch(() => { });
-        await navigateToView(page, targetViewId, { timeout: 7000 }).catch(() => { });
-        await page.waitForURL(`**/#${targetViewId}`, { timeout: 7000 }).catch(() => { });
-        if (await targetView.isVisible().catch(() => false)) {
-            await dismissGameCompleteIfOpen(page);
-            if (await targetView.isVisible().catch(() => false)) {
-                return;
-            }
-        }
-        if (await gameLink.isVisible().catch(() => false)) {
-            await gameLink.click({ timeout: 3000 }).catch(() => { });
-            if (await targetView.isVisible().catch(() => false)) {
-                await dismissGameCompleteIfOpen(page);
-                if (await targetView.isVisible().catch(() => false)) {
-                    return;
-                }
-            }
-        }
-        await ensureGamesHubVisible(page).catch(() => { });
-    }
-
-    await navigateToView(page, targetViewId, { timeout: 10000 }).catch(() => { });
-    await page.waitForURL(`**/#${targetViewId}`, { timeout: 10000 }).catch(() => { });
-    await dismissGameCompleteIfOpen(page);
-    if (!(await targetView.isVisible().catch(() => false))) {
-        await ensureGamesHubVisible(page);
-        await gameLink.click({ timeout: 5000 }).catch(() => { });
-    }
-    await expect(targetView).toBeVisible({ timeout: 10000 });
-    await dismissGameCompleteIfOpen(page);
-
-    // Force the session to be active to hide floating coach overlays
-    await page.evaluate((id) => {
-        const view = document.getElementById(id);
-        if (!view) return;
-        const stage = view.querySelector('.game-stage') || view.querySelector('.game-content');
-        if (stage) stage.dataset.session = 'active';
-    }, targetViewId);
-};
-
-const returnToGames = async (page, gameId) => {
-    const completeModal = page.locator('#game-complete-modal');
-    try {
-        if (await completeModal.isVisible().catch(() => false)) {
-            await page.locator('#game-complete-back').click({ timeout: 3000 });
-        } else {
-            await page.locator(`#view-game-${gameId} .back-btn`).click({ timeout: 3000 });
-        }
-    } catch {
-        if (await completeModal.isVisible().catch(() => false)) {
-            await page.locator('#game-complete-back').click().catch(() => { });
-        }
-    }
-
-    await navigateToView(page, 'view-games', { timeout: 10000 });
-};
-
-const findMemoryPairs = async (page) => {
-    return page.evaluate(() => {
-        const buckets = {};
-        document.querySelectorAll('#view-game-note-memory .memory-card').forEach((card) => {
-            const id = card.querySelector('input')?.id;
-            const note = card.querySelector('.memory-back')?.textContent?.trim();
-            if (!id || !note) return;
-            if (!buckets[note]) buckets[note] = [];
-            buckets[note].push(id);
-        });
-
-        return Object.values(buckets)
-            .filter((entries) => entries.length >= 2)
-            .map((entries) => entries.slice(0, 2));
-    });
-};
-
-const readNumericValue = async (locator) => {
-    const raw = await locator.innerText();
-    const numeric = Number.parseFloat(raw.replace(/[^0-9.-]/g, ''));
-    return Number.isFinite(numeric) ? numeric : 0;
-};
+import {
+    dispatchGameRecordedEvent,
+    dismissGameCompleteIfOpen,
+    openGame,
+    openGamesHub,
+    readNumericValue,
+    returnToGames,
+} from './helpers/game-flow.js';
 
 const ensureRhythmRunStarted = async (page) => {
     const runToggle = page.locator('#view-game-rhythm-dash #rhythm-run');
@@ -218,14 +111,6 @@ const tapScaleUntilScoreChanges = async (page, scoreLocator) => {
     }
 
     expect(await readNumericValue(scoreLocator)).not.toBe(startScore);
-};
-
-const dispatchGameRecordedEvent = async (page, gameId, score) => {
-    await page.evaluate(({ id, s }) => {
-        document.dispatchEvent(new CustomEvent('panda:game-recorded', {
-            detail: { id, score: s },
-        }));
-    }, { id: gameId, s: score });
 };
 
 const ensureSoundsEnabled = async (page) => {

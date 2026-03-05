@@ -37,8 +37,10 @@ export const createHomeCoachController = ({
         return 'Resume';
     };
 
+    const getContinueTarget = () => document.documentElement.dataset.practiceContinueHref || 'view-coach';
+
     const setContinueHref = (continueBtn, target) => {
-        const href = toHashRoute(target || document.documentElement.dataset.practiceContinueHref || 'view-coach');
+        const href = toHashRoute(target || getContinueTarget());
         document.documentElement.dataset.practiceContinueHref = href;
         if (continueBtn) {
             continueBtn.setAttribute('href', href);
@@ -64,11 +66,11 @@ export const createHomeCoachController = ({
         }
 
         if (continueBtn) {
-            setContinueHref(continueBtn, document.documentElement.dataset.practiceContinueHref || 'view-coach');
+            setContinueHref(continueBtn, getContinueTarget());
             if (continueBtn.dataset.bound !== 'true') {
                 continueBtn.dataset.bound = 'true';
                 continueBtn.addEventListener('click', () => {
-                    setContinueHref(continueBtn, document.documentElement.dataset.practiceContinueHref || 'view-coach');
+                    setContinueHref(continueBtn, getContinueTarget());
                 });
             }
             if (continueBtn.dataset.recommendationBound !== 'true') {
@@ -87,7 +89,7 @@ export const createHomeCoachController = ({
                         setContinueHref(continueBtn, recommended);
                     })
                     .catch(() => {
-                        setContinueHref(continueBtn, document.documentElement.dataset.practiceContinueHref || 'view-coach');
+                        setContinueHref(continueBtn, getContinueTarget());
                     });
             }
         }
@@ -127,6 +129,10 @@ export const createHomeCoachController = ({
         if (!coachStepperAutoBound) {
             coachStepperAutoBound = true;
             const canAutoSwitch = () => window.location.hash === '#view-coach' && typeof activateCoachStep === 'function';
+            const activatePlayIfAllowed = () => {
+                if (!canAutoSwitch()) return;
+                activateCoachStep('play');
+            };
 
             document.addEventListener(RT_SESSION_STARTED, () => {
                 if (!canAutoSwitch()) return;
@@ -141,20 +147,9 @@ export const createHomeCoachController = ({
                 }
             });
 
-            document.addEventListener(LESSON_COMPLETE, () => {
-                if (!canAutoSwitch()) return;
-                activateCoachStep('play');
-            });
-
-            document.addEventListener(GAME_RECORDED, () => {
-                if (!canAutoSwitch()) return;
-                activateCoachStep('play');
-            });
-
-            document.addEventListener(COACH_MISSION_COMPLETE, () => {
-                if (!canAutoSwitch()) return;
-                activateCoachStep('play');
-            });
+            document.addEventListener(LESSON_COMPLETE, activatePlayIfAllowed);
+            document.addEventListener(GAME_RECORDED, activatePlayIfAllowed);
+            document.addEventListener(COACH_MISSION_COMPLETE, activatePlayIfAllowed);
         }
     };
 

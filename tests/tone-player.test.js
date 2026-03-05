@@ -49,6 +49,15 @@ describe('createTonePlayer', () => {
         delete globalThis.webkitAudioContext;
     });
 
+    const playA4WithFakeTimers = async (player) => {
+        vi.useFakeTimers();
+        const promise = player.playNote('A4');
+        await vi.runAllTimersAsync();
+        const result = await promise;
+        vi.useRealTimers();
+        return result;
+    };
+
     it('returns object with playNote, playSequence, scheduleTone, stopAll', () => {
         const player = createTonePlayer();
         expect(player).toBeTruthy();
@@ -61,13 +70,9 @@ describe('createTonePlayer', () => {
 
     it('playNote resolves true for valid note', async () => {
         const player = createTonePlayer();
-        vi.useFakeTimers();
-        const promise = player.playNote('A4');
-        await vi.runAllTimersAsync();
-        const result = await promise;
+        const result = await playA4WithFakeTimers(player);
         expect(result).toBe(true);
         expect(mockContext.createOscillator).toHaveBeenCalled();
-        vi.useRealTimers();
     });
 
     it('playNote returns false for unknown note', async () => {
@@ -102,12 +107,8 @@ describe('createTonePlayer', () => {
         globalThis.webkitAudioContext = function () { return mockContext; };
 
         const player = createTonePlayer();
-        vi.useFakeTimers();
-        const promise = player.playNote('A4');
-        await vi.runAllTimersAsync();
-        const result = await promise;
+        const result = await playA4WithFakeTimers(player);
         expect(result).toBe(true);
         expect(mockContext.createOscillator).toHaveBeenCalled();
-        vi.useRealTimers();
     });
 });

@@ -102,6 +102,15 @@ fn compute_acf_div(samples: &[f32], tau: usize, limit: usize) -> (f32, f32) {
     (acf, div)
 }
 
+fn compute_nsdf_value(samples: &[f32], tau: usize, limit: usize) -> Option<f32> {
+    let (acf, div) = compute_acf_div(samples, tau, limit);
+    if div > 0.0 {
+        Some(2.0 * acf / div)
+    } else {
+        None
+    }
+}
+
 /// Pitch detector using autocorrelation algorithm
 #[wasm_bindgen]
 pub struct PitchDetector {
@@ -236,10 +245,8 @@ impl PitchDetector {
 
         for tau in ds_min_lag..ds_max_lag {
             let limit = ds_len - tau;
-            let (acf, div) = compute_acf_div(&self.downsampled, tau, limit);
-
-            if div > 0.0 {
-                self.nsdf[tau - ds_min_lag] = 2.0 * acf / div;
+            if let Some(val) = compute_nsdf_value(&self.downsampled, tau, limit) {
+                self.nsdf[tau - ds_min_lag] = val;
             }
         }
 
@@ -284,12 +291,9 @@ impl PitchDetector {
         // Only calculate NSDF for lags in the narrow refinement window
         for (i, tau) in (fine_min_lag..=fine_max_lag).enumerate() {
             let limit = n - tau;
-            let (acf, div) = compute_acf_div(buffer, tau, limit);
-
-            if div > 0.0 {
-                let val = 2.0 * acf / div;
+            if let Some(val) = compute_nsdf_value(buffer, tau, limit) {
                 fine_nsdf[i] = val;
-                
+
                 if val > best_fine_val {
                     best_fine_val = val;
                     best_fine_lag = tau;

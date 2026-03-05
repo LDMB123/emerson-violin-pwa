@@ -12,6 +12,17 @@ import {
 } from '../src/utils/recommendations-utils.js';
 
 describe('recommendations-utils', () => {
+    const withFixedNow = (timestamp) => {
+        let originalNow;
+        beforeEach(() => {
+            originalNow = Date.now;
+            Date.now = vi.fn(() => timestamp);
+        });
+        afterEach(() => {
+            Date.now = originalNow;
+        });
+    };
+
     describe('SKILL_BY_GAME constant', () => {
         it('maps pitch-quest to pitch', () => {
             expect(SKILL_BY_GAME['pitch-quest']).toBe('pitch');
@@ -52,16 +63,7 @@ describe('recommendations-utils', () => {
     });
 
     describe('recencyWeight', () => {
-        let originalNow;
-
-        beforeEach(() => {
-            originalNow = Date.now;
-            Date.now = vi.fn(() => 1000000000);
-        });
-
-        afterEach(() => {
-            Date.now = originalNow;
-        });
+        withFixedNow(1000000000);
 
         it('returns 1 for missing timestamp', () => {
             expect(recencyWeight(null)).toBe(1);
@@ -101,22 +103,24 @@ describe('recommendations-utils', () => {
             expect(result).toBeCloseTo(66.67, 1);
         });
 
-        it('ignores non-finite values', () => {
-            const items = [
-                { value: 100, weight: 1 },
-                { value: NaN, weight: 1 },
-                { value: 50, weight: 1 },
-            ];
-            const result = weightedAverage(items, (x) => x.value, (x) => x.weight);
-            expect(result).toBeCloseTo(75, 5);
-        });
-
-        it('ignores non-finite weights', () => {
-            const items = [
-                { value: 100, weight: 1 },
-                { value: 80, weight: NaN },
-                { value: 50, weight: 1 },
-            ];
+        it.each([
+            {
+                label: 'values',
+                items: [
+                    { value: 100, weight: 1 },
+                    { value: NaN, weight: 1 },
+                    { value: 50, weight: 1 },
+                ],
+            },
+            {
+                label: 'weights',
+                items: [
+                    { value: 100, weight: 1 },
+                    { value: 80, weight: NaN },
+                    { value: 50, weight: 1 },
+                ],
+            },
+        ])('ignores non-finite $label', ({ items }) => {
             const result = weightedAverage(items, (x) => x.value, (x) => x.weight);
             expect(result).toBeCloseTo(75, 5);
         });
@@ -132,16 +136,7 @@ describe('recommendations-utils', () => {
     });
 
     describe('computeSkillScores', () => {
-        let originalNow;
-
-        beforeEach(() => {
-            originalNow = Date.now;
-            Date.now = vi.fn(() => 1000000000);
-        });
-
-        afterEach(() => {
-            Date.now = originalNow;
-        });
+        withFixedNow(1000000000);
 
         it('returns empty object for empty log', () => {
             expect(computeSkillScores([])).toEqual({});
@@ -228,16 +223,7 @@ describe('recommendations-utils', () => {
     });
 
     describe('computeSongLevel', () => {
-        let originalNow;
-
-        beforeEach(() => {
-            originalNow = Date.now;
-            Date.now = vi.fn(() => 1000000000);
-        });
-
-        afterEach(() => {
-            Date.now = originalNow;
-        });
+        withFixedNow(1000000000);
 
         it('returns beginner for low accuracy', () => {
             const events = [
@@ -278,16 +264,7 @@ describe('recommendations-utils', () => {
     });
 
     describe('pickDailyCue', () => {
-        let originalNow;
-
-        beforeEach(() => {
-            originalNow = Date.now;
-            Date.now = vi.fn(() => 86400000 * 100);
-        });
-
-        afterEach(() => {
-            Date.now = originalNow;
-        });
+        withFixedNow(86400000 * 100);
 
         it('returns empty string for empty list', () => {
             expect(pickDailyCue([])).toBe('');

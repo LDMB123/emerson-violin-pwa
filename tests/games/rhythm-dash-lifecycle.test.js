@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    createDisposableReport,
+    createPersistedPagehideEvent,
+    resetMockCollection,
+} from './test-lifecycle-helpers.js';
 
 const sharedMocks = vi.hoisted(() => ({
     createStandardGameUpdate: vi.fn(() => vi.fn()),
@@ -76,49 +81,28 @@ const mountStage = () => {
     `;
 };
 
-const createPersistedPagehide = () => {
-    const event = typeof PageTransitionEvent === 'function'
-        ? new PageTransitionEvent('pagehide', { persisted: true })
-        : new Event('pagehide');
-    if (!('persisted' in event) || event.persisted !== true) {
-        try {
-            Object.defineProperty(event, 'persisted', {
-                configurable: true,
-                get: () => true,
-            });
-        } catch {
-            // no-op
-        }
-    }
-    return event;
+const startRun = () => {
+    bind();
+    const runToggle = document.querySelector('#rhythm-run');
+    expect(runToggle).toBeTruthy();
+    runToggle.checked = true;
+    runToggle.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(runToggle.checked).toBe(true);
+    return runToggle;
 };
 
 describe('rhythm-dash pagehide lifecycle', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
         window.location.hash = '#view-game-rhythm-dash';
-        Object.values(sharedMocks).forEach((mock) => {
-            if (typeof mock?.mockClear === 'function') mock.mockClear();
-        });
-        Object.values(rhythmUtilsMocks).forEach((mock) => {
-            if (typeof mock?.mockClear === 'function') mock.mockClear();
-        });
-        sharedMocks.attachTuning.mockImplementation((_id, onUpdate) => {
-            const report = vi.fn();
-            report.dispose = vi.fn();
-            onUpdate?.({ difficulty: 'medium' });
-            return report;
-        });
+        resetMockCollection(sharedMocks);
+        resetMockCollection(rhythmUtilsMocks);
+        sharedMocks.attachTuning.mockImplementation((_id, onUpdate) => createDisposableReport({ onUpdate }));
         mountStage();
     });
 
     it('stops an active run on non-persisted pagehide', () => {
-        bind();
-        const runToggle = document.querySelector('#rhythm-run');
-        expect(runToggle).toBeTruthy();
-        runToggle.checked = true;
-        runToggle.dispatchEvent(new Event('change', { bubbles: true }));
-        expect(runToggle.checked).toBe(true);
+        const runToggle = startRun();
 
         window.dispatchEvent(new Event('pagehide'));
 
@@ -126,14 +110,9 @@ describe('rhythm-dash pagehide lifecycle', () => {
     });
 
     it('keeps active run state on persisted pagehide snapshots', () => {
-        bind();
-        const runToggle = document.querySelector('#rhythm-run');
-        expect(runToggle).toBeTruthy();
-        runToggle.checked = true;
-        runToggle.dispatchEvent(new Event('change', { bubbles: true }));
-        expect(runToggle.checked).toBe(true);
+        const runToggle = startRun();
 
-        window.dispatchEvent(createPersistedPagehide());
+        window.dispatchEvent(createPersistedPagehideEvent());
 
         expect(runToggle.checked).toBe(true);
     });

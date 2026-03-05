@@ -1,54 +1,22 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { MODULE_LOADERS } from '../../src/app/module-registry.js';
+import {
+    gameModuleImportSpecs,
+    installAudioStub,
+    installGameCompleteModalDom,
+    installMatchMediaStub,
+    installRequestAnimationFrameStub,
+    loadModuleOrRecordFailure,
+    MockIntersectionObserver,
+} from './module-test-helpers.js';
 
 vi.mock('../../src/utils/dom-ready.js', () => ({
     whenReady: () => {},
 }));
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const gameMetricsPath = path.join(repoRoot, 'src/games/game-metrics.js');
-const gameMetricsSource = fs.readFileSync(gameMetricsPath, 'utf8');
-const gameModuleImportSpecs = [
-    ...new Set(
-        [...gameMetricsSource.matchAll(/'([^']+)'\s*:\s*\(\)\s*=>\s*import\('([^']+)'\)/g)]
-            .map((match) => match[2].replace('./', '../../src/games/'))
-    ),
-];
-
-class MockIntersectionObserver {
-    observe() {}
-
-    unobserve() {}
-
-    disconnect() {}
-}
-
 const installEnvironmentStubs = () => {
-    document.body.innerHTML = `
-        <dialog id="game-complete-modal">
-            <span id="game-complete-score"></span>
-            <span id="game-complete-accuracy"></span>
-            <div id="game-complete-stars"><span class="game-complete-star"></span><span class="game-complete-star"></span><span class="game-complete-star"></span></div>
-            <button id="game-complete-play-again" type="button"></button>
-            <button id="game-complete-back" type="button"></button>
-        </dialog>
-    `;
-
-    if (typeof window.matchMedia !== 'function') {
-        window.matchMedia = vi.fn().mockImplementation(() => ({
-            matches: false,
-            media: '',
-            onchange: null,
-            addEventListener: () => {},
-            removeEventListener: () => {},
-            addListener: () => {},
-            removeListener: () => {},
-            dispatchEvent: () => false,
-        }));
-    }
+    installGameCompleteModalDom();
+    installMatchMediaStub({ onlyIfMissing: true });
 
     if (typeof window.IntersectionObserver !== 'function') {
         window.IntersectionObserver = MockIntersectionObserver;
@@ -57,35 +25,18 @@ const installEnvironmentStubs = () => {
         globalThis.IntersectionObserver = MockIntersectionObserver;
     }
 
-    if (typeof globalThis.Audio !== 'function') {
-        globalThis.Audio = class MockAudio {
-            constructor() {
-                this.currentTime = 0;
-                this.duration = 0;
-                this.volume = 1;
-                this.loop = false;
-                this.paused = true;
-                this.src = '';
-            }
+    installAudioStub({ onlyIfMissing: true });
+    installRequestAnimationFrameStub({ onlyIfMissing: true });
+};
 
-            play() {
-                this.paused = false;
-                return Promise.resolve();
-            }
-
-            pause() {
-                this.paused = true;
-            }
-
-            addEventListener() {}
-
-            removeEventListener() {}
-        };
-    }
-
-    if (typeof window.requestAnimationFrame !== 'function') {
-        window.requestAnimationFrame = (callback) => window.setTimeout(() => callback(performance.now()), 0);
-    }
+const assertLoadableObjectModule = async ({ failures, label, load }) => {
+    const loadedModule = await loadModuleOrRecordFailure({
+        failures,
+        label,
+        load,
+    });
+    if (!loadedModule) return;
+    expect(loadedModule).toBeTypeOf('object');
 };
 
 describe('module smoke imports', () => {
@@ -96,21 +47,19 @@ describe('module smoke imports', () => {
         const failures = [];
 
         for (const [moduleKey, loader] of Object.entries(MODULE_LOADERS)) {
-            try {
-                const loadedModule = await loader();
-                expect(loadedModule).toBeTypeOf('object');
-            } catch (error) {
-                failures.push(`runtime:${moduleKey} -> ${error instanceof Error ? error.message : String(error)}`);
-            }
+            await assertLoadableObjectModule({
+                failures,
+                label: `runtime:${moduleKey}`,
+                load: loader,
+            });
         }
 
         for (const importSpec of gameModuleImportSpecs) {
-            try {
-                const loadedModule = await import(importSpec);
-                expect(loadedModule).toBeTypeOf('object');
-            } catch (error) {
-                failures.push(`game:${importSpec} -> ${error instanceof Error ? error.message : String(error)}`);
-            }
+            await assertLoadableObjectModule({
+                failures,
+                label: `game:${importSpec}`,
+                load: () => import(importSpec),
+            });
         }
 
         vi.clearAllTimers();

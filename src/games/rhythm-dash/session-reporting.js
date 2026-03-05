@@ -1,11 +1,10 @@
-import { recordGameEvent } from '../shared.js';
+import { reportFilteredSessionGameEvent } from '../game-session-reporting.js';
 import {
     computeAccuracyFromTimingScores,
     computeAccuracyFromBpmHistory,
 } from '../../utils/rhythm-dash-utils.js';
 import {
     resolveDifficultyLevel,
-    getObjectiveSummary,
 } from './helpers.js';
 
 const computeRhythmAccuracy = ({
@@ -41,23 +40,17 @@ export const reportRhythmDashSession = ({
         tapHistory,
         targetBpm,
     });
-    tuningReport?.({ score, accuracy });
-
-    const {
-        objectiveTier,
-        objectiveTotal,
-        objectivesCompleted,
-    } = getObjectiveSummary(stage, difficulty);
     const difficultyLevel = resolveDifficultyLevel(difficulty);
-    const sessionMs = runStartedAt ? Math.max(0, Date.now() - runStartedAt) : 0;
-    recordGameEvent('rhythm-dash', {
+    reportFilteredSessionGameEvent({
+        id: 'rhythm-dash',
+        reportResult: tuningReport,
+        stage,
+        difficulty,
         accuracy,
         score,
-        difficulty: difficultyLevel,
-        tier: objectiveTier,
-        sessionMs,
-        objectiveTotal,
-        objectivesCompleted,
+        sessionStartedAt: runStartedAt,
+        includeInput: (input) => input.id.startsWith('rd-set-'),
+        difficultyLabel: difficultyLevel,
         mistakes,
     });
 

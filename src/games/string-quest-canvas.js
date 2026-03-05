@@ -15,8 +15,7 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
             { id: 'E', color: '#b2ff59', thickness: 2, yPos: 0.8, vibration: 0, targetVibration: 0, highlight: 0 }
         ];
 
-        this.handlePointerDown = this.handlePointerDown.bind(this);
-        canvas.addEventListener('pointerdown', this.handlePointerDown);
+        this.bindCanvasPointerDownMethod('handlePointerDown');
     }
 
     reset() {
@@ -199,8 +198,4 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
         if (closest) this.pluck(closest.id);
     }
 
-    destroy() {
-        super.destroy();
-        this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
-    }
 }

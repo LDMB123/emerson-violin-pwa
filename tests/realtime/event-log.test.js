@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetStorageMocks } from './test-helpers.js';
 
 const storageMocks = vi.hoisted(() => ({
     getJSON: vi.fn(async () => null),
-    setJSON: vi.fn(async () => { }),
+    setJSON: vi.fn(async () => {}),
 }));
 
 vi.mock('../../src/persistence/storage.js', () => storageMocks);
@@ -21,9 +22,7 @@ import {
 
 describe('realtime event log', () => {
     beforeEach(() => {
-        storageMocks.getJSON.mockClear();
-        storageMocks.setJSON.mockClear();
-        storageMocks.getJSON.mockResolvedValue(null);
+        resetStorageMocks(storageMocks);
     });
 
     it('normalizes stored event log values to arrays', async () => {

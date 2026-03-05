@@ -7,9 +7,9 @@ describe('lifecycle-utils', () => {
     });
 
     it('returns false for non-persisted or invalid events', () => {
-        expect(isBfcachePagehide({ persisted: false })).toBe(false);
-        expect(isBfcachePagehide({})).toBe(false);
-        expect(isBfcachePagehide(null)).toBe(false);
-        expect(isBfcachePagehide(undefined)).toBe(false);
+        const nonPersistedEvents = [{ persisted: false }, {}, null, undefined];
+        nonPersistedEvents.forEach((event) => {
+            expect(isBfcachePagehide(event)).toBe(false);
+        });
     });
 });

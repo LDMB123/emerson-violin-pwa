@@ -70,6 +70,12 @@ impl PlayerProgress {
         self.check_level_up();
     }
 
+    /// Award XP and return the same value for call sites that report granted XP.
+    fn award_xp(&mut self, amount: u32) -> u32 {
+        self.add_xp(amount);
+        amount
+    }
+
     /// Check and apply level up if earned
     fn check_level_up(&mut self) {
         let new_level = self.calculate_level();
@@ -127,9 +133,7 @@ impl PlayerProgress {
         // Award XP
         let base_xp = minutes * 10;
         let total_xp = (base_xp as f32 * streak_mult) as u32;
-        self.add_xp(total_xp);
-
-        total_xp
+        self.award_xp(total_xp)
     }
 
     /// Log song completion
@@ -140,9 +144,7 @@ impl PlayerProgress {
         // XP based on accuracy (25 base + up to 25 bonus)
         let bonus = (accuracy as u32 * 25) / 100;
         let xp = 25 + bonus;
-        self.add_xp(xp);
-
-        xp
+        self.award_xp(xp)
     }
 
     /// Log game score
@@ -162,9 +164,7 @@ impl PlayerProgress {
 
         // Award XP (10 base + bonus for high scores)
         let xp = if is_high_score { 10 + score / 10 } else { 10 };
-        self.add_xp(xp);
-
-        xp
+        self.award_xp(xp)
     }
 
     // Getters

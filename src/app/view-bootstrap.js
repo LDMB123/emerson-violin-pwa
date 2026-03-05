@@ -1,3 +1,5 @@
+import { prefetchViewIfMissing } from './view-prefetch.js';
+
 const getInlineInitialView = () => {
     const container = document.getElementById('main-content');
     if (!container) return null;
@@ -36,10 +38,7 @@ export const warmInitialViews = ({
     candidateIds.forEach((viewId) => {
         if (viewId === inlineInitialView?.viewId) return;
         try {
-            const viewPath = getViewPath(viewId);
-            if (!viewLoader.has(viewPath)) {
-                viewLoader.prefetch(viewPath);
-            }
+            prefetchViewIfMissing({ viewId, getViewPath, viewLoader });
         } catch {
             // Ignore invalid/unknown routes during warmup.
         }
