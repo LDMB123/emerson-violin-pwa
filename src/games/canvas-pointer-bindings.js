@@ -56,3 +56,18 @@ export const bindCanvasPointerDrag = ({
         window.removeEventListener('touchend', handlePointerUp);
     };
 };
+
+export const bindRunningCanvasPointerDrag = ({
+    engine,
+    isTracking = () => true,
+    onStart = () => {},
+    onMove = () => {},
+    onEnd = () => {},
+} = {}) => bindCanvasPointerDrag({
+    canvas: engine?.canvas,
+    canStart: () => Boolean(engine?.isRunning),
+    isTracking,
+    onStart,
+    onMove,
+    onEnd,
+});

@@ -1,4 +1,5 @@
 import { emitEvent } from '../utils/event-names.js';
+import { getCheckboxInput } from '../utils/dom-utils.js';
 
 const MILESTONE_CHECKS = [
     {
@@ -77,10 +78,8 @@ export const createProgressInputController = ({
     };
 
     const handleChange = (event) => {
-        const input = event.target;
-        if (!(input instanceof HTMLInputElement)) return;
-        if (input.type !== 'checkbox') return;
-        if (!input.checked) return;
+        const input = getCheckboxInput(event.target, { requireChecked: true });
+        if (!input) return;
         if (shouldIgnoreProgressInput(input)) return;
 
         recordPracticeEvent(input);

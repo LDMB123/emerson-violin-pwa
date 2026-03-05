@@ -60,6 +60,11 @@ export function drawGlowingParticles(ctx, particles) {
     ctx.restore();
 }
 
+export const fillCanvas = (ctx, width, height, color) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, width, height);
+};
+
 /**
  * Maps a pointer event's client coordinates to canvas logical coordinates,
  * accounting for CSS scaling between the canvas's display size and its logical resolution.

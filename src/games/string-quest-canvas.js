@@ -1,4 +1,4 @@
-import { updateParticles, drawGlowingParticles, mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
+import { updateParticles, drawGlowingParticles, mapPointerToCanvasCoords, fillCanvas } from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 
 export class StringQuestCanvasEngine extends BaseCanvasEngine {
@@ -104,8 +104,7 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
 
     draw() {
         // Deep background
-        this.ctx.fillStyle = '#0a0a1a';
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        fillCanvas(this.ctx, this.width, this.height, '#0a0a1a');
 
         const time = performance.now() / 1000;
 

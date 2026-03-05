@@ -1,0 +1,6 @@
+export const createCanvasSurface = (canvas) => ({
+    canvas,
+    ctx: canvas.getContext('2d', { alpha: false, desynchronized: true }),
+    width: canvas.width,
+    height: canvas.height,
+});

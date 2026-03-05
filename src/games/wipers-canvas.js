@@ -1,5 +1,5 @@
 import { BaseCanvasEngine } from './canvas-engine-base.js';
-import { bindCanvasPointerDrag } from './canvas-pointer-bindings.js';
+import { bindRunningCanvasPointerDrag } from './canvas-pointer-bindings.js';
 import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
 import { clamp } from '../utils/math.js';
 
@@ -20,16 +20,15 @@ export class WipersCanvasEngine extends BaseCanvasEngine {
     }
 
     bindEvents() {
-        this.cleanupEvents = bindCanvasPointerDrag({
-            canvas: this.canvas,
-            canStart: () => this.isRunning,
+        this.cleanupEvents = bindRunningCanvasPointerDrag({
+            engine: this,
             isTracking: () => this.pointer.isDown,
             onStart: () => {
                 this.pointer.isDown = true;
             },
             onMove: ({ clientX }) => {
-            const { x } = mapPointerToCanvasCoords({ clientX, clientY: 0 }, this.canvas, this.width, this.height);
-            this.pointer.x = x;
+                const { x } = mapPointerToCanvasCoords({ clientX, clientY: 0 }, this.canvas, this.width, this.height);
+                this.pointer.x = x;
                 this.evaluateWipe();
             },
             onEnd: () => {
@@ -126,13 +125,5 @@ export class WipersCanvasEngine extends BaseCanvasEngine {
         this.armAngle = 0;
         this.lastPeak = 0;
         super.start();
-    }
-
-    stop() {
-        super.stop();
-        if (this.cleanupEvents) {
-            this.cleanupEvents();
-            this.cleanupEvents = null;
-        }
     }
 }

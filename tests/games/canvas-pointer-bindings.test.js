@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { bindCanvasPointerDrag } from '../../src/games/canvas-pointer-bindings.js';
+import { bindCanvasPointerDrag, bindRunningCanvasPointerDrag } from '../../src/games/canvas-pointer-bindings.js';
 
 describe('games/canvas-pointer-bindings', () => {
     it('wires pointer drag lifecycle and passes mapped client coordinates', () => {
@@ -58,6 +58,35 @@ describe('games/canvas-pointer-bindings', () => {
         canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 80, clientY: 12 }));
 
         expect(onMove).toHaveBeenCalledTimes(0);
+        cleanup();
+    });
+
+    it('uses engine canvas and running state via bindRunningCanvasPointerDrag', () => {
+        const canvas = document.createElement('canvas');
+        document.body.appendChild(canvas);
+        const onMove = vi.fn();
+        const engine = { canvas, isRunning: false };
+        let tracking = false;
+
+        const cleanup = bindRunningCanvasPointerDrag({
+            engine,
+            isTracking: () => tracking,
+            onStart: () => {
+                tracking = true;
+            },
+            onMove,
+            onEnd: () => {
+                tracking = false;
+            },
+        });
+
+        canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 32, clientY: 18 }));
+        expect(onMove).toHaveBeenCalledTimes(0);
+
+        engine.isRunning = true;
+        canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 64, clientY: 24 }));
+        expect(onMove).toHaveBeenCalledWith(expect.objectContaining({ clientX: 64, clientY: 24 }));
+
         cleanup();
     });
 });

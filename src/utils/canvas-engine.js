@@ -1,9 +1,8 @@
+import { createCanvasSurface } from './canvas-surface.js';
+
 export class BaseCanvasEngine {
     constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
-        this.width = canvas.width;
-        this.height = canvas.height;
+        Object.assign(this, createCanvasSurface(canvas));
         this.isRunning = false;
         this.lastTime = performance.now();
         this.particles = [];

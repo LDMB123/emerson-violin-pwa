@@ -1,9 +1,8 @@
+import { createCanvasSurface } from '../utils/canvas-surface.js';
+
 export class BaseCanvasEngine {
     constructor(canvas) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
-        this.width = canvas.width;
-        this.height = canvas.height;
+        Object.assign(this, createCanvasSurface(canvas));
 
         this.particles = [];
         this.isRunning = false;
@@ -21,6 +20,10 @@ export class BaseCanvasEngine {
 
     stop() {
         this.isRunning = false;
+        if (this.cleanupEvents) {
+            this.cleanupEvents();
+            this.cleanupEvents = null;
+        }
     }
 
     clear() {
@@ -42,6 +45,14 @@ export class BaseCanvasEngine {
         // Normalize logical width/height for subclasses
         this.width = rect.width;
         this.height = rect.height;
+    }
+
+    beginFrame(time) {
+        if (!this.isRunning) return null;
+        requestAnimationFrame(this.render);
+        const dt = Math.min((time - this.lastTime) / 1000, 0.1);
+        this.lastTime = time;
+        return { dt, ctx: this.ctx };
     }
 
     render(_time) {

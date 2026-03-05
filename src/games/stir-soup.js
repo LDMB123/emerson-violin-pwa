@@ -1,4 +1,5 @@
 import { StirSoupCanvasEngine } from './stir-soup-canvas.js';
+import { bindGameStartStop } from './game-start-stop-bindings.js';
 import { recordGameEvent } from './shared.js';
 import { isGameView } from '../utils/view-hash-utils.js';
 
@@ -6,7 +7,7 @@ const GAME_ID_STIR_SOUP = 'stir-soup';
 
 let engine = null;
 let bound = false;
-let clickHandler = null;
+let cleanupBindings = null;
 
 const SCORE_WIN = 2000;
 
@@ -38,31 +39,22 @@ export const init = () => {
     }
 
     if (!bound) {
-        startBtn?.removeEventListener('click', clickHandler);
-        clickHandler = () => {
-            if (engine.isRunning) {
-                engine.stop();
-                startBtn.textContent = 'Start Stirring';
-            } else {
+        cleanupBindings?.();
+        cleanupBindings = bindGameStartStop({
+            startButton: startBtn,
+            engine,
+            startLabel: 'Start Stirring',
+            stopLabel: 'Stop Stirring',
+            resetBeforeStart: () => {
                 if (scoreEl) scoreEl.textContent = '0';
                 if (authEl) authEl.textContent = '100%';
-                engine.start();
-                startBtn.textContent = 'Stop Stirring';
-            }
-        };
-        startBtn?.addEventListener('click', clickHandler);
-        // Auto-pause if navigating away; self-removes on first non-game navigation
-        const onHashChange = () => {
-            if (!isGameView(window.location.hash, 'stir-soup')) {
-                if (engine?.isRunning) {
-                    engine.stop();
-                    if (startBtn) startBtn.textContent = 'Start Stirring';
-                }
-                window.removeEventListener('hashchange', onHashChange);
+            },
+            isGameViewActive: () => isGameView(window.location.hash, 'stir-soup'),
+            onViewExit: () => {
                 bound = false;
-            }
-        };
-        window.addEventListener('hashchange', onHashChange);
+                cleanupBindings = null;
+            },
+        });
 
         bound = true;
     }

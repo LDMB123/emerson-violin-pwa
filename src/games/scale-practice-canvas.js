@@ -1,4 +1,4 @@
-import { updateParticles, drawGlowingParticles, emitRadialParticles } from '../utils/canvas-utils.js';
+import { updateParticles, drawGlowingParticles, emitRadialParticles, fillCanvas } from '../utils/canvas-utils.js';
 import { BaseCanvasEngine } from '../utils/canvas-engine.js';
 
 export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
@@ -80,8 +80,7 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
 
     draw() {
         // Deep background
-        this.ctx.fillStyle = '#0a0a1a';
-        this.ctx.fillRect(0, 0, this.width, this.height);
+        fillCanvas(this.ctx, this.width, this.height, '#0a0a1a');
 
         const totalNotes = this.notes.length;
         const noteSpacing = this.width / totalNotes;

@@ -45,13 +45,9 @@ export class RhythmCanvasEngine extends BaseCanvasEngine {
     }
 
     render(time) {
-        if (!this.isRunning) return;
-        requestAnimationFrame(this.render);
-
-        const dt = Math.min((time - this.lastTime) / 1000, 0.1);
-        this.lastTime = time;
-
-        const ctx = this.ctx;
+        const frame = this.beginFrame(time);
+        if (!frame) return;
+        const { dt, ctx } = frame;
 
         // Clear background with neon gradient trail
         ctx.fillStyle = 'rgba(10, 5, 25, 0.3)';

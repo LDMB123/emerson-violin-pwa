@@ -1,5 +1,5 @@
 import { BaseCanvasEngine } from './canvas-engine-base.js';
-import { bindCanvasPointerDrag } from './canvas-pointer-bindings.js';
+import { bindRunningCanvasPointerDrag } from './canvas-pointer-bindings.js';
 import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
 
 export class StirSoupCanvasEngine extends BaseCanvasEngine {
@@ -25,18 +25,17 @@ export class StirSoupCanvasEngine extends BaseCanvasEngine {
     }
 
     bindEvents() {
-        this.cleanupEvents = bindCanvasPointerDrag({
-            canvas: this.canvas,
-            canStart: () => this.isRunning,
+        this.cleanupEvents = bindRunningCanvasPointerDrag({
+            engine: this,
             isTracking: () => this.isStirring,
             onStart: () => {
                 this.isStirring = true;
             },
             onMove: ({ clientX, clientY }) => {
-            // Map pointer to internal resolution (1200x800)
-            const { x, y } = mapPointerToCanvasCoords({ clientX, clientY }, this.canvas, this.width, this.height);
-            this.pointer.x = x;
-            this.pointer.y = y;
+                // Map pointer to internal resolution (1200x800)
+                const { x, y } = mapPointerToCanvasCoords({ clientX, clientY }, this.canvas, this.width, this.height);
+                this.pointer.x = x;
+                this.pointer.y = y;
                 this.evaluateStir();
             },
             onEnd: () => {
@@ -156,13 +155,5 @@ export class StirSoupCanvasEngine extends BaseCanvasEngine {
         this.isStirring = false;
         this.targetAngle = 0;
         super.start();
-    }
-
-    stop() {
-        super.stop();
-        if (this.cleanupEvents) {
-            this.cleanupEvents();
-            this.cleanupEvents = null;
-        }
     }
 }

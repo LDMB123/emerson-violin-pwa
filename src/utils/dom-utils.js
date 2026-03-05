@@ -57,3 +57,10 @@ export const setHidden = (el, hidden) => {
 export const setDisabled = (el, disabled) => {
     if (el) el.disabled = disabled;
 };
+
+export const getCheckboxInput = (target, { requireChecked = false } = {}) => {
+    if (!(target instanceof HTMLInputElement)) return null;
+    if (target.type !== 'checkbox') return null;
+    if (requireChecked && !target.checked) return null;
+    return target;
+};

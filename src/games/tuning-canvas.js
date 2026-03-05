@@ -44,13 +44,9 @@ export class TuningCanvasEngine extends BaseCanvasEngine {
     }
 
     render(time) {
-        if (!this.isRunning) return;
-        requestAnimationFrame(this.render);
-
-        const dt = Math.min((time - this.lastTime) / 1000, 0.1);
-        this.lastTime = time;
-
-        const ctx = this.ctx;
+        const frame = this.beginFrame(time);
+        if (!frame) return;
+        const { dt, ctx } = frame;
 
         // Fade background (motion blur effect)
         ctx.fillStyle = 'rgba(15, 20, 35, 0.4)';

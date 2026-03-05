@@ -2,6 +2,16 @@ import { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 export { DEFAULT_MASTERY_THRESHOLDS };
 import { atLeast1 } from '../utils/math.js';
 
+const difficultyProfile = ({
+    easy = 0.8,
+    medium = 1.0,
+    hard = 1.2,
+} = {}) => ({
+    easy: { speed: easy, complexity: 0 },
+    medium: { speed: medium, complexity: 1 },
+    hard: { speed: hard, complexity: 2 },
+});
+
 export const GAME_META = {
     'pitch-quest': {
         skill: 'Pitch',
@@ -13,11 +23,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Hold steady intonation', cue: 'Keep the bow speed even.' },
         ],
         tip: 'Use slow bows and relaxed fingers to keep the pitch steady.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.3, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ hard: 1.3 }),
     },
     'rhythm-dash': {
         skill: 'Rhythm',
@@ -29,11 +35,7 @@ export const GAME_META = {
             { minutes: 3, label: 'Hold a combo streak', cue: 'Stay relaxed and consistent.' },
         ],
         tip: 'If timing slips, pause and restart the pulse before playing again.',
-        difficulty: {
-            easy: { speed: 0.75, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.35, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ easy: 0.75, hard: 1.35 }),
     },
     'note-memory': {
         skill: 'Reading',
@@ -45,11 +47,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Replay faster', cue: 'Try to beat your time.' },
         ],
         tip: 'Eyes up on the staff, then drop fingers with confidence.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.2, complexity: 2 },
-        },
+        difficulty: difficultyProfile(),
     },
     'ear-trainer': {
         skill: 'Pitch',
@@ -61,11 +59,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Confirm by playing', cue: 'Adjust the finger if needed.' },
         ],
         tip: 'Close your eyes to strengthen listening.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.3, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ hard: 1.3 }),
     },
     'bow-hero': {
         skill: 'Bowing',
@@ -77,11 +71,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Finish with long bows', cue: 'Use full length strokes.' },
         ],
         tip: 'Lead from the elbow and keep the wrist soft.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.3, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ hard: 1.3 }),
     },
     'string-quest': {
         skill: 'Bowing',
@@ -93,11 +83,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Build a combo', cue: 'Keep the bow angle steady.' },
         ],
         tip: 'Prepare the next string before the crossing.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.25, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ hard: 1.25 }),
     },
     'rhythm-painter': {
         skill: 'Rhythm',
@@ -109,11 +95,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Play with a metronome', cue: 'Feel the pulse in your feet.' },
         ],
         tip: 'If the rhythm feels rushed, slow down and reset.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.3, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ hard: 1.3 }),
     },
     'story-song': {
         skill: 'Reading',
@@ -125,11 +107,7 @@ export const GAME_META = {
             { minutes: 3, label: 'Add expression', cue: 'Use show-and-tell bowing.' },
         ],
         tip: 'Imagine the story scene as you play.',
-        difficulty: {
-            easy: { speed: 0.85, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.2, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ easy: 0.85 }),
     },
     pizzicato: {
         skill: 'Rhythm',
@@ -141,11 +119,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Add dynamic pops', cue: 'Soft then loud.' },
         ],
         tip: 'Keep the wrist loose and let the finger do the work.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.25, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ hard: 1.25 }),
     },
     'tuning-time': {
         skill: 'Pitch',
@@ -157,11 +131,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Play slow double stops', cue: 'Listen for resonance.' },
         ],
         tip: 'Breathe out as the pitch locks in.',
-        difficulty: {
-            easy: { speed: 0.85, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.2, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ easy: 0.85 }),
     },
     'melody-maker': {
         skill: 'Reading',
@@ -173,11 +143,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Play it back smoothly', cue: 'Keep a steady bow.' },
         ],
         tip: 'Sing the melody before you play it.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.2, complexity: 2 },
-        },
+        difficulty: difficultyProfile(),
     },
     'scale-practice': {
         skill: 'Pitch',
@@ -189,11 +155,7 @@ export const GAME_META = {
             { minutes: 3, label: 'Repeat with dynamics', cue: 'Crescendo then decrescendo.' },
         ],
         tip: 'Aim for consistent bow speed on each note.',
-        difficulty: {
-            easy: { speed: 0.75, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.3, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ easy: 0.75, hard: 1.3 }),
     },
     'duet-challenge': {
         skill: 'Rhythm',
@@ -205,11 +167,7 @@ export const GAME_META = {
             { minutes: 2, label: 'Combine both parts', cue: 'Balance your volume.' },
         ],
         tip: 'Keep eyes on the beat grid to stay together.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.3, complexity: 2 },
-        },
+        difficulty: difficultyProfile({ hard: 1.3 }),
     },
     'dynamic-dojo': {
         skill: 'Dynamics',
@@ -220,11 +178,7 @@ export const GAME_META = {
             { minutes: 3, label: 'Play piano on cue', cue: 'Gentle bow, near the fingerboard.' },
         ],
         tip: 'Use bow speed and weight together to control dynamics.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.2, complexity: 2 },
-        },
+        difficulty: difficultyProfile(),
     },
     echo: {
         skill: 'Rhythm',
@@ -235,11 +189,7 @@ export const GAME_META = {
             { minutes: 3, label: 'Echo it back', cue: 'Match the rhythm exactly.' },
         ],
         tip: 'Tap the rhythm on your leg before playing on the violin.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.2, complexity: 2 },
-        },
+        difficulty: difficultyProfile(),
     },
     'stir-soup': {
         skill: 'Bowing',
@@ -250,11 +200,7 @@ export const GAME_META = {
             { minutes: 3, label: 'Trace big slow circles', cue: 'Keep the wrist soft on the up-circle.' },
         ],
         tip: 'Imagine stirring a giant pot of thick soup.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.2, complexity: 2 },
-        },
+        difficulty: difficultyProfile(),
     },
     'wipers': {
         skill: 'Bowing',
@@ -265,11 +211,7 @@ export const GAME_META = {
             { minutes: 3, label: 'Rotate side to side', cue: 'Match the metronome beat.' },
         ],
         tip: 'Use your forearm to turn the hand, not your wrist.',
-        difficulty: {
-            easy: { speed: 0.8, complexity: 0 },
-            medium: { speed: 1.0, complexity: 1 },
-            hard: { speed: 1.2, complexity: 2 },
-        },
+        difficulty: difficultyProfile(),
     },
 };
 

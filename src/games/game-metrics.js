@@ -1,5 +1,6 @@
 import '../styles/games.css';
 import { atLeast1 } from '../utils/math.js';
+import { getCheckboxInput } from '../utils/dom-utils.js';
 import { stopTonePlayer } from './shared.js';
 import {
     GAME_MASTERY_UPDATED,
@@ -181,9 +182,8 @@ const loadGamesForView = (viewId) => {
 };
 
 const handleChange = (event) => {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement)) return;
-    if (input.type !== 'checkbox') return;
+    const input = getCheckboxInput(event.target);
+    if (!input) return;
     if (!input.closest('[id^="view-game-"]')) return;
     scheduleUpdateAll();
 };

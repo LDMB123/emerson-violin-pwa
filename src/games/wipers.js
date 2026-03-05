@@ -1,4 +1,5 @@
 import { WipersCanvasEngine } from './wipers-canvas.js';
+import { bindGameStartStop } from './game-start-stop-bindings.js';
 import { recordGameEvent } from './shared.js';
 import { isGameView } from '../utils/view-hash-utils.js';
 
@@ -6,7 +7,7 @@ const GAME_ID_WIPERS = 'wipers';
 
 let engine = null;
 let bound = false;
-let clickHandler = null;
+let cleanupBindings = null;
 
 const WIPES_WIN = 20;
 
@@ -36,30 +37,21 @@ export const init = () => {
     }
 
     if (!bound) {
-        startBtn?.removeEventListener('click', clickHandler);
-        clickHandler = () => {
-            if (engine.isRunning) {
-                engine.stop();
-                startBtn.textContent = 'Start Engine';
-            } else {
+        cleanupBindings?.();
+        cleanupBindings = bindGameStartStop({
+            startButton: startBtn,
+            engine,
+            startLabel: 'Start Engine',
+            stopLabel: 'Stop Engine',
+            resetBeforeStart: () => {
                 if (scoreEl) scoreEl.textContent = `0 / ${WIPES_WIN}`;
-                engine.start();
-                startBtn.textContent = 'Stop Engine';
-            }
-        };
-        startBtn?.addEventListener('click', clickHandler);
-        // Auto-pause if navigating away; self-removes on first non-game navigation
-        const onHashChange = () => {
-            if (!isGameView(window.location.hash, 'wipers')) {
-                if (engine?.isRunning) {
-                    engine.stop();
-                    if (startBtn) startBtn.textContent = 'Start Engine';
-                }
-                window.removeEventListener('hashchange', onHashChange);
+            },
+            isGameViewActive: () => isGameView(window.location.hash, 'wipers'),
+            onViewExit: () => {
                 bound = false;
-            }
-        };
-        window.addEventListener('hashchange', onHashChange);
+                cleanupBindings = null;
+            },
+        });
 
         bound = true;
     }

@@ -64,6 +64,22 @@ const generateTeacherWaveform = () => {
     return buffer;
 };
 
+const runTimedPlayheadLoop = ({ durationMs, onFrame, onComplete } = {}) => new Promise((resolve) => {
+    let startTime = null;
+    const loop = (timestamp) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        if (elapsed < durationMs) {
+            onFrame?.(elapsed / durationMs, elapsed);
+            requestAnimationFrame(loop);
+            return;
+        }
+        onComplete?.();
+        resolve();
+    };
+    requestAnimationFrame(loop);
+});
+
 const startGameSequence = async () => {
     if (curtain) curtain.style.display = 'none';
     if (!engine) return;
@@ -75,64 +91,48 @@ const startGameSequence = async () => {
     });
 
     // 1. Teacher Plays
-    const targetDuration = 4000;
-    let startTime = null;
-
     // Note: The WASM synthesizer trigger will go here
-
-    return new Promise(resolve => {
-        const loop = (timestamp) => {
-            if (!startTime) startTime = timestamp;
-            const elapsed = timestamp - startTime;
-            if (elapsed < targetDuration) {
-                engine.updateState({ playheadPosition: elapsed / targetDuration });
-                engine.render();
-                requestAnimationFrame(loop);
-            } else {
-                engine.updateState({ playheadPosition: 0, phase: 'student_playing' });
-                engine.render();
-                // 2. Student Plays
-                startStudentRecordingSequence().then(resolve);
-            }
-        };
-        requestAnimationFrame(loop);
+    await runTimedPlayheadLoop({
+        durationMs: 4000,
+        onFrame: (playheadPosition) => {
+            engine.updateState({ playheadPosition });
+            engine.render();
+        },
     });
+
+    engine.updateState({ playheadPosition: 0, phase: 'student_playing' });
+    engine.render();
+    // 2. Student Plays
+    await startStudentRecordingSequence();
 };
 
 const startStudentRecordingSequence = async () => {
     // 1. Tell WASM to clear its buffer and start recording
     postAudioMessage({ type: 'echo_record' });
 
-    const targetDuration = 4000;
-    let startTime = null;
+    await runTimedPlayheadLoop({
+        durationMs: 4000,
+        onFrame: (playheadPosition) => {
+            engine.updateState({ playheadPosition });
 
-    return new Promise(resolve => {
-        const loop = (timestamp) => {
-            if (!startTime) startTime = timestamp;
-            const elapsed = timestamp - startTime;
-            if (elapsed < targetDuration) {
-                engine.updateState({ playheadPosition: elapsed / targetDuration });
+            // Note: Polling WASM for live envelope goes here
 
-                // Note: Polling WASM for live envelope goes here
+            engine.render();
+        },
+        onComplete: () => {
+            engine.updateState({ playheadPosition: 0, phase: 'evaluating' });
 
-                engine.render();
-                requestAnimationFrame(loop);
-            } else {
-                engine.updateState({ playheadPosition: 0, phase: 'evaluating' });
+            // 2. Tell WASM we are done. Mute recording and ask for the envelope.
+            postAudioMessage({ type: 'echo_extract' });
 
-                // 2. Tell WASM we are done. Mute recording and ask for the envelope.
-                postAudioMessage({ type: 'echo_extract' });
+            // Note: Run WASM cross-correlation grading here
+            engine.updateState({ evaluationScore: 85.5 });
+            engine.render();
+        },
+    });
 
-                // Note: Run WASM cross-correlation grading here
-                engine.updateState({ evaluationScore: 85.5 });
-                engine.render();
-
-                setTimeout(() => {
-                    resolve();
-                }, 2000);
-            }
-        };
-        requestAnimationFrame(loop);
+    await new Promise((resolve) => {
+        setTimeout(resolve, 2000);
     });
 };
 
