@@ -16,7 +16,7 @@ const buildRecentGames = (gameEvents = []) => gameEvents
         scoreLabel: formatRecentScore(event),
     }));
 
-export const loadSupplementaryProgressData = async () => {
+const loadSupplementaryProgressData = async () => {
     const [
         curriculumState,
         curriculumContent,
@@ -43,7 +43,7 @@ export const loadSupplementaryProgressData = async () => {
     };
 };
 
-export const composeProgressResult = (model = {}) => {
+const composeProgressResult = (model = {}) => {
     const {
         gameEvents,
         supplemental,

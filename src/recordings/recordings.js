@@ -1,6 +1,7 @@
 import { isRecordingEnabled } from '../utils/feature-flags.js';
 import { getSongIdFromViewId, getSongIdFromHash, parseDuration } from '../utils/recording-export.js';
 import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
+import { scheduleBackgroundTask } from '../utils/idle-task.js';
 import { createRecordingCaptureController } from './recordings-capture.js';
 import { migrateRecordingsToBlobs, saveRecording } from './recordings-storage.js';
 
@@ -20,15 +21,11 @@ const getSongTitle = (songId) => {
 };
 
 const scheduleIdle = (task) => {
-    if (typeof window.scheduler?.postTask === 'function') {
-        window.scheduler.postTask(task, { priority: 'background', delay: 400 });
-        return;
-    }
-    if (typeof window.requestIdleCallback === 'function') {
-        window.requestIdleCallback(() => task(), { timeout: 1500 });
-        return;
-    }
-    window.setTimeout(task, 400);
+    scheduleBackgroundTask(task, {
+        delay: 400,
+        idleTimeout: 1500,
+        fallbackDelay: 400,
+    });
 };
 
 const resolveSettingsElements = () => {

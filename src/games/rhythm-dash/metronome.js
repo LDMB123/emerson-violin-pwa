@@ -2,6 +2,7 @@ import {
     getMetronomeNote,
     getMetronomeVolume,
 } from '../../utils/rhythm-dash-utils.js';
+import { createVisibilityListener } from '../../utils/visibility-listener.js';
 
 export const createRhythmDashMetronome = ({
     isEnabled,
@@ -12,24 +13,11 @@ export const createRhythmDashMetronome = ({
     let metronomeBeat = 0;
     let isActive = false;
     let pausedByVisibility = false;
-    let visibilityListenerBound = false;
 
     const clearMetronomeInterval = () => {
         if (!metronomeId) return;
         clearInterval(metronomeId);
         metronomeId = null;
-    };
-
-    const bindVisibilityListener = () => {
-        if (visibilityListenerBound) return;
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        visibilityListenerBound = true;
-    };
-
-    const unbindVisibilityListener = () => {
-        if (!visibilityListenerBound) return;
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        visibilityListenerBound = false;
     };
 
     const playLeadIn = (player) => {
@@ -67,19 +55,20 @@ export const createRhythmDashMetronome = ({
         pausedByVisibility = false;
         startMetronomeInterval();
     }
+    const visibilityListener = createVisibilityListener(handleVisibilityChange);
 
     const stop = () => {
         isActive = false;
         pausedByVisibility = false;
         clearMetronomeInterval();
-        unbindVisibilityListener();
+        visibilityListener.unbind();
         metronomeBeat = 0;
     };
 
     const start = () => {
         stop();
         isActive = true;
-        bindVisibilityListener();
+        visibilityListener.bind();
         if (document.visibilityState === 'hidden') {
             pausedByVisibility = true;
             return;

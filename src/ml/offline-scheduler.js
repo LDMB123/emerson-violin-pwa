@@ -1,6 +1,7 @@
 import { whenReady } from '../utils/dom-ready.js';
 import { refreshRecommendationsCache } from './recommendations.js';
 import { ML_RECS, GAME_RECORDED, PRACTICE_RECORDED, SONG_RECORDED, ML_UPDATE, emitEvent } from '../utils/event-names.js';
+import { scheduleBackgroundTask } from '../utils/idle-task.js';
 
 const deviceMemory = navigator.deviceMemory || 4;
 const MIN_INTERVAL = deviceMemory <= 4 ? 4 * 60 * 1000 : 2 * 60 * 1000;
@@ -9,15 +10,11 @@ let pending = false;
 
 const scheduleTask = (task) => {
     // Prefer browser background/idle queues to reduce foreground contention and power draw.
-    if (typeof window.scheduler?.postTask === 'function') {
-        window.scheduler.postTask(task, { priority: 'background', delay: 200 });
-        return;
-    }
-    if (typeof window.requestIdleCallback === 'function') {
-        window.requestIdleCallback(() => task(), { timeout: 1200 });
-        return;
-    }
-    window.setTimeout(task, 200);
+    scheduleBackgroundTask(task, {
+        delay: 200,
+        idleTimeout: 1200,
+        fallbackDelay: 200,
+    });
 };
 
 const scheduleRefresh = (reason) => {

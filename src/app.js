@@ -38,6 +38,7 @@ import {
     seedInlineInitialViewCache,
     warmInitialViews,
 } from './app/view-bootstrap.js';
+import { scheduleBackgroundTask } from './utils/idle-task.js';
 
 const viewLoader = new ViewLoader();
 const viewRenderGate = createAsyncGate();
@@ -51,25 +52,12 @@ const homeCoachController = createHomeCoachController({
 const { loadModule } = createModuleLoader({ moduleLoaders });
 
 const queueIdleTask = (task, delay = 0) => {
-    if ('scheduler' in window && typeof window.scheduler?.postTask === 'function') {
-        window.scheduler.postTask(task, { priority: 'background', delay });
-        return;
-    }
-
-    const run = () => {
-        if ('requestIdleCallback' in window) {
-            window.requestIdleCallback(() => task(), { timeout: 1500 });
-            return;
-        }
-        window.setTimeout(() => task(), 0);
-    };
-
-    if (delay > 0) {
-        window.setTimeout(run, delay);
-        return;
-    }
-
-    run();
+    scheduleBackgroundTask(task, {
+        delay,
+        idleTimeout: 1500,
+        fallbackDelay: 0,
+        delayBeforeIdle: true,
+    });
 };
 
 const loadIdle = (key, delay = 0) => {

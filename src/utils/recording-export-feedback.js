@@ -1,7 +1,7 @@
 import { getBlob } from '../persistence/storage.js';
 import { exportRecording } from './recording-export.js';
 
-export const runRecordingExportWithFeedback = async ({
+const runRecordingExportWithFeedback = async ({
     button = null,
     onExport = null,
     pendingLabel = '…',

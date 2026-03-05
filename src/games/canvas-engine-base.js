@@ -1,4 +1,5 @@
 import { createCanvasSurface } from '../utils/canvas-surface.js';
+import { cancelAnimationFrameId } from '../utils/animation-frame-utils.js';
 
 export class BaseCanvasEngine {
     constructor(canvas) {
@@ -30,9 +31,7 @@ export class BaseCanvasEngine {
     }
 
     cancelScheduledRender() {
-        if (this.rafId === null) return;
-        cancelAnimationFrame(this.rafId);
-        this.rafId = null;
+        cancelAnimationFrameId(this);
     }
 
     isPageHidden() {

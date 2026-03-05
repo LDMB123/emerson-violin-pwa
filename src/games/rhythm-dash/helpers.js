@@ -1,6 +1,5 @@
 import { atLeast1, clamp } from '../../utils/math.js';
 import { setTextContent } from '../../utils/dom-utils.js';
-import { GAME_META } from '../game-config.js';
 import {
     computeAverageFromHistory,
     computeBpm,
@@ -9,8 +8,6 @@ import {
     formatComboStatus,
     formatRegularStatus,
 } from '../../utils/rhythm-dash-utils.js';
-
-const RHYTHM_OBJECTIVE_IDS = ['rd-set-1', 'rd-set-2', 'rd-set-3'];
 
 export const resolveRhythmDashElements = (stage) => ({
     tapButton: stage.querySelector('.rhythm-tap'),
@@ -30,24 +27,9 @@ export const resolveRhythmDashElements = (stage) => ({
     energyBar: stage.querySelector('[data-rhythm="energy-bar"]'),
 });
 
-const resolveObjectiveTier = (stage, difficulty) => stage.dataset.gameObjectiveTier
-    || (difficulty.complexity >= 2 ? 'mastery' : difficulty.complexity >= 1 ? 'core' : 'foundation');
-
 export const resolveDifficultyLevel = (difficulty) => (
     difficulty.complexity >= 2 ? 'hard' : difficulty.complexity >= 1 ? 'medium' : 'easy'
 );
-
-const countCompletedObjectives = (ids = RHYTHM_OBJECTIVE_IDS) => ids
-    .map((id) => document.getElementById(id))
-    .filter((input) => input instanceof HTMLInputElement && input.checked)
-    .length;
-
-export const getObjectiveSummary = (stage, difficulty) => {
-    const objectiveTier = resolveObjectiveTier(stage, difficulty);
-    const objectiveTotal = GAME_META?.['rhythm-dash']?.objectivePacks?.[objectiveTier]?.length || RHYTHM_OBJECTIVE_IDS.length;
-    const objectivesCompleted = Math.min(objectiveTotal, countCompletedObjectives());
-    return { objectiveTier, objectiveTotal, objectivesCompleted };
-};
 
 export const updateStatusText = setTextContent;
 

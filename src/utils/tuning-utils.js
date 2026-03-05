@@ -3,7 +3,7 @@
  * Handles debouncing and margin-of-error (cents) verification to 
  * ensure the player holds the correct note steadily before it registers as a hit.
  */
-export function createTuningHitDetector(options = {}) {
+function createTuningHitDetector(options = {}) {
     const {
         centsMargin = 20,
         debounceMs = 300

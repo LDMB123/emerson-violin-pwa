@@ -13,7 +13,7 @@ const collectChecklistInputs = (stage, includeInput) => {
     return inputs.filter((input) => includeInput(input));
 };
 
-export const resolveGameObjectiveProgress = ({
+const resolveGameObjectiveProgress = ({
     stage,
     gameId,
     difficultyComplexity = 0,

@@ -1,4 +1,5 @@
 import { createCanvasSurface } from './canvas-surface.js';
+import { cancelAnimationFrameId } from './animation-frame-utils.js';
 
 export class BaseCanvasEngine {
     constructor(canvas) {
@@ -58,9 +59,7 @@ export class BaseCanvasEngine {
     }
 
     cancelScheduledFrame() {
-        if (this.rafId === null) return;
-        cancelAnimationFrame(this.rafId);
-        this.rafId = null;
+        cancelAnimationFrameId(this);
     }
 
     scheduleNextFrame() {

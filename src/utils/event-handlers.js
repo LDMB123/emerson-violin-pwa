@@ -1,6 +1,6 @@
 import { runOnceBinding } from './lifecycle-utils.js';
 
-export const createTargetedDetailHandler = (
+const createTargetedDetailHandler = (
     expectedId,
     onMatch,
     detailKey = 'id',
@@ -33,7 +33,7 @@ export const createResolveThenApplyHandler = (resolve, apply) => () => {
     }
 };
 
-export const bindDocumentEvents = (eventNames, handler, target = document) => {
+const bindDocumentEvents = (eventNames, handler, target = document) => {
     if (!Array.isArray(eventNames) || typeof handler !== 'function' || !target) return;
     eventNames.forEach((eventName) => {
         if (typeof eventName !== 'string' || !eventName) return;

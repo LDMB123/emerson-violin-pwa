@@ -4,6 +4,7 @@ import { getSongCheckpoint, saveSongCheckpoint } from './song-progression.js';
 import { parseViewSongId, sectionDuration, setStatus } from './song-player-view.js';
 import { attachTuning, playToneNote } from '../games/shared.js';
 import { getActiveTuningFeature, roundTuningCents } from '../utils/tuning-utils.js';
+import { createVisibilityListener } from '../utils/visibility-listener.js';
 
 const PLAYHEAD_AUTOSCROLL_INTERVAL_MS = 80;
 const PLAYHEAD_AUTOSCROLL_DELTA_PX = 4;
@@ -33,7 +34,6 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
     let audioTriggers = new Set();
     let isWaiting = false;
     let lastMetronomeBeat = -1;
-    let visibilityListenerBound = false;
     let lastAutoScrollAt = 0;
     let lastAutoScrollTarget = 0;
     const beatsPerMeasure = song?.time ? parseInt(song.time.split('/')[0], 10) || 4 : 4;
@@ -74,18 +74,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             scheduleUpdateLoop();
         }
     };
-
-    const bindVisibilityListener = () => {
-        if (visibilityListenerBound) return;
-        document.addEventListener('visibilitychange', onVisibilityChange);
-        visibilityListenerBound = true;
-    };
-
-    const unbindVisibilityListener = () => {
-        if (!visibilityListenerBound) return;
-        document.removeEventListener('visibilitychange', onVisibilityChange);
-        visibilityListenerBound = false;
-    };
+    const visibilityListener = createVisibilityListener(onVisibilityChange);
 
     const parseNotes = () => {
         notesElements = Array.from(view.querySelectorAll('.song-note')).map((el) => {
@@ -110,7 +99,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         playheadEl = null;
         lastAutoScrollAt = 0;
         lastAutoScrollTarget = 0;
-        unbindVisibilityListener();
+        visibilityListener.unbind();
         if (tuningActive) {
             if (tuningActive.rtListener) {
                 document.removeEventListener(RT_STATE, tuningActive.rtListener);
@@ -259,7 +248,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         isPlaying = true;
         playbackElapsed = 0;
         lastAnimFrame = performance.now();
-        bindVisibilityListener();
+        visibilityListener.bind();
         completedNotes.clear();
         audioTriggers.clear();
         isWaiting = false;

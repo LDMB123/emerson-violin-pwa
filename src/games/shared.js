@@ -236,7 +236,7 @@ export const recordGameEvent = async (id, payload = {}) => {
     }
 };
 
-export const stopEngineAndRecordGameEvent = (engine, id, payload = {}) => {
+const stopEngineAndRecordGameEvent = (engine, id, payload = {}) => {
     engine?.stop?.();
     recordGameEvent(id, payload);
 };
@@ -253,7 +253,7 @@ export const maybeStopEngineAndRecordThreshold = ({
     return true;
 };
 
-export const ensureGameStartStopBindings = ({
+const ensureGameStartStopBindings = ({
     state = null,
     bound = false,
     cleanupBindings = null,

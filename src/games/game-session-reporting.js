@@ -10,7 +10,7 @@ const DEFAULT_SESSION_REPORT_OPTIONS = {
     sessionStartedAt: 0,
 };
 
-export const buildSessionGameEventPayload = ({
+const buildSessionGameEventPayload = ({
     stage = null,
     gameId = '',
     difficulty = null,
@@ -52,7 +52,7 @@ export const buildSessionGameEventPayload = ({
     };
 };
 
-export const buildSessionReportEventArgs = (options = {}) => {
+const buildSessionReportEventArgs = (options = {}) => {
     const normalizedOptions = {
         ...DEFAULT_SESSION_REPORT_OPTIONS,
         ...options,
@@ -87,7 +87,7 @@ export const isPrimarySessionObjectiveInput = (input) => (
     && isStepSetObjectiveInput(input)
 );
 
-export const reportSessionGameEvent = ({
+const reportSessionGameEvent = ({
     id = '',
     reportResult = null,
     accuracy = 0,

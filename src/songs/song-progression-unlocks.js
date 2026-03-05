@@ -1,4 +1,4 @@
-export const CHALLENGE_UNLOCK_THRESHOLD = 75;
+const CHALLENGE_UNLOCK_THRESHOLD = 75;
 export const CHALLENGE_UNLOCK_REQUIRED = 3;
 
 const CHALLENGE_READY_TIERS = new Set(['bronze', 'silver', 'gold']);
