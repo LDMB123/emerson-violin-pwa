@@ -1,3 +1,4 @@
+/** Maps practice goal/input id prefixes back to canonical game ids. */
 export const PRACTICE_GAME_RULES = [
     { test: /^pq-step-/, id: 'pitch-quest' },
     { test: /^rd-set-/, id: 'rhythm-dash' },
@@ -26,20 +27,24 @@ const collectPracticeEvents = (events) => collectEvents(events, 'practice', byDa
 const collectGameEvents = (events) => collectEvents(events, 'game', byTimestampAscending);
 const collectSongEvents = (events) => collectEvents(events, 'song', byTimestampAscending);
 
+/** Collects the distinct event ids for a given event type. */
 export const collectEventIds = (events, type) => new Set(
     events
         .filter((event) => event.type === type)
         .map((event) => event.id),
 );
 
+/** Buckets progress events into sorted practice, game, and song collections. */
 export const buildProgressEventBuckets = (events) => ({
     practiceEvents: collectPracticeEvents(events),
     gameEvents: collectGameEvents(events),
     songEvents: collectSongEvents(events),
 });
 
+/** Creates the seven-day minutes window used by progress charts. */
 export const createDailyMinutes = () => Array.from({ length: 7 }, () => 0);
 
+/** Adds minutes into the rolling seven-day window when the day is in range. */
 export const addMinutesToDailyWindow = (dailyMinutes, currentDay, day, minutes) => {
     const offset = currentDay - day;
     if (offset < 0 || offset > 6) return false;

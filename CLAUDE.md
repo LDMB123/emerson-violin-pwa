@@ -64,9 +64,9 @@ npm run handoff:verify # audit:full + E2E
 ## Worktree Notes
 
 - AudioContext can enter `'interrupted'` state on iOS (phone calls, system audio) — handle alongside `'suspended'` in `src/audio/tone-player/context-manager.js`.
-- Safari 26+ removed `window.orientationchange` — use `screen.orientation.addEventListener('change', ...)` with `{ passive: true }` fallback for older browsers.
-- Safari 26+ freezes OS version in UA string — `parseIPadOSVersion()` returns stale value; don't display parsed version to users (`ipados-capabilities.js`).
-- `Map.getOrInsertComputed(key, fn)` is the established pattern for atomic get-or-create (Safari 26.2+/Chrome 133+); used in module-registry, view-loader, progress-model-primary — always include `supportsGetOrInsertComputed` fallback.
+- Prefer `screen.orientation.addEventListener('change', ...)` for orientation updates and keep the `orientationchange` fallback for engines that still need it.
+- Some iPad Safari builds freeze the OS version in the UA string — `parseIPadOSVersion()` can become stale, so do not display the parsed version to users (`ipados-capabilities.js`).
+- Prefer `Map.getOrInsertComputed(key, fn)` for atomic get-or-create when available; keep the `supportsGetOrInsertComputed` fallback path in `module-registry`, `view-loader`, and `progress-model-primary`.
 - WASM bindings in `src/wasm/panda_audio.js` follow `{typename}_{methodname}` export naming — mismatches return `undefined` silently; verify with `console.log(wasm)` exports when debugging.
 - `[profile.release]` in per-crate `Cargo.toml` (workspace members) is **silently ignored** — release profile must be in `wasm/Cargo.toml` workspace root to take effect.
 - WASM rebuild on macOS may fail with "You have not agreed to the Xcode license" — run `sudo xcodebuild -license accept` first; proc-macro build scripts need the native host linker.
@@ -97,8 +97,8 @@ npm run handoff:verify # audit:full + E2E
 - `dispose()` scope: module-level `dispose()` can only access module-level refs. Handler refs created inside `init()` are invisible to `dispose()` unless explicitly elevated to module scope with a `let` declaration outside the function.
 - `async` flag pattern: `let active = false` at module level, set `true` on start, set `false` first in cleanup. Async callbacks (setTimeout, etc.) check `if (!active) return` before re-registering any listeners. Prevents zombie listeners from delayed callbacks firing after navigation cleanup. Pattern established in `dynamic-dojo.js`.
 - `vite.config.js` dev SW: the dev-only `devServiceWorkerPlugin()` is a one-shot cleanup SW — it intentionally calls `self.clients.claim()` BEFORE `self.registration.unregister()`. Do NOT move `clients.claim()` after `unregister()` — by then the SW has already unregistered and `claim()` is a no-op (confirmed by E2E regression).
-- `document.activeViewTransition?.skipTransition()` — call before `document.startViewTransition()` to abort any in-flight transition; optional chain is safe no-op on older engines; see `navigation-controller.js` (Safari 26.2+ / Chrome 111+).
-- CSS `sibling-index()` — Safari 26.2+ only (no Chrome/Firefox); used in `app.css` for skeleton-bar stagger (`animation-delay: calc(sibling-index() * 80ms)`); replaces `:nth-child` selector stacks.
+- `document.activeViewTransition?.skipTransition()` — call before `document.startViewTransition()` to abort any in-flight transition; optional chaining keeps it a safe no-op on engines without `activeViewTransition`.
+- CSS `sibling-index()` drives the skeleton stagger in `app.css`; engines without support fall back to all items starting at `0ms`.
 
 ## Code Style
 

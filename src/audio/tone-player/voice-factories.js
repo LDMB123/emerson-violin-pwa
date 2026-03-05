@@ -32,6 +32,7 @@ const TIMBRE_PARTIALS = {
     ],
 };
 
+/** Default timbre used by the shared tone player when none is specified. */
 export const DEFAULT_TIMBRE = 'violin';
 const DEFAULT_ATTACK = 0.014;
 const DEFAULT_RELEASE = 0.06;
@@ -295,8 +296,10 @@ const loadSampleBufferForRoot = async (state, ctx, root) => {
     return result;
 };
 
+/** Returns whether the requested timbre should use sampled playback instead of synth voices. */
 export const isSamplerType = (type = DEFAULT_TIMBRE) => !['square', 'sawtooth'].includes(type);
 
+/** Creates a synthesized tone-player voice and returns its playback handle. */
 export const createSynthVoice = ({ state, ctx, frequency, options = {}, ensureOutputNode }) => {
     const timbreKey = TIMBRE_PARTIALS[options.type] ? options.type : DEFAULT_TIMBRE;
     const partials = TIMBRE_PARTIALS[timbreKey];
@@ -354,6 +357,7 @@ export const createSynthVoice = ({ state, ctx, frequency, options = {}, ensureOu
     return createVoiceHandle({ ctx, now, safeDuration, stop, cleanup });
 };
 
+/** Creates a sampled tone-player voice and returns its playback handle. */
 export const createSampleVoice = async ({ state, ctx, frequency, options = {}, ensureOutputNode }) => {
     if (typeof ctx.createBufferSource !== 'function') return null;
     const root = pickSampleRoot(frequency);

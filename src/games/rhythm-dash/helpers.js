@@ -9,6 +9,7 @@ import {
     formatRegularStatus,
 } from '../../utils/rhythm-dash-utils.js';
 
+/** Resolves the cached DOM elements used by the Rhythm Dash view. */
 export const resolveRhythmDashElements = (stage) => ({
     tapButton: stage.querySelector('.rhythm-tap'),
     runToggle: stage.querySelector('#rhythm-run'),
@@ -27,12 +28,15 @@ export const resolveRhythmDashElements = (stage) => ({
     energyBar: stage.querySelector('[data-rhythm="energy-bar"]'),
 });
 
+/** Maps a difficulty object to the coarse level label used by the UI. */
 export const resolveDifficultyLevel = (difficulty) => (
     difficulty.complexity >= 2 ? 'hard' : difficulty.complexity >= 1 ? 'medium' : 'easy'
 );
 
+/** Writes the status message for the Rhythm Dash HUD. */
 export const updateStatusText = setTextContent;
 
+/** Syncs the score meter width and ARIA values from a normalized score value. */
 export const updateMeter = (meterFill, meterTrack, scoreValue) => {
     const percent = clamp(scoreValue * 100, 0, 100);
     if (meterFill) {
@@ -59,18 +63,21 @@ const pushTempoHistory = ({
     }
 };
 
+/** Updates the displayed BPM when a finite tempo estimate is available. */
 export const syncBpmText = (bpmEl, bpmValue) => {
     if (Number.isFinite(bpmValue) && bpmValue > 0 && bpmEl) {
         bpmEl.textContent = String(Math.round(bpmValue));
     }
 };
 
+/** Formats the player-facing status message for the latest rhythm rating. */
 export const formatRhythmStatusMessage = ({ ratingSource, rating, combo }) => (
     shouldShowComboStatus(combo)
         ? `${ratingSource}: ${formatComboStatus(rating, combo)}`
         : `${ratingSource}: ${formatRegularStatus(rating)}`
 );
 
+/** Processes a manual tap fallback input and returns the timestamp to retain. */
 export const handleRhythmTapInput = ({
     runToggle,
     setStatus,
@@ -103,6 +110,7 @@ export const handleRhythmTapInput = ({
     return now;
 };
 
+/** Applies a realtime feature frame to Rhythm Dash and reports listening state. */
 export const applyRealtimeRhythmFrame = ({
     detail,
     runToggle,

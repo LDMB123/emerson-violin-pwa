@@ -76,6 +76,7 @@ const normalizeEvent = (event) => {
     return normalized;
 };
 
+/** Normalizes stored event records and reports whether any migration occurred. */
 export const migrateEventShape = (events) => {
     if (!Array.isArray(events)) {
         return { events: [], changed: true };
@@ -99,6 +100,7 @@ export const migrateEventShape = (events) => {
     return { events: next, changed };
 };
 
+/** Loads persisted events, migrating them to the current event schema if needed. */
 export const loadEvents = async () => {
     const stored = await getJSON(EVENTS_KEY);
     const migrated = migrateEventShape(stored);
@@ -108,10 +110,12 @@ export const loadEvents = async () => {
     return migrated.events;
 };
 
+/** Persists the normalized event list. */
 export const saveEvents = async (events) => {
     await setJSON(EVENTS_KEY, events);
 };
 
+/** Loads persisted recording metadata and normalizes required identifiers. */
 export const loadRecordings = async () => {
     const stored = await getJSON(RECORDINGS_KEY);
     return mapArrayEntries(stored, (recording) => {
@@ -124,6 +128,7 @@ export const loadRecordings = async () => {
     });
 };
 
+/** Resolves a playable URL for a stored recording and whether it must be revoked. */
 export const resolveRecordingSource = async (recording) => {
     if (!recording) return null;
     if (recording.dataUrl) return { url: recording.dataUrl, revoke: false };

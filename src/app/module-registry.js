@@ -2,6 +2,7 @@ const equals = (...targets) => (viewId) => targets.includes(viewId);
 const startsWith = (prefix) => (viewId) => viewId.startsWith(prefix);
 const oneOf = (...checks) => (viewId) => checks.some((check) => check(viewId));
 
+/** Maps module ids to lazy import factories used by the view loader. */
 export const MODULE_LOADERS = {
     platform: () => import('../platform/native-apis.js'),
     dataSaver: () => import('../platform/data-saver.js'),
@@ -55,6 +56,7 @@ export const MODULE_LOADERS = {
     echo: () => import('../games/echo.js'),
 };
 
+/** Lists modules that should be initialized eagerly during app startup. */
 export const EAGER_MODULES = [
     'dataSaver',
     'offlineRecovery',
@@ -65,12 +67,14 @@ export const EAGER_MODULES = [
     'webVitals',
 ];
 
+/** Schedules low-priority module preloads to run after initial startup settles. */
 export const IDLE_MODULE_PLAN = [
     ['mlScheduler', 180],
     ['badging', 420],
     ['audioPlayer', 540],
 ];
 
+/** Declares the primary view ids whose assets should be prefetched opportunistically. */
 export const PREFETCH_VIEW_IDS = [
     'view-home',
     'view-coach',
@@ -128,7 +132,7 @@ const MODULE_RULES = [
 ];
 
 const modulesByView = new Map();
-// Safari 26.2+, Chrome 133+
+// Prefer the atomic get-or-create path when the engine provides it.
 const supportsGetOrInsertComputed = 'getOrInsertComputed' in Map.prototype;
 
 const computeModulesForView = (viewId) => {
@@ -142,6 +146,7 @@ const computeModulesForView = (viewId) => {
     return Object.freeze(modules);
 };
 
+/** Resolves the unique module ids required to power a given view id. */
 export const resolveModulesForView = (viewId) => {
     if (typeof viewId !== 'string' || !viewId) {
         return [];

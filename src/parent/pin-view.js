@@ -1,3 +1,4 @@
+/** Resolves the DOM elements used by the parent PIN dialog and summary UI. */
 export const getPinElements = () => {
     const dialog = document.querySelector('[data-pin-dialog]');
     const input = document.getElementById('parent-pin-input');
@@ -7,6 +8,7 @@ export const getPinElements = () => {
     return { dialog, input, pinDisplayEl, pinInputEl, pinStatusEl };
 };
 
+/** Resets the parent PIN summary display to its masked default state. */
 export const updatePinDisplay = () => {
     const { pinDisplayEl, pinStatusEl } = getPinElements();
     if (pinDisplayEl) {
@@ -17,11 +19,13 @@ export const updatePinDisplay = () => {
     }
 };
 
+/** Updates the status text shown alongside the parent PIN controls. */
 export const setPinStatus = (message) => {
     const { pinStatusEl } = getPinElements();
     if (pinStatusEl) pinStatusEl.textContent = message;
 };
 
+/** Opens the parent PIN dialog and clears any stale error/input state. */
 export const showPinDialog = () => {
     const { dialog, input } = getPinElements();
     if (!dialog) return;
@@ -35,6 +39,7 @@ export const showPinDialog = () => {
     }
 };
 
+/** Closes the parent PIN dialog with an optional dialog return reason. */
 export const closePinDialog = (reason = '') => {
     const { dialog } = getPinElements();
     dialog?.close(reason);

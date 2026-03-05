@@ -1,12 +1,12 @@
-# Safari 26.2 / iPadOS 26.2 Testing Guide
+# Safari / iPadOS Testing Guide
 **Panda Violin - iPad mini (6th Generation)**
 
 ## Device Specs
 - **Device**: iPad mini (6th generation)
 - **Chip**: Apple A15 Bionic
 - **Screen**: 8.3" Liquid Retina (2266 x 1488 px at 326 ppi)
-- **OS**: iPadOS 26.2
-- **Browser**: Safari 26.2
+- **OS**: Current target iPadOS build
+- **Browser**: Current target Safari build
 
 ## Pre-Test Setup
 
@@ -128,7 +128,7 @@ JSON.parse(localStorage.getItem('panda-violin:parent-pin-v2'))
 ```javascript
 // Check Badging API availability
 'setAppBadge' in navigator && 'clearAppBadge' in navigator
-// Expected: true (Safari 17+)
+// Expected: true on Safari builds that support the Badging API
 
 // Manually test badge
 await navigator.setAppBadge(5)  // Badge shows "5"
@@ -509,8 +509,8 @@ These are expected behaviors (not bugs):
 4. **Push notifications**: Require explicit user permission, no silent push
 5. **Fullscreen API**: Not available in iOS Safari
 6. **Web Bluetooth/USB**: Not supported
-7. **UA string OS version frozen** (Safari 26+): Parsed iPadOS version from UA is stale — do not display or rely on it for feature detection
-8. **`window.orientationchange` removed** (Safari 26+): Use `screen.orientation.addEventListener('change', ...)` with fallback for older browsers
+7. **UA string OS version may be frozen**: Parsed iPadOS version from UA can be stale — do not display or rely on it for feature detection
+8. **Prefer `screen.orientation` change events**: Use `screen.orientation.addEventListener('change', ...)` and keep the older `orientationchange` fallback where needed
 9. **AudioContext `interrupted` state** (iOS): System events (phone calls, alerts) put AudioContext in `'interrupted'` — must handle alongside `'suspended'` when resuming audio
 
 ---
@@ -553,4 +553,4 @@ These are expected behaviors (not bugs):
 ---
 
 **Testing Duration**: Approximately 60-75 minutes for complete test suite (Phases 1–7)
-**Prerequisites**: iPad mini (6th gen) with iPadOS 26.2, Safari 26.2, deployed HTTPS app
+**Prerequisites**: iPad mini (6th gen) on the current target iPadOS/Safari build, deployed HTTPS app

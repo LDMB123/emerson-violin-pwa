@@ -5,6 +5,7 @@ const RADAR_RADIUS = 80;
 const RADAR_ORDER = ['pitch', 'rhythm', 'bow_control', 'posture', 'reading'];
 const RADAR_ANGLES = RADAR_ORDER.map((_, index) => ((index * 2 * Math.PI) / RADAR_ORDER.length) - Math.PI / 2);
 
+/** Infers how many practice minutes a checked goal input should contribute. */
 export const minutesForInput = (input) => {
     if (input?.dataset?.minutes) {
         const parsed = Number.parseInt(input.dataset.minutes, 10);
@@ -19,11 +20,13 @@ export const minutesForInput = (input) => {
     return 1;
 };
 
+/** Converts a numeric timestamp into the bigint format used by the tracker. */
 export const toTrackerTimestamp = (value) => {
     const parsed = finiteOrNow(Number(value));
     return BigInt(Math.floor(parsed));
 };
 
+/** Formats a compact recent-score label for progress summary lists. */
 export const formatRecentScore = (event) => {
     if (!event) return 'Score 0';
     if (Number.isFinite(event.accuracy)) {
@@ -38,6 +41,7 @@ export const formatRecentScore = (event) => {
     return 'Score 0';
 };
 
+/** Returns the canned coach encouragement message for a skill focus area. */
 export const coachMessageFor = (skill) => {
     switch (skill) {
         case 'pitch':
@@ -55,6 +59,7 @@ export const coachMessageFor = (skill) => {
     }
 };
 
+/** Builds SVG radar-chart points from skill percentage values. */
 export const buildRadarPoints = (skills) => {
     return RADAR_ORDER.map((key, index) => {
         const raw = skills?.[key] ?? 50;

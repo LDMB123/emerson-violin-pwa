@@ -61,8 +61,8 @@ const { bind } = createGame({
         );
         const notePool = ['G', 'D', 'A', 'E'];
         let sequence = ['G', 'D', 'A', 'E'];
-        // difficulty.speed: scales partner playback timeout; speed=1.0 = 900ms per note (current behavior)
-        // difficulty.complexity: adjusts sequence length; complexity=1 (medium) = length 4 (current behavior)
+        // difficulty.speed shortens or lengthens the partner playback timeout from the 900ms baseline.
+        // difficulty.complexity adjusts the sequence length for each round.
         const duetSeqLengths = [3, 4, 5];
         const duetSeqLength = duetSeqLengths[difficultyProfile.complexity] ?? 4;
         const partnerNoteTimeout = Math.round(900 / difficultyProfile.speed);

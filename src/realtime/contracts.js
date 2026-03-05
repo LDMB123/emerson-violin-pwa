@@ -8,8 +8,18 @@ import {
     RT_QUALITY,
 } from '../utils/event-names.js';
 
+/**
+ * Allowed confidence bands for realtime cues and state.
+ *
+ * @type {readonly string[]}
+ */
 export const CONFIDENCE_BANDS = Object.freeze(['low', 'medium', 'high']);
 
+/**
+ * Allowed cue states for realtime coaching.
+ *
+ * @type {readonly string[]}
+ */
 export const CUE_STATES = Object.freeze([
     'listening',
     'steady',
@@ -19,6 +29,11 @@ export const CUE_STATES = Object.freeze([
     'celebrate-lock',
 ]);
 
+/**
+ * Allowed parent override presets.
+ *
+ * @type {readonly string[]}
+ */
 export const PARENT_PRESETS = Object.freeze(['gentle', 'standard', 'challenge']);
 
 const REALTIME_EVENTS = Object.freeze([
@@ -133,11 +148,44 @@ const EVENT_VALIDATORS = Object.freeze({
     [RT_QUALITY]: validateQuality,
 });
 
+/**
+ * Returns whether an event name belongs to the realtime contract surface.
+ *
+ * @param {string} eventName
+ * @returns {boolean}
+ */
 export const isRealtimeEventName = (eventName) => REALTIME_EVENTS.includes(eventName);
+
+/**
+ * Returns whether a preset is a supported parent override preset.
+ *
+ * @param {string} preset
+ * @returns {boolean}
+ */
 export const isParentPreset = (preset) => PARENT_PRESETS.includes(preset);
+
+/**
+ * Returns whether a value is a supported confidence band.
+ *
+ * @param {string} band
+ * @returns {boolean}
+ */
 export const isConfidenceBand = (band) => CONFIDENCE_BANDS.includes(band);
+
+/**
+ * Returns whether a value is a supported cue state.
+ *
+ * @param {string} state
+ * @returns {boolean}
+ */
 export const isCueState = (state) => CUE_STATES.includes(state);
 
+/**
+ * Maps a numeric confidence score to its band label.
+ *
+ * @param {number} value
+ * @returns {string}
+ */
 export const confidenceBandFrom = (value) => {
     const score = isFiniteNumber(value) ? value : 0;
     if (score >= 0.75) return 'high';
@@ -145,6 +193,13 @@ export const confidenceBandFrom = (value) => {
     return 'low';
 };
 
+/**
+ * Validates a realtime payload against the event-specific contract.
+ *
+ * @param {string} eventName
+ * @param {any} payload
+ * @returns {{ ok: boolean, errors: string[] }}
+ */
 export const validateRealtimePayload = (eventName, payload) => {
     const errors = [];
     if (!isRealtimeEventName(eventName)) {
@@ -160,6 +215,13 @@ export const validateRealtimePayload = (eventName, payload) => {
     return { ok: errors.length === 0, errors };
 };
 
+/**
+ * Asserts that a realtime payload matches its contract and throws when it does not.
+ *
+ * @param {string} eventName
+ * @param {any} payload
+ * @returns {any}
+ */
 export const assertRealtimePayload = (eventName, payload) => {
     const result = validateRealtimePayload(eventName, payload);
     if (result.ok) return payload;

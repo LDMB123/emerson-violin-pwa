@@ -17,14 +17,18 @@ const persistPinData = async (pinKey, data) => {
     return data;
 };
 
+/** Normalizes user PIN input down to a four-digit numeric string. */
 export const normalizePin = (value) => (value || '').replace(/\D/g, '').slice(0, 4);
 
+/** Returns whether the Parent Zone is unlocked for the current tab session. */
 export const isParentUnlocked = (unlockKey) => sessionStorage.getItem(unlockKey) === 'true';
 
+/** Marks the Parent Zone unlocked for the current tab session. */
 export const markParentUnlocked = (unlockKey) => {
     sessionStorage.setItem(unlockKey, 'true');
 };
 
+/** Loads the persisted PIN hash, creating or migrating one if necessary. */
 export const loadPinData = async ({ pinKey, legacyPinKey }) => {
     const stored = await getJSON(pinKey);
     if (stored?.hash && stored?.salt) {
@@ -45,6 +49,7 @@ export const loadPinData = async ({ pinKey, legacyPinKey }) => {
     return persistPinData(pinKey, created);
 };
 
+/** Hashes and persists a newly chosen parent PIN. */
 export const savePinData = async ({ pinKey, pin }) => {
     const { hash, salt } = await createPinHash(pin);
     const next = {

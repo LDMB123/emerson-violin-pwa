@@ -1,6 +1,7 @@
 import { createAudioContext } from '../audio-context.js';
 import { setParam } from './shared.js';
 
+/** Creates the mutable runtime state container used by the shared tone player. */
 export const createTonePlayerState = ({ playbackEnabled, samplerBlocked }) => ({
     context: null,
     sequenceToken: 0,
@@ -20,6 +21,7 @@ const closeAndResetContext = (state) => {
     state.outputNode = null;
 };
 
+/** Ensures the tone player has a live `AudioContext`, recreating if needed. */
 export const ensurePlayerContext = async (state) => {
     if (!state.context) {
         state.context = createAudioContext();
@@ -39,6 +41,7 @@ export const ensurePlayerContext = async (state) => {
     return state.context;
 };
 
+/** Lazily creates the shared master output chain for tone player playback. */
 export const ensurePlayerOutputNode = (state, ctx) => {
     if (state.outputNode) return state.outputNode;
     const masterGain = ctx.createGain();
@@ -61,12 +64,14 @@ export const ensurePlayerOutputNode = (state, ctx) => {
     return state.outputNode;
 };
 
+/** Attempts to resume a suspended tone-player context after a user gesture. */
 export const unlockTonePlayerContext = (state) => {
     if (!state.context) return;
     if (state.context.state !== 'suspended' && state.context.state !== 'interrupted') return;
     state.context.resume().catch(() => {});
 };
 
+/** Binds one-time global gesture listeners that unlock blocked audio playback. */
 export const bindTonePlayerUnlockGestures = (state, unlockContext) => {
     if (state.unlockBound) return;
     state.unlockBound = true;
@@ -86,6 +91,7 @@ const unbindUnlockGestures = (state) => {
     state.unlockHandler = null;
 };
 
+/** Stops active playback, removes unlock listeners, and closes the context. */
 export const releaseTonePlayerContext = (state, stopAll) => {
     stopAll();
     unbindUnlockGestures(state);

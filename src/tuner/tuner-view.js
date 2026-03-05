@@ -6,10 +6,12 @@ const normalizeFrameMetrics = (frame) => ({
     frequency: Number.isFinite(frame?.frequency) ? Math.round(frame.frequency * 10) / 10 : 0,
 });
 
+/** Updates the tuner status line. */
 export const setStatus = (statusEl, text) => {
     if (statusEl) statusEl.textContent = text;
 };
 
+/** Resets the tuner note, cents, frequency, and live-panel state to idle. */
 export const resetDisplay = ({ noteEl, centsEl, freqEl, livePanel }) => {
     if (noteEl) noteEl.textContent = '--';
     if (centsEl) centsEl.textContent = '±0 cents';
@@ -18,6 +20,7 @@ export const resetDisplay = ({ noteEl, centsEl, freqEl, livePanel }) => {
     if (livePanel) livePanel.style.setProperty('--tuner-offset', '0');
 };
 
+/** Applies one tuner detection frame to the view and emits tune-state changes. */
 export const applyFrame = ({
     frame,
     tolerance,
@@ -53,11 +56,13 @@ const frameRenderKey = (frame) => {
     return `${frame.note || '--'}|${cents}|${frequency}`;
 };
 
+/** Returns a stable key for diffing tuner realtime render inputs. */
 export const realtimeRenderKey = (detail) => {
     const listening = Boolean(detail?.listening) && !detail?.paused ? '1' : '0';
     return `${listening}|${frameRenderKey(detail?.lastFeature)}`;
 };
 
+/** Syncs tuner control button and panel state to the current listening mode. */
 export const updateControlState = ({ startButton, stopButton, livePanel }, active) => {
     if (startButton) {
         startButton.disabled = Boolean(active);

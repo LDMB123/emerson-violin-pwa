@@ -38,7 +38,7 @@ export const setupNavigationController = ({
             window.addEventListener('hashchange', handle, { once: true });
         }
         if (supportsViewTransitions && shouldAnimateNav()) {
-            // Skip any in-flight transition before starting a new one (Safari 26.2+ / Chrome 111+).
+            // Skip any in-flight transition before starting a new one when the API is available.
             // activeViewTransition is undefined on older engines — optional chain is a safe no-op.
             document.activeViewTransition?.skipTransition();
             document.documentElement.dataset.navDirection = navDirection;
@@ -87,7 +87,7 @@ export const setupNavigationController = ({
     });
 };
 
-// Navigation API (Safari 18 / Chrome 102) replaces hashchange for view routing.
+// Use the Navigation API for view routing when available.
 // hashchange still fires for all other listeners (game lifecycle, metrics, etc.).
 const supportsNavigationAPI = 'navigation' in window;
 

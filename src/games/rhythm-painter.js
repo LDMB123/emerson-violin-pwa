@@ -88,8 +88,8 @@ const { bind } = createGame({
             red: 'E',
         };
 
-        // difficulty.speed: scales flourish playback tempo; speed=1.0 = 180 BPM (current behavior)
-        // difficulty.complexity: adjusts creativityTarget; complexity=1 (medium) = 70 (current behavior)
+        // difficulty.speed scales flourish playback tempo from the 180 BPM baseline.
+        // difficulty.complexity raises or lowers the creativity target for each round.
         const flourishTempo = Math.round(180 * difficulty.speed);
         const complexityCreativityTargets = [50, 70, 90];
 

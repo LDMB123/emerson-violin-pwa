@@ -19,6 +19,7 @@ const writeJSONWithFallback = async ({ warningLabel, write, applyFallback }) => 
 
 /* ── Public API: JSON (KV store) ────────────────────────── */
 
+/** Reads a JSON value from IndexedDB with localStorage fallback on failure. */
 export const getJSON = async (key) => {
     const db = await openDB();
     if (!db) return fallbackGetJSON(key);
@@ -30,6 +31,7 @@ export const getJSON = async (key) => {
     }
 };
 
+/** Persists a JSON value to IndexedDB and mirrors it to the fallback store. */
 export const setJSON = async (key, value) => {
     await writeJSONWithFallback({
         warningLabel: '[Storage] IndexedDB set failed',
@@ -38,6 +40,7 @@ export const setJSON = async (key, value) => {
     });
 };
 
+/** Removes a JSON value from IndexedDB and the fallback store. */
 export const removeJSON = async (key) => {
     await writeJSONWithFallback({
         warningLabel: '[Storage] IndexedDB remove failed',
@@ -50,6 +53,7 @@ export const removeJSON = async (key) => {
 
 /* ── Public API: Blobs ──────────────────────────────────── */
 
+/** Reads a blob payload from the dedicated IndexedDB blob store. */
 export const getBlob = async (key) => {
     if (!key) return null;
     const db = await openDB();
@@ -62,6 +66,7 @@ export const getBlob = async (key) => {
     }
 };
 
+/** Persists a blob payload to the dedicated IndexedDB blob store. */
 export const setBlob = async (key, blob) => {
     if (!key || !blob) return false;
     const db = await openDB();
@@ -75,6 +80,7 @@ export const setBlob = async (key, blob) => {
     }
 };
 
+/** Removes a blob payload from the dedicated IndexedDB blob store. */
 export const removeBlob = async (key) => {
     if (!key) return;
     const db = await openDB();

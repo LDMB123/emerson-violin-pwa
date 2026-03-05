@@ -1,4 +1,4 @@
-# Xcode Simulator Testing - iPad mini (6th Gen) Safari 26.2
+# Xcode Simulator Testing - iPad mini (6th Gen)
 
 Quick validation using Xcode Simulator before physical device testing.
 
@@ -8,7 +8,7 @@ Quick validation using Xcode Simulator before physical device testing.
 # List available iPad mini simulators
 xcrun simctl list devices | grep "iPad mini"
 
-# Boot iPad mini (6th generation) — Xcode 26 provides iPadOS 26 simulators
+# Boot iPad mini (6th generation) — use the simulator runtime that matches your current target iPadOS build
 # Find device UDID from list above, then:
 xcrun simctl boot <DEVICE_UDID>
 

@@ -30,8 +30,10 @@ const splitSuffix = (path = '') => {
 
 const stripAudioExtension = (path = '') => path.replace(AUDIO_EXTENSION_PATTERN, '');
 
+/** Returns whether a path points at an audio asset managed by this fallback helper. */
 export const isAudioAssetPath = (path = '') => AUDIO_ASSET_PATTERN.test(path);
 
+/** Builds ordered audio source candidates based on browser codec support. */
 export const getAudioPathCandidates = (basePath) => {
     if (!basePath) return [];
     const [pathOnly, suffix] = splitSuffix(basePath);
@@ -39,6 +41,7 @@ export const getAudioPathCandidates = (basePath) => {
     return SOURCE_ORDER.map((ext) => `${cleanPath}.${ext}${suffix}`);
 };
 
+/** Returns the preferred audio asset path for the current browser. */
 export const getAudioPath = (basePath) => getAudioPathCandidates(basePath)[0] || basePath;
 
 const readCandidateState = (audioEl) => {
@@ -51,6 +54,7 @@ const readCandidateState = (audioEl) => {
     };
 };
 
+/** Prepares an audio element with codec fallbacks and error-driven source swapping. */
 export const prepareAudioElementSource = (audioEl, basePath = null) => {
     if (!audioEl) return;
     const src = basePath || audioEl.getAttribute('src');

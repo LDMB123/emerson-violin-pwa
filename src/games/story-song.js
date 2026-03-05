@@ -66,8 +66,8 @@ const { bind } = createGame({
         const promptEl = stage.querySelector('[data-story="prompt"]');
         const storyPages = STORY_SONG_PAGES;
 
-        // difficulty.speed: scales playback tempo; speed=1.0 keeps tempo=92 BPM (current behavior)
-        // difficulty.complexity: visual feedback only (pages are fixed); speed scales tempo
+        // difficulty.speed scales playback tempo from the 92 BPM baseline.
+        // difficulty.complexity only affects feedback because the story pages are fixed.
         const stageSeconds = 4;
         const tempo = Math.round(92 * difficultyProfile.speed);
         let wasPlaying = false;

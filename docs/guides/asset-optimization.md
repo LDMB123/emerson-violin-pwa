@@ -201,8 +201,8 @@ NODE_ENV=production npm run build
 ### Audio Playback Issues
 **Cause**: Browser doesn't support Opus
 **Solution**: Ensure MP3 fallback is present
-- Safari 17+: Supports Opus
-- Safari 14-16: Requires MP3 fallback
+- Current Chromium, Firefox, and Safari builds generally support Opus
+- Older or limited-support Safari builds may require the MP3 fallback
 - All modern browsers support MP3
 
 ### Font Display Issues
@@ -245,16 +245,16 @@ find public/assets -type f -name '*.webp' | sort
 ## Browser Compatibility
 
 ### Opus Audio
-- Supported: Chrome, Firefox, Edge, Safari 17+
-- Fallback: MP3 for Safari 14-16
+- Supported: Current target Chromium, Firefox, Edge, and Safari builds
+- Fallback: MP3 where Opus support is unavailable
 - Implementation: `<audio>` with source detection
 
 ### WebP Images
-- Supported: All modern browsers (Safari 14+)
+- Supported: All current target browsers
 - Fallback: PNG via `<picture>` element when markup needs one
 - Progressive enhancement
 
 ### WOFF2 Fonts
-- Supported: All modern browsers (Safari 10+)
+- Supported: All current target browsers
 - No fallback needed for target browsers
 - Subset maintains variable font features

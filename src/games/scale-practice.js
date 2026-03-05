@@ -53,8 +53,8 @@ const { bind } = createGame({
         const tempoTags = new Set();
         const scaleNotes = ['G', 'A', 'B', 'C', 'D', 'E', 'F#', 'G', 'F#', 'E', 'D', 'C', 'B', 'A', 'G'];
 
-        // difficulty.speed: scales targetTempo; speed=1.0 keeps targetTempo=85 (current behavior)
-        // difficulty.complexity: visual feedback only for this game (single scale, no content pool to select)
+        // difficulty.speed scales target tempo from the 85 BPM baseline.
+        // difficulty.complexity only affects feedback here because the note pattern is fixed.
         const targetTempo = Math.round(85 * difficultyProfile.speed);
 
         // Store DOM refs and state on gameState

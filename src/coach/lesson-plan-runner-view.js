@@ -9,6 +9,7 @@ import {
 } from '../utils/lesson-plan-utils.js';
 import { setDisabled } from '../utils/dom-utils.js';
 
+/** Creates the root DOM markup for the guided lesson runner widget. */
 export const createRunnerMarkup = () => {
     const runner = document.createElement('div');
     runner.className = 'lesson-runner';
@@ -35,6 +36,7 @@ export const createRunnerMarkup = () => {
     return runner;
 };
 
+/** Collects the DOM nodes the lesson runner uses for rendering and controls. */
 export const createRunnerViewState = ({ runner, stepsList }) => ({
     statusEl: runner.querySelector('[data-lesson-runner-status]'),
     stepEl: runner.querySelector('[data-lesson-runner-step]'),
@@ -54,11 +56,13 @@ const setRunnerCta = (ctaButton, href, label = 'Open activity') => {
     ctaButton.textContent = label;
 };
 
+/** Renders the runner countdown timer from a remaining-seconds value. */
 export const renderRunnerTimer = (timerEl, seconds = 0) => {
     if (!timerEl) return;
     timerEl.textContent = formatTime(Math.max(0, Number(seconds) || 0) * 1000);
 };
 
+/** Updates lesson runner button labels and enabled states in one call. */
 export const setRunnerControls = (
     { startButton, nextButton } = {},
     { startLabel = null, startDisabled, nextDisabled } = {},
@@ -163,6 +167,7 @@ const renderRunnerStep = ({
     );
 };
 
+/** Builds the renderer callbacks that keep runner state and DOM in sync. */
 export const createRunnerRenderers = ({
     runnerState,
     runnerView,

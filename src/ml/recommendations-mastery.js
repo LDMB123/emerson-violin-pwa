@@ -64,6 +64,7 @@ const toMasteryByIdObject = (entriesMap, thresholds) => Object.fromEntries(
     Array.from(entriesMap.values()).map((entry) => [entry.id, withMasteryTier(entry, thresholds)]),
 );
 
+/** Builds per-game and per-song mastery summaries from recorded events. */
 export const masteryFromEvents = (events, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
     const gamesById = new Map();
     const songsById = new Map();
@@ -88,6 +89,7 @@ export const masteryFromEvents = (events, thresholds = DEFAULT_MASTERY_THRESHOLD
     };
 };
 
+/** Buckets skill scores into mastery tiers for recommendation UIs. */
 export const skillMastery = (skillScores, skillLabels = {}) => {
     const entries = Object.entries(skillScores || {});
     const byTier = {
@@ -126,6 +128,7 @@ const pickTopDueReview = (dueSongs = [], dueGames = []) => {
         : { type: 'game', ...topGame };
 };
 
+/** Collects games that are due for spaced-review prompts from mastery state. */
 export const collectDueGameReviews = (state, { now = Date.now(), limit = 5 } = {}) => {
     const games = Object.entries(state?.games || {})
         .map(([id, entry]) => ({ id, ...(entry || {}) }))
@@ -148,6 +151,7 @@ export const collectDueGameReviews = (state, { now = Date.now(), limit = 5 } = {
     });
 };
 
+/** Builds the highest-priority due-review CTA across songs and games. */
 export const buildDueReviewAction = ({ dueSongs = [], dueGames = [], songCatalog, gameLabels = {} }) => {
     const top = pickTopDueReview(dueSongs, dueGames);
     if (!top) return null;

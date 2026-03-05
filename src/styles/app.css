@@ -1,5 +1,5 @@
 /**
- * Panda Violin - iPadOS 26.2 Optimized Styles
+ * Panda Violin - iPad-Optimized Styles
  * 
  * Features:
  * - CSS Layers for cascade control
@@ -61,7 +61,7 @@
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
         overscroll-behavior-y: none;
-        /* iPadOS 26.2 Native Feel: No rubber-banding */
+        /* iPad-friendly scroll behavior: no rubber-banding */
     }
 
     button {
@@ -204,7 +204,7 @@
         --radius-2xl: 38px;
         --radius-full: 9999px;
 
-        /* Animations - iPadOS 26.2 Spring Physics */
+        /* Animation easing tuned for a springy tablet feel */
         --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
         --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
         --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -213,7 +213,7 @@
         --duration-normal: 0.35s;
         --duration-slow: 0.5s;
 
-        /* Safe Areas (iPadOS 26.2) */
+        /* Safe areas */
         --safe-top: env(safe-area-inset-top, 0px);
         --safe-bottom: env(safe-area-inset-bottom, 0px);
 
@@ -3881,7 +3881,7 @@
     background-size: 200% 100%;
     border-radius: var(--radius-md);
     animation: skeleton-shimmer 1.8s ease-in-out infinite;
-    /* Stagger shimmer by sibling position (Safari 26.2; no-op on older engines — all start at 0ms) */
+    /* Stagger shimmer by sibling position where supported; older engines start all items at 0ms. */
     animation-delay: calc((sibling-index() - 1) * 120ms);
 }
 
