@@ -1,3 +1,4 @@
+/** Syncs Story Song progress counters onto the mutable game state object. */
 export const syncStorySongGameState = ({
     gameState,
     pageIndex,
@@ -13,6 +14,7 @@ export const syncStorySongGameState = ({
     if (typeof score === 'number') gameState.score = score;
 };
 
+/** Computes Story Song score and counters after completing one page. */
 export const computeStorySongProgressAfterPage = ({
     completedNotes,
     completedPages,
@@ -29,6 +31,7 @@ export const computeStorySongProgressAfterPage = ({
     };
 };
 
+/** Resets Story Song progress counters in state and bound setters. */
 export const resetStorySongProgressState = ({
     gameState,
     setPageIndex,

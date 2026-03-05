@@ -1,6 +1,7 @@
 import { clamp } from '../utils/math.js';
 import { setTextContent } from '../utils/dom-utils.js';
 
+/** Formats the Tuning Time progress message for the current note and remaining strings. */
 export const formatTuningProgressMessage = ({
     note,
     tunedCount,
@@ -11,8 +12,10 @@ export const formatTuningProgressMessage = ({
     return `Tuning ${note} · ${remaining} more string${remaining === 1 ? '' : 's'} to go.`;
 };
 
+/** Updates the Tuning Time status message. */
 export const setTuningStatusText = setTextContent;
 
+/** Renders Tuning Time progress width and progressbar values. */
 export const renderTuningProgress = ({
     progressEl,
     progressBar,

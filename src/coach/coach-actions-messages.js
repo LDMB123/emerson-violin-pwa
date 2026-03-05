@@ -1,3 +1,4 @@
+/** Maps game ids to lightweight post-session coach encouragement messages. */
 export const GAME_MESSAGES = {
     'pitch-quest': 'Nice pitch work! Try using less pressure on the bow next.',
     'rhythm-dash': 'Great rhythm! See if you can keep that tempo in a real song.',
@@ -22,8 +23,10 @@ const BASE_MESSAGES = [
     'Try a short song and keep your tempo calm.',
 ];
 
+/** Returns the default rotating coach message set. */
 export const getBaseCoachMessages = () => [...BASE_MESSAGES];
 
+/** Builds the merged coach message queue from recommendations and pending cues. */
 export const buildCoachMessages = ({ recs, pendingGameMessage }) => {
     const next = [...BASE_MESSAGES];
     if (recs?.coachMessage) next.unshift(recs.coachMessage);

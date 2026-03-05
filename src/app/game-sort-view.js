@@ -42,6 +42,7 @@ const updateGameSortEmptyState = (emptyState, selected, visibleCount, favoriteCo
     emptyState.hidden = false;
 };
 
+/** Applies the active games filter to all rendered game cards. */
 export const applyGameSort = (context) => {
     const selected = context.sortControls.find((control) => control.checked)?.value || 'quick';
     let visibleCount = 0;
@@ -66,6 +67,7 @@ export const applyGameSort = (context) => {
     updateGameSortEmptyState(context.emptyState, selected, visibleCount, context.favoriteIds.size);
 };
 
+/** Binds favorite-toggle buttons for each game card in the games shelf. */
 export const bindGameSortFavorites = (context, syncGameSortFavorites) => {
     context.cards.forEach((card) => {
         const button = ensureFavoriteButton(card);
@@ -89,6 +91,7 @@ export const bindGameSortFavorites = (context, syncGameSortFavorites) => {
     });
 };
 
+/** Binds filter controls so games are resorted when the selection changes. */
 export const bindGameSortControls = (context) => {
     context.sortControls.forEach((control) => {
         if (control.dataset.bound === 'true') return;

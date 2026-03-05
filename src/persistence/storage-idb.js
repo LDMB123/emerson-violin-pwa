@@ -1,6 +1,8 @@
 const DB_NAME = 'panda-violin-db';
 const DB_VERSION = 2;
+/** Object store name for JSON/key-value records. */
 export const STORE = 'kv';
+/** Object store name for blob-backed recording payloads. */
 export const BLOB_STORE = 'blobs';
 
 let dbPromise = null;
@@ -17,6 +19,7 @@ const runSafeOp = (operation, onError) => {
     }
 };
 
+/** Opens the app IndexedDB database and caches the live connection promise. */
 export const openDB = () => {
     if (dbPromise) return dbPromise;
     if (!('indexedDB' in globalThis)) {
@@ -64,6 +67,7 @@ export const openDB = () => {
     return dbPromise;
 };
 
+/** Runs an IndexedDB store operation and resolves with its request result. */
 export const idbOp = (db, storeName, mode, fn) => new Promise((resolve, reject) => {
     let settled = false;
     const finishReject = (error) => {

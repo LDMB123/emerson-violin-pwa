@@ -6,9 +6,11 @@ import { eventScore } from '../utils/event-score.js';
 
 const FLOW_FIRST_TIME = 'first_time';
 const FLOW_PROGRESSING = 'progressing';
+/** Flow label used when recent performance suggests the learner is regressing. */
 export const FLOW_REGRESSING = 'regressing';
 const FLOW_STABLE = 'stable';
 
+/** Maps curriculum flow states to mission-planning phases. */
 export const PHASE_BY_FLOW = {
     [FLOW_FIRST_TIME]: 'onramp',
     [FLOW_PROGRESSING]: 'advance',
@@ -147,6 +149,7 @@ const deriveCurriculumSnapshot = ({ content, state, sourceEvents }) => {
     };
 };
 
+/** Builds the current curriculum snapshot from content, state, and recent events. */
 export const getCurriculumSnapshot = async ({ events } = {}) => {
     const inputs = await loadCurriculumSnapshotInputs({ events });
     return deriveCurriculumSnapshot(inputs);

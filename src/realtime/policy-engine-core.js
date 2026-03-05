@@ -22,6 +22,7 @@ const PRESET_BOUNDS = Object.freeze({
     }),
 });
 
+/** Non-configurable safety rails applied on top of parent policy presets. */
 export const HARD_RAILS = Object.freeze({
     oneCueAtATime: true,
     maxConsecutiveCorrections: 2,
@@ -90,6 +91,7 @@ const emitSystemCue = (state, {
     fallback,
 }), now);
 
+/** Evaluates one realtime feature frame and returns the next coach cue, if any. */
 export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
     const now = finiteOrNow(context.now);
     const pitchCents = finiteOrZero(features.pitchCents);
@@ -196,4 +198,5 @@ export const evaluatePolicyFrame = (state, features = {}, context = {}) => {
     });
 };
 
+/** Returns the effective timing/pitch bounds for a parent preset. */
 export const getBoundsForPreset = (preset) => ({ ...getBounds(preset) });

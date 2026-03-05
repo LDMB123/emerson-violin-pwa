@@ -79,8 +79,10 @@ const buildSessionReportEventArgs = (options = {}) => {
     };
 };
 
+/** Returns whether an input id represents a step/set objective checkbox. */
 export const isStepSetObjectiveInput = (input) => /(-step-|set-)/.test(input.id);
 
+/** Returns whether an input should contribute to primary session objective reporting. */
 export const isPrimarySessionObjectiveInput = (input) => (
     !input.id.startsWith('setting-')
     && !input.id.includes('parent-')
@@ -107,6 +109,7 @@ const reportSessionGameEvent = ({
     return payload;
 };
 
+/** Records a game session event using filtered objective inputs and derived payload data. */
 export const reportFilteredSessionGameEvent = (options = {}) => {
     const {
         includeInput = null,

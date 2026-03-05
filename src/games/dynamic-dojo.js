@@ -3,6 +3,7 @@ import { attachTuning } from './shared.js';
 import { RT_STATE } from '../utils/event-names.js';
 import { clamp } from '../utils/math.js';
 
+/** Computes Dynamic Dojo accuracy from completed targets versus total targets. */
 export const computeAccuracy = (state) => {
     if (!state.totalTargets) return 0;
     return (state.score / state.totalTargets) * 100;
@@ -160,4 +161,5 @@ function triggerWin(gameState, onComplete) {
     setTimeout(onComplete, 2000);
 }
 
+/** Binds and initializes the Dynamic Dojo game module. */
 export const init = () => bind();

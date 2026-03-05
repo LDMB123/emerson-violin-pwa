@@ -23,6 +23,7 @@ const normalizeParentGoal = (stored) => {
     return { title, weeklyMinutes };
 };
 
+/** Parses and validates parent-goal form input into a normalized goal object. */
 export const parseParentGoalInput = ({ titleInput, minutesInput }) => {
     const title = titleInput?.trim() || DEFAULT_PARENT_GOAL.title;
     const parsed = Number.parseInt(minutesInput ?? DEFAULT_PARENT_GOAL.weeklyMinutes, 10);
@@ -43,11 +44,13 @@ export const parseParentGoalInput = ({ titleInput, minutesInput }) => {
     };
 };
 
+/** Loads the persisted parent practice goal. */
 export const loadParentGoal = async () => {
     const stored = await getJSON(GOAL_KEY);
     return normalizeParentGoal(stored);
 };
 
+/** Persists the parent practice goal. */
 export const saveParentGoal = async (goal) => {
     await setJSON(GOAL_KEY, goal);
 };

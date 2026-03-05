@@ -1,8 +1,10 @@
 const CHALLENGE_UNLOCK_THRESHOLD = 75;
+/** Number of challenge-ready songs required before challenge songs unlock. */
 export const CHALLENGE_UNLOCK_REQUIRED = 3;
 
 const CHALLENGE_READY_TIERS = new Set(['bronze', 'silver', 'gold']);
 
+/** Returns whether a score is high enough to count toward challenge readiness. */
 export const isChallengeReadinessScore = (score) => {
     const numericScore = Number(score);
     return Number.isFinite(numericScore) && numericScore >= CHALLENGE_UNLOCK_THRESHOLD;
@@ -37,6 +39,7 @@ const isSongUnlockedForState = (song, options = {}) => {
     return challengeReadinessCount(songProgressState) >= CHALLENGE_UNLOCK_REQUIRED;
 };
 
+/** Builds a song-id to unlocked-state map for the supplied catalog and progress state. */
 export const buildUnlockMapForCatalog = (catalog, options = {}) => {
     const { curriculumState, songProgressState } = normalizeUnlockOptions(options);
     const songs = Array.isArray(catalog?.songs) ? catalog.songs : [];

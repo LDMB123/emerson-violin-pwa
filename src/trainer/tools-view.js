@@ -1,4 +1,5 @@
 import { syncAudioPlaybackClass, updateSliderFill } from '../utils/dom-utils.js';
+/** Binds all range inputs so their visual fill stays synced with their value. */
 export const bindRangeFillInputs = () => {
     document.querySelectorAll('input[type="range"]').forEach((slider) => {
         updateSliderFill(slider);
@@ -8,6 +9,7 @@ export const bindRangeFillInputs = () => {
     });
 };
 
+/** Binds trainer audio cards and pauses the metronome when audio playback starts. */
 export const bindTrainerAudioCards = ({ audioCards, metronomeController }) => {
     audioCards.forEach((card) => {
         const audio = card.querySelector('audio');
@@ -37,6 +39,7 @@ export const bindTrainerAudioCards = ({ audioCards, metronomeController }) => {
     });
 };
 
+/** Resolves the DOM elements used by the trainer metronome and drill tools. */
 export const resolveTrainerToolElements = () => {
     const metronome = {
         slider: document.querySelector('[data-metronome="slider"]'),

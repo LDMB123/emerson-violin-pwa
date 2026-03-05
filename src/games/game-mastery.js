@@ -40,6 +40,7 @@ const tierFromDays = (entry, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
     return tierFromDistinctDayCounts(entry, thresholds);
 };
 
+/** Returns the distinct-day count associated with a requested mastery tier. */
 export const getTierDays = (entry, tier) => {
     if (!entry) return 0;
     if (tier === 'gold' || tier === 'mastery') return entry.goldDays || 0;
@@ -47,6 +48,7 @@ export const getTierDays = (entry, tier) => {
     return entry.bronzeDays || 0;
 };
 
+/** Loads and normalizes the persisted game mastery state. */
 export const loadGameMasteryState = async () => {
     const stored = await getJSON(GAME_MASTERY_KEY);
     return normalizeState(stored);
@@ -58,6 +60,7 @@ const saveGameMasteryState = async (state) => {
     return normalized;
 };
 
+/** Merges a scored game attempt into persisted game mastery state. */
 export const updateGameMastery = async ({
     gameId,
     score,

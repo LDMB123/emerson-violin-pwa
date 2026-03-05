@@ -34,8 +34,10 @@ const hydratePolicy = async () => {
 
 void hydratePolicy();
 
+/** Evaluates one realtime feature frame against the singleton policy-engine state. */
 export const evaluateFrame = (features = {}, context = {}) => evaluatePolicyFrame(state, features, context);
 
+/** Applies and persists the selected parent preset for realtime coaching. */
 export const applyParentPreset = async (preset) => {
     if (!isParentPreset(preset)) return state.preset;
     const previous = state.preset;
@@ -52,6 +54,7 @@ export const applyParentPreset = async (preset) => {
     return state.preset;
 };
 
+/** Returns the public snapshot of the singleton realtime policy engine state. */
 export const getPolicyState = () => ({
     preset: state.preset,
     rails: { ...HARD_RAILS },

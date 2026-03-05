@@ -1,3 +1,4 @@
+/** Computes the next Duet Challenge state after a correct player tap. */
 export const applyDuetCorrectTurn = ({
     combo,
     score,
@@ -25,6 +26,7 @@ export const applyDuetCorrectTurn = ({
     };
 };
 
+/** Computes the next Duet Challenge state after an incorrect player tap. */
 export const applyDuetIncorrectTurn = ({
     mistakes,
 }) => ({

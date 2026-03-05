@@ -1,6 +1,7 @@
 import { setAriaCurrent } from '../utils/dom-utils.js';
 import { prefetchViewIfMissing } from './view-prefetch.js';
 
+/** Sets up click-driven hash navigation, nav state syncing, and view transitions. */
 export const setupNavigationController = ({
     ctx,
     getCurrentViewId,
@@ -91,6 +92,7 @@ export const setupNavigationController = ({
 // hashchange still fires for all other listeners (game lifecycle, metrics, etc.).
 const supportsNavigationAPI = 'navigation' in window;
 
+/** Binds hash or Navigation API routing to the supplied view renderer. */
 export const bindHashViewController = ({
     getCurrentViewId,
     showView,
@@ -124,6 +126,7 @@ export const bindHashViewController = ({
     return { syncInitialView };
 };
 
+/** Queues low-priority prefetches for likely next views when data saver is off. */
 export const prefetchLikelyViews = ({
     currentViewId,
     prefetchViewIds,

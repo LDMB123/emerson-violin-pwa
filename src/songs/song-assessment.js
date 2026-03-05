@@ -17,6 +17,7 @@ const starsFromScores = (timing, intonation, overall) => {
     return 0;
 };
 
+/** Maps a normalized song score to its mastery tier label. */
 export const tierFromScore = (score) => {
     if (score >= DEFAULT_MASTERY_THRESHOLDS.gold) return 'gold';
     if (score >= DEFAULT_MASTERY_THRESHOLDS.silver) return 'silver';
@@ -24,6 +25,7 @@ export const tierFromScore = (score) => {
     return 'foundation';
 };
 
+/** Normalizes one song attempt into scored timing, intonation, stars, and tier. */
 export const assessSongAttempt = ({
     accuracy,
     timingAccuracy,
@@ -49,6 +51,7 @@ export const assessSongAttempt = ({
     };
 };
 
+/** Aggregates song attempt events into per-song best-score summaries. */
 export const aggregateSongAssessments = (events = []) => {
     const songMap = new Map();
 

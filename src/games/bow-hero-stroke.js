@@ -1,3 +1,4 @@
+/** Computes Bow Hero stroke feedback from timing cadence and current streak. */
 export const computeBowStrokeFeedback = ({
     lastStrokeAt,
     now,
@@ -26,4 +27,5 @@ export const computeBowStrokeFeedback = ({
     };
 };
 
+/** Alternates the Bow Hero target note between A and D by stroke count. */
 export const resolveBowStrokeNote = (strokeCount) => (strokeCount % 2 === 0 ? 'A' : 'D');

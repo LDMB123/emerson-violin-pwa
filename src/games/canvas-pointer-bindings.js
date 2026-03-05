@@ -27,6 +27,7 @@ const resolveRunningPointerOptions = (options = {}) => {
     };
 };
 
+/** Binds mouse and touch drag handling for a canvas-like interaction surface. */
 export const bindCanvasPointerDrag = ({
     canvas,
     canStart = TRUE,
@@ -72,6 +73,7 @@ export const bindCanvasPointerDrag = ({
     };
 };
 
+/** Binds canvas drag handling that only starts while the game engine is running. */
 export const bindRunningCanvasPointerDrag = (options = {}) => {
     const { engine, isTracking, onStart, onMove, onEnd } = resolveRunningPointerOptions(options);
     return bindCanvasPointerDrag({
@@ -84,6 +86,7 @@ export const bindRunningCanvasPointerDrag = (options = {}) => {
     });
 };
 
+/** Binds running canvas drag handling and maps client coordinates into canvas space. */
 export const bindRunningMappedCanvasPointerDrag = (options = {}) => {
     const { engine, isTracking, onStart, onMove, onEnd } = resolveRunningPointerOptions(options);
     return bindRunningCanvasPointerDrag({

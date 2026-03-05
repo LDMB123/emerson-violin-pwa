@@ -80,6 +80,7 @@ const withPersistedStepMission = (params = {}, reason, buildUpdatedMission = () 
     });
 };
 
+/** Marks a mission step complete, updates derived mission progress, and persists it. */
 export const completeMissionStep = async (params = {}) => {
     const reason = params.reason || 'step-complete';
     return withPersistedStepMission(params, reason, ({ normalized, stepId }) => {
@@ -109,6 +110,7 @@ export const completeMissionStep = async (params = {}) => {
     });
 };
 
+/** Marks one mission step in progress and persists the updated mission state. */
 export const startMissionStep = async (params = {}) => {
     return withPersistedStepMission(params, 'step-start', ({ normalized, stepId }) => {
         const sourceSteps = normalized.steps;
@@ -133,6 +135,7 @@ export const startMissionStep = async (params = {}) => {
     });
 };
 
+/** Inserts remediation steps after the current step for the supplied weak skill. */
 export const insertRemediationForSkill = async ({
     mission,
     unit,

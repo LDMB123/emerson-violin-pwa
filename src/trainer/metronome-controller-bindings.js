@@ -1,6 +1,7 @@
 import { calculateMetronomeBpm, shouldClearTapTimes } from './trainer-utils.js';
 import { updateSliderFill } from '../utils/dom-utils.js';
 
+/** Binds slider input so the metronome BPM updates from manual dragging. */
 export const bindMetronomeSliderControl = ({
     slider,
     updateBpm,
@@ -20,6 +21,7 @@ export const bindMetronomeSliderControl = ({
     });
 };
 
+/** Binds the metronome start/stop toggle button. */
 export const bindMetronomeToggleControl = ({
     toggle,
     isRunning,
@@ -51,6 +53,7 @@ const getNextTapTimes = ({ tapTimes, now }) => {
     return nextTapTimes;
 };
 
+/** Binds tap-tempo input and converts recent taps into a metronome BPM. */
 export const bindMetronomeTapControl = ({
     tap,
     slider,

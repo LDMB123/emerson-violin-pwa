@@ -86,6 +86,7 @@ const loadCatalog = async () => {
     }
 };
 
+/** Loads the normalized song catalog, optionally bypassing the in-memory cache. */
 export const getSongCatalog = async ({ forceRefresh = false } = {}) => {
     if (!forceRefresh && cachedCatalog) {
         return clone(cachedCatalog);
@@ -104,12 +105,14 @@ export const getSongCatalog = async ({ forceRefresh = false } = {}) => {
     return clone(catalog);
 };
 
+/** Loads one song entry from the normalized song catalog. */
 export const getSongById = async (songId) => {
     if (!songId) return null;
     const catalog = await getSongCatalog();
     return catalog.byId?.[songId] || null;
 };
 
+/** Loads the section list for a song from the normalized song catalog. */
 export const getSongSections = async (songId) => {
     const song = await getSongById(songId);
     return song?.sections || [];

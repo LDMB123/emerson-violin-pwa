@@ -56,6 +56,7 @@ const hasActiveMission = (mission) => {
     return normalized.status !== 'complete';
 };
 
+/** Persists mission state and updates the parent curriculum snapshot. */
 export const saveMissionState = async ({ state, mission, unit }) => {
     const completedUnitIds = Array.isArray(state.completedUnitIds) ? [...state.completedUnitIds] : [];
     if (mission.status === 'complete' && unit?.id && !completedUnitIds.includes(unit.id)) {
@@ -82,6 +83,7 @@ export const saveMissionState = async ({ state, mission, unit }) => {
     return saveCurriculumState(nextState);
 };
 
+/** Returns the active mission or generates and persists a new one when needed. */
 export const ensurePersistedMission = async ({
     snapshot,
     recommendations,

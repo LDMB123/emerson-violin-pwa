@@ -7,8 +7,10 @@ const resolveAudioContextCtor = () => {
     return typeof fallback === 'function' ? fallback : null;
 };
 
+/** Returns whether the current environment exposes a usable AudioContext constructor. */
 export const hasAudioContextSupport = () => Boolean(resolveAudioContextCtor());
 
+/** Creates an AudioContext, gracefully falling back when options are unsupported. */
 export const createAudioContext = (options = undefined) => {
     const Ctor = resolveAudioContextCtor();
     if (!Ctor) return null;

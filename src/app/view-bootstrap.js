@@ -12,6 +12,7 @@ const getInlineInitialView = () => {
     };
 };
 
+/** Seeds the view loader cache from the server-rendered inline initial view markup. */
 export const seedInlineInitialViewCache = ({ viewLoader, getViewPath }) => {
     const inlineInitialView = getInlineInitialView();
     if (!inlineInitialView) return;
@@ -22,6 +23,7 @@ export const seedInlineInitialViewCache = ({ viewLoader, getViewPath }) => {
     }
 };
 
+/** Prefetches the current initial view when data-saver mode is disabled. */
 export const warmInitialViews = ({
     getCurrentViewId,
     viewLoader,
@@ -46,6 +48,7 @@ export const warmInitialViews = ({
     });
 };
 
+/** Resolves the first view to show, including onboarding redirect checks. */
 export const resolveInitialView = async (getCurrentViewId) => {
     const hasExplicitHash = window.location.hash.startsWith('#view-');
     let initialViewId = getCurrentViewId() || 'view-home';

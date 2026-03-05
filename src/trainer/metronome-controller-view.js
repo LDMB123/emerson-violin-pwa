@@ -1,5 +1,6 @@
 import { updateSliderFill, setAriaPressed, updateProgressAttribute } from '../utils/dom-utils.js';
 
+/** Creates an empty metronome element bag for uninitialized trainer views. */
 export const createEmptyMetronomeElements = () => ({
     slider: null,
     bpmLabel: null,
@@ -12,6 +13,7 @@ export const createEmptyMetronomeElements = () => ({
 
 
 
+/** Syncs metronome button and visual state to the current running flag. */
 export const syncMetronomeRunningState = ({ elements, running }) => {
     if (elements.toggle) {
         elements.toggle.textContent = running ? 'Stop' : 'Start';
@@ -22,6 +24,7 @@ export const syncMetronomeRunningState = ({ elements, running }) => {
     }
 };
 
+/** Updates all metronome display elements from the current BPM value. */
 export const updateMetronomeDisplay = ({ elements, bpm }) => {
     if (elements.bpmLabel) elements.bpmLabel.textContent = `${bpm} BPM`;
     if (elements.dialNumber) elements.dialNumber.textContent = String(bpm);

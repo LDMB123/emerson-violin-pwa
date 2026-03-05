@@ -1,3 +1,4 @@
+/** Renders the Bow Hero star meter from the current star count. */
 export const renderBowHeroStars = ({
     stars,
     starCount,
@@ -7,6 +8,7 @@ export const renderBowHeroStars = ({
     });
 };
 
+/** Handles Bow Hero start/pause toggle changes and finalizes a partial run if needed. */
 export const handleBowHeroRunToggleChange = ({
     runToggle,
     startTimer,

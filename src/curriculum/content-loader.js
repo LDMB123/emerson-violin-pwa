@@ -86,6 +86,7 @@ const loadCurriculum = async () => {
     }
 };
 
+/** Loads the normalized curriculum track content, optionally bypassing cache. */
 export const getCurriculumContent = async ({ forceRefresh = false } = {}) => {
     if (!forceRefresh && cachedContent) {
         return clone(cachedContent);
@@ -109,6 +110,7 @@ const getCurriculumUnits = async () => {
     return content.units || [];
 };
 
+/** Returns one curriculum unit from the normalized curriculum content. */
 export const getCurriculumUnit = async (unitId) => {
     if (!unitId) return null;
     const units = await getCurriculumUnits();

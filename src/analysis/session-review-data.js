@@ -20,6 +20,7 @@ const calculateAccuracyAverage = (songEvents, limit = 5) => {
     return Math.round(total / recent.length);
 };
 
+/** Builds the summary stats used by the session review surface. */
 export const buildSessionStats = (events) => {
     const songEvents = buildSongEvents(events);
 
@@ -31,6 +32,7 @@ export const buildSessionStats = (events) => {
     };
 };
 
+/** Builds a skill profile object from practice, game, and song events. */
 export const buildSkillProfile = ({ SkillProfile, SkillCategory, events, updateSkillProfile }) => {
     const profile = new SkillProfile();
 

@@ -10,6 +10,7 @@ const PRACTICE_VIEW_PREFIXES = [
     '#view-song-',
 ];
 
+/** Creates the mutable runtime state container for realtime coaching sessions. */
 export const createRealtimeSessionState = () => ({
     sessionId: '',
     active: false,
@@ -40,6 +41,8 @@ export const createRealtimeSessionState = () => ({
     },
 });
 
+/** Returns whether a hash belongs to a practice-capable view. */
 export const isPracticeHash = (hash) => PRACTICE_VIEW_PREFIXES.some((prefix) => hash.startsWith(prefix));
 
+/** Generates a unique-ish realtime session id for logging and UI state. */
 export const createRealtimeSessionId = () => `rt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

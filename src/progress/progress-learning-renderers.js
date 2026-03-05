@@ -40,6 +40,7 @@ const songTier = (score) => {
 
 
 
+/** Renders the curriculum unit progression map into progress and parent surfaces. */
 export const renderCurriculumMap = ({ curriculumContent, curriculumState, recommendations, progressEl, parentEl }) => {
     const units = Array.isArray(curriculumContent?.units) ? curriculumContent.units : [];
     const completed = new Set(Array.isArray(curriculumState?.completedUnitIds) ? curriculumState.completedUnitIds : []);
@@ -63,6 +64,7 @@ export const renderCurriculumMap = ({ curriculumContent, curriculumState, recomm
     );
 };
 
+/** Renders top song mastery chips into progress and parent surfaces. */
 export const renderSongHeatmap = ({ songProgressState, songCatalog, progressEl, parentEl }) => {
     const entries = Object.entries(songProgressState?.songs || {})
         .map(([id, entry]) => ({ id, ...(entry || {}) }))
@@ -84,6 +86,7 @@ export const renderSongHeatmap = ({ songProgressState, songCatalog, progressEl, 
     );
 };
 
+/** Renders game mastery chips for every configured game into both surfaces. */
 export const renderGameMasteryMatrix = ({
     gameMasteryState,
     gameMeta,
@@ -111,6 +114,7 @@ export const renderGameMasteryMatrix = ({
     );
 };
 
+/** Renders the current next-action recommendation list into both surfaces. */
 export const renderNextActions = ({ recommendations, progressEl, parentEl }) => {
     const actions = Array.isArray(recommendations?.nextActions) ? recommendations.nextActions : [];
     renderNextActionsList(progressEl, actions);

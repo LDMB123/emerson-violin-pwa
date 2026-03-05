@@ -1,3 +1,4 @@
+/** Starts a Duet Challenge round and plays the partner sequence when audio is enabled. */
 export const startDuetChallengeRound = ({
     isSoundEnabled,
     setPrompt,
@@ -26,6 +27,7 @@ export const startDuetChallengeRound = ({
     markChecklist('dc-step-1');
 };
 
+/** Returns whether Duet Challenge is ready to accept a player tap. */
 export const ensureDuetChallengeReadyForTap = ({
     isPartnerPlaying,
     active,

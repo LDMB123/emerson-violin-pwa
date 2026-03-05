@@ -166,6 +166,7 @@ const applyContinueLastSong = async (cards, continueCard, continueTitle, events 
     }
 };
 
+/** Prevents interaction with song cards that are currently soft-locked. */
 export const bindSongCardLockGuards = (cards) => {
     cards.forEach((card) => {
         if (card.dataset.songLockBound === 'true') return;
@@ -178,6 +179,7 @@ export const bindSongCardLockGuards = (cards) => {
     });
 };
 
+/** Applies recommendation badges to song cards based on current lesson guidance. */
 export const applyRecommendedBadges = async (cards) => {
     try {
         const recs = await getLearningRecommendations();
@@ -195,6 +197,7 @@ export const applyRecommendedBadges = async (cards) => {
     }
 };
 
+/** Refreshes song-card stats, locks, continue state, and recommendation badges. */
 export const refreshSongCards = async (cards, continueCard, continueTitle) => {
     const [events, catalog, progressionState] = await Promise.all([
         loadEvents().catch(() => []),

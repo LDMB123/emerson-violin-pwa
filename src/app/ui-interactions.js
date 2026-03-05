@@ -2,6 +2,7 @@ const INTERACTIVE_LABEL_SELECTOR = '.toggle-ui label[for], .song-controls label[
 
 let interactiveLabelKeysBound = false;
 
+/** Adds button semantics to label elements used as interactive toggles. */
 export const prepareInteractiveLabels = (root = document) => {
     root.querySelectorAll(INTERACTIVE_LABEL_SELECTOR).forEach((label) => {
         label.setAttribute('role', 'button');
@@ -9,6 +10,7 @@ export const prepareInteractiveLabels = (root = document) => {
     });
 };
 
+/** Enables keyboard activation for interactive labels across the document. */
 export const bindInteractiveLabelKeys = () => {
     if (interactiveLabelKeysBound) return;
     interactiveLabelKeysBound = true;
@@ -21,6 +23,7 @@ export const bindInteractiveLabelKeys = () => {
     });
 };
 
+/** Binds shared popover focus and aria-expanded behavior across the app. */
 export const setupPopoverSystem = (ctx) => {
     const setPopoverExpanded = (popover, expanded) => {
         if (!popover?.id) return;

@@ -1,12 +1,14 @@
 import { clamp, percentageRounded } from '../utils/math.js';
 import { getSongIdFromViewId } from '../utils/recording-export.js';
 
+/** Extracts the canonical song id from a song view hash/id string. */
 export const parseViewSongId = (viewId) => {
     if (typeof viewId !== 'string') return null;
     const songId = getSongIdFromViewId(viewId);
     return songId || null;
 };
 
+/** Builds the advanced song-player control panel for sectional practice. */
 export const createControls = ({ song, checkpoint }) => {
     const wrapper = document.createElement('div');
     wrapper.className = 'song-advanced-controls glass';
@@ -73,11 +75,13 @@ export const createControls = ({ song, checkpoint }) => {
     return wrapper;
 };
 
+/** Updates the advanced song-player status line. */
 export const setStatus = (controls, message) => {
     const status = controls?.querySelector('[data-song-advanced-status]');
     if (status) status.textContent = message;
 };
 
+/** Returns the duration of a selected song section in milliseconds. */
 export const sectionDuration = (sections, sectionId) => {
     if (!Array.isArray(sections) || !sections.length) return 0;
     const section = sections.find((item) => item.id === sectionId) || sections[0];

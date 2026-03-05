@@ -2,6 +2,7 @@ import { atLeast1, durationToMinutes, percentageRounded } from '../utils/math.js
 import { createIntervalTicker } from '../utils/interval-ticker.js';
 import { toCountdownSeconds } from '../utils/countdown-utils.js';
 
+/** Formats a minute count for guided-session labels. */
 export const formatMinutes = (value) => `${atLeast1(Math.round(value || 0))} min`;
 
 const formatClockValue = (totalSeconds, { padMinutes = false } = {}) => {
@@ -12,6 +13,7 @@ const formatClockValue = (totalSeconds, { padMinutes = false } = {}) => {
     return `${minutesLabel}:${secondsLabel}`;
 };
 
+/** Formats elapsed milliseconds as a zero-padded `MM:SS` string. */
 export const formatTime = (ms) => {
     const total = Math.max(0, Math.floor(ms / 1000));
     return formatClockValue(total, { padMinutes: true });
@@ -23,6 +25,7 @@ export const formatCountdown = (ms) => {
     return formatClockValue(total);
 };
 
+/** Creates a guided-session timer with progress updates and milestone callbacks. */
 export const createSessionTimer = ({ targetMinutes, onUpdate, onMilestone }) => {
     let startedAt = null;
     const safeTargetMinutes = atLeast1(targetMinutes || 0);
