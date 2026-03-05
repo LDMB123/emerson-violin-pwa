@@ -35,6 +35,34 @@ const TIMBRE_PARTIALS = {
 export const DEFAULT_TIMBRE = 'violin';
 const DEFAULT_ATTACK = 0.014;
 const DEFAULT_RELEASE = 0.06;
+const SYNTH_VOICE_SHAPING = {
+    envelope: {
+        attack: DEFAULT_ATTACK,
+        release: DEFAULT_RELEASE,
+        decayFactor: 0.65,
+        minSustain: 0.015,
+    },
+    filter: {
+        ratio: 6,
+        min: 1400,
+        max: 5200,
+        q: 0.65,
+    },
+};
+const SAMPLE_VOICE_SHAPING = {
+    envelope: {
+        attack: 0.015,
+        release: 0.08,
+        decayFactor: 0.68,
+        minSustain: 0.03,
+    },
+    filter: {
+        ratio: 5.5,
+        min: 1500,
+        max: 5400,
+        q: 0.75,
+    },
+};
 
 const SAMPLE_ROOTS = [
     { note: 'G3', frequency: 196.00, file: 'violin-g3' },
@@ -124,6 +152,108 @@ const pickSampleRoot = (targetFrequency) => {
     return best;
 };
 
+const createVoiceHandle = ({
+    ctx,
+    now,
+    safeDuration,
+    stop,
+    cleanup,
+}) => {
+    const startDelayMs = Math.max(0, (now - ctx.currentTime) * 1000);
+    return {
+        waitMs: startDelayMs + (safeDuration + 0.08) * 1000,
+        stop,
+        cleanup,
+    };
+};
+
+const createFilteredEnvelope = (
+    ctx,
+    {
+        now,
+        duration,
+        volume,
+        frequency,
+        envelope = {},
+        filter = {},
+    },
+) => {
+    const { gain: voiceGain, stopAt } = createEnvelopeGain(ctx, {
+        now,
+        duration,
+        volume,
+        ...envelope,
+    });
+    const { tail: voiceTail, filter: filterNode } = connectOptionalLowpass(ctx, voiceGain, frequency, filter);
+    return { voiceGain, voiceTail, filterNode, stopAt };
+};
+
+const createDisconnectCleanup = (...groups) => {
+    let cleaned = false;
+    return () => {
+        if (cleaned) return;
+        cleaned = true;
+        groups.forEach((group) => disconnectNodes(group));
+    };
+};
+
+const createShapedVoicePath = (
+    ctx,
+    {
+        now,
+        safeDuration,
+        safeVolume,
+        frequency,
+        shaping,
+    },
+) => createFilteredEnvelope(ctx, {
+    now,
+    duration: safeDuration,
+    volume: safeVolume,
+    frequency,
+    envelope: shaping.envelope,
+    filter: shaping.filter,
+});
+
+const resolveVoiceTimingAndPath = (
+    ctx,
+    {
+        options = {},
+        frequency,
+        shaping,
+        volume = {},
+    },
+) => {
+    const now = options.startTime !== undefined ? options.startTime : ctx.currentTime;
+    const safeDuration = Math.max(0.1, options.duration ?? 0.45);
+    const safeVolume = clamp(options.volume ?? volume.defaultValue, volume.min, volume.max);
+    return {
+        now,
+        safeDuration,
+        ...createShapedVoicePath(ctx, {
+            now,
+            safeDuration,
+            safeVolume,
+            frequency,
+            shaping,
+        }),
+    };
+};
+
+const resolveSynthVoicePath = (ctx, { frequency, options }) => resolveVoiceTimingAndPath(ctx, {
+    options,
+    frequency,
+    shaping: SYNTH_VOICE_SHAPING,
+    volume: { defaultValue: 0.18, min: 0.04, max: 0.55 },
+});
+
+const resolveSampleVoicePath = (ctx, { frequency, options }) => resolveVoiceTimingAndPath(ctx, {
+    options,
+    frequency,
+    shaping: SAMPLE_VOICE_SHAPING,
+    volume: { defaultValue: 0.22, min: 0.04, max: 0.6 },
+});
+
 const loadSampleBufferForRoot = async (state, ctx, root) => {
     if (state.samplerBlocked) return null;
     if (state.sampleBuffers.has(root.note)) {
@@ -164,32 +294,16 @@ const loadSampleBufferForRoot = async (state, ctx, root) => {
 export const isSamplerType = (type = DEFAULT_TIMBRE) => !['square', 'sawtooth'].includes(type);
 
 export const createSynthVoice = ({ state, ctx, frequency, options = {}, ensureOutputNode }) => {
-    const now = options.startTime !== undefined ? options.startTime : ctx.currentTime;
-    const safeDuration = Math.max(0.1, options.duration ?? 0.45);
-    const safeVolume = clamp(options.volume ?? 0.18, 0.04, 0.55);
     const timbreKey = TIMBRE_PARTIALS[options.type] ? options.type : DEFAULT_TIMBRE;
     const partials = TIMBRE_PARTIALS[timbreKey];
     const {
-        gain: voiceGain,
-        stopAt,
-    } = createEnvelopeGain(ctx, {
         now,
-        duration: safeDuration,
-        volume: safeVolume,
-        attack: DEFAULT_ATTACK,
-        release: DEFAULT_RELEASE,
-        decayFactor: 0.65,
-        minSustain: 0.015,
-    });
-    const {
-        tail: voiceTail,
-        filter: filterNode,
-    } = connectOptionalLowpass(ctx, voiceGain, frequency, {
-        ratio: 6,
-        min: 1400,
-        max: 5200,
-        q: 0.65,
-    });
+        safeDuration,
+        voiceGain,
+        voiceTail,
+        filterNode,
+        stopAt,
+    } = resolveSynthVoicePath(ctx, { frequency, options });
 
     voiceTail.connect(ensureOutputNode(state, ctx));
 
@@ -223,27 +337,17 @@ export const createSynthVoice = ({ state, ctx, frequency, options = {}, ensureOu
         vibratoOsc.stop(stopAt);
     }
 
-    let cleaned = false;
-    const cleanup = () => {
-        if (cleaned) return;
-        cleaned = true;
-        disconnectNodes(oscillators);
-        disconnectNodes([vibratoOsc, vibratoGain, voiceGain, filterNode]);
-    };
+    const cleanup = createDisconnectCleanup(
+        oscillators,
+        [vibratoOsc, vibratoGain, voiceGain, filterNode],
+    );
 
     const stop = () => {
         oscillators.forEach(safeStop);
         safeStop(vibratoOsc);
         cleanup();
     };
-
-    const startDelayMs = Math.max(0, (now - ctx.currentTime) * 1000);
-
-    return {
-        waitMs: startDelayMs + (safeDuration + 0.08) * 1000,
-        stop,
-        cleanup,
-    };
+    return createVoiceHandle({ ctx, now, safeDuration, stop, cleanup });
 };
 
 export const createSampleVoice = async ({ state, ctx, frequency, options = {}, ensureOutputNode }) => {
@@ -252,34 +356,18 @@ export const createSampleVoice = async ({ state, ctx, frequency, options = {}, e
     const buffer = await loadSampleBufferForRoot(state, ctx, root);
     if (!buffer) return null;
 
-    const now = options.startTime !== undefined ? options.startTime : ctx.currentTime;
-    const safeDuration = Math.max(0.1, options.duration ?? 0.45);
-    const safeVolume = clamp(options.volume ?? 0.22, 0.04, 0.6);
     const {
-        gain: voiceGain,
-        stopAt,
-    } = createEnvelopeGain(ctx, {
         now,
-        duration: safeDuration,
-        volume: safeVolume,
-        attack: 0.015,
-        release: 0.08,
-        decayFactor: 0.68,
-        minSustain: 0.03,
-    });
+        safeDuration,
+        voiceGain,
+        voiceTail,
+        filterNode,
+        stopAt,
+    } = resolveSampleVoicePath(ctx, { frequency, options });
 
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.playbackRate.value = clamp(frequency / root.frequency, 0.52, 2.1);
-    const {
-        tail: voiceTail,
-        filter: filterNode,
-    } = connectOptionalLowpass(ctx, voiceGain, frequency, {
-        ratio: 5.5,
-        min: 1500,
-        max: 5400,
-        q: 0.75,
-    });
 
     source.connect(voiceGain);
     voiceTail.connect(ensureOutputNode(state, ctx));
@@ -290,21 +378,16 @@ export const createSampleVoice = async ({ state, ctx, frequency, options = {}, e
         return null;
     }
 
-    let cleaned = false;
-    const cleanup = () => {
-        if (cleaned) return;
-        cleaned = true;
-        disconnectNodes([source, voiceGain, filterNode]);
-    };
+    const cleanup = createDisconnectCleanup([source, voiceGain, filterNode]);
     source.onended = cleanup;
-
-    const startDelayMs = Math.max(0, (now - ctx.currentTime) * 1000);
-    return {
-        waitMs: startDelayMs + (safeDuration + 0.08) * 1000,
+    return createVoiceHandle({
+        ctx,
+        now,
+        safeDuration,
         stop: () => {
             safeStop(source);
             cleanup();
         },
         cleanup,
-    };
+    });
 };

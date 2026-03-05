@@ -14,6 +14,12 @@ export const createSessionReviewRecordingController = () => {
     let currentRecordings = [];
     let soundChangeHandler = null;
 
+    const getValidRecording = (index) => {
+        const recording = currentRecordings[index];
+        if (!recording?.dataUrl && !recording?.blobKey) return null;
+        return recording;
+    };
+
     const updatePlaybackButtons = (enabled) => {
         recordingEls.forEach((el) => {
             const button = el.querySelector('.recording-play');
@@ -49,8 +55,8 @@ export const createSessionReviewRecordingController = () => {
             button.addEventListener('click', async () => {
                 if (!isSoundEnabled()) return;
 
-                const recording = currentRecordings[index];
-                if (!recording?.dataUrl && !recording?.blobKey) return;
+                const recording = getValidRecording(index);
+                if (!recording) return;
 
                 const source = await resolveRecordingSource(recording);
                 if (!source) return;
@@ -71,8 +77,8 @@ export const createSessionReviewRecordingController = () => {
             button.addEventListener('click', async () => {
                 if (button.disabled) return;
 
-                const recording = currentRecordings[index];
-                if (!recording?.dataUrl && !recording?.blobKey) return;
+                const recording = getValidRecording(index);
+                if (!recording) return;
                 await runRecordingExportAction({
                     button,
                     recording,

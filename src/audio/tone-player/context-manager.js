@@ -13,6 +13,13 @@ export const createTonePlayerState = ({ playbackEnabled, samplerBlocked }) => ({
     sampleLoads: new Map(),
 });
 
+const closeAndResetContext = (state) => {
+    if (!state.context) return;
+    state.context.close().catch(() => {});
+    state.context = null;
+    state.outputNode = null;
+};
+
 export const ensurePlayerContext = async (state) => {
     if (!state.context) {
         state.context = createAudioContext();
@@ -25,9 +32,7 @@ export const ensurePlayerContext = async (state) => {
         } catch {
             // Close the broken context so the next call creates a fresh one
             // rather than re-entering the resume path repeatedly.
-            state.context.close().catch(() => {});
-            state.context = null;
-            state.outputNode = null;
+            closeAndResetContext(state);
             return null;
         }
     }
@@ -84,9 +89,5 @@ const unbindUnlockGestures = (state) => {
 export const releaseTonePlayerContext = (state, stopAll) => {
     stopAll();
     unbindUnlockGestures(state);
-    if (state.context) {
-        state.context.close().catch(() => {});
-        state.context = null;
-        state.outputNode = null;
-    }
+    closeAndResetContext(state);
 };

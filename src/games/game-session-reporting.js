@@ -91,28 +91,16 @@ export const reportSessionGameEvent = ({
     return payload;
 };
 
-export const reportFilteredSessionGameEvent = ({
-    id = '',
-    reportResult = null,
-    stage = null,
-    difficulty = null,
-    accuracy = 0,
-    score = 0,
-    sessionStartedAt = 0,
-    includeInput = null,
-    mistakes = null,
-    difficultyLabel = '',
-} = {}) => reportSessionGameEvent({
-    ...buildSessionReportEventArgs({
-        id,
-        reportResult,
-        stage,
-        difficulty,
-        accuracy,
-        score,
-        sessionStartedAt,
-    }),
-    includeInput,
-    mistakes,
-    difficultyLabel,
-});
+export const reportFilteredSessionGameEvent = (options = {}) => {
+    const {
+        includeInput = null,
+        mistakes = null,
+        difficultyLabel = '',
+    } = options;
+    return reportSessionGameEvent({
+        ...buildSessionReportEventArgs(options),
+        includeInput,
+        mistakes,
+        difficultyLabel,
+    });
+};

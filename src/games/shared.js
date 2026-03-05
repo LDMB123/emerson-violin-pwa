@@ -46,20 +46,20 @@ export const stopTonePlayer = () => {
     }
 };
 
-export const playToneNote = (note, options) => {
+const playWithTonePlayer = (playback) => {
     if (!isSoundEnabled()) return false;
     const player = getTonePlayer();
     if (!player) return false;
-    player.playNote(note, options).catch(() => { });
+    playback(player).catch(() => { });
     return true;
 };
 
+export const playToneNote = (note, options) => {
+    return playWithTonePlayer((player) => player.playNote(note, options));
+};
+
 export const playToneSequence = (notes, options) => {
-    if (!isSoundEnabled()) return false;
-    const player = getTonePlayer();
-    if (!player) return false;
-    player.playSequence(notes, options).catch(() => { });
-    return true;
+    return playWithTonePlayer((player) => player.playSequence(notes, options));
 };
 
 export const bindTap = (element, handler, { threshold = 160, clickIgnoreWindow = 420 } = {}) => {

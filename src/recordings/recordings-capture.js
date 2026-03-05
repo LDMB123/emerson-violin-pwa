@@ -1,3 +1,5 @@
+import { forEachUnboundSongView, getSongViewPlaybackElements } from '../songs/song-view-utils.js';
+
 export const createRecordingCaptureController = ({
     recordingToggleOn,
     setRecordingStatus,
@@ -6,6 +8,7 @@ export const createRecordingCaptureController = ({
     parseDuration,
     onPermissionDenied,
 }) => {
+    const BOUND_KEY = 'recordingsBound';
     let recorder = null;
     let recordingStream = null;
     let recordingSongId = null;
@@ -97,14 +100,12 @@ export const createRecordingCaptureController = ({
     };
 
     const bindSongViews = () => {
-        const songViews = Array.from(document.querySelectorAll('.song-view'));
-        songViews.forEach((view) => {
-            if (view.dataset.recordingsBound === 'true') return;
-            view.dataset.recordingsBound = 'true';
-            const toggle = view.querySelector('.song-play-toggle');
-            const sheet = view.querySelector('.song-sheet');
-            const playhead = view.querySelector('.song-playhead');
-            const songId = getSongId(view);
+        forEachUnboundSongView(BOUND_KEY, (view) => {
+            const playbackElements = getSongViewPlaybackElements(view, getSongId);
+            const toggle = playbackElements?.toggle;
+            const songId = playbackElements?.songId;
+            const sheet = playbackElements?.sheet;
+            const playhead = playbackElements?.playhead;
             if (!toggle || !songId) return;
             const duration = parseDuration(sheet);
 

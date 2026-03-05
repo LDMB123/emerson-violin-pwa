@@ -1,5 +1,5 @@
 import { GOAL_TARGET_CHANGE, emitEvent } from '../utils/event-names.js';
-import { setDisabled } from '../utils/dom-utils.js';
+import { setDisabled, setTextContent } from '../utils/dom-utils.js';
 import { getLearningRecommendations } from '../ml/recommendations.js';
 import {
     loadParentGoal,
@@ -25,7 +25,7 @@ const resolveElements = () => {
 };
 
 const setStatus = (message) => {
-    if (statusEl) statusEl.textContent = message;
+    setTextContent(statusEl, message);
 };
 
 const setFormDisabled = (disabled) => {

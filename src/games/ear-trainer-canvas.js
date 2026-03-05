@@ -57,12 +57,16 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
 
         // Resume AudioContext on first user interaction if suspended
         const resumeAudio = () => {
-            if (this.audioCtx && (this.audioCtx.state === 'suspended' || this.audioCtx.state === 'interrupted')) {
-                this.audioCtx.resume();
-            }
+            this.resumeAudioContext();
             document.removeEventListener('pointerdown', resumeAudio);
         };
         document.addEventListener('pointerdown', resumeAudio);
+    }
+
+    resumeAudioContext() {
+        if (this.audioCtx && (this.audioCtx.state === 'suspended' || this.audioCtx.state === 'interrupted')) {
+            this.audioCtx.resume();
+        }
     }
 
     emitParticles(intensity) {
@@ -86,9 +90,7 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
 
 
     start() {
-        if (this.audioCtx && (this.audioCtx.state === 'suspended' || this.audioCtx.state === 'interrupted')) {
-            this.audioCtx.resume();
-        }
+        this.resumeAudioContext();
         super.start();
     }
 

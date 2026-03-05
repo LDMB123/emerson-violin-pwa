@@ -11,6 +11,17 @@ const dismiss = async () => {
     window.location.hash = '#view-home';
 };
 
+const setActiveDot = (index) => {
+    dots.forEach((dot) => {
+        dot.classList.toggle('is-active', dot.dataset.slide === index);
+    });
+};
+
+const bindDismissButton = (button) => {
+    if (!button) return;
+    button.addEventListener('click', dismiss);
+};
+
 if (carousel && dots.length) {
     // Dot navigation
     dots.forEach((dot) => {
@@ -28,9 +39,7 @@ if (carousel && dots.length) {
     if ('onscrollend' in window) {
         carousel.addEventListener('scrollend', () => {
             const index = String(Math.round(carousel.scrollLeft / (carousel.offsetWidth || 1)));
-            dots.forEach((dot) => {
-                dot.classList.toggle('is-active', dot.dataset.slide === index);
-            });
+            setActiveDot(index);
         });
     } else {
         const observer = new IntersectionObserver(
@@ -39,9 +48,7 @@ if (carousel && dots.length) {
                     if (!entry.isIntersecting) return;
                     const id = entry.target.id;
                     const index = id.replace('onboarding-slide-', '');
-                    dots.forEach((dot) => {
-                        dot.classList.toggle('is-active', dot.dataset.slide === index);
-                    });
+                    setActiveDot(index);
                 });
             },
             { root: carousel, threshold: 0.6 }
@@ -53,13 +60,8 @@ if (carousel && dots.length) {
     }
 }
 
-if (startBtn) {
-    startBtn.addEventListener('click', dismiss);
-}
-
-if (skipBtn) {
-    skipBtn.addEventListener('click', dismiss);
-}
+bindDismissButton(startBtn);
+bindDismissButton(skipBtn);
 
 // Escape key dismisses onboarding
 document.addEventListener('keydown', (event) => {

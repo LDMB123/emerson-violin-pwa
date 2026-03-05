@@ -18,6 +18,7 @@ import {
     showPinDialog,
     updatePinDisplay,
 } from './pin-view.js';
+import { getMatchingInputTarget } from '../utils/dom-utils.js';
 
 let cachedPinData = null;
 let pinReady = null;
@@ -108,12 +109,7 @@ const bindGlobalListeners = () => {
     if (listenersBound) return;
     listenersBound = true;
 
-    document.addEventListener('submit', (event) => {
-        const form = event.target;
-        if (!(form instanceof HTMLFormElement)) return;
-        if (!form.closest('[data-pin-dialog]')) return;
-        handleSubmit(event);
-    });
+    document.addEventListener('submit', handleSubmit);
 
     document.addEventListener('click', (event) => {
         const button = event.target.closest('[data-parent-pin-save]');
@@ -122,9 +118,11 @@ const bindGlobalListeners = () => {
     });
 
     document.addEventListener('input', (event) => {
-        const target = event.target;
-        if (!(target instanceof HTMLInputElement)) return;
-        if (target.id !== 'parent-pin-input' && !target.matches('[data-parent-pin-input]')) return;
+        const target = getMatchingInputTarget(event.target, {
+            id: 'parent-pin-input',
+            selector: '[data-parent-pin-input]',
+        });
+        if (!target) return;
         target.value = normalizePin(target.value);
     });
 

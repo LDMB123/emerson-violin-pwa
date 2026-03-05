@@ -3,6 +3,7 @@ import {
     getPreferredOrientation,
 } from './platform-utils.js';
 import { getViewId } from '../utils/app-utils.js';
+import { mergeControllerElements } from './controller-elements.js';
 
 const createEmptyElements = () => ({
     wakeToggle: null,
@@ -34,6 +35,15 @@ export const createPowerControls = () => {
         wakeLock = null;
     };
 
+    const withWakeEligibleView = async (onDenied = null) => {
+        const viewId = getViewId(window.location.hash);
+        if (viewAllowsWake(viewId)) return true;
+        if (typeof onDenied === 'function') {
+            await onDenied();
+        }
+        return false;
+    };
+
     const requestWakeLock = async () => {
         if (!elements.wakeToggle) return;
         if (!elements.wakeToggle.checked) {
@@ -43,12 +53,10 @@ export const createPowerControls = () => {
         }
         if (document.hidden) return;
 
-        const viewId = getViewId(window.location.hash);
-        if (!viewAllowsWake(viewId)) {
+        if (!(await withWakeEligibleView(async () => {
             await releaseWakeLock();
             updateWakeStatus('Enable this while practicing to keep the screen awake.');
-            return;
-        }
+        }))) return;
 
         try {
             wakeLock = await navigator.wakeLock.request('screen');
@@ -115,12 +123,10 @@ export const createPowerControls = () => {
         }
         if (document.hidden) return;
 
-        const viewId = getViewId(window.location.hash);
-        if (!viewAllowsWake(viewId)) {
+        if (!(await withWakeEligibleView(() => {
             unlockOrientation();
             updateOrientationStatus('Enable this while practicing to keep the orientation fixed.');
-            return;
-        }
+        }))) return;
 
         try {
             await screen.orientation.lock(getPreferredOrientation());
@@ -172,10 +178,7 @@ export const createPowerControls = () => {
 
     return {
         setElements(nextElements) {
-            elements = {
-                ...createEmptyElements(),
-                ...nextElements,
-            };
+            elements = mergeControllerElements(createEmptyElements, nextElements);
         },
         bindWakeLock,
         bindOrientationLock,

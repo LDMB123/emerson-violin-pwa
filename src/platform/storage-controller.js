@@ -6,6 +6,7 @@ import {
 } from './platform-utils.js';
 import { PERSIST_REQUEST_KEY } from '../persistence/storage-keys.js';
 import { OFFLINE_MODE_CHANGE } from '../utils/event-names.js';
+import { mergeControllerElements } from './controller-elements.js';
 
 const createEmptyElements = () => ({
     statusEl: null,
@@ -176,10 +177,7 @@ export const createStorageController = () => {
 
     return {
         setElements(nextElements) {
-            elements = {
-                ...createEmptyElements(),
-                ...nextElements,
-            };
+            elements = mergeControllerElements(createEmptyElements, nextElements);
         },
         updateStorageStatus,
         maybeAutoPersist,

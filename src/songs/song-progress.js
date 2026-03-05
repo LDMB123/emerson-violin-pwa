@@ -4,12 +4,13 @@ import { loadEvents } from '../persistence/loaders.js';
 import { clamp, clampRounded } from '../utils/math.js';
 import { SOUNDS_CHANGE } from '../utils/event-names.js';
 import { getSongIdFromViewId, parseDuration } from '../utils/recording-export.js';
-import { isSoundEnabled } from '../utils/sound-state.js';
-import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
+import { isSoundEnabled, isSoundDisabledEvent } from '../utils/sound-state.js';
+import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
 import { assessSongAttempt } from './song-assessment.js';
 import { saveSongCheckpoint } from './song-progression.js';
 import { recordSongEvent } from './song-progress-recording.js';
 import { updateBestAccuracyUI } from './song-progress-ui.js';
+import { forEachUnboundSongView, getSongViewPlaybackElements } from './song-view-utils.js';
 
 const NOTE_DURATION_SCALE = 0.74;
 const NOTE_MIN_SECONDS = 0.12;
@@ -123,19 +124,14 @@ const bindGlobalPlaybackListeners = () => {
         stopActiveSongToggles(nextSongViewId);
     }, { passive: true });
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
+    bindHiddenAndPagehide({
+        onHidden: () => {
             stopActiveSongToggles();
-        }
-    });
-
-    window.addEventListener('pagehide', (event) => {
-        if (isBfcachePagehide(event)) return;
-        stopActiveSongToggles();
+        },
     });
 
     document.addEventListener(SOUNDS_CHANGE, (event) => {
-        if (event.detail?.enabled === false) {
+        if (isSoundDisabledEvent(event)) {
             stopPlayAlongAudio();
         }
     });
@@ -223,16 +219,15 @@ const handleToggle = (toggle, songId, duration, sequence) => {
 };
 
 const initSongProgress = () => {
+    const BOUND_KEY = 'songProgressBound';
     bindGlobalPlaybackListeners();
-    const views = document.querySelectorAll('.song-view');
-    views.forEach((view) => {
-        if (view.dataset.songProgressBound === 'true') return;
-        view.dataset.songProgressBound = 'true';
-
-        const toggle = view.querySelector('.song-play-toggle');
-        const sheet = view.querySelector('.song-sheet');
-        const playhead = view.querySelector('.song-playhead');
-        const songId = getSongIdFromViewId(view?.id);
+    forEachUnboundSongView(BOUND_KEY, (view) => {
+        const {
+            toggle,
+            sheet,
+            playhead,
+            songId,
+        } = getSongViewPlaybackElements(view, (songView) => getSongIdFromViewId(songView?.id));
         const duration = parseDuration(sheet);
         const sequence = getSongSequence(view);
 

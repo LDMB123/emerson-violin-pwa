@@ -82,27 +82,23 @@ export const createTonePlayer = () => {
         }
         const ctx = await ensurePlayerContext(state);
         if (!ctx) return false;
+        const options = { duration, volume, type, startTime };
+        const createVoiceConfig = () => ({
+            state,
+            ctx,
+            frequency,
+            options,
+            ensureOutputNode: ensurePlayerOutputNode,
+        });
 
         if (isSamplerType(type) && !state.samplerBlocked) {
-            const sampleVoice = await createSampleVoice({
-                state,
-                ctx,
-                frequency,
-                options: { duration, volume, type, startTime },
-                ensureOutputNode: ensurePlayerOutputNode,
-            });
+            const sampleVoice = await createSampleVoice(createVoiceConfig());
             if (sampleVoice) {
                 return playVoice(sampleVoice);
             }
         }
 
-        const synthVoice = createSynthVoice({
-            state,
-            ctx,
-            frequency,
-            options: { duration, volume, type, startTime },
-            ensureOutputNode: ensurePlayerOutputNode,
-        });
+        const synthVoice = createSynthVoice(createVoiceConfig());
         return playVoice(synthVoice);
     };
 

@@ -26,8 +26,8 @@ const syncFavoriteButton = (card, favoriteIds) => {
 };
 
 const updateGameSortEmptyState = (emptyState, selected, visibleCount, favoriteCount) => {
-    if (!emptyState) return;
-    if (visibleCount > 0) {
+    if (!emptyState || visibleCount > 0) {
+        if (!emptyState) return;
         emptyState.hidden = true;
         return;
     }

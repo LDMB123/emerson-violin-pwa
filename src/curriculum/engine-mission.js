@@ -41,16 +41,53 @@ const withStepMission = async ({ mission, stepId } = {}, applyStepUpdate = async
     return applyStepUpdate(normalized, stepId);
 };
 
-export const completeMissionStep = async (params = {}) => {
-    const { state, unit, reason = 'step-complete' } = params;
+const mapStepById = (steps, stepId, {
+    onMatch,
+    onMismatch = (step) => step,
+}) => mapMissionSteps(steps, (step) => {
+    if (step.id !== stepId) return onMismatch(step);
+    return onMatch(step);
+});
+
+const stepWithStatusAt = (step, status, timestampKey, timestamp) => ({
+    ...step,
+    status,
+    [timestampKey]: timestamp,
+});
+
+const mapStepStatus = ({
+    steps,
+    stepId,
+    status,
+    timestampKey,
+    onMismatch,
+}) => {
+    const now = Date.now();
+    return {
+        now,
+        steps: mapStepById(steps, stepId, {
+            onMatch: (step) => stepWithStatusAt(step, status, timestampKey, now),
+            onMismatch,
+        }),
+    };
+};
+
+const withPersistedStepMission = (params = {}, reason, buildUpdatedMission = () => null) => {
+    const { state, unit } = params;
     return withStepMission(params, async (normalized, stepId) => {
-        const steps = mapMissionSteps(normalized.steps, (step) => {
-            if (step.id !== stepId) return step;
-            return {
-                ...step,
-                status: MISSION_STEP_STATES.COMPLETE,
-                completedAt: Date.now(),
-            };
+        const updated = buildUpdatedMission({ normalized, stepId });
+        return persistMissionUpdate({ mission: updated, state, unit, reason });
+    });
+};
+
+export const completeMissionStep = async (params = {}) => {
+    const reason = params.reason || 'step-complete';
+    return withPersistedStepMission(params, reason, ({ normalized, stepId }) => {
+        const { now, steps } = mapStepStatus({
+            steps: normalized.steps,
+            stepId,
+            status: MISSION_STEP_STATES.COMPLETE,
+            timestampKey: 'completedAt',
         });
 
         const nextCurrent = steps.find((step) => step.status === MISSION_STEP_STATES.IN_PROGRESS)
@@ -66,36 +103,32 @@ export const completeMissionStep = async (params = {}) => {
             currentStepId: nextCurrent?.id || normalized.currentStepId,
             completionPercent,
             status: completionPercent >= 100 ? 'complete' : 'active',
-            completedAt: completionPercent >= 100 ? Date.now() : null,
+            completedAt: completionPercent >= 100 ? now : null,
         });
-
-        return persistMissionUpdate({ mission: updated, state, unit, reason });
+        return updated;
     });
 };
 
 export const startMissionStep = async (params = {}) => {
-    const { state, unit } = params;
-    return withStepMission(params, async (normalized, stepId) => {
-        const steps = mapMissionSteps(normalized.steps, (step) => {
-            if (step.id !== stepId) {
+    return withPersistedStepMission(params, 'step-start', ({ normalized, stepId }) => {
+        const { steps } = mapStepStatus({
+            steps: normalized.steps,
+            stepId,
+            status: MISSION_STEP_STATES.IN_PROGRESS,
+            timestampKey: 'startedAt',
+            onMismatch: (step) => {
                 if (step.status === MISSION_STEP_STATES.IN_PROGRESS) {
                     return { ...step, status: MISSION_STEP_STATES.NOT_STARTED };
                 }
                 return step;
-            }
-            return {
-                ...step,
-                status: MISSION_STEP_STATES.IN_PROGRESS,
-                startedAt: Date.now(),
-            };
+            },
         });
 
         const updated = updateMission(normalized, {
             steps,
             currentStepId: stepId,
         });
-
-        return persistMissionUpdate({ mission: updated, state, unit, reason: 'step-start' });
+        return updated;
     });
 };
 

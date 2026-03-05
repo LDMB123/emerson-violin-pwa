@@ -1,5 +1,6 @@
 import { SOUNDS_CHANGE, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
-import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
+import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
+import { isSoundDisabledEvent } from '../utils/sound-state.js';
 
 export const attachTrainerGlobalListeners = ({
     metronomeController,
@@ -8,17 +9,15 @@ export const attachTrainerGlobalListeners = ({
     refreshTrainerTuningById,
     onMlReset,
 }) => {
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
+    bindHiddenAndPagehide({
+        onHidden: () => {
             metronomeController.stop({ silent: true });
-        }
-    });
-
-    window.addEventListener('pagehide', (event) => {
-        if (isBfcachePagehide(event)) return;
-        metronomeController.report();
-        metronomeController.stop({ silent: true });
-        drillsController.handlePagehide();
+        },
+        onPagehide: () => {
+            metronomeController.report();
+            metronomeController.stop({ silent: true });
+            drillsController.handlePagehide();
+        },
     });
 
     window.addEventListener('hashchange', () => {
@@ -30,7 +29,7 @@ export const attachTrainerGlobalListeners = ({
     }, { passive: true });
 
     document.addEventListener(SOUNDS_CHANGE, (event) => {
-        if (event.detail?.enabled === false) {
+        if (isSoundDisabledEvent(event)) {
             metronomeController.stop({ silent: true });
             metronomeController.setStatus('Sounds are off.');
         }

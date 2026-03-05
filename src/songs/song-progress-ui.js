@@ -1,16 +1,11 @@
 import { clampRounded } from '../utils/math.js';
 import { ensureChildDiv } from '../utils/dom-utils.js';
+import { getSongEventScore } from './song-event-score.js';
 
 const computeBestBySong = (events) => {
     return events.reduce((acc, event) => {
         if (event?.type !== 'song' || !event?.id) return acc;
-        const score = Number.isFinite(event.accuracy)
-            ? event.accuracy
-            : Number.isFinite(event.timingAccuracy)
-                ? event.timingAccuracy
-                : Number.isFinite(event.score)
-                    ? event.score
-                    : 0;
+        const score = getSongEventScore(event, { includeLegacyScore: true });
         if (!acc[event.id] || score > acc[event.id]) {
             acc[event.id] = score;
         }

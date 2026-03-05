@@ -1,7 +1,7 @@
 import { hasServiceWorkerSupport } from './sw-support.js';
 import { createSwUpdateFlowController } from './sw-update-flow.js';
 import { createSwRefreshController } from './sw-refresh-controller.js';
-import { setHidden, setDisabled } from '../utils/dom-utils.js';
+import { setHidden, setDisabled, setTextContent } from '../utils/dom-utils.js';
 
 let statusEl = null;
 let syncStatusEl = null;
@@ -17,11 +17,11 @@ const resolveElements = () => {
 };
 
 const setStatus = (message) => {
-    if (statusEl) statusEl.textContent = message;
+    setTextContent(statusEl, message);
 };
 
 const setSyncStatus = (message) => {
-    if (syncStatusEl) syncStatusEl.textContent = message;
+    setTextContent(syncStatusEl, message);
 };
 
 const showApply = (show) => {
@@ -65,9 +65,14 @@ const checkForUpdates = async () => {
     }
 };
 
-const bindGlobalListeners = () => {
-    if (globalsBound) return;
+const claimGlobalBinding = () => {
+    if (globalsBound) return false;
     globalsBound = true;
+    return true;
+};
+
+const bindGlobalListeners = () => {
+    if (!claimGlobalBinding()) return;
     navigator.serviceWorker.addEventListener('controllerchange', updateFlowController.handleControllerChange, { once: true });
 };
 

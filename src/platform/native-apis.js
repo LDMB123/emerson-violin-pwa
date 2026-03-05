@@ -42,14 +42,18 @@ const resolveElements = () => {
     installStateController.setElement(document.querySelector('[data-install-status]'));
 };
 
+const handlePersistApplied = () => {
+    mediaSoundController.updateSoundState();
+    powerControls.requestWakeLock();
+    powerControls.requestOrientationLock();
+};
+
 const bindGlobalListeners = () => {
-    if (globalsBound) return;
+    if (globalsBound === true) {
+        return;
+    }
     globalsBound = true;
-    document.addEventListener(PERSIST_APPLIED, () => {
-        mediaSoundController.updateSoundState();
-        powerControls.requestWakeLock();
-        powerControls.requestOrientationLock();
-    });
+    document.addEventListener(PERSIST_APPLIED, handlePersistApplied);
 };
 
 const initNativeApis = () => {

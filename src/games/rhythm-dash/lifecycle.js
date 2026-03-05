@@ -42,18 +42,20 @@ export const createRhythmDashLifecycle = () => {
     }) => {
         cleanup();
 
+        const stopRunToggle = ({ dispatchWhenUnchecked = false } = {}) => {
+            if (!runToggle) return false;
+            if (!runToggle.checked && !dispatchWhenUnchecked) return false;
+            runToggle.checked = false;
+            runToggle.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        };
+
         hashChangeHandler = () => {
             if (isGameView(window.location.hash, 'rhythm-dash')) {
-                if (runToggle) {
-                    runToggle.checked = false;
-                    runToggle.dispatchEvent(new Event('change', { bubbles: true }));
-                }
+                stopRunToggle({ dispatchWhenUnchecked: true });
                 return;
             }
-            if (runToggle?.checked) {
-                runToggle.checked = false;
-                runToggle.dispatchEvent(new Event('change', { bubbles: true }));
-            } else {
+            if (!stopRunToggle()) {
                 reportSession();
             }
         };
@@ -63,10 +65,7 @@ export const createRhythmDashLifecycle = () => {
             const requestedViewId = event?.detail?.viewId;
             if (requestedViewId && requestedViewId !== 'view-game-rhythm-dash') return;
             if (!isGameView(window.location.hash, 'rhythm-dash')) return;
-            if (runToggle) {
-                runToggle.checked = false;
-                runToggle.dispatchEvent(new Event('change', { bubbles: true }));
-            }
+            stopRunToggle({ dispatchWhenUnchecked: true });
         };
         document.addEventListener(GAME_PLAY_AGAIN, resetRequestHandler);
 
@@ -74,8 +73,7 @@ export const createRhythmDashLifecycle = () => {
             if (document.hidden) {
                 if (runToggle?.checked) {
                     setPausedByVisibility(true);
-                    runToggle.checked = false;
-                    runToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                    stopRunToggle();
                     setStatus('Paused while app is in the background.');
                 }
             } else if (getPausedByVisibility()) {
@@ -97,9 +95,7 @@ export const createRhythmDashLifecycle = () => {
         pagehideHandler = (event) => {
             if (!isGameView(window.location.hash, 'rhythm-dash')) return;
             if (event?.persisted) return;
-            if (runToggle?.checked) {
-                runToggle.checked = false;
-                runToggle.dispatchEvent(new Event('change', { bubbles: true }));
+            if (stopRunToggle()) {
                 return;
             }
             stopMetronome();

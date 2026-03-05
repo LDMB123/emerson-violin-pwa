@@ -17,6 +17,20 @@ const resolveClientPoint = (event) => {
 const TRUE = () => true;
 const NOOP = () => {};
 
+const resolveRunningPointerOptions = ({
+    engine,
+    isTracking = TRUE,
+    onStart = NOOP,
+    onMove = NOOP,
+    onEnd = NOOP,
+} = {}) => ({
+    engine,
+    isTracking,
+    onStart,
+    onMove,
+    onEnd,
+});
+
 export const bindCanvasPointerDrag = ({
     canvas,
     canStart = TRUE,
@@ -62,32 +76,25 @@ export const bindCanvasPointerDrag = ({
     };
 };
 
-export const bindRunningCanvasPointerDrag = ({
-    engine,
-    isTracking = TRUE,
-    onStart = NOOP,
-    onMove = NOOP,
-    onEnd = NOOP,
-} = {}) => bindCanvasPointerDrag({
-    canvas: engine?.canvas,
-    canStart: () => Boolean(engine?.isRunning),
-    isTracking,
-    onStart,
-    onMove,
-    onEnd,
-});
+export const bindRunningCanvasPointerDrag = (options = {}) => {
+    const { engine, isTracking, onStart, onMove, onEnd } = resolveRunningPointerOptions(options);
+    return bindCanvasPointerDrag({
+        canvas: engine?.canvas,
+        canStart: () => Boolean(engine?.isRunning),
+        isTracking,
+        onStart,
+        onMove,
+        onEnd,
+    });
+};
 
-export const bindRunningMappedCanvasPointerDrag = ({
-    engine,
-    isTracking = TRUE,
-    onStart = NOOP,
-    onMove = NOOP,
-    onEnd = NOOP,
-} = {}) => bindRunningCanvasPointerDrag({
-    engine,
-    isTracking,
-    onStart,
-    onMove: ({ clientX, clientY, event }) => {
+export const bindRunningMappedCanvasPointerDrag = (options = {}) => {
+    const { engine, isTracking, onStart, onMove, onEnd } = resolveRunningPointerOptions(options);
+    return bindRunningCanvasPointerDrag({
+        engine,
+        isTracking,
+        onStart,
+        onMove: ({ clientX, clientY, event }) => {
         const point = mapPointerToCanvasCoords(
             { clientX, clientY },
             engine?.canvas,
@@ -101,5 +108,6 @@ export const bindRunningMappedCanvasPointerDrag = ({
             event,
         });
     },
-    onEnd,
-});
+        onEnd,
+    });
+};

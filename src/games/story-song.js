@@ -27,7 +27,7 @@ const storyTitleEl = cachedEl('#view-game-story-song [data-story="title"]');
 
 const updateStorySong = () => {
     const inputs = Array.from(document.querySelectorAll('#view-game-story-song input[id^="ss-step-"]'));
-    const checked = inputs.length ? inputs.filter((input) => input.checked).length : 0;
+    const checked = inputs.reduce((count, input) => count + (input.checked ? 1 : 0), 0);
     const titleEl = storyTitleEl();
     if (titleEl) {
         titleEl.textContent = checked === inputs.length ? 'Story Song Lab · Complete!' : 'Story Song Lab';
@@ -42,12 +42,17 @@ const { bind } = createGame({
     onReset: (gameState) => {
         // Don't interrupt active playback on tuning change
         if (gameState._isPlaying) return;
-        syncStorySongGameState({
+        resetStorySongProgressState({
             gameState,
-            pageIndex: 0,
-            completedNotes: 0,
-            completedPages: 0,
-            score: 0,
+            setPageIndex: (value) => {
+                gameState._pageIndex = value;
+            },
+            setCompletedNotes: (value) => {
+                gameState._completedNotes = value;
+            },
+            setCompletedPages: (value) => {
+                gameState._completedPages = value;
+            },
         });
         if (gameState._updatePage) gameState._updatePage(0);
         if (gameState._updateStatus) gameState._updateStatus('Press Play-Along to start.');

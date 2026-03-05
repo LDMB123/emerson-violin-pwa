@@ -86,8 +86,7 @@ class RealtimeAudioProcessor extends AudioWorkletProcessor {
                     this.echoBuffer.set_recording(false);
                     this.echoRecording = false;
                     // Extract 400 slices to match the Canvas UI width
-                    const envelope = this.echoBuffer.extract_envelope(400);
-                    this.port.postMessage({ type: 'echo_envelope', payload: Array.from(envelope) });
+                    this.emitEchoEnvelope();
                 }
             }
         };
@@ -131,6 +130,12 @@ class RealtimeAudioProcessor extends AudioWorkletProcessor {
         return elapsed - nearest;
     }
 
+    emitEchoEnvelope() {
+        if (!this.echoBuffer) return;
+        const envelope = this.echoBuffer.extract_envelope(400);
+        this.port.postMessage({ type: 'echo_envelope', payload: Array.from(envelope) });
+    }
+
     process(inputs, outputs) {
         const input = inputs[0];
         const output = outputs[0];
@@ -162,8 +167,7 @@ class RealtimeAudioProcessor extends AudioWorkletProcessor {
                     // Auto-stop recording if full
                     this.echoRecording = false;
                     this.echoBuffer.set_recording(false);
-                    const envelope = this.echoBuffer.extract_envelope(400);
-                    this.port.postMessage({ type: 'echo_envelope', payload: Array.from(envelope) });
+                    this.emitEchoEnvelope();
                 }
             }
             const nowMs = currentTime * 1000;
@@ -197,4 +201,3 @@ class RealtimeAudioProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('rt-audio-processor', RealtimeAudioProcessor);
-

@@ -46,6 +46,11 @@ const handlePermissionDenied = () => {
     recordToggle.dispatchEvent(new Event('change', { bubbles: true }));
 };
 
+const stopRecordingOnPagehide = (event) => {
+    if (isBfcachePagehide(event)) return;
+    recordingController.stopRecording();
+};
+
 const recordingController = createRecordingCaptureController({
     recordingToggleOn,
     setRecordingStatus,
@@ -114,10 +119,7 @@ const initRecordings = () => {
             recordingController.stopRecording();
         }
     });
-    window.addEventListener('pagehide', (event) => {
-        if (isBfcachePagehide(event)) return;
-        recordingController.stopRecording();
-    });
+    window.addEventListener('pagehide', stopRecordingOnPagehide);
 
     window.addEventListener(
         'hashchange',

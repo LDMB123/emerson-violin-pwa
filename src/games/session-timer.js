@@ -2,19 +2,22 @@ import { atLeast1, durationToMinutes, percentageRounded } from '../utils/math.js
 
 export const formatMinutes = (value) => `${atLeast1(Math.round(value || 0))} min`;
 
+const formatClockValue = (totalSeconds, { padMinutes = false } = {}) => {
+    const minutes = durationToMinutes(totalSeconds);
+    const seconds = totalSeconds % 60;
+    const minutesLabel = padMinutes ? String(minutes).padStart(2, '0') : String(minutes);
+    return `${minutesLabel}:${seconds.toString().padStart(2, '0')}`;
+};
+
 export const formatTime = (ms) => {
     const total = Math.max(0, Math.floor(ms / 1000));
-    const minutes = durationToMinutes(total);
-    const seconds = total % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return formatClockValue(total, { padMinutes: true });
 };
 
 /** Countdown variant — uses Math.ceil so display never shows 0:00 prematurely. */
 export const formatCountdown = (ms) => {
     const total = Math.max(0, Math.ceil(ms / 1000));
-    const minutes = durationToMinutes(total);
-    const seconds = total % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return formatClockValue(total);
 };
 
 export const createSessionTimer = ({ targetMinutes, onUpdate, onMilestone }) => {

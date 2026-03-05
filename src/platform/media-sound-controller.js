@@ -1,6 +1,7 @@
-import { isSoundEnabled } from '../utils/sound-state.js';
+import { isSoundEnabled, isSoundDisabledEvent } from '../utils/sound-state.js';
 import { SOUNDS_CHANGE, emitEvent } from '../utils/event-names.js';
-import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
+import { bindHiddenAndPagehide } from '../utils/lifecycle-utils.js';
+import { mergeControllerElements } from './controller-elements.js';
 
 const createEmptyElements = () => ({
     soundToggle: null,
@@ -124,19 +125,13 @@ export const createMediaSoundController = () => {
         audioFocusGlobalsBound = true;
 
         document.addEventListener(SOUNDS_CHANGE, (event) => {
-            if (event.detail?.enabled === false) {
+            if (isSoundDisabledEvent(event)) {
                 pauseAllAudio();
             }
         });
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                pauseAllAudio();
-            }
-        });
-        window.addEventListener('pagehide', (event) => {
-            if (isBfcachePagehide(event)) return;
-            pauseAllAudio();
+        bindHiddenAndPagehide({
+            onHidden: pauseAllAudio,
         });
         window.addEventListener('hashchange', () => {
             pauseAllAudio();
@@ -170,10 +165,7 @@ export const createMediaSoundController = () => {
 
     return {
         setElements(nextElements) {
-            elements = {
-                ...createEmptyElements(),
-                ...nextElements,
-            };
+            elements = mergeControllerElements(createEmptyElements, nextElements);
         },
         bindMediaSession,
         bindAudioFocus,

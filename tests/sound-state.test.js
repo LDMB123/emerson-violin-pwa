@@ -1,5 +1,5 @@
 import { describe, expect, it, afterEach } from 'vitest';
-import { isSoundEnabled } from '../src/utils/sound-state.js';
+import { isSoundEnabled, isSoundDisabledEvent } from '../src/utils/sound-state.js';
 
 describe('isSoundEnabled', () => {
     afterEach(() => {
@@ -24,5 +24,17 @@ describe('isSoundEnabled', () => {
     it('returns true for any non-"off" value', () => {
         document.documentElement.dataset.sounds = 'yes';
         expect(isSoundEnabled()).toBe(true);
+    });
+});
+
+describe('isSoundDisabledEvent', () => {
+    it('returns true when the sounds-change event disables audio', () => {
+        expect(isSoundDisabledEvent({ detail: { enabled: false } })).toBe(true);
+    });
+
+    it('returns false for non-disable payloads', () => {
+        expect(isSoundDisabledEvent({ detail: { enabled: true } })).toBe(false);
+        expect(isSoundDisabledEvent({ detail: {} })).toBe(false);
+        expect(isSoundDisabledEvent(null)).toBe(false);
     });
 });

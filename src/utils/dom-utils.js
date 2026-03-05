@@ -58,9 +58,20 @@ export const setDisabled = (el, disabled) => {
     if (el) el.disabled = disabled;
 };
 
+export const setTextContent = (el, value) => {
+    if (el) el.textContent = value;
+};
+
 export const getCheckboxInput = (target, { requireChecked = false } = {}) => {
     if (!(target instanceof HTMLInputElement)) return null;
     if (target.type !== 'checkbox') return null;
     if (requireChecked && !target.checked) return null;
     return target;
+};
+
+export const getMatchingInputTarget = (target, { id, selector } = {}) => {
+    if (!(target instanceof HTMLInputElement)) return null;
+    if (id && target.id === id) return target;
+    if (selector && target.matches(selector)) return target;
+    return null;
 };

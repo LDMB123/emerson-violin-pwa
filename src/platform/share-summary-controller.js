@@ -1,3 +1,5 @@
+import { mergeControllerElements } from './controller-elements.js';
+
 const createEmptyElements = () => ({
     shareButton: null,
     shareStatusEl: null,
@@ -64,10 +66,7 @@ export const createShareSummaryController = () => {
 
     return {
         setElements(nextElements) {
-            elements = {
-                ...createEmptyElements(),
-                ...nextElements,
-            };
+            elements = mergeControllerElements(createEmptyElements, nextElements);
         },
         bind,
     };

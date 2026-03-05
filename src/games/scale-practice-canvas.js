@@ -38,10 +38,23 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
         });
     }
 
-    update(dt) {
+    getTrackY(index, cy) {
+        const distanceFromStart = index <= 7 ? index : 14 - index;
+        const elevationRatio = distanceFromStart / 7;
+        return cy + 20 - (elevationRatio * 60);
+    }
+
+    getLayoutMetrics() {
         const totalNotes = this.notes.length;
-        const noteSpacing = this.width / totalNotes;
-        const cy = this.height / 2;
+        return {
+            totalNotes,
+            noteSpacing: this.width / totalNotes,
+            cy: this.height / 2,
+        };
+    }
+
+    update(dt) {
+        const { noteSpacing, cy } = this.getLayoutMetrics();
 
         // Note Physics (Spring animations)
         this.notesState.forEach((state, i) => {
@@ -57,11 +70,7 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
             if (state.particleEmitTime > 0) {
                 state.particleEmitTime -= dt;
                 const px = (i + 0.5) * noteSpacing;
-
-                // Determine vertical elevation based on scale contour (arch shape)
-                const distanceFromStart = i <= 7 ? i : 14 - i;
-                const elevationRatio = distanceFromStart / 7;
-                const py = cy + 20 - (elevationRatio * 60);
+                const py = this.getTrackY(i, cy);
 
                 // Determine color based on ascending vs descending
                 const isAscending = i < 7;
@@ -82,9 +91,7 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
         // Deep background
         fillCanvas(this.ctx, this.width, this.height, '#0a0a1a');
 
-        const totalNotes = this.notes.length;
-        const noteSpacing = this.width / totalNotes;
-        const cy = this.height / 2;
+        const { totalNotes, noteSpacing, cy } = this.getLayoutMetrics();
         const time = performance.now() / 1000;
 
         // Draw Baseline connecting path
@@ -95,9 +102,7 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
 
         for (let i = 0; i < totalNotes; i++) {
             const px = (i + 0.5) * noteSpacing;
-            const distanceFromStart = i <= 7 ? i : 14 - i;
-            const elevationRatio = distanceFromStart / 7;
-            const py = cy + 20 - (elevationRatio * 60);
+            const py = this.getTrackY(i, cy);
 
             if (i === 0) {
                 this.ctx.moveTo(px, py);
@@ -112,13 +117,9 @@ export class ScalePracticeCanvasEngine extends BaseCanvasEngine {
         for (let i = 0; i < totalNotes; i++) {
             const state = this.notesState[i];
             const px = (i + 0.5) * noteSpacing;
-
-            // Arch shape (Highest pitch is highest visually)
-            const distanceFromStart = i <= 7 ? i : 14 - i;
-            const elevationRatio = distanceFromStart / 7;
             // Add a subtle wave animation to the entire track
             const waveOffset = Math.sin(time * 2 + i * 0.5) * 5;
-            const py = cy + 20 - (elevationRatio * 60) + waveOffset;
+            const py = this.getTrackY(i, cy) + waveOffset;
 
             const isAscending = i < 7;
             const isApex = i === 7;

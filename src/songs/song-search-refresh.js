@@ -3,6 +3,7 @@ import { loadEvents } from '../persistence/loaders.js';
 import { getSongCatalog } from './song-library.js';
 import { buildSongUnlockMap, loadSongProgressState } from './song-progression.js';
 import { CHALLENGE_UNLOCK_REQUIRED, isChallengeReadinessScore } from './song-progression-unlocks.js';
+import { getSongEventScore } from './song-event-score.js';
 import { ensureChildDiv } from '../utils/dom-utils.js';
 import { clampRounded, finiteOrZero } from '../utils/math.js';
 
@@ -16,11 +17,7 @@ const getSongStatsFromEvents = (events) => {
     if (!Array.isArray(events)) return {};
     return events.reduce((statsBySong, event) => {
         if (event?.type !== 'song' || !event?.id) return statsBySong;
-        const accuracy = Number.isFinite(event.accuracy)
-            ? event.accuracy
-            : Number.isFinite(event.timingAccuracy)
-                ? event.timingAccuracy
-                : 0;
+        const accuracy = getSongEventScore(event);
         const existing = statsBySong[event.id] || { attempts: 0, best: 0, stars: 0 };
         existing.attempts += 1;
         existing.best = Math.max(existing.best, accuracy);

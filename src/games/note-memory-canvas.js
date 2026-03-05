@@ -133,6 +133,12 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
         this.ctx.fillStyle = '#2f1d16'; // Deep warm background
         this.ctx.fillRect(0, 0, this.width, this.height);
 
+        const fillCardBody = (card) => {
+            this.ctx.beginPath();
+            this.ctx.roundRect(0, 0, card.width, card.height, 16);
+            this.ctx.fill();
+        };
+
         // Draw cards
         this.cards.forEach(card => {
             this.ctx.save();
@@ -156,9 +162,7 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
             if (!isFront) {
                 // Draw Card Back (Question Mark)
                 this.ctx.fillStyle = '#4e342e';
-                this.ctx.beginPath();
-                this.ctx.roundRect(0, 0, card.width, card.height, 16);
-                this.ctx.fill();
+                fillCardBody(card);
 
                 // Border
                 this.ctx.strokeStyle = '#6d4c41';
@@ -186,9 +190,7 @@ export class NoteMemoryCanvasEngine extends BaseCanvasEngine {
                     this.ctx.fillStyle = '#fff3e0'; // Warm white paper
                 }
 
-                this.ctx.beginPath();
-                this.ctx.roundRect(0, 0, card.width, card.height, 16);
-                this.ctx.fill();
+                fillCardBody(card);
                 this.ctx.shadowBlur = 0; // reset
 
                 // Text Note

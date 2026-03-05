@@ -1,4 +1,4 @@
-import { setDisabled } from '../utils/dom-utils.js';
+import { setDisabled, setTextContent } from '../utils/dom-utils.js';
 import { durationToMinutes } from '../utils/math.js';
 
 export const createParentRecordingsRenderer = () => {
@@ -19,7 +19,7 @@ export const createParentRecordingsRenderer = () => {
     };
 
     const setStatus = (message) => {
-        if (statusEl) statusEl.textContent = message;
+        setTextContent(statusEl, message);
     };
 
     const setClearEnabled = (enabled) => {
@@ -74,9 +74,9 @@ export const createParentRecordingsRenderer = () => {
         titleDiv.textContent = recording.title || `Recording ${index + 1}`;
         let createdAt = '';
         if (recording.createdAt) {
-            const stamp = new Date(recording.createdAt);
-            if (!Number.isNaN(stamp.getTime())) {
-                createdAt = stamp.toLocaleDateString();
+            const timestamp = Date.parse(recording.createdAt);
+            if (Number.isFinite(timestamp)) {
+                createdAt = new Date(timestamp).toLocaleDateString();
             }
         }
         const parts = [`Duration ${formatDuration(recording.duration || 0)}`];

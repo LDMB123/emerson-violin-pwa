@@ -12,6 +12,7 @@ import {
 import { isVoiceCoachEnabled } from '../utils/feature-flags.js';
 import { finiteOrZero } from '../utils/math.js';
 import { speakMessage as speakVoiceMessage, cancelSpeech } from '../utils/speech-utils.js';
+import { getMatchingInputTarget } from '../utils/dom-utils.js';
 import {
     GAME_MESSAGES,
     buildCoachMessages,
@@ -192,9 +193,8 @@ document.addEventListener(GAME_RECORDED, (e) => {
 });
 
 document.addEventListener('change', (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) return;
-    if (target.id !== 'setting-voice') return;
+    const target = getMatchingInputTarget(event.target, { id: 'setting-voice' });
+    if (!target) return;
     if (!target.checked) {
         cancelSpeech();
     }

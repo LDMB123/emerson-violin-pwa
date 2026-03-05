@@ -45,20 +45,18 @@ const summarizeUnitCompletion = (unit, events = []) => {
     const songDone = new Set();
     let practiceMinutes = 0;
 
+    const markObjectiveIfComplete = (event, { type, required, done }) => {
+        if (event.type !== type || !required.has(event.id)) return;
+        const score = eventScore(event);
+        if (Number.isFinite(score) && score >= 60) {
+            done.add(event.id);
+        }
+    };
+
     events.forEach((event) => {
         if (!event || typeof event !== 'object') return;
-        if (event.type === 'game' && requiredGames.has(event.id)) {
-            const score = eventScore(event);
-            if (Number.isFinite(score) && score >= 60) {
-                gameDone.add(event.id);
-            }
-        }
-        if (event.type === 'song' && requiredSongs.has(event.id)) {
-            const score = eventScore(event);
-            if (Number.isFinite(score) && score >= 60) {
-                songDone.add(event.id);
-            }
-        }
+        markObjectiveIfComplete(event, { type: 'game', required: requiredGames, done: gameDone });
+        markObjectiveIfComplete(event, { type: 'song', required: requiredSongs, done: songDone });
         if (event.type === 'practice') {
             practiceMinutes += finiteOrZero(event.minutes);
         }

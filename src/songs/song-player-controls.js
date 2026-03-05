@@ -200,9 +200,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             const unscaledElapsed = playbackElapsed / scale;
 
             // Find the first uncompleted note that we have reached in time
-            const activeNote = notesElements.find((n) =>
-                !completedNotes.has(n.el) && unscaledElapsed >= n.start && unscaledElapsed <= (n.start + n.duration)
-            );
+            const activeNote = findPendingActiveNote(notesElements, completedNotes, unscaledElapsed);
 
             if (activeNote) {
                 // We hit a note! We must pause and wait for the pitch.
@@ -221,9 +219,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             const unscaledElapsed = playbackElapsed / scale;
 
             // Find notes that should be playing RIGHT NOW but haven't been triggered yet
-            const activeNotesToPlay = notesElements.filter((n) =>
-                !audioTriggers.has(n.el) && unscaledElapsed >= n.start && unscaledElapsed <= (n.start + n.duration)
-            );
+            const activeNotesToPlay = listPendingActiveNotes(notesElements, audioTriggers, unscaledElapsed);
 
             activeNotesToPlay.forEach(n => {
                 audioTriggers.add(n.el);
@@ -311,6 +307,28 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         view.dataset.songLoop = loopToggle?.checked ? 'true' : 'false';
     };
 
+    const isNoteActiveAtElapsed = (note, elapsed) => (
+        elapsed >= note.start && elapsed <= (note.start + note.duration)
+    );
+
+    const isPendingActiveNote = (note, seenSet, elapsed) => (
+        !seenSet.has(note.el) && isNoteActiveAtElapsed(note, elapsed)
+    );
+
+    const findPendingActiveNote = (notes, seenSet, elapsed) => (
+        notes.find((note) => isPendingActiveNote(note, seenSet, elapsed))
+    );
+
+    const listPendingActiveNotes = (notes, seenSet, elapsed) => (
+        notes.filter((note) => isPendingActiveNote(note, seenSet, elapsed))
+    );
+
+    const withSongId = (handler) => async () => {
+        const songId = parseViewSongId(view.id);
+        if (!songId) return;
+        await handler(songId);
+    };
+
     const restartPlaybackIfActive = () => {
         if (playToggle?.checked) {
             startPlayback();
@@ -340,9 +358,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         }
     });
 
-    saveButton?.addEventListener('click', async () => {
-        const songId = parseViewSongId(view.id);
-        if (!songId) return;
+    saveButton?.addEventListener('click', withSongId(async (songId) => {
         // Use musical elapsed time (pauses during Wait For Me) instead of wall-clock time.
         const elapsed = playbackElapsed;
         const tempo = Number(view.dataset.songTempo || song?.bpm || 80);
@@ -352,11 +368,9 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
             tempo,
         });
         setStatus(controls, 'Checkpoint saved.');
-    });
+    }));
 
-    resumeButton?.addEventListener('click', async () => {
-        const songId = parseViewSongId(view.id);
-        if (!songId) return;
+    resumeButton?.addEventListener('click', withSongId(async (songId) => {
         const checkpoint = await getSongCheckpoint(songId);
         if (!checkpoint) {
             setStatus(controls, 'No checkpoint yet.');
@@ -373,7 +387,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         applySection();
         applyTempo();
         setStatus(controls, 'Checkpoint restored. Press Playhead to continue.');
-    });
+    }));
 
     applySection();
     applyTempo();
