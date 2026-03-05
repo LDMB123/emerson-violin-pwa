@@ -4,10 +4,10 @@ import {
     gameModuleRows,
     GAME_COMPLETE_MODAL_HTML,
     installAudioStub,
+    installIntersectionObserverStub,
     installMatchMediaStub,
     installRequestAnimationFrameStub,
-    loadModuleOrRecordFailure,
-    MockIntersectionObserver,
+    loadObjectModuleOrRecordFailure,
 } from './module-test-helpers.js';
 
 vi.mock('../../src/utils/dom-ready.js', () => ({
@@ -330,8 +330,7 @@ const installEnvironment = () => {
     ensureNotification();
     ensureCaches();
     ensureFetch();
-    window.IntersectionObserver = MockIntersectionObserver;
-    globalThis.IntersectionObserver = MockIntersectionObserver;
+    installIntersectionObserverStub();
     window.MutationObserver = MockMutationObserver;
     globalThis.MutationObserver = MockMutationObserver;
     installRequestAnimationFrameStub();
@@ -364,13 +363,12 @@ describe('module behavior contracts', () => {
         const failures = [];
 
         for (const [moduleKey, loader] of Object.entries(MODULE_LOADERS)) {
-            const loadedModule = await loadModuleOrRecordFailure({
+            const loadedModule = await loadObjectModuleOrRecordFailure({
                 failures,
                 label: `runtime:${moduleKey}`,
                 load: loader,
             });
             if (!loadedModule) continue;
-            expect(loadedModule).toBeTypeOf('object');
 
             if (moduleKey !== 'progress') {
                 await invokeMaybeAsync(loadedModule.init);
@@ -406,13 +404,12 @@ describe('module behavior contracts', () => {
         const failures = [];
 
         for (const { viewId, importSpec } of gameModuleRows) {
-            const loadedModule = await loadModuleOrRecordFailure({
+            const loadedModule = await loadObjectModuleOrRecordFailure({
                 failures,
                 label: `game:${viewId} (${importSpec})`,
                 load: () => import(importSpec),
             });
             if (!loadedModule) continue;
-            expect(loadedModule).toBeTypeOf('object');
             expect(typeof loadedModule.bind).toBe('function');
             expect(typeof loadedModule.update).toBe('function');
 

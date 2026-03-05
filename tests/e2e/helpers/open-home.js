@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 import { seedKVValue } from './seed-kv.js';
+import { forceSoundsOn } from './sound-state.js';
 
 export const openHome = async (page) => {
     await page.goto('/#view-home', { waitUntil: 'domcontentloaded', timeout: 10000 });
@@ -12,10 +13,7 @@ export const openHome = async (page) => {
     await seedKVValue(page, 'onboarding-complete', true).catch(() => {});
     await seedKVValue(page, 'panda-violin:ui-state:v1', uiState).catch(() => {});
 
-    await page.evaluate(() => {
-        document.documentElement.dataset.sounds = 'on';
-        document.dispatchEvent(new CustomEvent('panda:sounds-change', { detail: { enabled: true } }));
-    });
+    await forceSoundsOn(page);
 
     const dismissOnboardingIfVisible = async () => {
         const onboardingVisible = await page.locator('#view-onboarding').isVisible().catch(() => false);

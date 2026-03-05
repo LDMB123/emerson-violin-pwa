@@ -4,10 +4,10 @@ import {
     gameModuleImportSpecs,
     installAudioStub,
     installGameCompleteModalDom,
+    installIntersectionObserverStub,
     installMatchMediaStub,
     installRequestAnimationFrameStub,
-    loadModuleOrRecordFailure,
-    MockIntersectionObserver,
+    loadObjectModuleOrRecordFailure,
 } from './module-test-helpers.js';
 
 vi.mock('../../src/utils/dom-ready.js', () => ({
@@ -17,26 +17,9 @@ vi.mock('../../src/utils/dom-ready.js', () => ({
 const installEnvironmentStubs = () => {
     installGameCompleteModalDom();
     installMatchMediaStub({ onlyIfMissing: true });
-
-    if (typeof window.IntersectionObserver !== 'function') {
-        window.IntersectionObserver = MockIntersectionObserver;
-    }
-    if (typeof globalThis.IntersectionObserver !== 'function') {
-        globalThis.IntersectionObserver = MockIntersectionObserver;
-    }
-
+    installIntersectionObserverStub({ onlyIfMissing: true });
     installAudioStub({ onlyIfMissing: true });
     installRequestAnimationFrameStub({ onlyIfMissing: true });
-};
-
-const assertLoadableObjectModule = async ({ failures, label, load }) => {
-    const loadedModule = await loadModuleOrRecordFailure({
-        failures,
-        label,
-        load,
-    });
-    if (!loadedModule) return;
-    expect(loadedModule).toBeTypeOf('object');
 };
 
 describe('module smoke imports', () => {
@@ -47,7 +30,7 @@ describe('module smoke imports', () => {
         const failures = [];
 
         for (const [moduleKey, loader] of Object.entries(MODULE_LOADERS)) {
-            await assertLoadableObjectModule({
+            await loadObjectModuleOrRecordFailure({
                 failures,
                 label: `runtime:${moduleKey}`,
                 load: loader,
@@ -55,7 +38,7 @@ describe('module smoke imports', () => {
         }
 
         for (const importSpec of gameModuleImportSpecs) {
-            await assertLoadableObjectModule({
+            await loadObjectModuleOrRecordFailure({
                 failures,
                 label: `game:${importSpec}`,
                 load: () => import(importSpec),

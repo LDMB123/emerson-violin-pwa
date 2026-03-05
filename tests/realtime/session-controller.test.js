@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RT_PROFILE_KEY } from '../../src/persistence/storage-keys.js';
 import { RT_STATE } from '../../src/utils/event-names.js';
 import { createPersistedPagehideEvent } from '../games/test-lifecycle-helpers.js';
-import { createStorageMocks } from './test-helpers.js';
+import { createStorageMocks, resetStorageMocks } from './test-helpers.js';
 
 const storageMocks = createStorageMocks();
 
@@ -246,7 +246,7 @@ describe('realtime session controller interface', () => {
     beforeEach(() => {
         vi.resetModules();
         vi.clearAllMocks();
-        storageMocks.getJSON.mockResolvedValue(null);
+        resetStorageMocks(storageMocks);
         storageMocks.setJSON.mockResolvedValue(undefined);
         eventLogMocks.appendRealtimeEvent.mockResolvedValue(undefined);
         eventLogMocks.saveRealtimeQuality.mockResolvedValue(undefined);

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { dispatchPagehide } from './helpers/bfcache-events.js';
 
 const installRealtimeBfcacheProbe = async (page) => {
     await page.addInitScript(() => {
@@ -58,19 +59,6 @@ const getProbe = async (page) =>
         started: window.__rtBfcacheProbe.started,
         stopped: window.__rtBfcacheProbe.stopped,
     }));
-
-const dispatchPagehide = async (page, persisted) => {
-    await page.evaluate((isPersisted) => {
-        const event = new Event('pagehide');
-        if (isPersisted) {
-            Object.defineProperty(event, 'persisted', {
-                configurable: true,
-                value: true,
-            });
-        }
-        window.dispatchEvent(event);
-    }, persisted);
-};
 
 test('realtime session ignores persisted pagehide and stops on unload pagehide', async ({ page }) => {
     await installRealtimeBfcacheProbe(page);

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { setCheckboxValue } from './helpers/dom-controls.js';
 import { openHome } from './helpers/open-home.js';
 import {
     dispatchGameRecordedEvent,
@@ -8,6 +9,7 @@ import {
     readNumericValue,
     returnToGames,
 } from './helpers/game-flow.js';
+import { forceSoundsOn } from './helpers/sound-state.js';
 
 const ensureRhythmRunStarted = async (page) => {
     const runToggle = page.locator('#view-game-rhythm-dash #rhythm-run');
@@ -28,43 +30,45 @@ const ensureRhythmRunStarted = async (page) => {
     await expect(runToggle).toBeChecked({ timeout: 5000 });
 };
 
-const tapRhythmUntilScoreIncreases = async (page, scoreLocator) => {
-    const startScore = await readNumericValue(scoreLocator);
-    await ensureRhythmRunStarted(page);
-
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-        await page.evaluate(() => {
-            const scoreEl = document.querySelector('#view-game-rhythm-dash [data-rhythm="score"]');
-            if (scoreEl) {
-                const current = Number.parseInt(scoreEl.dataset.liveScore || '0', 10);
-                scoreEl.dataset.liveScore = String(current + 100);
-                scoreEl.textContent = String(current + 100);
-            }
-        });
-        await page.waitForTimeout(200);
-        if ((await readNumericValue(scoreLocator)) > startScore) {
+const runUntilNumericValueIncreases = async ({ attempts = 8, readValue, runAttempt }) => {
+    const startValue = await readValue();
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+        await runAttempt();
+        if ((await readValue()) > startValue) {
             return;
         }
     }
+    expect(await readValue()).toBeGreaterThan(startValue);
+};
 
-    expect(await readNumericValue(scoreLocator)).toBeGreaterThan(startScore);
+const tapRhythmUntilScoreIncreases = async (page, scoreLocator) => {
+    await ensureRhythmRunStarted(page);
+    await runUntilNumericValueIncreases({
+        readValue: () => readNumericValue(scoreLocator),
+        runAttempt: async () => {
+            await page.evaluate(() => {
+                const scoreEl = document.querySelector('#view-game-rhythm-dash [data-rhythm="score"]');
+                if (scoreEl) {
+                    const current = Number.parseInt(scoreEl.dataset.liveScore || '0', 10);
+                    scoreEl.dataset.liveScore = String(current + 100);
+                    scoreEl.textContent = String(current + 100);
+                }
+            });
+            await page.waitForTimeout(200);
+        },
+    });
 };
 
 const tapPainterUntilScoreIncreases = async (page, scoreLocator) => {
-    const startScore = await readNumericValue(scoreLocator);
-
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-        const dot = page.locator('#view-game-rhythm-painter .paint-dot.dot-blue');
-        await dot.scrollIntoViewIfNeeded();
-        await dot.click({ force: true });
-
-        await page.waitForTimeout(120);
-        if ((await readNumericValue(scoreLocator)) > startScore) {
-            return;
-        }
-    }
-
-    expect(await readNumericValue(scoreLocator)).toBeGreaterThan(startScore);
+    await runUntilNumericValueIncreases({
+        readValue: () => readNumericValue(scoreLocator),
+        runAttempt: async () => {
+            const dot = page.locator('#view-game-rhythm-painter .paint-dot.dot-blue');
+            await dot.scrollIntoViewIfNeeded();
+            await dot.click({ force: true });
+            await page.waitForTimeout(120);
+        },
+    });
 };
 
 const tapBowUntilStarsIncrease = async (page, starsLocator) => {
@@ -113,13 +117,6 @@ const tapScaleUntilScoreChanges = async (page, scoreLocator) => {
     expect(await readNumericValue(scoreLocator)).not.toBe(startScore);
 };
 
-const ensureSoundsEnabled = async (page) => {
-    await page.evaluate(() => {
-        document.documentElement.dataset.sounds = 'on';
-        document.dispatchEvent(new CustomEvent('panda:sounds-change', { detail: { enabled: true } }));
-    });
-};
-
 const emitPitchLockFeature = async (page, note = 'A') => {
     await page.evaluate(({ targetNote }) => {
         document.dispatchEvent(new CustomEvent('panda:rt-state', {
@@ -138,11 +135,15 @@ const emitPitchLockFeature = async (page, note = 'A') => {
     }, { targetNote: note });
 };
 
+const openGamesSuite = async (page) => {
+    await openHome(page);
+    await openGamesHub(page);
+};
+
 test.describe('all games core interactions', () => {
     test('group A: pitch/rhythm/memory/ear/bow', async ({ page }) => {
         test.setTimeout(90000);
-        await openHome(page);
-        await openGamesHub(page);
+        await openGamesSuite(page);
 
         await openGame(page, 'pitch-quest');
         const pitchScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
@@ -178,7 +179,7 @@ test.describe('all games core interactions', () => {
         await openGame(page, 'ear-trainer');
         const earQuestion = page.locator('#view-game-ear-trainer [data-ear="question"]');
         await expect(earQuestion).toContainText('Question 1 of 10');
-        await ensureSoundsEnabled(page);
+        await forceSoundsOn(page);
         await expect.poll(async () => {
             const playBtn = page.locator('#view-game-ear-trainer [data-ear="play"]');
             if (await playBtn.isVisible()) {
@@ -203,8 +204,7 @@ test.describe('all games core interactions', () => {
 
     test('group B: tuning/melody/scale/duet', async ({ page }) => {
         test.setTimeout(120000);
-        await openHome(page);
-        await openGamesHub(page);
+        await openGamesSuite(page);
 
         await openGame(page, 'tuning-time');
         const tuningStatus = page.locator('#view-game-tuning-time [data-tuning="status"]');
@@ -232,7 +232,7 @@ test.describe('all games core interactions', () => {
         await returnToGames(page, 'scale-practice');
 
         await openGame(page, 'duet-challenge');
-        await ensureSoundsEnabled(page);
+        await forceSoundsOn(page);
         const duetStepOne = page.locator('#view-game-duet-challenge #dc-step-1');
         await expect.poll(async () => {
             await page.locator('#view-game-duet-challenge [data-duet="play"]').click();
@@ -255,8 +255,7 @@ test.describe('all games core interactions', () => {
 
     test('group C: string/painter/story/pizzicato', async ({ page }) => {
         test.setTimeout(120000);
-        await openHome(page);
-        await openGamesHub(page);
+        await openGamesSuite(page);
 
         await openGame(page, 'string-quest');
         const stringScore = page.locator('#view-game-string-quest [data-string="score"]');
@@ -273,10 +272,7 @@ test.describe('all games core interactions', () => {
         await openGame(page, 'story-song');
         const storyStatus = page.locator('#view-game-story-song [data-story="status"]');
         await expect(storyStatus).toContainText('Play-Along to start.');
-        await page.locator('#view-game-story-song #story-play').evaluate((input) => {
-            input.checked = true;
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-        });
+        await setCheckboxValue(page.locator('#view-game-story-song #story-play'), true);
         await expect(storyStatus).not.toHaveText('Press Play-Along to start.');
         await returnToGames(page, 'story-song');
 
@@ -289,8 +285,7 @@ test.describe('all games core interactions', () => {
 
     test('group D: dojo/stir-soup/wipers/echo', async ({ page }) => {
         test.setTimeout(90000);
-        await openHome(page);
-        await openGamesHub(page);
+        await openGamesSuite(page);
 
         await openGame(page, 'dynamic-dojo');
         await expect(page.locator('#view-game-dynamic-dojo')).toBeVisible();

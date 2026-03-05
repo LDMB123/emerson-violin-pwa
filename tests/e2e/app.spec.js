@@ -2,6 +2,16 @@ import { test, expect } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
 import { gotoAndExpectView, setParentUnlocked } from './helpers/view-navigation.js';
 
+const clickAndExpectView = async (page, trigger, targetViewLocator, { timeout = 10000 } = {}) => {
+  await expect.poll(async () => {
+    if (await trigger.isVisible().catch(() => false)) {
+      await trigger.click({ force: true }).catch(() => {});
+    }
+    return targetViewLocator.isVisible().catch(() => false);
+  }, { timeout }).toBe(true);
+  await expect(targetViewLocator).toBeVisible({ timeout });
+};
+
 test.describe('Kid-first flows', () => {
   test.beforeEach(async ({ page }) => {
     await openHome(page);
@@ -15,46 +25,39 @@ test.describe('Kid-first flows', () => {
   });
 
   test('start practice reaches coach in one tap', async ({ page }) => {
-    // Navigate via the giant home button instead of the old data attribute
-    await page.locator('.home-giant-actions a[href="#view-coach"]').click();
-    await page.waitForURL('**/#view-coach');
-
-    await expect(page.locator('#view-coach')).toBeVisible();
+    await clickAndExpectView(page, page.locator('a[href="#view-coach"]').first(), page.locator('#view-coach'));
     await expect(page.locator('.practice-focus')).toBeVisible();
     await expect(page.locator('.focus-status')).toContainText(/Ready!/);
   });
 
   test('child can reach games and launch a game in two taps', async ({ page }) => {
-    await page.locator('.bottom-nav a[href="#view-games"]').click();
-    await page.waitForURL('**/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
-
-    await page.locator('a[href="#view-game-pitch-quest"]').first().click({ force: true });
-    await page.waitForURL('**/#view-game-pitch-quest');
+    await clickAndExpectView(page, page.locator('a[href="#view-games"]').first(), page.locator('#view-games'));
+    await clickAndExpectView(page, page.locator('a[href="#view-game-pitch-quest"]').first(), page.locator('#view-game-pitch-quest'));
     await expect(page.locator('#view-game-pitch-quest .pitch-quest-stage')).toBeVisible();
   });
 
   test('child can open songs and continue last song in two taps', async ({ page }) => {
-    await page.locator('.bottom-nav a[href="#view-songs"]').click();
-    await page.waitForURL('**/#view-songs');
-
-    await page.locator('[data-continue-last-song]').click();
-    await page.waitForURL(/#view-song-/);
+    await clickAndExpectView(page, page.locator('a[href="#view-songs"]').first(), page.locator('#view-songs'));
+    await expect.poll(async () => {
+      const continueLink = page.locator('[data-continue-last-song]');
+      if (await continueLink.isVisible().catch(() => false)) {
+        await continueLink.click({ force: true }).catch(() => {});
+      }
+      return page.locator('.song-view').isVisible().catch(() => false);
+    }, { timeout: 10000 }).toBe(true);
 
     await expect(page.locator('.song-view')).toBeVisible();
   });
 
   test('advanced controls are not visible in child settings', async ({ page }) => {
-    await page.goto('/#view-settings');
-    await expect(page.locator('#view-settings')).toBeVisible();
+    await gotoAndExpectView(page, '#view-settings');
     await expect(page.locator('[data-parent-advanced-controls]')).toHaveCount(0);
     await expect(page.locator('[data-offline-check]')).toHaveCount(0);
     await expect(page.locator('[data-sw-update]')).toHaveCount(0);
   });
 
   test('parent advanced controls are PIN gated', async ({ page }) => {
-    await page.locator('[data-parent-lock]').click();
-    await page.waitForURL('**/#view-parent');
+    await clickAndExpectView(page, page.locator('[data-parent-lock]'), page.locator('#view-parent'));
 
     const dialog = page.locator('[data-pin-dialog]');
     await expect(dialog).toBeVisible();

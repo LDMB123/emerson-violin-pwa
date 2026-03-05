@@ -87,6 +87,15 @@ export const installRequestAnimationFrameStub = ({ onlyIfMissing = false } = {})
     window.requestAnimationFrame = (callback) => window.setTimeout(() => callback(performance.now()), 0);
 };
 
+export const installIntersectionObserverStub = ({ onlyIfMissing = false } = {}) => {
+    if (!onlyIfMissing || typeof window.IntersectionObserver !== 'function') {
+        window.IntersectionObserver = MockIntersectionObserver;
+    }
+    if (!onlyIfMissing || typeof globalThis.IntersectionObserver !== 'function') {
+        globalThis.IntersectionObserver = MockIntersectionObserver;
+    }
+};
+
 export const GAME_COMPLETE_MODAL_HTML = `
     <dialog id="game-complete-modal">
         <span id="game-complete-score"></span>
@@ -119,4 +128,21 @@ export const loadModuleOrRecordFailure = async ({
         failures.push(`${label} -> ${toErrorMessage(error)}`);
         return null;
     }
+};
+
+export const loadObjectModuleOrRecordFailure = async ({
+    failures = [],
+    label = '',
+    load = null,
+} = {}) => {
+    const loadedModule = await loadModuleOrRecordFailure({
+        failures,
+        label,
+        load,
+    });
+    if (!loadedModule || typeof loadedModule !== 'object') {
+        failures.push(`${label} -> expected module object export`);
+        return null;
+    }
+    return loadedModule;
 };

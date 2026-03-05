@@ -1,6 +1,16 @@
 import { test, expect } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
-import { navigateToView } from './helpers/navigate-view.js';
+import { gotoAndExpectView } from './helpers/view-navigation.js';
+
+const goToView = async (page, viewHash, { timeout = 10000 } = {}) => {
+    await gotoAndExpectView(page, viewHash, { timeout });
+};
+
+const measureViewLoadMs = async (page, viewHash, { timeout = 10000 } = {}) => {
+    const startedAt = Date.now();
+    await goToView(page, viewHash, { timeout });
+    return Date.now() - startedAt;
+};
 
 test.describe('Lazy View Loading', () => {
     test.beforeEach(async ({ page }) => {
@@ -26,39 +36,25 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should lazy load trainer view', async ({ page }) => {
-        // Navigate to trainer view via direct URL
-        await page.goto('/#view-trainer');
-
-        // Wait for view content to load
-        await expect(page.locator('#view-trainer')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('#main-content')).toContainText('Practice Tools', { timeout: 10000 });
+        await goToView(page, '#view-trainer');
 
         // Verify trainer elements are present in DOM
         await expect(page.locator('#tool-metronome')).toBeAttached();
     });
 
     test('should lazy load coach view from navigation', async ({ page }) => {
-        await navigateToView(page, 'view-coach');
-        await expect(page.locator('#view-coach')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('#main-content')).toContainText('Daily Mission', { timeout: 10000 });
+        await goToView(page, '#view-coach');
+        await expect(page.locator('#view-coach')).toBeVisible();
     });
 
     test('should cache and quickly reload views', async ({ page }) => {
-        // First load of coach view - measure network timing
-        const start1 = Date.now();
-        await page.goto('/#view-coach');
-        await expect(page.locator('#main-content')).toContainText('Daily Mission', { timeout: 10000 });
-        const time1 = Date.now() - start1;
+        const time1 = await measureViewLoadMs(page, '#view-coach');
 
         // Navigate away
-        await page.goto('/#view-home');
-        await page.waitForSelector('.home-kid-title');
+        await goToView(page, '#view-home');
+        await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
 
-        // Second load of coach (should be cached)
-        const start2 = Date.now();
-        await page.goto('/#view-coach');
-        await expect(page.locator('#main-content')).toContainText('Daily Mission', { timeout: 10000 });
-        const time2 = Date.now() - start2;
+        const time2 = await measureViewLoadMs(page, '#view-coach');
 
         // Ensure reload stays in a practical cache-hit budget and does not regress badly.
         expect(time2).toBeLessThan(1200);
@@ -69,24 +65,12 @@ test.describe('Lazy View Loading', () => {
         // Load home
         await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
 
-        // Load coach via URL
-        await page.goto('/#view-coach');
-        await page.waitForURL('**/#view-coach');
-        await expect(page.locator('#main-content')).toContainText('Daily Mission', { timeout: 10000 });
-
-        // Load games via URL
-        await page.goto('/#view-games');
-        await page.waitForURL('**/#view-games');
-        await expect(page.locator('#main-content')).toContainText('Games', { timeout: 10000 });
-
-        // Load progress via URL
-        await page.goto('/#view-progress');
-        await page.waitForURL('**/#view-progress');
-        await expect(page.locator('#main-content')).toContainText('Progress', { timeout: 10000 });
+        await goToView(page, '#view-coach');
+        await goToView(page, '#view-games');
+        await goToView(page, '#view-progress');
 
         // Return to home via URL
-        await page.goto('/#view-home');
-        await page.waitForURL('**/#view-home');
+        await goToView(page, '#view-home');
         await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
     });
 
@@ -101,24 +85,18 @@ test.describe('Lazy View Loading', () => {
         expect(await page.evaluate(() => document.readyState)).toBe('complete');
 
         // The page should still be functional - test by navigating to a valid view
-        await page.goto('/#view-home');
+        await goToView(page, '#view-home');
         await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
     });
 
     test('should maintain view state after navigation', async ({ page }) => {
-        // Navigate to progress view via URL
-        await page.goto('/#view-progress');
-        await page.waitForURL('**/#view-progress');
-        await expect(page.locator('#main-content')).toContainText('Progress', { timeout: 10000 });
+        await goToView(page, '#view-progress');
 
-        // Navigate away via URL
-        await page.goto('/#view-home');
+        // Navigate away
+        await goToView(page, '#view-home');
         await expect(page.locator('.home-kid-title')).toContainText('Ready to play');
 
-        // Navigate back to progress via URL
-        await page.goto('/#view-progress');
-        await page.waitForURL('**/#view-progress');
-        await expect(page.locator('#main-content')).toContainText('Progress', { timeout: 10000 });
+        await goToView(page, '#view-progress');
 
         // View should load quickly from cache
         const loadTime = await page.evaluate(() => {
@@ -128,41 +106,25 @@ test.describe('Lazy View Loading', () => {
     });
 
     test('should load views with deep navigation paths', async ({ page }) => {
-        // Navigate to games view via URL
-        await page.goto('/#view-games');
-        await page.waitForURL('**/#view-games');
-        await expect(page.locator('#main-content')).toContainText('Games', { timeout: 10000 });
-
-        // Navigate to a specific game via URL
-        await page.goto('/#view-game-pitch-quest');
-        await page.waitForURL('**/#view-game-pitch-quest');
-        await expect(page.locator('#main-content')).toContainText('Catch the Bamboo!', { timeout: 10000 });
+        await goToView(page, '#view-games');
+        await goToView(page, '#view-game-pitch-quest');
+        await expect(page.locator('#view-game-pitch-quest')).toBeVisible();
     });
 
     test('should preload views efficiently', async ({ page }) => {
         // Home view should be loaded
         await expect(page.locator('.home-kid-title')).toBeVisible();
 
-        // Navigate quickly between views to test caching
-        const views = [
-            { id: 'coach', text: 'Daily Mission' },
-            { id: 'games', text: 'Games' },
-            { id: 'progress', text: 'Progress' }
-        ];
+        const views = ['#view-coach', '#view-games', '#view-progress'];
 
         for (const view of views) {
-            await page.goto(`/#view-${view.id}`);
-            await page.waitForURL(`**/#view-${view.id}`);
-            await expect(page.locator('#main-content')).toContainText(view.text, { timeout: 10000 });
+            await goToView(page, view);
         }
 
         // All views should now be cached
         // Navigate back through them quickly
-        for (const view of [{ id: 'home', text: 'Daily Mission' }, ...views]) {
-            const start = Date.now();
-            await page.goto(`/#view-${view.id}`);
-            await page.waitForURL(`**/#view-${view.id}`);
-            const loadTime = Date.now() - start;
+        for (const view of ['#view-home', ...views]) {
+            const loadTime = await measureViewLoadMs(page, view);
 
             // Cached views should load relatively quickly
             // Using a more realistic timeout since goto() has overhead

@@ -1,11 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { openSongsView } from './helpers/songs-view.js';
 
 test('song detail supports section controls and checkpoint persistence', async ({ page }) => {
     await openHome(page);
-
-    await page.goto('/#view-songs');
-    await expect(page.locator('#view-songs')).toBeVisible();
+    await openSongsView(page);
 
     const firstSong = page.locator('.song-card[data-song]').first();
     await firstSong.click();
@@ -25,6 +24,6 @@ test('song detail supports section controls and checkpoint persistence', async (
     await page.locator('.song-view.is-active [data-song-save-checkpoint]').click();
     await expect(page.locator('.song-view.is-active [data-song-advanced-status]')).toContainText(/checkpoint saved/i);
 
-    await page.goto('/#view-songs');
+    await openSongsView(page);
     await expect(page.locator('.song-card.has-checkpoint').first()).toBeVisible();
 });

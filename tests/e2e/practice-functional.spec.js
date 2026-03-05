@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { gotoAndExpectView } from './helpers/view-navigation.js';
 
 const playToneUntilCardActive = async (page, tone = 'A') => {
     const toneButton = page.locator(`[data-tone="${tone}"]`);
@@ -19,19 +20,19 @@ const toggleMetronomeUntilLabel = async (page, label) => {
     }, { timeout: 10000 }).toContain(label);
 };
 
+const gotoView = async (page, viewId) => gotoAndExpectView(page, `#${viewId}`);
+const reopenViaGames = async (page, viewId) => {
+    await gotoView(page, 'view-games');
+    await gotoView(page, viewId);
+};
+
 test('trainer metronome remains functional after navigation', async ({ page }) => {
     await openHome(page);
-
-    await page.goto('/#view-trainer');
-    await expect(page.locator('#view-trainer')).toBeVisible();
+    await gotoView(page, 'view-trainer');
 
     await toggleMetronomeUntilLabel(page, 'Stop');
 
-    await page.goto('/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
-
-    await page.goto('/#view-trainer');
-    await expect(page.locator('#view-trainer')).toBeVisible();
+    await reopenViaGames(page, 'view-trainer');
 
     await toggleMetronomeUntilLabel(page, 'Start');
 
@@ -40,19 +41,13 @@ test('trainer metronome remains functional after navigation', async ({ page }) =
 
 test('bowing and posture tools remain functional after navigation', async ({ page }) => {
     await openHome(page);
-
-    await page.goto('/#view-bowing');
-    await expect(page.locator('#view-bowing')).toBeVisible();
+    await gotoView(page, 'view-bowing');
     await expect(page.locator('#view-bowing .game-drill-intro')).toContainText('Goal:', { timeout: 10000 });
 
-    await page.goto('/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
-
-    await page.goto('/#view-bowing');
+    await reopenViaGames(page, 'view-bowing');
     await expect(page.locator('#view-bowing .game-drill-intro')).toContainText('Goal:', { timeout: 10000 });
 
-    await page.goto('/#view-posture');
-    await expect(page.locator('#view-posture')).toBeVisible();
+    await gotoView(page, 'view-posture');
 
     const sampleFile = {
         name: 'posture.jpg',
@@ -66,11 +61,7 @@ test('bowing and posture tools remain functional after navigation', async ({ pag
     await page.locator('[data-posture-clear]').click();
     await expect(page.locator('[data-posture-preview]')).toHaveAttribute('hidden', '');
 
-    await page.goto('/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
-
-    await page.goto('/#view-posture');
-    await expect(page.locator('#view-posture')).toBeVisible();
+    await reopenViaGames(page, 'view-posture');
 
     await page.locator('#posture-capture').setInputFiles(sampleFile);
     await expect(page.locator('[data-posture-preview]')).toBeVisible();
@@ -78,24 +69,17 @@ test('bowing and posture tools remain functional after navigation', async ({ pag
 
 test('tuner reference tone controls remain functional after navigation', async ({ page }) => {
     await openHome(page);
-
-    await page.goto('/#view-settings');
-    await expect(page.locator('#view-settings')).toBeVisible();
+    await gotoView(page, 'view-settings');
     const soundToggle = page.locator('#setting-sounds');
     if (!(await soundToggle.isChecked())) {
         await soundToggle.check();
     }
 
-    await page.goto('/#view-tuner');
-    await expect(page.locator('#view-tuner')).toBeVisible();
+    await gotoView(page, 'view-tuner');
 
     await playToneUntilCardActive(page, 'A');
 
-    await page.goto('/#view-games');
-    await expect(page.locator('#view-games')).toBeVisible();
-
-    await page.goto('/#view-tuner');
-    await expect(page.locator('#view-tuner')).toBeVisible();
+    await reopenViaGames(page, 'view-tuner');
 
     await playToneUntilCardActive(page, 'A');
 });

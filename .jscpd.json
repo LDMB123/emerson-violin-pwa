@@ -1,0 +1,20 @@
+{
+  "threshold": 0,
+  "reporters": [
+    "console",
+    "json"
+  ],
+  "output": ".jscpd",
+  "gitignore": true,
+  "minLines": 5,
+  "minTokens": 50,
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/.tmp/**",
+    "**/src/wasm/**",
+    "**/wasm/*/pkg/**",
+    "**/wasm/target/**"
+  ]
+}

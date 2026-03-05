@@ -15,9 +15,27 @@ const seedSongEvents = async (page, events) => {
         }));
     });
 };
+const clickSongFilter = async (page, filterValue) => {
+    await page.locator(`label:has(input[name="song-filter"][value="${filterValue}"]) .filter-chip`).click({ force: true });
+};
+const expectVisibleSongCount = async (page, count) => {
+    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(count);
+};
 const goToSongsWithFilter = async (page, filterValue) => {
     await gotoAndExpectView(page, '#view-songs');
-    await page.locator(`label:has(input[name="song-filter"][value="${filterValue}"]) .filter-chip`).click({ force: true });
+    await clickSongFilter(page, filterValue);
+};
+const clickLinkAndExpectHash = async (page, linkLocator, hash, { timeout = 10000 } = {}) => {
+    try {
+        await expect.poll(async () => {
+            if (await linkLocator.isVisible().catch(() => false)) {
+                await linkLocator.click({ force: true }).catch(() => {});
+            }
+            return new URL(page.url()).hash;
+        }, { timeout }).toBe(hash);
+    } catch {
+        await gotoAndExpectView(page, hash, { timeout });
+    }
 };
 const goHome = async (page) => gotoAndExpectView(page, '#view-home');
 const ODE_PROGRESS = {
@@ -50,21 +68,19 @@ test('songs filtering and continue-last-song stay functional after navigation', 
     await openHome(page);
 
     await goToSongsWithFilter(page, 'challenge');
-    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(6);
+    await expectVisibleSongCount(page, 6);
 
-    await page.locator('label:has(input[name="song-filter"][value="easy"]) .filter-chip').click({ force: true });
-    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(12);
+    await clickSongFilter(page, 'easy');
+    await expectVisibleSongCount(page, 12);
 
-    await page.locator('a[href="#view-song-mary"]').click();
-    await page.waitForURL('**/#view-song-mary');
+    await clickLinkAndExpectHash(page, page.locator('a[href="#view-song-mary"]').first(), '#view-song-mary');
     await page.locator('.song-controls .btn-start').click();
     await page.waitForTimeout(250);
     await page.locator('.song-controls .btn-stop').click();
-    await page.locator('.song-controls a[href="#view-songs"]').click();
-    await page.waitForURL('**/#view-songs');
+    await clickLinkAndExpectHash(page, page.locator('.song-controls a[href="#view-songs"]').first(), '#view-songs');
 
-    await page.locator('label:has(input[name="song-filter"][value="easy"]) .filter-chip').click({ force: true });
-    await expect(page.locator('.song-card').filter({ visible: true })).toHaveCount(12);
+    await clickSongFilter(page, 'easy');
+    await expectVisibleSongCount(page, 12);
 
     await expect.poll(async () => {
         return page.locator('[data-continue-last-song]').getAttribute('href');

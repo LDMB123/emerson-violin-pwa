@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { gotoAndExpectView } from './helpers/view-navigation.js';
 
 test('games view shows mastery metadata after gameplay event', async ({ page }) => {
     await openHome(page);
 
-    await page.goto('/#view-games');
+    await gotoAndExpectView(page, '#view-games');
     await page.evaluate(() => {
         document.dispatchEvent(new CustomEvent('panda:game-mastery-updated', {
             detail: {
@@ -23,6 +24,6 @@ test('games view shows mastery metadata after gameplay event', async ({ page }) 
     });
 
     const masteryMeta = page.locator('.game-card[data-game-id="rhythm-dash"] [data-game-mastery-meta]');
-    await expect(masteryMeta).toBeVisible();
+    await expect.poll(async () => masteryMeta.isVisible().catch(() => false), { timeout: 10000 }).toBe(true);
     await expect(masteryMeta).toContainText(/bronze/i);
 });

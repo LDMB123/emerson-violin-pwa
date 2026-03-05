@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test';
+import { navigateToView } from './navigate-view.js';
 
 export const setParentUnlocked = async (page, unlocked) => {
     await page.evaluate((value) => {
@@ -11,7 +12,7 @@ export const setParentUnlocked = async (page, unlocked) => {
 };
 
 export const gotoAndExpectView = async (page, viewHash, { timeout = 10000 } = {}) => {
-    await page.goto(`/${viewHash}`);
-    await expect(page.locator(viewHash)).toBeVisible({ timeout });
+    const viewId = String(viewHash || '#view-home').replace(/^#/, '');
+    await navigateToView(page, viewId, { timeout });
+    await expect(page.locator(`#${viewId}`)).toBeVisible({ timeout });
 };
-

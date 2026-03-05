@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { setCheckboxValue, setInputValue } from './helpers/dom-controls.js';
 import { openHome } from './helpers/open-home.js';
 import { seedKVValue } from './helpers/seed-kv.js';
 import { gotoAndExpectView, setParentUnlocked } from './helpers/view-navigation.js';
@@ -18,14 +19,8 @@ const saveParentGoal = async (page, { title, minutes }) => {
     await expect(status).not.toContainText('Loading goal', { timeout: 10000 });
 
     const applyGoalValues = async () => {
-        await page.locator('[data-parent-goal-title-input]').evaluate((input, value) => {
-            input.value = value;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-        }, title);
-        await page.locator('[data-parent-goal-minutes-input]').evaluate((input, value) => {
-            input.value = value;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-        }, String(minutes));
+        await setInputValue(page.locator('[data-parent-goal-title-input]'), title);
+        await setInputValue(page.locator('[data-parent-goal-minutes-input]'), String(minutes));
 
         await expect(page.locator('[data-parent-goal-title-input]')).toHaveValue(title);
         await expect(page.locator('[data-parent-goal-minutes-input]')).toHaveValue(String(minutes));
@@ -117,18 +112,28 @@ const prepareParentAdvancedControls = async (page) => {
     await waitForBoundFlag(page, '#setting-offline-mode', 'data-offline-mode-bound');
 };
 const setOfflineMode = async (page, enabled) => {
-    await page.locator('#setting-offline-mode').evaluate((input, value) => {
-        input.checked = value;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    }, Boolean(enabled));
+    await setCheckboxValue(page.locator('#setting-offline-mode'), Boolean(enabled));
     await expect(page.locator('[data-offline-mode-status]')).toContainText(enabled ? 'Offline mode is on' : 'Offline mode is off');
 };
 const enableMlDemo = async (page) => {
-    await page.locator('[data-ml-demo]').evaluate((input) => {
-        input.checked = true;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-    });
+    await setCheckboxValue(page.locator('[data-ml-demo]'), true);
     await expect(page.locator('[data-ml-simulate]')).toBeEnabled();
+};
+const expectPinDialogVisible = async (page) => {
+    const dialog = page.locator('[data-pin-dialog]');
+    await expect.poll(async () => page.locator('[data-pin-dialog]').count(), { timeout: 10000 }).toBe(1);
+    await expect(dialog).toBeVisible();
+    return dialog;
+};
+const submitPinDialogAction = async (page, action) => {
+    await page.locator(`[data-pin-dialog] button[value="${action}"]`).evaluate((button) => {
+        if (!(button instanceof HTMLButtonElement)) return;
+        if (button.form?.requestSubmit) {
+            button.form.requestSubmit(button);
+            return;
+        }
+        button.click();
+    });
 };
 
 test('progress cards remain functional across navigation', async ({ page }) => {
@@ -141,14 +146,12 @@ test('progress cards remain functional across navigation', async ({ page }) => {
         { type: 'game', id: 'pitch-quest', score: 88, accuracy: 88, stars: 4, day, timestamp: now - 1000 },
     ]);
 
-    await page.goto('/#view-game-pitch-quest');
-    await expect(page.locator('#view-game-pitch-quest')).toBeVisible();
+    await gotoAndExpectView(page, '#view-game-pitch-quest');
     const listenButton = page.locator('#view-game-pitch-quest [data-pitch="listen"]');
     await listenButton.scrollIntoViewIfNeeded();
     await listenButton.click({ force: true });
 
-    await page.goto('/#view-progress');
-    await expect(page.locator('#view-progress')).toBeVisible();
+    await gotoAndExpectView(page, '#view-progress');
 
     await expect.poll(async () => {
         return page.locator('[data-recent-game][hidden]').count();
@@ -156,8 +159,7 @@ test('progress cards remain functional across navigation', async ({ page }) => {
 
     await goHome(page);
 
-    await page.goto('/#view-progress');
-    await expect(page.locator('#view-progress')).toBeVisible();
+    await gotoAndExpectView(page, '#view-progress');
     await expect(page.locator('[data-progress="xp-info"]')).not.toHaveText('0 / 0 XP');
 });
 
@@ -197,12 +199,10 @@ test('parent PIN gate remains functional after re-render', async ({ page }) => {
     await setParentUnlocked(page, false);
 
     await goParent(page);
-    const dialog = page.locator('[data-pin-dialog]');
-    await expect.poll(async () => page.locator('[data-pin-dialog]').count(), { timeout: 10000 }).toBe(1);
-    await expect(dialog).toBeVisible();
+    const dialog = await expectPinDialogVisible(page);
 
     await page.locator('#parent-pin-input').fill('1001');
-    await page.locator('[data-pin-dialog] button[value="confirm"]').click();
+    await submitPinDialogAction(page, 'confirm');
     await expect(dialog).toBeHidden({ timeout: 10000 });
 
     await goHome(page);
@@ -210,12 +210,11 @@ test('parent PIN gate remains functional after re-render', async ({ page }) => {
     await setParentUnlocked(page, false);
 
     await goParent(page);
-    await expect.poll(async () => page.locator('[data-pin-dialog]').count(), { timeout: 10000 }).toBe(1);
-    await expect(dialog).toBeVisible();
+    await expectPinDialogVisible(page);
 
-    await page.locator('[data-pin-dialog] button[value="cancel"]').click();
-    await page.waitForURL('**/#view-home');
+    await submitPinDialogAction(page, 'cancel');
     await expect(page.locator('#view-home')).toBeVisible();
+    await expect(page.locator('#view-parent')).toBeHidden();
 });
 
 test('parent advanced controls stay interactive after revisiting parent view', async ({ page }) => {

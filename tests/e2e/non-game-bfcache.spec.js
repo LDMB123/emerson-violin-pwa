@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { dispatchPagehide } from './helpers/bfcache-events.js';
 import { seedKVValue } from './helpers/seed-kv.js';
 import { gotoAndExpectView, setParentUnlocked } from './helpers/view-navigation.js';
 
@@ -135,16 +136,6 @@ const installRealtimeAndAudioDoubles = async (page) => {
     });
 };
 
-const dispatchPagehide = async (page, persisted) => {
-    await page.evaluate((isPersisted) => {
-        const event = new Event('pagehide');
-        if (isPersisted) {
-            Object.defineProperty(event, 'persisted', { value: true });
-        }
-        window.dispatchEvent(event);
-    }, persisted);
-};
-
 const getProbe = async (page) =>
     page.evaluate(() => ({
         audioPlayCalls: window.__bfcacheProbe.audioPlayCalls,
@@ -168,29 +159,42 @@ const playRecordingAndAssertPagehideBehavior = async (page, playButton) => {
     expect(afterUnload.audioPauseCalls).toBeGreaterThan(afterPersisted.audioPauseCalls);
 };
 
-test('session review recordings ignore persisted pagehide and stop on unload pagehide', async ({ page }) => {
+const openRecordingsView = async ({
+    page,
+    viewHash,
+    recordingsTitleSelector,
+    recordingsPlayButtonSelector,
+    parentUnlocked = false,
+} = {}) => {
     await installRealtimeAndAudioDoubles(page);
     await openHome(page);
 
     await seedKVValue(page, RECORDINGS_KEY, [SAMPLE_RECORDING]);
-    await gotoAndExpectView(page, '#view-analysis');
+    await setParentUnlocked(page, parentUnlocked);
+    await gotoAndExpectView(page, viewHash);
+    await expect(page.locator(recordingsTitleSelector).first()).toContainText('Session Clip');
+    return page.locator(recordingsPlayButtonSelector).first();
+};
 
-    const playButton = page.locator('#view-analysis .analysis-recording .recording-play').first();
-    await expect(page.locator('#view-analysis [data-analysis=\"recording-title\"]').first()).toContainText('Session Clip');
+test('session review recordings ignore persisted pagehide and stop on unload pagehide', async ({ page }) => {
+    const playButton = await openRecordingsView({
+        page,
+        viewHash: '#view-analysis',
+        recordingsTitleSelector: '#view-analysis [data-analysis="recording-title"]',
+        recordingsPlayButtonSelector: '#view-analysis .analysis-recording .recording-play',
+    });
     await expect.poll(async () => playButton.getAttribute('data-bound')).toBe('true');
     await expect(playButton).toHaveAttribute('data-recording-available', 'true');
     await playRecordingAndAssertPagehideBehavior(page, playButton);
 });
 
 test('parent recordings ignore persisted pagehide and stop on unload pagehide', async ({ page }) => {
-    await installRealtimeAndAudioDoubles(page);
-    await openHome(page);
-
-    await seedKVValue(page, RECORDINGS_KEY, [SAMPLE_RECORDING]);
-    await setParentUnlocked(page, true);
-    await gotoAndExpectView(page, '#view-parent');
-    await expect(page.locator('#view-parent [data-parent-recordings] .recording-title').first()).toContainText('Session Clip');
-
-    const playButton = page.locator('#view-parent [data-parent-recordings] .recording-play').first();
+    const playButton = await openRecordingsView({
+        page,
+        viewHash: '#view-parent',
+        recordingsTitleSelector: '#view-parent [data-parent-recordings] .recording-title',
+        recordingsPlayButtonSelector: '#view-parent [data-parent-recordings] .recording-play',
+        parentUnlocked: true,
+    });
     await playRecordingAndAssertPagehideBehavior(page, playButton);
 });
