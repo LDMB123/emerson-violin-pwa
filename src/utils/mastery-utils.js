@@ -1,6 +1,7 @@
 /**
  * Utility functions for calculating mastery progress across games and songs.
  */
+import { atLeast1 } from './math.js';
 
 export const DEFAULT_MASTERY_THRESHOLDS = {
     bronze: 60,
@@ -25,6 +26,16 @@ export const dayCounts = (days, thresholds = DEFAULT_MASTERY_THRESHOLDS) => {
     };
 };
 
+export const mergeDayHighScore = (days, dayKey, score) => {
+    const normalizedDays = days && typeof days === 'object' ? days : {};
+    const key = String(dayKey);
+    const current = Number(normalizedDays[key] || 0);
+    return {
+        ...normalizedDays,
+        [key]: Math.max(current, Number(score) || 0),
+    };
+};
+
 const REVIEW_INTERVAL_DAYS_BY_TIER = {
     foundation: 1,
     bronze: 3,
@@ -33,3 +44,27 @@ const REVIEW_INTERVAL_DAYS_BY_TIER = {
 };
 
 export const reviewIntervalDays = (tier = 'foundation') => REVIEW_INTERVAL_DAYS_BY_TIER[tier] || 1;
+
+export const buildDueReviewEntry = ({
+    id,
+    dueAt,
+    tier = 'foundation',
+    attempts = 0,
+    now = Date.now(),
+}) => ({
+    id,
+    dueAt,
+    overdueMs: Math.max(0, now - dueAt),
+    tier: tier || 'foundation',
+    attempts: Number(attempts) || 0,
+});
+
+export const selectDueReviewEntries = (
+    entries,
+    { now = Date.now(), limit = 5, requirePositiveDueAt = false } = {},
+) => (entries || [])
+    .filter((entry) => Number.isFinite(entry?.dueAt))
+    .filter((entry) => entry.dueAt <= now)
+    .filter((entry) => !requirePositiveDueAt || entry.dueAt > 0)
+    .sort((left, right) => right.overdueMs - left.overdueMs)
+    .slice(0, atLeast1(Math.round(limit)));

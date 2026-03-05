@@ -1,7 +1,13 @@
 export { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
-import { reviewIntervalDays, dayCounts, DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
+import {
+    reviewIntervalDays,
+    dayCounts,
+    buildDueReviewEntry,
+    selectDueReviewEntries,
+    DEFAULT_MASTERY_THRESHOLDS,
+} from '../utils/mastery-utils.js';
 import { gameViewHash, songViewHash } from '../utils/view-hash-utils.js';
-import { atLeast1, clampRounded, DAY_MS, finiteOrZero } from '../utils/math.js';
+import { clampRounded, DAY_MS, finiteOrZero } from '../utils/math.js';
 import { eventScore } from '../utils/event-score.js';
 
 const bucketLevel = (score, { bronze, silver, gold }) => {
@@ -128,18 +134,19 @@ export const collectDueGameReviews = (state, { now = Date.now(), limit = 5 } = {
             const intervalDays = reviewIntervalDays(entry.tier);
             const updatedAt = finiteOrZero(entry.updatedAt);
             const dueAt = updatedAt + (intervalDays * DAY_MS);
-            return {
+            return buildDueReviewEntry({
                 id: entry.id,
                 dueAt,
-                overdueMs: Math.max(0, now - dueAt),
                 tier: entry.tier || 'foundation',
                 attempts: entry.attempts || 0,
-            };
+                now,
+            });
         })
-        .filter((entry) => entry.dueAt > 0 && entry.dueAt <= now)
-        .sort((left, right) => right.overdueMs - left.overdueMs)
-        .slice(0, atLeast1(Math.round(limit)));
-    return entries;
+    return selectDueReviewEntries(entries, {
+        now,
+        limit,
+        requirePositiveDueAt: true,
+    });
 };
 
 export const buildDueReviewAction = ({ dueSongs = [], dueGames = [], songCatalog, gameLabels = {} }) => {

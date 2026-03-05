@@ -6,7 +6,7 @@ import {
     normalizeSongEntry,
     tierFromCounts,
 } from './song-progression-core.js';
-import { dayCounts, reviewIntervalDays } from '../utils/mastery-utils.js';
+import { dayCounts, mergeDayHighScore, reviewIntervalDays } from '../utils/mastery-utils.js';
 import { collectDueSongReviewsFromState } from './song-progression-reviews.js';
 import { buildUnlockMapForCatalog } from './song-progression-unlocks.js';
 
@@ -37,94 +37,89 @@ const saveSongProgressState = async (state) => {
     return normalized;
 };
 
-export const updateSongProgress = async (songId, attempt = {}) => {
-    if (!songId) return loadSongProgressState();
-
+const loadSongEntryContext = async (songId) => {
     const state = await loadSongProgressState();
-    const existing = normalizeSongEntry(state.songs[songId]);
-
-    const accuracy = Number.isFinite(attempt.accuracy) ? clampRounded(attempt.accuracy, 0, 100) : 0;
-    const timing = Number.isFinite(attempt.timingAccuracy)
-        ? clampRounded(attempt.timingAccuracy, 0, 100)
-        : accuracy;
-    const intonation = Number.isFinite(attempt.intonationAccuracy)
-        ? clampRounded(attempt.intonationAccuracy, 0, 100)
-        : accuracy;
-    const stars = Number.isFinite(attempt.stars)
-        ? clampRounded(attempt.stars, 0, 5)
-        : existing.bestStars;
-
-    const sectionProgress = {
-        ...existing.sectionProgress,
+    return {
+        state,
+        existing: normalizeSongEntry(state.songs[songId]),
     };
+};
 
-    if (typeof attempt.sectionId === 'string' && attempt.sectionId.trim()) {
-        const key = attempt.sectionId.trim();
-        const bestSection = finiteOrZero(sectionProgress[key]);
-        sectionProgress[key] = Math.max(bestSection, accuracy);
-    }
-
-    const dayKey = String(Number.isFinite(attempt.day) ? Math.round(attempt.day) : todayDay());
-    const attemptScore = clampRounded((accuracy + timing + intonation) / 3, 0, 100);
-    const days = {
-        ...existing.days,
-        [dayKey]: Math.max(Number(existing.days?.[dayKey] || 0), attemptScore),
-    };
-    const counts = dayCounts(days);
-    const tier = tierFromCounts(counts);
-    const updatedAt = Date.now();
-
-    const nextEntry = {
-        attempts: existing.attempts + 1,
-        bestAccuracy: Math.max(existing.bestAccuracy, accuracy),
-        bestTiming: Math.max(existing.bestTiming, timing),
-        bestIntonation: Math.max(existing.bestIntonation, intonation),
-        bestStars: Math.max(existing.bestStars, stars),
-        sectionProgress,
-        checkpoint: existing.checkpoint,
-        days,
-        ...counts,
-        tier,
-        updatedAt,
-        nextReviewAt: updatedAt + (reviewIntervalDays(tier) * DAY_MS),
-    };
-
+const withUpdatedSongEntry = async (songId, buildEntry) => {
+    if (!songId) return loadSongProgressState();
+    const { state, existing } = await loadSongEntryContext(songId);
     const nextState = {
         ...state,
         songs: {
             ...state.songs,
-            [songId]: nextEntry,
+            [songId]: buildEntry(existing, state),
         },
     };
-
     await saveSongProgressState(nextState);
     return nextState;
 };
 
+export const updateSongProgress = async (songId, attempt = {}) => {
+    return withUpdatedSongEntry(songId, (existing) => {
+        const accuracy = Number.isFinite(attempt.accuracy) ? clampRounded(attempt.accuracy, 0, 100) : 0;
+        const timing = Number.isFinite(attempt.timingAccuracy)
+            ? clampRounded(attempt.timingAccuracy, 0, 100)
+            : accuracy;
+        const intonation = Number.isFinite(attempt.intonationAccuracy)
+            ? clampRounded(attempt.intonationAccuracy, 0, 100)
+            : accuracy;
+        const stars = Number.isFinite(attempt.stars)
+            ? clampRounded(attempt.stars, 0, 5)
+            : existing.bestStars;
+
+        const sectionProgress = {
+            ...existing.sectionProgress,
+        };
+
+        if (typeof attempt.sectionId === 'string' && attempt.sectionId.trim()) {
+            const key = attempt.sectionId.trim();
+            const bestSection = finiteOrZero(sectionProgress[key]);
+            sectionProgress[key] = Math.max(bestSection, accuracy);
+        }
+
+        const dayKey = String(Number.isFinite(attempt.day) ? Math.round(attempt.day) : todayDay());
+        const attemptScore = clampRounded((accuracy + timing + intonation) / 3, 0, 100);
+        const days = mergeDayHighScore(existing.days, dayKey, attemptScore);
+        const counts = dayCounts(days);
+        const tier = tierFromCounts(counts);
+        const updatedAt = Date.now();
+
+        return {
+            attempts: existing.attempts + 1,
+            bestAccuracy: Math.max(existing.bestAccuracy, accuracy),
+            bestTiming: Math.max(existing.bestTiming, timing),
+            bestIntonation: Math.max(existing.bestIntonation, intonation),
+            bestStars: Math.max(existing.bestStars, stars),
+            sectionProgress,
+            checkpoint: existing.checkpoint,
+            days,
+            ...counts,
+            tier,
+            updatedAt,
+            nextReviewAt: updatedAt + (reviewIntervalDays(tier) * DAY_MS),
+        };
+    });
+};
+
 export const saveSongCheckpoint = async (songId, checkpoint = {}) => {
-    if (!songId) return loadSongProgressState();
-    const state = await loadSongProgressState();
-    const existing = normalizeSongEntry(state.songs[songId]);
-
-    const nextState = {
-        ...state,
-        songs: {
-            ...state.songs,
-            [songId]: {
-                ...existing,
-                checkpoint: {
-                    sectionId: checkpoint.sectionId || null,
-                    elapsed: finiteOrZero(checkpoint.elapsed),
-                    tempo: Number.isFinite(checkpoint.tempo) ? checkpoint.tempo : null,
-                    savedAt: Date.now(),
-                },
-                updatedAt: Date.now(),
+    return withUpdatedSongEntry(songId, (existing) => {
+        const updatedAt = Date.now();
+        return {
+            ...existing,
+            checkpoint: {
+                sectionId: checkpoint.sectionId || null,
+                elapsed: finiteOrZero(checkpoint.elapsed),
+                tempo: Number.isFinite(checkpoint.tempo) ? checkpoint.tempo : null,
+                savedAt: updatedAt,
             },
-        },
-    };
-
-    await saveSongProgressState(nextState);
-    return nextState;
+            updatedAt,
+        };
+    });
 };
 
 export const getSongCheckpoint = async (songId) => {

@@ -1,7 +1,7 @@
 import { getJSON, setJSON } from '../persistence/storage.js';
 import { GAME_MASTERY_KEY } from '../persistence/storage-keys.js';
 import { clampRounded, clone, finiteOrNow, finiteOrZero, positiveRound } from '../utils/math.js';
-import { DEFAULT_MASTERY_THRESHOLDS, dayCounts } from '../utils/mastery-utils.js';
+import { DEFAULT_MASTERY_THRESHOLDS, dayCounts, mergeDayHighScore } from '../utils/mastery-utils.js';
 
 const normalizeGameEntry = (entry) => ({
     id: entry?.id || '',
@@ -67,10 +67,7 @@ export const updateGameMastery = async ({
     const normalizedScore = clampRounded(score, 0, 100);
     const dayKey = String(finiteOrZero(day));
 
-    const days = {
-        ...existing.days,
-        [dayKey]: Math.max(Number(existing.days?.[dayKey] || 0), normalizedScore),
-    };
+    const days = mergeDayHighScore(existing.days, dayKey, normalizedScore);
 
     const counts = dayCounts(days, thresholds);
     const nextEntry = {
@@ -97,4 +94,3 @@ export const updateGameMastery = async ({
         game: clone(nextEntry),
     };
 };
-

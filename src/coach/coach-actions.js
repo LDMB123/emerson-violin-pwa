@@ -160,6 +160,15 @@ const handleMissionUpdated = (event) => {
     setMessage(message);
 };
 
+const announcePracticeStep = (prefix, event) => {
+    if (!resolveCoachElements()) return;
+    const stepLabel = event.detail?.step?.label;
+    if (!stepLabel) return;
+    const message = `${prefix}: ${stepLabel}.`;
+    bubble.dataset.coachAuto = 'false';
+    setMessage(message);
+};
+
 const initCoachActions = () => {
     resolveCoachElements();
     bindCoachActions();
@@ -173,22 +182,8 @@ document.addEventListener(LESSON_STEP, handleLessonStep);
 document.addEventListener(LESSON_COMPLETE, handleLessonComplete);
 document.addEventListener(COACH_MISSION_COMPLETE, handleMissionComplete);
 document.addEventListener(MISSION_UPDATED, handleMissionUpdated);
-document.addEventListener(PRACTICE_STEP_STARTED, (event) => {
-    if (!resolveCoachElements()) return;
-    const stepLabel = event.detail?.step?.label;
-    if (!stepLabel) return;
-    const message = `Started: ${stepLabel}.`;
-    bubble.dataset.coachAuto = 'false';
-    setMessage(message);
-});
-document.addEventListener(PRACTICE_STEP_COMPLETED, (event) => {
-    if (!resolveCoachElements()) return;
-    const stepLabel = event.detail?.step?.label;
-    if (!stepLabel) return;
-    const message = `Completed: ${stepLabel}.`;
-    bubble.dataset.coachAuto = 'false';
-    setMessage(message);
-});
+document.addEventListener(PRACTICE_STEP_STARTED, (event) => announcePracticeStep('Started', event));
+document.addEventListener(PRACTICE_STEP_COMPLETED, (event) => announcePracticeStep('Completed', event));
 document.addEventListener(GAME_RECORDED, (e) => {
     const id = e.detail?.id;
     if (id && GAME_MESSAGES[id]) {
