@@ -1,5 +1,6 @@
 import { BaseCanvasEngine } from './canvas-engine-base.js';
 import { mapPointerToCanvasCoords } from '../utils/canvas-utils.js';
+import { clamp } from '../utils/math.js';
 
 export class WipersCanvasEngine extends BaseCanvasEngine {
     constructor(canvas, onScoreUpdate) {
@@ -73,7 +74,7 @@ export class WipersCanvasEngine extends BaseCanvasEngine {
         // Normalizing rotation mapping
         const maxOffset = this.width * 0.4;
         let rotationPercent = offset / maxOffset;
-        rotationPercent = Math.max(-1, Math.min(1, rotationPercent));
+        rotationPercent = clamp(rotationPercent, -1, 1);
 
         const MAX_ROTATION = Math.PI / 4; // 45 degrees
         this.armAngle = rotationPercent * MAX_ROTATION;

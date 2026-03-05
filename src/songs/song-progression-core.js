@@ -55,7 +55,7 @@ export const normalizeSongEntry = (entry) => ({
             bestAccuracy: clampRounded(entry?.bestAccuracy || 0, 0, 100),
             bestTiming: clampRounded(entry?.bestTiming || 0, 0, 100),
             bestIntonation: clampRounded(entry?.bestIntonation || 0, 0, 100),
-            bestStars: Math.max(0, Math.min(5, Math.round(entry?.bestStars || 0))),
+            bestStars: clampRounded(entry?.bestStars || 0, 0, 5),
             sectionProgress: entry?.sectionProgress && typeof entry.sectionProgress === 'object' ? entry.sectionProgress : {},
             checkpoint: entry?.checkpoint && typeof entry.checkpoint === 'object' ? entry.checkpoint : null,
             days,

@@ -319,7 +319,7 @@ export const applyControlsToView = ({ view, controls, song, sections }) => {
         }
         if (Number.isFinite(checkpoint.tempo) && Number.isFinite(song?.bpm) && song.bpm > 0) {
             const percent = percentageRounded(checkpoint.tempo, song.bpm);
-            if (tempoScaleInput) tempoScaleInput.value = String(Math.max(50, Math.min(130, percent)));
+            if (tempoScaleInput) tempoScaleInput.value = String(clamp(percent, 50, 130));
         }
         applySection();
         applyTempo();

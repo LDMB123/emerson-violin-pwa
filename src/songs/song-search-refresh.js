@@ -2,6 +2,7 @@ import { getLearningRecommendations } from '../ml/recommendations.js';
 import { loadEvents } from '../persistence/loaders.js';
 import { getSongCatalog } from './song-library.js';
 import { buildSongUnlockMap, loadSongProgressState } from './song-progression.js';
+import { CHALLENGE_UNLOCK_REQUIRED, isChallengeReadinessScore } from './song-progression-unlocks.js';
 import { ensureChildDiv } from '../utils/dom-utils.js';
 import { clampRounded, finiteOrZero } from '../utils/math.js';
 
@@ -10,9 +11,6 @@ const recommendationLevelMap = {
     intermediate: 'practice',
     advanced: 'challenge',
 };
-
-const CHALLENGE_UNLOCK_THRESHOLD = 75;
-const CHALLENGE_UNLOCK_REQUIRED = 3;
 
 const getSongStatsFromEvents = (events) => {
     if (!Array.isArray(events)) return {};
@@ -103,14 +101,11 @@ const fallbackUnlockCount = (cards, events = []) => {
             .map((card) => card.dataset.song),
     );
 
-    const bestBySong = Object.entries(getSongStatsFromEvents(events)).reduce((acc, [id, stats]) => {
-        acc[id] = stats.best;
-        return acc;
-    }, {});
+    const statsBySong = getSongStatsFromEvents(events);
 
     let cleanPracticeCount = 0;
     practiceSongs.forEach((songId) => {
-        if ((bestBySong[songId] || 0) >= CHALLENGE_UNLOCK_THRESHOLD) {
+        if (isChallengeReadinessScore(statsBySong[songId]?.best)) {
             cleanPracticeCount += 1;
         }
     });

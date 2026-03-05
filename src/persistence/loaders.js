@@ -10,7 +10,7 @@ const clampScore = (value, max = 100) => {
 
 const normalizeSongStars = (event, accuracy) => {
     if (Number.isFinite(event?.stars)) {
-        return Math.max(0, Math.min(5, Math.round(event.stars)));
+        return clampRounded(event.stars, 0, 5);
     }
     if (!Number.isFinite(accuracy)) return null;
     if (accuracy >= 95) return 5;

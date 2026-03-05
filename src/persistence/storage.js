@@ -1,6 +1,22 @@
 import { BLOB_STORE, STORE, idbOp, openDB } from './storage-idb.js';
 import { fallbackGetJSON, fallbackRemoveJSON, fallbackSetJSON } from './storage-fallback.js';
 
+const writeJSONWithFallback = async ({ warningLabel, write, applyFallback }) => {
+    const db = await openDB();
+    if (!db) {
+        applyFallback();
+        return;
+    }
+
+    try {
+        await idbOp(db, STORE, 'readwrite', write);
+    } catch (error) {
+        console.warn(warningLabel, error);
+    } finally {
+        applyFallback();
+    }
+};
+
 /* ── Public API: JSON (KV store) ────────────────────────── */
 
 export const getJSON = async (key) => {
@@ -15,33 +31,19 @@ export const getJSON = async (key) => {
 };
 
 export const setJSON = async (key, value) => {
-    const db = await openDB();
-    if (!db) {
-        fallbackSetJSON(key, value);
-        return;
-    }
-    try {
-        await idbOp(db, STORE, 'readwrite', (s) => s.put(value, key));
-        fallbackSetJSON(key, value);
-    } catch (error) {
-        console.warn('[Storage] IndexedDB set failed', error);
-        fallbackSetJSON(key, value);
-    }
+    await writeJSONWithFallback({
+        warningLabel: '[Storage] IndexedDB set failed',
+        write: (store) => store.put(value, key),
+        applyFallback: () => fallbackSetJSON(key, value),
+    });
 };
 
 export const removeJSON = async (key) => {
-    const db = await openDB();
-    if (!db) {
-        fallbackRemoveJSON(key);
-        return;
-    }
-    try {
-        await idbOp(db, STORE, 'readwrite', (s) => s.delete(key));
-        fallbackRemoveJSON(key);
-    } catch (error) {
-        console.warn('[Storage] IndexedDB remove failed', error);
-        fallbackRemoveJSON(key);
-    }
+    await writeJSONWithFallback({
+        warningLabel: '[Storage] IndexedDB remove failed',
+        write: (store) => store.delete(key),
+        applyFallback: () => fallbackRemoveJSON(key),
+    });
 };
 
 
