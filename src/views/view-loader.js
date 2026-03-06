@@ -1,6 +1,7 @@
 // Prefer Map.getOrInsertComputed when the runtime supports it; fall back to
 // explicit cache checks in browsers that do not expose the method yet.
 const supportsGetOrInsertComputed = 'getOrInsertComputed' in Map.prototype;
+const LOW_PRIORITY_FETCH_OPTIONS = Object.freeze({ priority: 'low' });
 
 export class ViewLoader {
   constructor() {
@@ -15,11 +16,11 @@ export class ViewLoader {
 
   prefetch(viewPath) {
     if (!this.has(viewPath) && !this.loading.has(viewPath)) {
-      this.load(viewPath).catch(() => { });
+      this.load(viewPath, LOW_PRIORITY_FETCH_OPTIONS).catch(() => { });
     }
   }
 
-  async load(viewPath) {
+  async load(viewPath, requestOptions = null) {
     if (this.cache.has(viewPath)) {
       return this.cache.get(viewPath);
     }
@@ -28,7 +29,8 @@ export class ViewLoader {
       return this.loading.get(viewPath);
     }
 
-    const promise = fetch(viewPath)
+    const request = requestOptions ? fetch(viewPath, requestOptions) : fetch(viewPath);
+    const promise = request
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Failed to load view: HTTP ${response.status}`);

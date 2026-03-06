@@ -67,6 +67,12 @@ export const EAGER_MODULES = [
     'webVitals',
 ];
 
+/** Lists eagerly loaded modules whose init hooks must run once at app startup. */
+export const STARTUP_INIT_MODULES = [
+    'realtimeOverlay',
+    'webVitals',
+];
+
 /** Schedules low-priority module preloads to run after initial startup settles. */
 export const IDLE_MODULE_PLAN = [
     ['mlScheduler', 180],

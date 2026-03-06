@@ -1,7 +1,65 @@
 import { describe, expect, it, vi } from 'vitest';
-import { prefetchViewIfMissing } from '../../src/app/view-prefetch.js';
+import { canPrefetchViews, prefetchViewIfMissing } from '../../src/app/view-prefetch.js';
 
 describe('app/view-prefetch', () => {
+    it('allows prefetch when the page is visible and reduced-data is off', () => {
+        Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            value: 'visible',
+        });
+        Object.defineProperty(navigator, 'connection', {
+            configurable: true,
+            value: { saveData: false },
+        });
+        window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+        expect(canPrefetchViews()).toBe(true);
+    });
+
+    it('blocks prefetch when navigator saveData is enabled', () => {
+        Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            value: 'visible',
+        });
+        Object.defineProperty(navigator, 'connection', {
+            configurable: true,
+            value: { saveData: true },
+        });
+        window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+        expect(canPrefetchViews()).toBe(false);
+    });
+
+    it('blocks prefetch when reduced-data media preference is enabled', () => {
+        Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            value: 'visible',
+        });
+        Object.defineProperty(navigator, 'connection', {
+            configurable: true,
+            value: { saveData: false },
+        });
+        window.matchMedia = vi.fn().mockImplementation((query) => ({
+            matches: query === '(prefers-reduced-data: reduce)',
+        }));
+
+        expect(canPrefetchViews()).toBe(false);
+    });
+
+    it('blocks prefetch while the document is hidden', () => {
+        Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            value: 'hidden',
+        });
+        Object.defineProperty(navigator, 'connection', {
+            configurable: true,
+            value: { saveData: false },
+        });
+        window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+
+        expect(canPrefetchViews()).toBe(false);
+    });
+
     it('prefetches when the view path is not cached', () => {
         const getViewPath = vi.fn(() => '/views/home.html');
         const viewLoader = {

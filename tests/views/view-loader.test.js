@@ -140,7 +140,7 @@ describe('ViewLoader', () => {
       viewLoader.prefetch('views/prefetch.html');
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(global.fetch).toHaveBeenCalledWith('views/prefetch.html');
+      expect(global.fetch).toHaveBeenCalledWith('views/prefetch.html', { priority: 'low' });
     });
 
     it('should not initiate load when already cached', () => {

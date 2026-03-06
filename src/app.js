@@ -16,6 +16,7 @@ import {
     EAGER_MODULES,
     IDLE_MODULE_PLAN,
     PREFETCH_VIEW_IDS,
+    STARTUP_INIT_MODULES,
     resolveModulesForView,
 } from './app/module-registry.js';
 import { createModuleLoader } from './app/module-loader.js';
@@ -48,6 +49,7 @@ const homeCoachController = createHomeCoachController({
     getRouteMeta,
     toMissionCheckpointHref,
 });
+const startupModulesInitialized = new Set();
 
 const { loadModule } = createModuleLoader({ moduleLoaders });
 
@@ -168,6 +170,26 @@ const loadEagerModules = () => {
     EAGER_MODULES.forEach((key) => loadModule(key));
 };
 
+const loadStartupModule = async (key) => {
+    if (!key || startupModulesInitialized.has(key)) return;
+    startupModulesInitialized.add(key);
+    const module = await loadModule(key);
+    if (!module) {
+        startupModulesInitialized.delete(key);
+        return;
+    }
+    runModuleInit(module);
+};
+
+const loadStartupModules = () => {
+    STARTUP_INIT_MODULES.forEach((key) => {
+        loadStartupModule(key).catch((error) => {
+            startupModulesInitialized.delete(key);
+            console.warn(`[App] Startup module init failed for ${key}`, error);
+        });
+    });
+};
+
 const loadIdleModules = () => {
     IDLE_MODULE_PLAN.forEach(([key, delay]) => loadIdle(key, delay));
 };
@@ -194,6 +216,7 @@ const boot = async () => {
     setupPopoverSystem(ctx);
     bindInteractiveLabelKeys();
     loadEagerModules();
+    loadStartupModules();
     loadIdleModules();
     prefetchLikelyViews({
         currentViewId: initialViewId,

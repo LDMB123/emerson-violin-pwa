@@ -8,6 +8,7 @@ const storageMocks = createStorageMocks();
 
 const eventLogMocks = vi.hoisted(() => ({
     appendRealtimeEvent: vi.fn(async () => {}),
+    flushRealtimeEvents: vi.fn(async () => []),
     saveRealtimeQuality: vi.fn(async () => {}),
 }));
 
@@ -249,6 +250,7 @@ describe('realtime session controller interface', () => {
         resetStorageMocks(storageMocks);
         storageMocks.setJSON.mockResolvedValue(undefined);
         eventLogMocks.appendRealtimeEvent.mockResolvedValue(undefined);
+        eventLogMocks.flushRealtimeEvents.mockResolvedValue([]);
         eventLogMocks.saveRealtimeQuality.mockResolvedValue(undefined);
         policyMocks.evaluateFrame.mockReturnValue(null);
         policyMocks.applyParentPreset.mockImplementation(async (preset) => preset || 'standard');
@@ -396,7 +398,7 @@ describe('realtime session controller interface', () => {
         await stopSession('test-stop');
     });
 
-    it('throttles profile persistence during active sampling and flushes on stop', async () => {
+    it('coalesces profile persistence during active sampling and flushes on stop', async () => {
         const { FakeAudioWorkletNode, stopSession } = await startHarnessedSession({ workerMode: 'none' });
         emitFeatureFrame(FakeAudioWorkletNode, {
             cents: 8,
@@ -420,7 +422,8 @@ describe('realtime session controller interface', () => {
         const totalWrites = storageMocks.setJSON.mock.calls
             .filter(([key]) => key === RT_PROFILE_KEY)
             .length;
-        expect(totalWrites).toBe(2);
+        expect(totalWrites).toBe(1);
+        expect(eventLogMocks.flushRealtimeEvents).toHaveBeenCalledTimes(1);
     });
 
     it('pauses for parent entry and resumes on return to child practice views', async () => {

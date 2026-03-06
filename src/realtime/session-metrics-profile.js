@@ -22,6 +22,13 @@ export const createSessionMetricsProfile = ({
     let profileDirty = false;
     let profilePersistPromise = null;
     let lastProfilePersistAt = 0;
+    let profilePersistTimer = null;
+
+    const clearProfilePersistTimer = () => {
+        if (profilePersistTimer === null) return;
+        clearTimeout(profilePersistTimer);
+        profilePersistTimer = null;
+    };
 
     const hydrateProfileCache = async () => {
         if (profileCache && typeof profileCache === 'object') {
@@ -70,7 +77,20 @@ export const createSessionMetricsProfile = ({
         profileDirty = true;
     };
 
+    const scheduleProfileFlush = () => {
+        if (!profileDirty || profilePersistPromise || profilePersistTimer !== null) return;
+        const now = Date.now();
+        const delayMs = lastProfilePersistAt > 0
+            ? Math.max(0, profilePersistIntervalMs - (now - lastProfilePersistAt))
+            : 0;
+        profilePersistTimer = setTimeout(() => {
+            profilePersistTimer = null;
+            void flushProfileCache().catch(() => {});
+        }, delayMs);
+    };
+
     const flushProfileCache = async ({ force = false } = {}) => {
+        clearProfilePersistTimer();
         if (profilePersistPromise) {
             await profilePersistPromise;
         }
@@ -78,6 +98,7 @@ export const createSessionMetricsProfile = ({
 
         const now = Date.now();
         if (!force && lastProfilePersistAt > 0 && now - lastProfilePersistAt < profilePersistIntervalMs) {
+            scheduleProfileFlush();
             return;
         }
 
@@ -160,6 +181,7 @@ export const createSessionMetricsProfile = ({
         updateQuality,
         buildQualityPayload,
         updateProfileCacheFromFeature,
+        scheduleProfileFlush,
         flushProfileCache,
         hydrateCalibrationFromProfile,
         updateSessionCalibration,

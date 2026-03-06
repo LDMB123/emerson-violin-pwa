@@ -4,6 +4,7 @@ import {
     RT_PROFILE_KEY,
     RT_UI_PREFS_KEY,
 } from '../persistence/storage-keys.js';
+import { appendRealtimeEvent, flushRealtimeEvents, saveRealtimeQuality } from './event-log.js';
 import {
     RT_SESSION_STARTED,
     RT_SESSION_STOPPED,
@@ -12,7 +13,6 @@ import {
     emitEvent,
 } from '../utils/event-names.js';
 import { assertRealtimePayload } from './contracts.js';
-import { appendRealtimeEvent, saveRealtimeQuality } from './event-log.js';
 import { createSessionAudioGraph } from './session-audio-graph.js';
 import { createSessionLifecycle } from './session-lifecycle.js';
 import { createPolicyWorkerClient } from './policy-worker-client.js';
@@ -104,6 +104,7 @@ const lifecycle = createSessionLifecycle({
     persistSessionUiPreference,
     publishState: runtimeEngine.publishState,
     saveRealtimeQuality,
+    flushRealtimeEvents,
     rtSessionStartedEvent: RT_SESSION_STARTED,
     rtSessionStoppedEvent: RT_SESSION_STOPPED,
     rtQualityEvent: RT_QUALITY,

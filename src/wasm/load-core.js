@@ -1,12 +1,25 @@
 let wasmModule = null;
+let wasmModulePromise = null;
 /**
  * Loads and caches the shared WASM core module on first use.
  */
 export const getCore = async () => {
-    if (!wasmModule) {
-        const mod = await import('./panda_core.js');
-        await mod.default();
-        wasmModule = mod;
+    if (wasmModule) {
+        return wasmModule;
     }
-    return wasmModule;
+
+    if (!wasmModulePromise) {
+        wasmModulePromise = import('./panda_core.js')
+            .then(async (mod) => {
+                await mod.default();
+                wasmModule = mod;
+                return mod;
+            })
+            .catch((error) => {
+                wasmModulePromise = null;
+                throw error;
+            });
+    }
+
+    return wasmModulePromise;
 };

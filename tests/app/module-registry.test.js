@@ -4,6 +4,7 @@ import {
     EAGER_MODULES,
     IDLE_MODULE_PLAN,
     PREFETCH_VIEW_IDS,
+    STARTUP_INIT_MODULES,
     resolveModulesForView,
 } from '../../src/app/module-registry.js';
 
@@ -16,6 +17,13 @@ describe('module-registry', () => {
 
     it('has loaders for all idle modules', () => {
         IDLE_MODULE_PLAN.forEach(([moduleKey]) => {
+            expect(typeof MODULE_LOADERS[moduleKey]).toBe('function');
+        });
+    });
+
+    it('keeps startup init modules eagerly available', () => {
+        STARTUP_INIT_MODULES.forEach((moduleKey) => {
+            expect(EAGER_MODULES).toContain(moduleKey);
             expect(typeof MODULE_LOADERS[moduleKey]).toBe('function');
         });
     });

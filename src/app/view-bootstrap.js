@@ -1,4 +1,4 @@
-import { prefetchViewIfMissing } from './view-prefetch.js';
+import { canPrefetchViews, prefetchViewIfMissing } from './view-prefetch.js';
 
 const getInlineInitialView = () => {
     const container = document.getElementById('main-content');
@@ -29,8 +29,7 @@ export const warmInitialViews = ({
     viewLoader,
     getViewPath,
 }) => {
-    const saveDataEnabled = navigator.connection?.saveData === true;
-    if (saveDataEnabled) return;
+    if (!canPrefetchViews()) return;
 
     const candidateIds = new Set();
     const currentViewId = getCurrentViewId();

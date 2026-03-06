@@ -26,6 +26,7 @@ const setSyncStatus = createTextContentSetter(() => syncStatusEl);
 
 const showApply = (show) => {
     setHidden(applyButton, !show);
+    setDisabled(applyButton, !show);
 };
 
 const updateFlowController = createSwUpdateFlowController({
@@ -82,7 +83,7 @@ const claimGlobalBinding = () => {
 
 const bindGlobalListeners = () => {
     if (!claimGlobalBinding()) return;
-    navigator.serviceWorker.addEventListener('controllerchange', updateFlowController.handleControllerChange, { once: true });
+    navigator.serviceWorker.addEventListener('controllerchange', updateFlowController.handleControllerChange);
 };
 
 const bindLocalListeners = () => {
@@ -113,10 +114,13 @@ const initSwUpdates = async () => {
             setStatus('Service worker not ready yet.');
             setSyncStatus('Background refresh will start once the app is installed.');
             setDisabled(updateButton, true);
+            setDisabled(applyButton, true);
+            showApply(false);
         },
     });
     if (!registration) return;
 
+    setDisabled(updateButton, false);
     updateFlowController.bindUpdateFlow(registration);
     refreshController.registerBackgroundRefresh(registration);
     bindLocalListeners();

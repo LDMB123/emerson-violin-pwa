@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const prefetchMocks = vi.hoisted(() => ({
+    canPrefetchViews: vi.fn(() => true),
     prefetchViewIfMissing: vi.fn(),
 }));
 
@@ -23,6 +24,8 @@ describe('app/view-bootstrap', () => {
     };
 
     beforeEach(() => {
+        prefetchMocks.canPrefetchViews.mockReset();
+        prefetchMocks.canPrefetchViews.mockReturnValue(true);
         prefetchMocks.prefetchViewIfMissing.mockReset();
         onboardingMocks.shouldShowOnboarding.mockReset();
         onboardingMocks.shouldShowOnboarding.mockResolvedValue(false);
@@ -66,10 +69,7 @@ describe('app/view-bootstrap', () => {
     });
 
     it('skips warming when data saver is enabled', () => {
-        Object.defineProperty(navigator, 'connection', {
-            configurable: true,
-            value: { saveData: true },
-        });
+        prefetchMocks.canPrefetchViews.mockReturnValue(false);
 
         warmInitialViews({
             getCurrentViewId: () => 'view-home',
@@ -77,6 +77,7 @@ describe('app/view-bootstrap', () => {
             getViewPath: (id) => id,
         });
 
+        expect(prefetchMocks.canPrefetchViews).toHaveBeenCalledTimes(1);
         expect(prefetchMocks.prefetchViewIfMissing).not.toHaveBeenCalled();
     });
 
@@ -89,6 +90,7 @@ describe('app/view-bootstrap', () => {
             getViewPath: (id) => `/views/${id}.html`,
         });
 
+        expect(prefetchMocks.canPrefetchViews).toHaveBeenCalledTimes(1);
         expect(prefetchMocks.prefetchViewIfMissing).toHaveBeenCalledWith({
             viewId: 'view-coach',
             getViewPath: expect.any(Function),

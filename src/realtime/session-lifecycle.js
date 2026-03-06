@@ -19,6 +19,7 @@ export const createSessionLifecycle = ({
     persistSessionUiPreference,
     publishState,
     saveRealtimeQuality,
+    flushRealtimeEvents,
     rtSessionStartedEvent,
     rtSessionStoppedEvent,
     rtQualityEvent,
@@ -116,6 +117,7 @@ export const createSessionLifecycle = ({
             await saveRealtimeQuality(qualityPayload);
         }
 
+        await flushRealtimeEvents();
         await persistSessionUiPreference(false);
         publishState(true);
     };

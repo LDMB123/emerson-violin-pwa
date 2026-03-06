@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetStorageMocks } from './test-helpers.js';
 
 const storageMocks = vi.hoisted(() => ({
@@ -12,35 +12,43 @@ vi.mock('../../src/persistence/storage-keys.js', () => ({
     RT_QUALITY_KEY: 'rt-quality',
 }));
 
-import {
-    loadRealtimeEvents,
-    appendRealtimeEvent,
-    clearRealtimeEvents,
-    loadRealtimeQuality,
-    saveRealtimeQuality,
-} from '../../src/realtime/event-log.js';
+const loadEventLog = async () => import('../../src/realtime/event-log.js');
 
 describe('realtime event log', () => {
     beforeEach(() => {
+        vi.resetModules();
+        vi.useFakeTimers();
         resetStorageMocks(storageMocks);
+    });
+
+    afterEach(async () => {
+        await vi.runOnlyPendingTimersAsync();
+        vi.useRealTimers();
     });
 
     it('normalizes stored event log values to arrays', async () => {
         storageMocks.getJSON.mockResolvedValueOnce({ invalid: true });
+        const { loadRealtimeEvents } = await loadEventLog();
         await expect(loadRealtimeEvents()).resolves.toEqual([]);
     });
 
-    it('appends realtime events and persists the updated log', async () => {
+    it('appends realtime events in memory and batches persistence', async () => {
         storageMocks.getJSON.mockResolvedValueOnce([{ type: 'rt:state', detail: { listening: true }, timestamp: 1 }]);
-        const events = await appendRealtimeEvent('rt:cue', { id: 'cue-1' });
+        const { appendRealtimeEvent, flushRealtimeEvents, loadRealtimeEvents } = await loadEventLog();
 
-        expect(events).toHaveLength(2);
-        expect(events[1]).toMatchObject({
-            type: 'rt:cue',
-            detail: { id: 'cue-1' },
-        });
-        expect(typeof events[1].timestamp).toBe('number');
-        expect(storageMocks.setJSON).toHaveBeenCalledWith('rt-events', events);
+        const firstAppend = await appendRealtimeEvent('rt:cue', { id: 'cue-1' });
+        const secondAppend = await appendRealtimeEvent('rt:cue', { id: 'cue-2' });
+
+        expect(firstAppend).toHaveLength(2);
+        expect(secondAppend).toHaveLength(3);
+        expect(storageMocks.getJSON).toHaveBeenCalledTimes(1);
+        expect(storageMocks.setJSON).not.toHaveBeenCalled();
+        await expect(loadRealtimeEvents()).resolves.toEqual(secondAppend);
+
+        const flushed = await flushRealtimeEvents();
+        expect(flushed).toEqual(secondAppend);
+        expect(storageMocks.setJSON).toHaveBeenCalledTimes(1);
+        expect(storageMocks.setJSON).toHaveBeenCalledWith('rt-events', secondAppend);
     });
 
     it('trims appended logs to the max realtime event window', async () => {
@@ -50,17 +58,28 @@ describe('realtime event log', () => {
             timestamp: index,
         }));
         storageMocks.getJSON.mockResolvedValueOnce(seeded);
+        const { appendRealtimeEvent, flushRealtimeEvents } = await loadEventLog();
 
         const events = await appendRealtimeEvent('rt:cue', { id: 'overflow' });
+        await flushRealtimeEvents();
 
         expect(events).toHaveLength(1500);
         expect(events[0].detail).toEqual({ index: 1 });
         expect(events[1499]).toMatchObject({ type: 'rt:cue', detail: { id: 'overflow' } });
     });
 
+    it('clears the cached realtime event log', async () => {
+        storageMocks.getJSON.mockResolvedValueOnce([{ type: 'rt:cue', detail: { id: 'cue-1' }, timestamp: 1 }]);
+        const { clearRealtimeEvents, loadRealtimeEvents } = await loadEventLog();
 
+        await expect(clearRealtimeEvents()).resolves.toEqual([]);
+        await expect(loadRealtimeEvents()).resolves.toEqual([]);
+        expect(storageMocks.setJSON).toHaveBeenCalledWith('rt-events', []);
+    });
 
     it('loads and saves realtime quality snapshots', async () => {
+        const { loadRealtimeQuality, saveRealtimeQuality } = await loadEventLog();
+
         storageMocks.getJSON.mockResolvedValueOnce({ p95CueLatencyMs: 120 });
         await expect(loadRealtimeQuality()).resolves.toEqual({ p95CueLatencyMs: 120 });
 

@@ -74,7 +74,9 @@ export const writeJsonToStorage = (
     value,
     storage = window.localStorage,
 ) => tryRun(() => {
-    storage.setItem(key, JSON.stringify(value));
+    const serialized = JSON.stringify(value);
+    if (storage.getItem(key) === serialized) return;
+    storage.setItem(key, serialized);
 });
 
 /**

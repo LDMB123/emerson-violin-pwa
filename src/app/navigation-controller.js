@@ -1,5 +1,5 @@
 import { setAriaCurrent } from '../utils/dom-utils.js';
-import { prefetchViewIfMissing } from './view-prefetch.js';
+import { canPrefetchViews, prefetchViewIfMissing } from './view-prefetch.js';
 
 /** Sets up click-driven hash navigation, nav state syncing, and view transitions. */
 export const setupNavigationController = ({
@@ -135,8 +135,7 @@ export const prefetchLikelyViews = ({
     getViewPath,
     viewLoader,
 }) => {
-    const saveDataMode = navigator.connection?.saveData === true;
-    if (saveDataMode) return;
+    if (!canPrefetchViews()) return;
 
     prefetchViewIds
         .filter((viewId) => viewId !== currentViewId)

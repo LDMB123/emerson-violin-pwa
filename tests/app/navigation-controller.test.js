@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const prefetchMocks = vi.hoisted(() => ({
+    canPrefetchViews: vi.fn(() => true),
     prefetchViewIfMissing: vi.fn(),
 }));
 
@@ -14,6 +15,8 @@ import {
 
 describe('app/navigation-controller', () => {
     beforeEach(() => {
+        prefetchMocks.canPrefetchViews.mockReset();
+        prefetchMocks.canPrefetchViews.mockReturnValue(true);
         prefetchMocks.prefetchViewIfMissing.mockReset();
         window.location.hash = '#view-home';
         Object.defineProperty(navigator, 'connection', {
@@ -82,6 +85,7 @@ describe('app/navigation-controller', () => {
             viewLoader: {},
         });
 
+        expect(prefetchMocks.canPrefetchViews).toHaveBeenCalledTimes(1);
         expect(queueIdleTask).toHaveBeenCalledTimes(2);
         expect(prefetchMocks.prefetchViewIfMissing).toHaveBeenCalledWith({
             viewId: 'view-coach',
@@ -96,10 +100,7 @@ describe('app/navigation-controller', () => {
     });
 
     it('skips prefetching when data saver is enabled', () => {
-        Object.defineProperty(navigator, 'connection', {
-            configurable: true,
-            value: { saveData: true },
-        });
+        prefetchMocks.canPrefetchViews.mockReturnValue(false);
 
         const queueIdleTask = vi.fn();
         prefetchLikelyViews({
@@ -111,6 +112,7 @@ describe('app/navigation-controller', () => {
             viewLoader: {},
         });
 
+        expect(prefetchMocks.canPrefetchViews).toHaveBeenCalledTimes(1);
         expect(queueIdleTask).not.toHaveBeenCalled();
         expect(prefetchMocks.prefetchViewIfMissing).not.toHaveBeenCalled();
     });

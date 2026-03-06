@@ -102,7 +102,7 @@ export const createSessionPolicyProcessor = ({
         metricsProfile.updateQuality(feature);
         metricsProfile.updateSessionCalibration(feature);
         metricsProfile.updateProfileCacheFromFeature(feature);
-        metricsProfile.flushProfileCache().catch(() => {});
+        metricsProfile.scheduleProfileFlush();
 
         processPolicyEvalPayload(buildPolicyEvalPayload(feature));
     };
