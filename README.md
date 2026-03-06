@@ -1,6 +1,11 @@
-# Panda Violin PWA
+# Emerson Violin PWA
 
 Local-first violin practice app for iPad-focused use, with an onboarding flow, practice tools, games, coach guidance, and offline behavior.
+
+Installed app metadata comes from [manifest.webmanifest](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/manifest.webmanifest):
+
+- `name`: `Emerson's Violin Studio`
+- `short_name`: `ViolinPanda`
 
 ## Health Check
 
@@ -46,6 +51,13 @@ npm run audit:a11y
 npm run audit:learning
 npm run audit:full
 ```
+
+## Documentation
+
+- [docs/README.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/docs/README.md): documentation map and source-of-truth guide
+- [docs/HANDOFF.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/docs/HANDOFF.md): zero-context operator runbook
+- [CLAUDE.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/CLAUDE.md): repo-specific engineering notes and runtime gotchas
+- `docs/guides/`: focused workflows for asset optimization and Safari/iPad validation
 
 ## Playwright Worker Tuning
 
@@ -93,7 +105,7 @@ If either command hangs or intermittently times out, step down by one worker.
 - Views are loaded from `public/views/**` by `src/views/view-loader.js`.
 - Active view visibility is JS-driven via `.view.is-active` (not solely CSS `:target`).
 - Idle/secondary modules are queued with `requestIdleCallback` fallback.
-- Audio file URLs in loaded views are rewritten at render-time via `getAudioPath()`.
+- Audio file URLs in loaded views are rewritten at render-time via `prepareAudioElementSource()`.
 - View extraction from `index.html` is retired; view parity enforced via `npm run audit:view-sync` against `public/views/home.html`.
 
 ## Project Layout
@@ -106,4 +118,5 @@ docs/           Guides and handoff runbook
 _archived/      Historical plans and archived source material
 scripts/        Build/precache/optimization utilities
 wasm/           Rust source for WASM modules
+manifest.webmanifest  Installed app metadata, icons, and shortcuts
 ```

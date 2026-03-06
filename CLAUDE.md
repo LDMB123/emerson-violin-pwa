@@ -6,6 +6,8 @@
 
 Progressive Web App for violin tuning and practice assistance.
 
+Installed app metadata is defined in [manifest.webmanifest](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/manifest.webmanifest) with `name="Emerson's Violin Studio"` and `short_name="ViolinPanda"`.
+
 ## Quick Start
 
 ```bash
@@ -20,7 +22,13 @@ npm run handoff:verify # Full gate + E2E for handoff
 
 ## Project Overview
 
-Violin tuner PWA with real-time pitch detection using Web Audio API.
+Local-first violin practice PWA with tuner, coach flows, games, songs, progress tracking, offline behavior, and optional WASM-backed helpers.
+
+## Documentation Map
+
+- [docs/README.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/docs/README.md): doc index and source-of-truth pointers
+- [docs/HANDOFF.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/docs/HANDOFF.md): verification and pickup runbook
+- [README.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/README.md): operator-facing overview and command list
 
 ## Key Technologies
 
@@ -85,7 +93,7 @@ npm run handoff:verify # audit:full + E2E
 - Zero-context pickup runbook is in `docs/HANDOFF.md`.
 - Shipped game views live under `public/views/games/`: Bow Hero, Duet Challenge, Dynamic Dojo, Ear Trainer, Echo, Melody Maker, Note Memory, Pitch Quest, Pizzicato, Rhythm Dash, Rhythm Painter, Scale Practice, Stir Soup, Story Song, String Quest, Tuning Time, Wipers.
 - `src/games/sequence-game.js` is a shared runtime factory used by sequence-style games such as `pizzicato.js` and `string-quest.js`; it is not a standalone shipped game view.
-- Song library expanded: 21 playable song sheets under `public/views/songs/`.
+- Song library currently includes 30 playable song sheets under `public/views/songs/`.
 - CSS dead code pass removed unused variables/classes; remaining CSS is auditable via `scripts/find-dead-css-vars.mjs`.
 - All game views use full-bleed immersive layout (no bottom-nav overlap).
 - Coach speech bubble is connected via `data-progress="coach-speech"` + `.coach-bubble-text` in `coach.html`.

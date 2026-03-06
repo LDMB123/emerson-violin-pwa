@@ -24,6 +24,7 @@ Treat command output as the source of truth. Do not rely on dated pass/fail coun
 - Feature/module loading is orchestrated by `src/app/module-registry.js`.
 - Persistence is IndexedDB-first with localStorage fallback under `src/persistence/`.
 - Service worker and install/offline logic live under `public/` and `src/platform/`.
+- Installed app metadata, shortcuts, and icon definitions live in `manifest.webmanifest`.
 - Optional Rust/WASM modules live under `src/wasm/` and `wasm/`.
 - Shipped game views live under `public/views/games/`.
 - `src/games/sequence-game.js` is a shared runtime used by sequence-style games; it is not a standalone shipped view.
@@ -84,9 +85,10 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Files To Read Before Editing
 
-1. `docs/HANDOFF.md`
-2. `CLAUDE.md`
-3. `README.md`
+1. `docs/README.md`
+2. `docs/HANDOFF.md`
+3. `CLAUDE.md`
+4. `README.md`
 
 ## Recommended Next Work
 

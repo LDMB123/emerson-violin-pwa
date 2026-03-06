@@ -1,5 +1,5 @@
 # Safari / iPadOS Testing Guide
-**Panda Violin - iPad mini (6th Generation)**
+**Installed app metadata: Emerson's Violin Studio / ViolinPanda**
 
 ## Device Specs
 - **Device**: iPad mini (6th generation)
@@ -107,11 +107,11 @@ JSON.parse(localStorage.getItem('panda-violin:parent-pin-v2'))
 1. **Setup**: Add app to Home Screen for badge testing
    - In Safari, tap Share button
    - Tap "Add to Home Screen"
-   - Confirm the suggested iOS title matches the current build (currently `Panda Violin`)
+   - Confirm the suggested iOS title matches the current manifest metadata (`Emerson's Violin Studio` / `ViolinPanda`) or the title you intentionally edit before adding
    - Tap "Add"
 2. Close Safari, return to Home Screen
 3. **Expected**: App icon appears with NO badge initially
-4. Open Panda Violin from Home Screen
+4. Open the installed app from Home Screen
 5. Navigate to **Practice Coach** (`#view-coach`)
 6. Leave at least one lesson step incomplete
 7. Press Home button (or swipe up) to minimize app
@@ -352,7 +352,7 @@ console.log('Quota:', (estimate.quota / 1024 / 1024).toFixed(2), 'MB');
 2. Tap Share button (square with arrow up)
 3. Scroll and tap "Add to Home Screen"
 4. **Check**:
-   - App name uses current build metadata (currently `Panda Violin` on iOS Home Screen)
+   - App name reflects the current manifest metadata (`Emerson's Violin Studio` / `ViolinPanda`) unless you edited the install title manually
    - App icon shows the app branding, not the Safari generic icon
    - Option to edit name/icon before adding
 5. Tap "Add" button
@@ -398,7 +398,7 @@ fetch('./manifest.webmanifest')
 **Steps**:
 1. With app already installed (from Test 8)
 2. **Enable Airplane Mode** (swipe down from top-right, tap airplane icon)
-3. Close Panda Violin completely
+3. Close the installed app completely
 4. Reopen app from Home Screen
 5. **Expected**: App loads successfully offline
 6. Navigate through all sections:
@@ -539,7 +539,7 @@ These are expected behaviors (not bugs):
 
 ### Badge Not Appearing
 - Ensure app added to Home Screen (badges only work for installed PWAs)
-- Check Settings > Notifications > Panda Violin > Badges enabled
+- Check Settings > Notifications > the installed app name > Badges enabled
 
 ### Service Worker Not Caching
 - Clear Safari cache: Settings > Safari > Clear History and Website Data

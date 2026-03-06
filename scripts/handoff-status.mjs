@@ -13,7 +13,7 @@ const status = {
     npm: run('npm --version'),
 };
 
-console.log('Panda Violin PWA Handoff Status');
+console.log('Emerson Violin PWA Handoff Status');
 console.log('--------------------------------');
 console.log(`Branch: ${status.branch}`);
 console.log(`Commit: ${status.commit}`);

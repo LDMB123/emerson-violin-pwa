@@ -44,8 +44,8 @@ xcrun simctl openurl booted "http://localhost:5173"
 - ✅ Service Workers - Full support
 - ✅ Visual Viewport API - Full support
 - ✅ Touch simulation - Click events work
-- ✅ Screen wake lock API - Available (but won't prevent Mac sleep)
-- ✅ Badging API - API available (but won't show on Mac Dock)
+- ✅ Screen wake lock API - Capability can be checked in console, but it will not prevent the host Mac from sleeping
+- ✅ Badging API - Capability can be checked in console, but the Simulator will not mirror iPad badge UI on the Mac Dock
 
 **What doesn't work in Simulator**:
 - ❌ **Microphone access** - Simulator has no mic, tuner can't test
@@ -212,7 +212,7 @@ See [`docs/guides/safari-ipad-test-guide.md`](safari-ipad-test-guide.md) for com
 
 **For CI/CD integration** (future):
 - Simulator automation via `xcrun simctl`
-- Playwright can connect to Simulator Safari
+- Project browser automation already covers WebKit + iPad emulation via Playwright; Simulator Safari remains a manual validation target
 - Limited value without microphone testing
 - Focus automation on: PIN security, storage, UI interactions
 
