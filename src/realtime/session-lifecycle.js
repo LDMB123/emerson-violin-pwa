@@ -122,6 +122,12 @@ export const createSessionLifecycle = ({
         publishState(true);
     };
 
+    const isParentViewHash = (hash) => hash === '#view-parent';
+    const shouldResumePracticeSession = (hash) => state.active && state.paused && isPracticeHash(hash);
+    const shouldStopForNavigation = (hash) => state.active && !isPracticeHash(hash);
+    const shouldPauseForHiddenDocument = () => document.hidden && state.active && !state.paused;
+    const shouldStopForPagehide = (event) => !isBfcachePagehide(event) && state.active;
+
     const lifecycle = {
         startSession: async () => {
             if (state.active && !state.paused) {
@@ -176,37 +182,40 @@ export const createSessionLifecycle = ({
             return getSessionState();
         },
 
+        handleHashChange: () => {
+            const hash = currentHash();
+            if (isParentViewHash(hash)) {
+                runLifecycleAction(lifecycle.pauseSession('parent-zone'));
+                return;
+            }
+            if (shouldResumePracticeSession(hash)) {
+                runLifecycleAction(lifecycle.resumeSession());
+                return;
+            }
+            if (shouldStopForNavigation(hash)) {
+                runLifecycleAction(lifecycle.stopSession('leaving-practice'));
+            }
+        },
+
+        handleVisibilityChange: () => {
+            if (shouldPauseForHiddenDocument()) {
+                runLifecycleAction(lifecycle.pauseSession('hidden'));
+            }
+        },
+
+        handlePagehide: (event) => {
+            if (shouldStopForPagehide(event)) {
+                runLifecycleAction(lifecycle.stopSession('pagehide'));
+            }
+        },
+
         bindGlobalGuards: () => {
             if (globalBindingsReady) return;
             globalBindingsReady = true;
 
-            window.addEventListener('hashchange', () => {
-                const hash = currentHash();
-                if (hash === '#view-parent') {
-                    runLifecycleAction(lifecycle.pauseSession('parent-zone'));
-                    return;
-                }
-                if (state.active && state.paused && isPracticeHash(hash)) {
-                    runLifecycleAction(lifecycle.resumeSession());
-                    return;
-                }
-                if (state.active && !isPracticeHash(hash)) {
-                    runLifecycleAction(lifecycle.stopSession('leaving-practice'));
-                }
-            }, { passive: true });
-
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && state.active && !state.paused) {
-                    runLifecycleAction(lifecycle.pauseSession('hidden'));
-                }
-            });
-
-            window.addEventListener('pagehide', (event) => {
-                if (isBfcachePagehide(event)) return;
-                if (state.active) {
-                    runLifecycleAction(lifecycle.stopSession('pagehide'));
-                }
-            });
+            window.addEventListener('hashchange', lifecycle.handleHashChange, { passive: true });
+            document.addEventListener('visibilitychange', lifecycle.handleVisibilityChange);
+            window.addEventListener('pagehide', lifecycle.handlePagehide);
         },
 
         init: () => {

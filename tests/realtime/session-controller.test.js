@@ -215,6 +215,12 @@ const flushTicks = async (count = 2) => {
         await nextTick();
     }
 };
+const setDocumentHidden = (hidden) => {
+    Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: hidden,
+    });
+};
 const startHarnessedSession = async ({
     workerMode = 'none',
     withInit = false,
@@ -248,6 +254,7 @@ describe('realtime session controller interface', () => {
         vi.resetModules();
         vi.clearAllMocks();
         resetStorageMocks(storageMocks);
+        setDocumentHidden(false);
         storageMocks.setJSON.mockResolvedValue(undefined);
         eventLogMocks.appendRealtimeEvent.mockResolvedValue(undefined);
         eventLogMocks.flushRealtimeEvents.mockResolvedValue([]);
@@ -452,6 +459,27 @@ describe('realtime session controller interface', () => {
         expect(state.paused).toBe(false);
         expect(state.listening).toBe(true);
 
+        await stopSession('test-stop');
+    });
+
+    it('pauses active sessions when the document becomes hidden', async () => {
+        const { getSessionState, stopSession } = await startHarnessedSession({
+            workerMode: 'none',
+            withInit: true,
+            initialFeature: { cents: 7, confidence: 0.58 },
+            flushCount: 1,
+        });
+
+        setDocumentHidden(true);
+        document.dispatchEvent(new Event('visibilitychange'));
+        await flushTicks();
+
+        const state = getSessionState();
+        expect(state.active).toBe(true);
+        expect(state.paused).toBe(true);
+        expect(state.listening).toBe(false);
+
+        setDocumentHidden(false);
         await stopSession('test-stop');
     });
 

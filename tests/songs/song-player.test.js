@@ -179,6 +179,33 @@ describe('songs/song-player', () => {
         expect(emitted.length).toBeGreaterThan(0);
     });
 
+    it('restarts active playback when the section changes', async () => {
+        const view = mountSongView('twinkle');
+        await initSongPlayer();
+
+        const playToggle = view?.querySelector('.song-play-toggle');
+        const sectionSelect = view?.querySelector('[data-song-section]');
+        const emitted = [];
+        document.addEventListener(SONG_SECTION_COMPLETED, (event) => emitted.push(event.detail));
+
+        playToggle.checked = true;
+        playToggle.dispatchEvent(new Event('change', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(100);
+
+        sectionSelect.value = 'section-b';
+        sectionSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        await vi.advanceTimersByTimeAsync(1200);
+        expect(emitted).toHaveLength(0);
+
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0]).toMatchObject({
+            songId: 'twinkle',
+            sectionId: 'section-b',
+            tempo: 80,
+        });
+    });
+
     it('throttles playhead auto-scroll layout reads during playback', async () => {
         const view = mountSongView('twinkle', { withSheet: true });
         const songSheet = view?.querySelector('.song-sheet');
