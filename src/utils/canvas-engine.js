@@ -51,6 +51,11 @@ export class BaseCanvasEngine {
         this.ctx.fillRect(0, 0, this.width, this.height);
     }
 
+    clear() {
+        if (!this.ctx) return;
+        this.ctx.clearRect(0, 0, this.width, this.height);
+    }
+
     start() {
         if (this.isRunning) return;
         this.isRunning = true;

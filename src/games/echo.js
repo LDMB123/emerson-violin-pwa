@@ -7,6 +7,10 @@ let container = null;
 let startBtn = null;
 let curtain = null;
 let startHandler = null;
+let activeRunId = 0;
+let pendingStartTimeoutId = null;
+let pendingResultTimeoutId = null;
+let activePlayheadRafId = null;
 
 // Mock "Teacher" Rhythm Pattern (later this will come from ML/Curriculum)
 const MOCK_TEACHER_PATTERN = [
@@ -26,6 +30,40 @@ const resolveElements = () => {
 
 const handleMissionUpdate = () => {
     // reserved for mission-aware game logic
+};
+
+const invalidateActiveRun = () => {
+    activeRunId += 1;
+    return activeRunId;
+};
+
+const createRunId = () => invalidateActiveRun();
+
+const isActiveRun = (runId) => Boolean(engine) && runId === activeRunId;
+
+const clearTrackedTimeout = (timeoutId) => {
+    if (timeoutId === null) return null;
+    clearTimeout(timeoutId);
+    return null;
+};
+
+const clearPendingAsyncWork = () => {
+    pendingStartTimeoutId = clearTrackedTimeout(pendingStartTimeoutId);
+    pendingResultTimeoutId = clearTrackedTimeout(pendingResultTimeoutId);
+    if (activePlayheadRafId !== null) {
+        cancelAnimationFrame(activePlayheadRafId);
+        activePlayheadRafId = null;
+    }
+};
+
+const restoreStartUi = () => {
+    if (curtain) {
+        curtain.style.display = 'flex';
+    }
+    if (startBtn) {
+        startBtn.textContent = 'Play Again';
+        startBtn.disabled = false;
+    }
 };
 
 const handleRealtimeFeature = (e) => {
@@ -64,28 +102,67 @@ const generateTeacherWaveform = () => {
     return buffer;
 };
 
-const runTimedPlayheadLoop = ({ durationMs, onFrame, onComplete } = {}) => new Promise((resolve) => {
-    let startTime = null;
-    const loop = (timestamp) => {
-        if (!startTime) startTime = timestamp;
-        const elapsed = timestamp - startTime;
-        if (elapsed < durationMs) {
-            onFrame?.(elapsed / durationMs, elapsed);
-            requestAnimationFrame(loop);
+const waitForTrackedDelay = ({ delayMs, runId, timerKey } = {}) => new Promise((resolve) => {
+    if (!isActiveRun(runId)) {
+        resolve(false);
+        return;
+    }
+
+    const assignTimer = (value) => {
+        if (timerKey === 'start') {
+            pendingStartTimeoutId = value;
             return;
         }
-        onComplete?.();
-        resolve();
+        pendingResultTimeoutId = value;
     };
-    requestAnimationFrame(loop);
+
+    const timeoutId = setTimeout(() => {
+        assignTimer(null);
+        resolve(isActiveRun(runId));
+    }, delayMs);
+    assignTimer(timeoutId);
 });
 
-const runEchoPlayheadLoop = ({ onFrame = null, onComplete = null } = {}) => {
-    if (!engine) return Promise.resolve();
+const runTimedPlayheadLoop = ({ durationMs, onFrame, onComplete, runId } = {}) => new Promise((resolve, reject) => {
+    if (!isActiveRun(runId)) {
+        resolve(false);
+        return;
+    }
+
+    let startTime = null;
+    const loop = (timestamp) => {
+        if (!isActiveRun(runId)) {
+            activePlayheadRafId = null;
+            resolve(false);
+            return;
+        }
+
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        try {
+            if (elapsed < durationMs) {
+                onFrame?.(elapsed / durationMs, elapsed);
+                activePlayheadRafId = requestAnimationFrame(loop);
+                return;
+            }
+            activePlayheadRafId = null;
+            onComplete?.();
+            resolve(true);
+        } catch (error) {
+            activePlayheadRafId = null;
+            reject(error);
+        }
+    };
+    activePlayheadRafId = requestAnimationFrame(loop);
+});
+
+const runEchoPlayheadLoop = ({ onFrame = null, onComplete = null, runId } = {}) => {
+    if (!isActiveRun(runId)) return Promise.resolve(false);
     return runTimedPlayheadLoop({
         durationMs: 4000,
+        runId,
         onFrame: (playheadPosition) => {
-            if (!engine) return;
+            if (!isActiveRun(runId)) return;
             engine.updateState({ playheadPosition });
             if (typeof onFrame === 'function') {
                 onFrame(playheadPosition);
@@ -95,9 +172,9 @@ const runEchoPlayheadLoop = ({ onFrame = null, onComplete = null } = {}) => {
     });
 };
 
-const startGameSequence = async () => {
+const startGameSequence = async (runId) => {
+    if (!isActiveRun(runId)) return false;
     if (curtain) curtain.style.display = 'none';
-    if (!engine) return;
 
     engine.resetGame();
     engine.updateState({
@@ -107,24 +184,27 @@ const startGameSequence = async () => {
 
     // 1. Teacher Plays
     // Note: The WASM synthesizer trigger will go here
-    await runEchoPlayheadLoop();
+    const didCompleteTeacherTurn = await runEchoPlayheadLoop({ runId });
+    if (!didCompleteTeacherTurn || !isActiveRun(runId)) return false;
 
-    if (!engine) return;
     engine.updateState({ playheadPosition: 0, phase: 'student_playing' });
     // 2. Student Plays
-    await startStudentRecordingSequence();
+    return startStudentRecordingSequence(runId);
 };
 
-const startStudentRecordingSequence = async () => {
+const startStudentRecordingSequence = async (runId) => {
+    if (!isActiveRun(runId)) return false;
+
     // 1. Tell WASM to clear its buffer and start recording
     postAudioMessage({ type: 'echo_record' });
 
-    await runEchoPlayheadLoop({
+    const didCompleteStudentTurn = await runEchoPlayheadLoop({
+        runId,
         onFrame: () => {
             // Note: Polling WASM for live envelope goes here
         },
         onComplete: () => {
-            if (!engine) return;
+            if (!isActiveRun(runId)) return;
             engine.updateState({ playheadPosition: 0, phase: 'evaluating' });
 
             // 2. Tell WASM we are done. Mute recording and ask for the envelope.
@@ -134,10 +214,9 @@ const startStudentRecordingSequence = async () => {
             engine.updateState({ evaluationScore: 85.5 });
         },
     });
+    if (!didCompleteStudentTurn || !isActiveRun(runId)) return false;
 
-    await new Promise((resolve) => {
-        setTimeout(resolve, 2000);
-    });
+    return waitForTrackedDelay({ delayMs: 2000, runId, timerKey: 'result' });
 };
 
 const initEcho = () => {
@@ -154,19 +233,26 @@ const initEcho = () => {
     }
 
     if (startBtn) {
-        startHandler = async () => {
+        startHandler = () => {
+            const runId = createRunId();
             startBtn.disabled = true;
             startBtn.textContent = 'Get Ready...';
             // Trigger audio context warmup inside this human click handler
-            setTimeout(() => {
-                startGameSequence().then(() => {
-                    if (curtain) {
-                        curtain.style.display = 'flex';
-                        startBtn.textContent = 'Play Again';
-                        startBtn.disabled = false;
+            void waitForTrackedDelay({ delayMs: 500, runId, timerKey: 'start' })
+                .then((shouldContinue) => {
+                    if (!shouldContinue) return false;
+                    return startGameSequence(runId);
+                })
+                .catch((error) => {
+                    if (isActiveRun(runId)) {
+                        console.error('[Echo] failed to start sequence', error);
                     }
+                    return false;
+                })
+                .finally(() => {
+                    if (!isActiveRun(runId)) return;
+                    restoreStartUi();
                 });
-            }, 500);
         };
         startBtn.addEventListener('click', startHandler);
     }
@@ -177,6 +263,8 @@ export const init = initEcho;
 
 /** Tears down Echo game listeners, handlers, and canvas engine state. */
 export const dispose = () => {
+    invalidateActiveRun();
+    clearPendingAsyncWork();
     document.removeEventListener(MISSION_UPDATED, handleMissionUpdate);
     document.removeEventListener(RT_FEATURE, handleRealtimeFeature);
     if (startBtn && startHandler) {

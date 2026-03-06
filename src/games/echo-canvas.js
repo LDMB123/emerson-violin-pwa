@@ -82,7 +82,7 @@ export class EchoGameCanvasEngine extends BaseCanvasEngine {
         ctx.shadowBlur = 0;
     }
 
-    render() {
+    draw() {
         this.clear();
 
         // Background divided into two halves
@@ -135,5 +135,9 @@ export class EchoGameCanvasEngine extends BaseCanvasEngine {
             this.ctx.fillStyle = this.colors.textDim;
             this.ctx.fillText(`Accuracy: ${Math.round(this.gameState.evaluationScore)}%`, this.width / 2, this.height / 2 + 50);
         }
+    }
+
+    render() {
+        this.draw();
     }
 }
