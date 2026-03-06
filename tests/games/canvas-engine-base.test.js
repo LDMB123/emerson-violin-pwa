@@ -110,7 +110,7 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
         const { engine, ctx } = createEngine();
 
         engine.clear();
-        expect(ctx.clearRect).toHaveBeenCalledWith(0, 0, 160, 90);
+        expect(ctx.clearRect).toHaveBeenCalledWith(0, 0, 320, 180);
     });
 
     it('resizes canvas and normalizes logical dimensions', () => {
@@ -158,7 +158,7 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
 
         expect(frame?.dt).toBeCloseTo(0.05);
         expect(ctx.fillStyle).toBe('#123456');
-        expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 160, 90);
+        expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 320, 180);
     });
 
     it('draw helpers render expected shapes and centers', () => {
@@ -171,8 +171,8 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
 
         const center = engine.fillBackgroundAndGetCenter(ctx, '#ff0000');
         expect(ctx.fillStyle).toBe('#ff0000');
-        expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 160, 90);
-        expect(center).toEqual({ centerX: 80, centerY: 45 });
+        expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 320, 180);
+        expect(center).toEqual({ centerX: 160, centerY: 90 });
     });
 
     it('updates and draws only live particles', () => {

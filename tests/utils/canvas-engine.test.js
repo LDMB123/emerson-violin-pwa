@@ -102,4 +102,39 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
         engine.canvas.dispatchEvent(new Event('pointerdown'));
         expect(onPointerDown).toHaveBeenCalledTimes(1);
     });
+
+    it('sizes the canvas backing store to the displayed dimensions', () => {
+        const parent = document.createElement('div');
+        parent.getBoundingClientRect = vi.fn(() => ({
+            width: 320,
+            height: 180,
+            top: 0,
+            left: 0,
+            right: 320,
+            bottom: 180,
+        }));
+
+        const canvas = document.createElement('canvas');
+        const ctx = {
+            clearRect: vi.fn(),
+            scale: vi.fn(),
+        };
+        canvas.getContext = vi.fn(() => ctx);
+        parent.appendChild(canvas);
+        document.body.appendChild(parent);
+
+        Object.defineProperty(window, 'devicePixelRatio', {
+            configurable: true,
+            value: 2,
+        });
+
+        const engine = new TestCanvasEngine(canvas);
+        engines.push(engine);
+
+        expect(canvas.width).toBe(640);
+        expect(canvas.height).toBe(360);
+        expect(engine.width).toBe(320);
+        expect(engine.height).toBe(180);
+        expect(ctx.scale).toHaveBeenCalledWith(2, 2);
+    });
 });

@@ -1,4 +1,4 @@
-import { createCanvasSurface } from './canvas-surface.js';
+import { createCanvasSurface, resizeCanvasSurface } from './canvas-surface.js';
 import { cancelAnimationFrameId } from './animation-frame-utils.js';
 
 export class BaseCanvasEngine {
@@ -16,6 +16,7 @@ export class BaseCanvasEngine {
         this.loop = this.loop.bind(this);
         window.addEventListener('resize', this.handleResize);
         document.addEventListener('visibilitychange', this.handleVisibilityChange);
+        this.handleResize();
     }
 
     addCanvasListener(type, handler, options) {
@@ -41,8 +42,7 @@ export class BaseCanvasEngine {
     }
 
     handleResize() {
-        // Core implementation relies on CSS scaling, 
-        // children can override if they need internal resolution changes
+        resizeCanvasSurface(this);
     }
 
     fillBackground(color) {

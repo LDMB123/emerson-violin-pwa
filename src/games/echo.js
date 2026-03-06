@@ -85,11 +85,11 @@ const runEchoPlayheadLoop = ({ onFrame = null, onComplete = null } = {}) => {
     return runTimedPlayheadLoop({
         durationMs: 4000,
         onFrame: (playheadPosition) => {
+            if (!engine) return;
             engine.updateState({ playheadPosition });
             if (typeof onFrame === 'function') {
                 onFrame(playheadPosition);
             }
-            engine.render();
         },
         onComplete,
     });
@@ -109,8 +109,8 @@ const startGameSequence = async () => {
     // Note: The WASM synthesizer trigger will go here
     await runEchoPlayheadLoop();
 
+    if (!engine) return;
     engine.updateState({ playheadPosition: 0, phase: 'student_playing' });
-    engine.render();
     // 2. Student Plays
     await startStudentRecordingSequence();
 };
@@ -124,6 +124,7 @@ const startStudentRecordingSequence = async () => {
             // Note: Polling WASM for live envelope goes here
         },
         onComplete: () => {
+            if (!engine) return;
             engine.updateState({ playheadPosition: 0, phase: 'evaluating' });
 
             // 2. Tell WASM we are done. Mute recording and ask for the envelope.
@@ -131,7 +132,6 @@ const startStudentRecordingSequence = async () => {
 
             // Note: Run WASM cross-correlation grading here
             engine.updateState({ evaluationScore: 85.5 });
-            engine.render();
         },
     });
 
@@ -151,7 +151,6 @@ const initEcho = () => {
     const canvas = container.querySelector('#echo-canvas');
     if (canvas) {
         engine = new EchoGameCanvasEngine(canvas);
-        engine.handleResize();
     }
 
     if (startBtn) {

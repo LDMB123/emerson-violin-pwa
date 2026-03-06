@@ -1,4 +1,4 @@
-import { createCanvasSurface } from '../utils/canvas-surface.js';
+import { createCanvasSurface, resizeCanvasSurface } from '../utils/canvas-surface.js';
 import { cancelAnimationFrameId } from '../utils/animation-frame-utils.js';
 
 export class BaseCanvasEngine {
@@ -13,6 +13,9 @@ export class BaseCanvasEngine {
 
         this.render = this.render.bind(this);
         this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
+        this.handleResize = this.handleResize.bind(this);
+        window.addEventListener('resize', this.handleResize);
+        this.handleResize();
     }
 
     start() {
@@ -76,19 +79,7 @@ export class BaseCanvasEngine {
     }
 
     handleResize() {
-        const dpr = window.devicePixelRatio || 1;
-        const rect = this.canvas.parentElement.getBoundingClientRect();
-
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
-
-        this.width = this.canvas.width;
-        this.height = this.canvas.height;
-
-        this.ctx.scale(dpr, dpr);
-        // Normalize logical width/height for subclasses
-        this.width = rect.width;
-        this.height = rect.height;
+        resizeCanvasSurface(this);
     }
 
     beginFrame(time) {
@@ -157,5 +148,10 @@ export class BaseCanvasEngine {
         if (!this.isRunning) return;
         this.rafId = null;
         this.scheduleRender();
+    }
+
+    destroy() {
+        this.stop();
+        window.removeEventListener('resize', this.handleResize);
     }
 }

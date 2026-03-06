@@ -143,10 +143,11 @@ export class EarTrainerCanvasEngine extends BaseCanvasEngine {
         const earContext = this.ctx;
         earContext.textAlign = 'center';
         earContext.textBaseline = 'middle';
+        const [centerX, centerY] = center;
 
         // Slightly scale icon based on volume
         const iconScale = 1 + this.lastRMS;
-        this.ctx.translate(center[0], center[1]);
+        this.ctx.translate(centerX, centerY);
         this.ctx.scale(iconScale, iconScale);
         this.ctx.fillText('👂', 0, 0);
         this.ctx.restore();
