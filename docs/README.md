@@ -9,7 +9,7 @@ Use this file to decide which document to read before editing or validating the 
 - [CLAUDE.md](../CLAUDE.md)
   - Repo-specific engineering rules, runtime caveats, and implementation notes
 - [docs/HANDOFF.md](HANDOFF.md)
-  - Zero-context pickup runbook and verification sequence
+  - Zero-context pickup runbook, verification sequence, and Playwright worker calibration
 
 ## Guides
 

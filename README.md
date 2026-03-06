@@ -55,11 +55,11 @@ npm run audit:full
 ## Documentation
 
 - [docs/README.md](docs/README.md): documentation map and source-of-truth guide
-- [docs/HANDOFF.md](docs/HANDOFF.md): zero-context operator runbook
+- [docs/HANDOFF.md](docs/HANDOFF.md): zero-context operator runbook, verification sequence, and Playwright worker calibration
 - [CLAUDE.md](CLAUDE.md): repo-specific engineering notes and runtime gotchas
 - `docs/guides/`: focused workflows for asset optimization and Safari/iPad validation
 
-## Playwright Worker Tuning
+## Playwright Workers
 
 `playwright.config.js` now defaults to:
 
@@ -73,22 +73,7 @@ PW_WORKERS=2 npm run test:e2e
 PW_WORKERS=3 npx playwright test
 ```
 
-Recommended starting points:
-
-| Machine profile | Recommended `PW_WORKERS` | Notes |
-| --- | --- | --- |
-| CI/shared runner | `1` | Most stable for WebKit and avoids resource contention. |
-| Laptop/desktop (typical dev setup) | `2` | Default local setting; preferred for `handoff:verify`. |
-| High-end local workstation | `3` | Use only after calibration; reduce if hangs appear. |
-
-Calibration flow for higher parallelism:
-
-```bash
-PW_WORKERS=3 npx playwright test tests/e2e/games-all-functional.spec.js --grep "group C: string/painter/story/pizzicato" --repeat-each=5
-PW_WORKERS=3 npm run test:e2e
-```
-
-If either command hangs or intermittently times out, step down by one worker.
+Use [docs/HANDOFF.md](docs/HANDOFF.md) for the full worker calibration matrix and high-parallelism validation flow.
 
 ## Quality Gates
 
