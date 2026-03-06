@@ -7,11 +7,18 @@ This repo is only the Emerson Violin PWA. Do not pull context from sibling proje
 ## Quick Start
 
 ```bash
+nvm install
+nvm use
 npm install
 npm run dev    # Development server
 npm run build  # Production build
 npm run handoff:status # Repo/env snapshot
 ```
+
+Runtime pin:
+
+- Node version lives in [.nvmrc](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/.nvmrc)
+- npm version lives in [package.json](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/package.json) `packageManager`
 
 ## Read First
 

@@ -25,9 +25,16 @@ Avoid relying on dated snapshots in docs. Verify repo health from the current ch
 ## Development
 
 ```bash
+nvm install
+nvm use
 npm install
 npm run dev
 ```
+
+Repo runtime pins:
+
+- Node: `.nvmrc` -> `25.8.0`
+- npm: `package.json#packageManager` -> `11.11.0`
 
 Useful commands:
 

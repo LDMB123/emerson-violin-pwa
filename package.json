@@ -2,6 +2,7 @@
   "name": "panda-violin-pwa",
   "version": "2.0.0",
   "description": "Local-first violin teaching PWA for children with a Red Panda coach and iPadOS 26.2 optimization",
+  "packageManager": "npm@11.11.0",
   "type": "module",
   "scripts": {
     "predev": "node scripts/build-sw-assets.js",
@@ -49,6 +50,7 @@
     "vitest": "^4.0.18"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^25.8.0",
+    "npm": "^11.11.0"
   }
 }

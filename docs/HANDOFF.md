@@ -4,6 +4,8 @@
 
 1. Install dependencies if `node_modules/` is absent:
    ```bash
+   nvm install
+   nvm use
    npm install
    ```
 2. Confirm repo state:
@@ -16,6 +18,11 @@
    ```
 
 Treat command output as the source of truth. Do not rely on dated pass/fail counts in docs.
+
+Runtime source of truth:
+
+- Node: [.nvmrc](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/.nvmrc)
+- npm: [package.json](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/package.json) `packageManager`
 
 ## Current Repo Shape
 
