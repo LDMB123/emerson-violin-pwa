@@ -8,7 +8,7 @@ const ensureCoachMissionStatus = () => {
     let status = coachView.querySelector('[data-coach-mission-status]');
     if (status) return status;
 
-    const anchor = coachView.querySelector('.coach-kid-layout');
+    const anchor = coachView.querySelector('.view-lead') || coachView.querySelector('.coach-kid-layout');
     if (!anchor?.parentElement) return null;
 
     status = document.createElement('p');
