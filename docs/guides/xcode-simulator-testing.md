@@ -22,6 +22,12 @@ npm run dev -- --host
 xcrun simctl openurl booted "http://localhost:5173"
 ```
 
+## Connect Web Inspector
+
+1. In the simulator, open `Settings > Safari > Advanced` and enable **Web Inspector**.
+2. On the Mac, enable Safari's Develop menu if needed: `Safari > Settings > Advanced > Show features for web developers`.
+3. In macOS Safari, attach to the page through `Develop > Simulator > localhost`.
+
 ## What Simulator Can Validate
 
 Works well:

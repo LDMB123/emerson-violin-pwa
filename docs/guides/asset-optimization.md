@@ -49,7 +49,7 @@ npm install  # Included in package.json
 **Script**: `scripts/optimize-audio.js`
 **Source**: `public/assets/audio/*.wav`
 **Output**: `public/assets/audio/*.{opus,mp3}`
-**Archive**: `_archived/original-assets/audio/`
+**Archive**: local `_archived/original-assets/audio/` scratch copy created during optimization (not tracked in git)
 
 Process:
 1. Find all WAV files
@@ -62,7 +62,7 @@ Process:
 **Script**: `scripts/optimize-fonts.js`
 **Source**: `src/assets/fonts/*.woff2`
 **Output**: Same location (in-place replacement)
-**Archive**: `_archived/original-assets/fonts/`
+**Archive**: local `_archived/original-assets/fonts/` scratch copy created during optimization (not tracked in git)
 
 Process:
 1. Archive original variable fonts
@@ -79,7 +79,7 @@ Process:
 - `public/assets/illustrations/*.png` → `.webp` replacement
 - `public/assets/*.png` → `.webp` replacement plus archived original for legacy root-level assets
 - `public/assets/icons/*.png` remain PNG
-**Archive**: `_archived/original-assets/images/` for legacy top-level PNGs only
+**Archive**: local `_archived/original-assets/images/` scratch copy for legacy top-level PNGs only (not tracked in git)
 
 Process:
 1. Convert badge PNGs to WebP and remove the PNG runtime files
@@ -125,22 +125,24 @@ if (audio.canPlayType('audio/ogg; codecs=opus')) {
 
 ## Rollback Procedure
 
+Optimization-created `_archived/original-assets/...` directories are local scratch output, not guaranteed repo content. If those directories are absent, restore from git history or your original source assets instead of using the copy commands below.
+
 ### Restore Original Audio
 ```bash
-cp _archived/original-assets/audio/*.wav public/assets/audio/
-rm public/assets/audio/*.{opus,mp3}
+test -d _archived/original-assets/audio && cp _archived/original-assets/audio/*.wav public/assets/audio/
+rm -f public/assets/audio/*.{opus,mp3}
 ```
 
 ### Restore Original Fonts
 ```bash
-cp _archived/original-assets/fonts/*.woff2 src/assets/fonts/
+test -d _archived/original-assets/fonts && cp _archived/original-assets/fonts/*.woff2 src/assets/fonts/
 ```
 
 ### Restore Original Images
 ```bash
 # Restore archived legacy top-level PNG assets, if any were processed
 mkdir -p public/assets
-cp _archived/original-assets/images/*.png public/assets/ 2>/dev/null || true
+test -d _archived/original-assets/images && cp _archived/original-assets/images/*.png public/assets/ 2>/dev/null || true
 
 # Remove generated WebP files
 find public/assets -maxdepth 1 -name '*.webp' -delete
@@ -153,13 +155,13 @@ Badge and illustration PNG source files are not archived by the optimizer. Resto
 ### Full Restore
 ```bash
 # Restore all assets
-cp -r _archived/original-assets/audio/* public/assets/audio/
-cp -r _archived/original-assets/fonts/* src/assets/fonts/
+test -d _archived/original-assets/audio && cp -r _archived/original-assets/audio/* public/assets/audio/
+test -d _archived/original-assets/fonts && cp -r _archived/original-assets/fonts/* src/assets/fonts/
 mkdir -p public/assets
-cp -r _archived/original-assets/images/* public/assets/ 2>/dev/null || true
+test -d _archived/original-assets/images && cp -r _archived/original-assets/images/* public/assets/ 2>/dev/null || true
 
 # Remove optimized versions
-rm public/assets/audio/*.{opus,mp3}
+rm -f public/assets/audio/*.{opus,mp3}
 find public/assets -maxdepth 1 -name '*.webp' -delete
 find public/assets/badges -name '*.webp' -delete
 find public/assets/illustrations -name '*.webp' -delete
@@ -168,7 +170,7 @@ find public/assets/illustrations -name '*.webp' -delete
 npm run build
 ```
 
-If you need badge or illustration PNG inputs after a full restore, recover them from git history or re-export them from the original artwork before rerunning the optimizer.
+If the `_archived/original-assets/...` directories are absent, recover audio WAVs, font sources, and any legacy top-level PNGs from git history or your original source assets before rerunning the optimizer. Badge and illustration PNG inputs must still come from git history or original artwork.
 
 ## Troubleshooting
 

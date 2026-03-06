@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const CRITICAL_AUDIO_ASSETS = [
+const CRITICAL_AUDIO_ASSET_BASES = [
     'assets/audio/violin-a4.wav',
     'assets/audio/violin-g3.wav',
     'assets/audio/violin-d4.wav',
@@ -9,6 +9,16 @@ const CRITICAL_AUDIO_ASSETS = [
     'assets/audio/metronome-90.wav',
     'assets/audio/metronome-120.wav',
 ];
+
+const resolveCriticalAudioAssets = (page, assetPaths) => page.evaluate((basePaths) => {
+    const audio = document.createElement('audio');
+    const supportsOpus = Boolean(
+        audio.canPlayType('audio/ogg; codecs=opus')
+        || audio.canPlayType('audio/webm; codecs=opus')
+    );
+    const preferredExt = supportsOpus ? '.opus' : '.mp3';
+    return basePaths.map((asset) => asset.replace(/\.wav$/i, preferredExt));
+}, assetPaths);
 
 const ensureServiceWorkerControl = async (page) => {
     await page.evaluate(() => navigator.serviceWorker.ready);
@@ -62,14 +72,15 @@ test('progress path has no BigInt conversion errors and can serve critical audio
         || location.hostname === '[::1]'
         || location.hostname.endsWith('.local')
     ));
+    const criticalAudioAssets = await resolveCriticalAudioAssets(page, CRITICAL_AUDIO_ASSET_BASES);
 
-    const onlineChecks = await fetchAssetChecks(page, CRITICAL_AUDIO_ASSETS);
+    const onlineChecks = await fetchAssetChecks(page, criticalAudioAssets);
 
     await ensureServiceWorkerControl(page);
 
     await context.setOffline(true);
 
-    const offlineChecks = await fetchAssetChecks(page, CRITICAL_AUDIO_ASSETS);
+    const offlineChecks = await fetchAssetChecks(page, criticalAudioAssets);
 
     const hasBigIntError = errors.some((entry) => entry.includes('Cannot convert') && entry.includes('to a BigInt'));
     const hasTrackerError = errors.some((entry) => entry.includes('achievementtracker') || entry.includes('check_progress'));
@@ -81,7 +92,7 @@ test('progress path has no BigInt conversion errors and can serve critical audio
     if (testInfo.project.name === 'iPad Safari') {
         if (localDev) {
             // Local dev intentionally unregisters SW/caches, so validate request execution only.
-            expect(offlineChecks).toHaveLength(CRITICAL_AUDIO_ASSETS.length);
+            expect(offlineChecks).toHaveLength(criticalAudioAssets.length);
             return;
         }
         // WebKit/iPad Safari in Playwright can throw `TypeError: Load failed` for cached audio fetches
@@ -102,7 +113,7 @@ test('progress path has no BigInt conversion errors and can serve critical audio
                 });
             }
             return checks;
-        }, CRITICAL_AUDIO_ASSETS);
+        }, criticalAudioAssets);
 
         expect(cacheChecks.every((check) => check.hasCache)).toBe(true);
     } else {

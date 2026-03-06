@@ -33,7 +33,17 @@ const e2eFiles = fs.readdirSync(e2eDir).filter((fileName) => /\.(spec|test)\.js$
 const e2eSource = e2eFiles
     .map((fileName) => fs.readFileSync(path.join(e2eDir, fileName), 'utf8'))
     .join('\n');
-const rawE2eViews = [...new Set([...e2eSource.matchAll(/view-[a-z0-9-]+/g)].map((match) => match[0]).filter(isConcreteViewId))]
+const E2E_VIEW_ID_PATTERN = /view-[a-z0-9]+(?:-[a-z0-9]+)*/g;
+const rawE2eViews = [...new Set(
+    [...e2eSource.matchAll(E2E_VIEW_ID_PATTERN)]
+        .filter((match) => {
+            const endIndex = (match.index ?? 0) + match[0].length;
+            const suffix = e2eSource.slice(endIndex, endIndex + 8);
+            return !/^\.[a-z0-9]/i.test(suffix);
+        })
+        .map((match) => match[0])
+        .filter(isConcreteViewId)
+)]
     .sort();
 
 const collectHtmlFiles = (dirPath) => {
