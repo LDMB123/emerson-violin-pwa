@@ -47,6 +47,25 @@ describe('persistence/loaders', () => {
         expect(storageMocks.setJSON).toHaveBeenCalledWith(EVENTS_KEY, result);
     });
 
+    it('loadEvents avoids rewriting already normalized event arrays', async () => {
+        const events = [{
+            type: 'song',
+            id: 'twinkle',
+            accuracy: 83,
+            timingAccuracy: 83,
+            intonationAccuracy: 83,
+            stars: 3,
+            tempo: 76,
+            attemptType: 'full',
+            timestamp: 172800000,
+            day: 2,
+        }];
+        storageMocks.getJSON.mockResolvedValueOnce(events);
+
+        await expect(loadEvents()).resolves.toEqual(events);
+        expect(storageMocks.setJSON).not.toHaveBeenCalled();
+    });
+
     it('migrateEventShape upgrades legacy song events', () => {
         const migrated = migrateEventShape([{
             type: 'song',

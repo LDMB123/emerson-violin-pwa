@@ -23,33 +23,56 @@ const normalizeSongStars = (event, accuracy) => {
 };
 
 const normalizeEvent = (event) => {
-    if (!event || typeof event !== 'object') return null;
+    if (!event || typeof event !== 'object') {
+        return { event: null, changed: true };
+    }
     const timestamp = finiteOrNow(event.timestamp);
-    const normalized = {
-        ...event,
-        timestamp,
-        day: Number.isFinite(event.day) ? event.day : dayFromTimestamp(timestamp),
+    const day = Number.isFinite(event.day) ? event.day : dayFromTimestamp(timestamp);
+    let changed = timestamp !== event.timestamp || day !== event.day;
+    let normalized = changed
+        ? {
+            ...event,
+            timestamp,
+            day,
+        }
+        : event;
+
+    const ensureClone = () => {
+        if (normalized === event) {
+            normalized = {
+                ...event,
+                timestamp,
+                day,
+            };
+        }
+    };
+
+    const assignIfChanged = (key, value) => {
+        if (normalized[key] === value) return;
+        ensureClone();
+        normalized[key] = value;
+        changed = true;
     };
 
     if (event.type === 'game') {
         const score = clampScore(event.score);
         const accuracy = clampScore(event.accuracy ?? event.score);
-        normalized.score = score ?? 0;
-        normalized.accuracy = accuracy ?? 0;
+        assignIfChanged('score', score ?? 0);
+        assignIfChanged('accuracy', accuracy ?? 0);
         if (!normalized.difficulty && typeof event.mode === 'string') {
-            normalized.difficulty = event.mode;
+            assignIfChanged('difficulty', event.mode);
         }
         if (!normalized.tier && typeof event.level === 'string') {
-            normalized.tier = event.level;
+            assignIfChanged('tier', event.level);
         }
         if (!Number.isFinite(normalized.objectiveTotal) && Number.isFinite(event?.objectives?.total)) {
-            normalized.objectiveTotal = positiveRound(event.objectives.total);
+            assignIfChanged('objectiveTotal', positiveRound(event.objectives.total));
         }
         if (!Number.isFinite(normalized.objectivesCompleted) && Number.isFinite(event?.objectives?.completed)) {
-            normalized.objectivesCompleted = positiveRound(event.objectives.completed);
+            assignIfChanged('objectivesCompleted', positiveRound(event.objectives.completed));
         }
         if (!Number.isFinite(normalized.mistakes) && Number.isFinite(event?.misses)) {
-            normalized.mistakes = positiveRound(event.misses);
+            assignIfChanged('mistakes', positiveRound(event.misses));
         }
     }
 
@@ -57,23 +80,23 @@ const normalizeEvent = (event) => {
         const accuracy = clampScore(event.accuracy ?? event.score);
         const timingAccuracy = clampScore(event.timingAccuracy ?? accuracy);
         const intonationAccuracy = clampScore(event.intonationAccuracy ?? accuracy);
-        normalized.accuracy = accuracy ?? 0;
-        normalized.timingAccuracy = timingAccuracy ?? 0;
-        normalized.intonationAccuracy = intonationAccuracy ?? 0;
-        normalized.stars = normalizeSongStars(event, accuracy);
+        assignIfChanged('accuracy', accuracy ?? 0);
+        assignIfChanged('timingAccuracy', timingAccuracy ?? 0);
+        assignIfChanged('intonationAccuracy', intonationAccuracy ?? 0);
+        assignIfChanged('stars', normalizeSongStars(event, accuracy));
         if (!normalized.attemptType) {
-            normalized.attemptType = normalized.sectionId ? 'section' : 'full';
+            assignIfChanged('attemptType', normalized.sectionId ? 'section' : 'full');
         }
         if (!Number.isFinite(normalized.tempo) && Number.isFinite(event.bpm)) {
-            normalized.tempo = Math.max(30, Math.round(event.bpm));
+            assignIfChanged('tempo', Math.max(30, Math.round(event.bpm)));
         }
     }
 
     if (event.type === 'practice') {
-        normalized.minutes = Number.isFinite(event.minutes) ? Math.max(0, event.minutes) : 0;
+        assignIfChanged('minutes', Number.isFinite(event.minutes) ? Math.max(0, event.minutes) : 0);
     }
 
-    return normalized;
+    return { event: normalized, changed };
 };
 
 /** Normalizes stored event records and reports whether any migration occurred. */
@@ -85,15 +108,15 @@ export const migrateEventShape = (events) => {
     let changed = false;
     const next = events
         .map((event) => {
-            const normalized = normalizeEvent(event);
-            if (!normalized) {
+            const result = normalizeEvent(event);
+            if (!result.event) {
                 changed = true;
                 return null;
             }
-            if (JSON.stringify(normalized) !== JSON.stringify(event)) {
+            if (result.changed) {
                 changed = true;
             }
-            return normalized;
+            return result.event;
         })
         .filter(Boolean);
 
