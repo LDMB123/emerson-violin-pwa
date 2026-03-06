@@ -9,6 +9,8 @@ This repo is only the Emerson Violin PWA. Do not pull context from sibling proje
 ```bash
 nvm install
 nvm use
+npm install -g npm@11.11.0
+npm run runtime:check
 npm install
 npm run dev    # Development server
 npm run build  # Production build
@@ -19,6 +21,7 @@ Runtime pin:
 
 - Node version lives in [.nvmrc](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/.nvmrc)
 - npm version lives in [package.json](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/package.json) `packageManager`
+- Fail-fast validation runs through `npm run runtime:check`
 
 ## Read First
 

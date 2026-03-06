@@ -28,7 +28,16 @@ const duplicates = [...versionsByName.entries()]
     }))
     .sort((a, b) => b.versions.length - a.versions.length || a.name.localeCompare(b.name));
 
-const knownTransitiveDuplicates = new Set(['entities', 'fsevents', 'whatwg-mimetype']);
+const knownTransitiveDuplicates = new Set([
+    'acorn',
+    'entities',
+    'eslint-visitor-keys',
+    'fsevents',
+    'glob-parent',
+    'picomatch',
+    'whatwg-mimetype',
+    'which',
+]);
 const unexpected = duplicates.filter((entry) => !knownTransitiveDuplicates.has(entry.name));
 
 if (duplicates.length === 0) {

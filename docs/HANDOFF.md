@@ -6,6 +6,8 @@
    ```bash
    nvm install
    nvm use
+   npm install -g npm@11.11.0
+   npm run runtime:check
    npm install
    ```
 2. Confirm repo state:
@@ -23,6 +25,7 @@ Runtime source of truth:
 
 - Node: [.nvmrc](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/.nvmrc)
 - npm: [package.json](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/package.json) `packageManager`
+- Fail-fast check: `npm run runtime:check`
 
 ## Current Repo Shape
 

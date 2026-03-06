@@ -27,6 +27,8 @@ Avoid relying on dated snapshots in docs. Verify repo health from the current ch
 ```bash
 nvm install
 nvm use
+npm install -g npm@11.11.0
+npm run runtime:check
 npm install
 npm run dev
 ```
@@ -35,6 +37,8 @@ Repo runtime pins:
 
 - Node: `.nvmrc` -> `25.8.0`
 - npm: `package.json#packageManager` -> `11.11.0`
+
+`npm run runtime:check` is the fail-fast guard for local and CI runtime drift.
 
 Useful commands:
 
