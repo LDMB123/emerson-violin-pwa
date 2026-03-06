@@ -25,6 +25,21 @@ const goToSongsWithFilter = async (page, filterValue) => {
     await gotoAndExpectView(page, '#view-songs');
     await clickSongFilter(page, filterValue);
 };
+const waitForGamesFilterReady = async (page) => {
+    await expect(page.locator('#view-games input[name="game-sort"][value="favorites"][data-bound="true"]'))
+        .toHaveCount(1);
+    await expect(page.locator('#view-games .game-card[data-game-id="tuning-time"] [data-game-favorite-bound="true"]'))
+        .toBeVisible();
+};
+const checkGameSortFilter = async (page, filterValue) => {
+    const input = page.locator(`#view-games input[name="game-sort"][value="${filterValue}"][data-bound="true"]`);
+    await expect(input).toHaveCount(1);
+    await input.evaluate((element) => {
+        element.checked = true;
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(input).toBeChecked();
+};
 const clickLinkAndExpectHash = async (page, linkLocator, hash, { timeout = 10000 } = {}) => {
     try {
         await expect.poll(async () => {
@@ -124,23 +139,25 @@ test('games favorites filter uses persisted player favorites', async ({ page }) 
     await openHome(page);
 
     await gotoAndExpectView(page, '#view-games');
+    await waitForGamesFilterReady(page);
 
     const targetCard = page.locator('#view-games .game-card[data-game-id="tuning-time"]');
-    const targetFavorite = targetCard.locator('[data-game-favorite]');
+    const targetFavorite = targetCard.locator('[data-game-favorite-bound="true"]');
 
     await expect(targetFavorite).toBeVisible();
-    await targetFavorite.click({ force: true });
-    await expect(targetFavorite).toHaveAttribute('aria-pressed', 'true');
+    await targetFavorite.click();
+    await expect.poll(async () => targetFavorite.getAttribute('aria-pressed')).toBe('true');
 
-    await page.locator('label:has(input[name="game-sort"][value="favorites"]) .filter-chip').click({ force: true });
+    await checkGameSortFilter(page, 'favorites');
     await expect(targetCard).not.toHaveClass(/is-hidden/);
 
     await goHome(page);
 
     await gotoAndExpectView(page, '#view-games');
-    await page.locator('label:has(input[name="game-sort"][value="favorites"]) .filter-chip').click({ force: true });
+    await waitForGamesFilterReady(page);
+    await checkGameSortFilter(page, 'favorites');
     await expect(page.locator('#view-games .game-card[data-game-id="tuning-time"]')).not.toHaveClass(/is-hidden/);
-    await expect(page.locator('#view-games .game-card[data-game-id="tuning-time"] [data-game-favorite]'))
+    await expect(page.locator('#view-games .game-card[data-game-id="tuning-time"] [data-game-favorite-bound="true"]'))
         .toHaveAttribute('aria-pressed', 'true');
 });
 

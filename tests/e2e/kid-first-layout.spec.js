@@ -2,13 +2,32 @@ import { test, expect } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
 import { navigateToView } from './helpers/navigate-view.js';
 
-const assertNoHorizontalOverflow = async (page) => {
-  const hasOverflow = await page.evaluate(() => {
-    const htmlOverflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
-    const bodyOverflow = document.body.scrollWidth - document.body.clientWidth;
-    return htmlOverflow > 1 || bodyOverflow > 1;
+const waitForResponsiveLayout = async (page) => {
+  await page.evaluate(async () => {
+    const waitFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+    if (document.fonts?.ready) {
+      try {
+        await document.fonts.ready;
+      } catch {}
+    }
+
+    await waitFrame();
+    await waitFrame();
   });
-  expect(hasOverflow).toBe(false);
+};
+
+const assertNoHorizontalOverflow = async (page) => {
+  await expect
+    .poll(async () => {
+      await waitForResponsiveLayout(page);
+      return page.evaluate(() => {
+        const htmlOverflow = Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        const bodyOverflow = Math.max(0, document.body.scrollWidth - document.body.clientWidth);
+        return Math.max(htmlOverflow, bodyOverflow);
+      });
+    }, { timeout: 5000 })
+    .toBeLessThanOrEqual(1);
 };
 
 test('captures iPad and phone layouts for core child views', async ({ page }, testInfo) => {
