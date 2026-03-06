@@ -14,10 +14,7 @@ Installed app metadata is defined in [manifest.webmanifest](manifest.webmanifest
 npm install
 npm run dev    # Development server
 npm run build  # Production build
-npm run lint   # Lint source files
-npm run preview # Preview build
-npm run audit:full # Full local quality gate
-npm run handoff:verify # Full gate + E2E for handoff
+npm run handoff:status # Repo/env snapshot
 ```
 
 ## Project Overview
@@ -27,8 +24,8 @@ Local-first violin practice PWA with tuner, coach flows, games, songs, progress 
 ## Documentation Map
 
 - [docs/README.md](docs/README.md): doc index and source-of-truth pointers
-- [docs/HANDOFF.md](docs/HANDOFF.md): verification and pickup runbook
-- [README.md](README.md): operator-facing overview and command list
+- [docs/HANDOFF.md](docs/HANDOFF.md): verification, pickup, and Playwright worker runbook
+- [README.md](README.md): operator-facing overview and full command list
 
 ## Key Technologies
 
@@ -37,23 +34,11 @@ Local-first violin practice PWA with tuner, coach flows, games, songs, progress 
 - PWA: Service Workers, Web App Manifest
 - Browser Target: Modern evergreen browsers (Chrome, Firefox, Safari) — no legacy IE/Edge fallbacks
 
-## Common Commands
+## Operator Commands
 
-```bash
-npm run dev      # Start development
-npm run build    # Build for production
-npm run test     # Run unit tests
-npm run test:e2e # Run Playwright E2E tests
-npm run lint     # Run linter
-npm run lint:all # Lint src + scripts + tests
-npm run audit:deadcode # Unused file/export/dependency scan
-npm run audit:deps # Duplicate dependency scan with allowlist
-npm run audit:secrets # Secret/credential leak pattern scan across tracked files
-npm run audit:perf:config # Validate perf budget/workflow env consistency
-npm run audit:full # Full pre-handoff/pre-merge quality gate
-npm run handoff:status # Print branch/commit/env snapshot
-npm run handoff:verify # audit:full + E2E
-```
+Use [README.md](README.md) for the full day-to-day command list.
+
+Use [docs/HANDOFF.md](docs/HANDOFF.md) for the full verification gate, Playwright worker calibration, and handoff flow.
 
 ## Gotchas
 
