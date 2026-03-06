@@ -5,12 +5,14 @@ import { EVENTS_KEY, RECORDINGS_KEY } from '../../src/persistence/storage-keys.j
 const storageMocks = vi.hoisted(() => ({
     getJSON: vi.fn(async () => null),
     setJSON: vi.fn(async () => {}),
+    appendJSONItem: vi.fn(async () => {}),
     getBlob: vi.fn(async () => null),
 }));
 
 vi.mock('../../src/persistence/storage.js', () => storageMocks);
 
 import {
+    appendEvent,
     loadEvents,
     migrateEventShape,
     saveEvents,
@@ -22,6 +24,7 @@ describe('persistence/loaders', () => {
     beforeEach(() => {
         storageMocks.getJSON.mockClear();
         storageMocks.setJSON.mockClear();
+        storageMocks.appendJSONItem.mockClear();
         storageMocks.getBlob.mockClear();
     });
 
@@ -131,6 +134,29 @@ describe('persistence/loaders', () => {
         const events = [{ id: 'save-me' }];
         await saveEvents(events);
         expect(storageMocks.setJSON).toHaveBeenCalledWith(EVENTS_KEY, events);
+    });
+
+    it('appendEvent normalizes before using append storage path', async () => {
+        const result = await appendEvent({
+            type: 'song',
+            id: 'twinkle',
+            score: 83,
+            bpm: 76,
+            timestamp: 172800000,
+        }, { maxEntries: 500 });
+
+        expect(result).toMatchObject({
+            type: 'song',
+            id: 'twinkle',
+            accuracy: 83,
+            timingAccuracy: 83,
+            intonationAccuracy: 83,
+            stars: 3,
+            tempo: 76,
+            attemptType: 'full',
+            day: 2,
+        });
+        expect(storageMocks.appendJSONItem).toHaveBeenCalledWith(EVENTS_KEY, result, { maxEntries: 500 });
     });
 
     it('loadRecordings returns [] when storage value is not an array', async () => {

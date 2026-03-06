@@ -1,6 +1,240 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { EVENTS_KEY, RECORDINGS_KEY } from '../../src/persistence/storage-keys.js';
 
 const FALLBACK_PREFIX = 'panda-violin:kv:';
+
+const createIndexedDBMock = () => {
+    const stores = new Map();
+
+    const ensureStoreState = (name, options = undefined) => {
+        if (!stores.has(name)) {
+            stores.set(name, options?.keyPath
+                ? { kind: 'collection', rows: [], nextPk: 1 }
+                : { kind: 'kv', rows: new Map() });
+        }
+        return stores.get(name);
+    };
+
+    const completeTransaction = (tx) => {
+        if (tx.pending !== 0 || tx.completed || tx.failed) return;
+        tx.completed = true;
+        tx.oncomplete?.();
+    };
+
+    const createRequest = (tx, executor) => {
+        tx.pending += 1;
+        const request = {
+            result: null,
+            error: null,
+            onsuccess: null,
+            onerror: null,
+        };
+
+        queueMicrotask(() => {
+            try {
+                request.result = executor();
+                request.onsuccess?.();
+            } catch (error) {
+                request.error = error;
+                tx.error = error;
+                tx.failed = true;
+                request.onerror?.();
+                tx.onerror?.();
+                return;
+            } finally {
+                tx.pending -= 1;
+                completeTransaction(tx);
+            }
+        });
+
+        return request;
+    };
+
+    const createObjectStoreApi = (name, tx) => {
+        const state = ensureStoreState(name);
+
+        const getCollectionRows = () => state.rows.slice().sort((left, right) => left.pk - right.pk);
+        const getTimestampSortedRows = () => (
+            state.rows.slice().sort((left, right) => (
+                (left.timestamp ?? 0) - (right.timestamp ?? 0)
+                || left.pk - right.pk
+            ))
+        );
+
+        const createCursorRequest = (rowsFactory) => {
+            tx.pending += 1;
+            const orderedPks = rowsFactory().map((row) => row.pk);
+            let cursorIndex = 0;
+            const request = {
+                result: null,
+                error: null,
+                onsuccess: null,
+                onerror: null,
+            };
+
+            const emit = () => {
+                queueMicrotask(() => {
+                    if (cursorIndex >= orderedPks.length) {
+                        request.result = null;
+                        request.onsuccess?.();
+                        tx.pending -= 1;
+                        completeTransaction(tx);
+                        return;
+                    }
+
+                    const pk = orderedPks[cursorIndex];
+                    const row = state.rows.find((entry) => entry.pk === pk) || null;
+                    let continued = false;
+                    request.result = {
+                        value: row,
+                        delete: () => {
+                            state.rows = state.rows.filter((entry) => entry.pk !== pk);
+                        },
+                        continue: () => {
+                            continued = true;
+                            cursorIndex += 1;
+                            emit();
+                        },
+                    };
+                    request.onsuccess?.();
+                    if (!continued) {
+                        tx.pending -= 1;
+                        completeTransaction(tx);
+                    }
+                });
+            };
+
+            emit();
+            return request;
+        };
+
+        return {
+            get: (key) => createRequest(tx, () => {
+                if (state.kind === 'collection') {
+                    return getCollectionRows().find((row) => row.pk === key);
+                }
+                return state.rows.get(key);
+            }),
+            getAll: () => createRequest(tx, () => (
+                state.kind === 'collection'
+                    ? getCollectionRows()
+                    : Array.from(state.rows.values())
+            )),
+            put: (value, key) => createRequest(tx, () => {
+                if (state.kind === 'collection') {
+                    const pk = key ?? value?.pk ?? state.nextPk++;
+                    const nextValue = { ...value, pk };
+                    state.rows = state.rows.filter((row) => row.pk !== pk);
+                    state.rows.push(nextValue);
+                    state.nextPk = Math.max(state.nextPk, pk + 1);
+                    return pk;
+                }
+                state.rows.set(key, value);
+                return key;
+            }),
+            add: (value) => createRequest(tx, () => {
+                if (state.kind !== 'collection') {
+                    throw new Error(`Store "${name}" does not support add`);
+                }
+                const pk = state.nextPk++;
+                state.rows.push({ ...value, pk });
+                return pk;
+            }),
+            count: () => createRequest(tx, () => (
+                state.kind === 'collection' ? state.rows.length : state.rows.size
+            )),
+            index: () => ({
+                openCursor: () => createCursorRequest(getTimestampSortedRows),
+            }),
+            openCursor: () => createCursorRequest(getCollectionRows),
+            delete: (key) => createRequest(tx, () => {
+                if (state.kind === 'collection') {
+                    state.rows = state.rows.filter((row) => row.pk !== key);
+                    return undefined;
+                }
+                state.rows.delete(key);
+                return undefined;
+            }),
+            clear: () => createRequest(tx, () => {
+                if (state.kind === 'collection') {
+                    state.rows = [];
+                    return undefined;
+                }
+                state.rows.clear();
+                return undefined;
+            }),
+        };
+    };
+
+    const createUpgradeStoreApi = (name) => {
+        const tx = {
+            pending: 0,
+            completed: false,
+            failed: false,
+            error: null,
+            oncomplete: null,
+            onerror: null,
+        };
+        return {
+            ...createObjectStoreApi(name, tx),
+            indexNames: {
+                contains: () => false,
+            },
+            createIndex: () => {},
+        };
+    };
+
+    const db = {
+        objectStoreNames: {
+            contains: (name) => stores.has(name),
+        },
+        createObjectStore: (name, options) => {
+            ensureStoreState(name, options);
+            return createUpgradeStoreApi(name);
+        },
+        transaction: (storeName) => {
+            const tx = {
+                error: null,
+                pending: 0,
+                failed: false,
+                completed: false,
+                onabort: null,
+                oncomplete: null,
+                onerror: null,
+                objectStore: () => createObjectStoreApi(storeName, tx),
+                abort: vi.fn(() => {
+                    tx.failed = true;
+                    tx.error = tx.error || new Error('aborted');
+                    tx.onabort?.();
+                }),
+            };
+            return tx;
+        },
+    };
+
+    return {
+        stores,
+        db,
+        open: vi.fn(() => {
+            const request = {
+                result: db,
+                error: null,
+                onupgradeneeded: null,
+                onsuccess: null,
+                onerror: null,
+                onblocked: null,
+                transaction: {
+                    objectStore: (name) => createUpgradeStoreApi(name),
+                },
+            };
+            queueMicrotask(() => {
+                request.onupgradeneeded?.({ oldVersion: 0 });
+                request.onsuccess?.();
+            });
+            return request;
+        }),
+    };
+};
 
 describe('persistence/storage fallback behavior', () => {
     beforeEach(() => {
@@ -86,70 +320,9 @@ describe('persistence/storage fallback behavior', () => {
     });
 
     it('uses IndexedDB stores when available for JSON and blob operations', async () => {
-        const stores = new Map();
-        const ensureStore = (name) => {
-            if (!stores.has(name)) {
-                stores.set(name, new Map());
-            }
-            return stores.get(name);
-        };
-        const createSuccessRequest = (result) => {
-            const request = {
-                result,
-                error: null,
-                onsuccess: null,
-                onerror: null,
-            };
-            queueMicrotask(() => {
-                request.onsuccess?.();
-            });
-            return request;
-        };
-
-        const db = {
-            objectStoreNames: {
-                contains: (name) => stores.has(name),
-            },
-            createObjectStore: (name) => {
-                ensureStore(name);
-            },
-            transaction: (storeName) => {
-                const tx = {
-                    error: null,
-                    onabort: null,
-                    onerror: null,
-                    objectStore: () => ({
-                        get: (key) => createSuccessRequest(ensureStore(storeName).get(key)),
-                        put: (value, key) => {
-                            ensureStore(storeName).set(key, value);
-                            return createSuccessRequest(key);
-                        },
-                        delete: (key) => {
-                            ensureStore(storeName).delete(key);
-                            return createSuccessRequest(undefined);
-                        },
-                    }),
-                };
-                return tx;
-            },
-        };
-
+        const indexedDBMock = createIndexedDBMock();
         globalThis.indexedDB = {
-            open: vi.fn(() => {
-                const request = {
-                    result: db,
-                    error: null,
-                    onupgradeneeded: null,
-                    onsuccess: null,
-                    onerror: null,
-                    onblocked: null,
-                };
-                queueMicrotask(() => {
-                    request.onupgradeneeded?.();
-                    request.onsuccess?.();
-                });
-                return request;
-            }),
+            open: indexedDBMock.open,
         };
 
         const { setJSON, getJSON, removeJSON, setBlob, getBlob, removeBlob } = await import('../../src/persistence/storage.js');
@@ -163,6 +336,47 @@ describe('persistence/storage fallback behavior', () => {
         await expect(getBlob('blob-key')).resolves.toBe(blob);
         await removeBlob('blob-key');
         await expect(getBlob('blob-key')).resolves.toBeNull();
+    });
+
+    it('routes collection-backed keys into dedicated IndexedDB stores', async () => {
+        const indexedDBMock = createIndexedDBMock();
+        globalThis.indexedDB = {
+            open: indexedDBMock.open,
+        };
+
+        const { setJSON, getJSON, removeJSON } = await import('../../src/persistence/storage.js');
+        const events = [{ type: 'game', id: 'rhythm-dash', timestamp: 10, day: 1 }];
+        const recordings = [{ id: 'song-1', timestamp: 20, createdAt: '2026-03-06T00:00:00.000Z' }];
+
+        await setJSON(EVENTS_KEY, events);
+        await setJSON(RECORDINGS_KEY, recordings);
+
+        await expect(getJSON(EVENTS_KEY)).resolves.toEqual(events);
+        await expect(getJSON(RECORDINGS_KEY)).resolves.toEqual(recordings);
+        expect(window.localStorage.getItem(`${FALLBACK_PREFIX}${EVENTS_KEY}`)).toBeNull();
+        expect(window.localStorage.getItem(`${FALLBACK_PREFIX}${RECORDINGS_KEY}`)).toBeNull();
+
+        await removeJSON(EVENTS_KEY);
+        await expect(getJSON(EVENTS_KEY)).resolves.toEqual([]);
+    });
+
+    it('appends and prunes collection-backed event rows without rewriting the kv store', async () => {
+        const indexedDBMock = createIndexedDBMock();
+        globalThis.indexedDB = {
+            open: indexedDBMock.open,
+        };
+
+        const { appendJSONItem, getJSON } = await import('../../src/persistence/storage.js');
+
+        await appendJSONItem(EVENTS_KEY, { type: 'game', id: 'one', timestamp: 10, day: 1 }, { maxEntries: 2 });
+        await appendJSONItem(EVENTS_KEY, { type: 'game', id: 'two', timestamp: 20, day: 1 }, { maxEntries: 2 });
+        await appendJSONItem(EVENTS_KEY, { type: 'game', id: 'three', timestamp: 30, day: 1 }, { maxEntries: 2 });
+
+        await expect(getJSON(EVENTS_KEY)).resolves.toEqual([
+            { type: 'game', id: 'two', timestamp: 20, day: 1 },
+            { type: 'game', id: 'three', timestamp: 30, day: 1 },
+        ]);
+        expect(window.localStorage.getItem(`${FALLBACK_PREFIX}${EVENTS_KEY}`)).toBeNull();
     });
 
 });

@@ -34,32 +34,39 @@ const shouldIgnoreProgressInput = (input) => !input.id
 export const createProgressInputController = ({
     loadEvents,
     saveEvents,
+    appendEvent,
     collectEventIds,
     minutesForInput,
     todayDay,
     practiceRecordedEventName,
     onEventsUpdated,
-    }) => {
-        const recordPracticeEvent = async (input) => {
-            const events = await loadEvents();
-            const earned = collectEventIds(events, 'practice');
-            const allowRepeat = /^goal-step-focus-/.test(input.id);
-            if (!allowRepeat && earned.has(input.id)) return;
-            const day = todayDay();
-            const timestamp = Date.now();
+}) => {
+    const recordPracticeEvent = async (input) => {
+        const events = await loadEvents();
+        const earned = collectEventIds(events, 'practice');
+        const allowRepeat = /^goal-step-focus-/.test(input.id);
+        if (!allowRepeat && earned.has(input.id)) return;
+        const day = todayDay();
+        const timestamp = Date.now();
 
-            const entry = {
-                type: 'practice',
-                id: input.id,
-                minutes: minutesForInput(input),
-                day,
-                timestamp,
-            };
+        const entry = {
+            type: 'practice',
+            id: input.id,
+            minutes: minutesForInput(input),
+            day,
+            timestamp,
+        };
 
-        events.push(entry);
-        await saveEvents(events);
-        emitEvent(practiceRecordedEventName, entry);
-        await onEventsUpdated(events);
+        const storedEntry = appendEvent
+            ? await appendEvent(entry)
+            : entry;
+        if (!storedEntry) return;
+        const nextEvents = [...events, storedEntry];
+        if (!appendEvent) {
+            await saveEvents(nextEvents);
+        }
+        emitEvent(practiceRecordedEventName, storedEntry);
+        await onEventsUpdated(nextEvents);
     };
 
     const recordAchievementEvent = async (id) => {
@@ -70,9 +77,15 @@ export const createProgressInputController = ({
         const timestamp = Date.now();
         const day = todayDay();
 
-        events.push({ type: 'achievement', id, timestamp, day });
-        await saveEvents(events);
-        await onEventsUpdated(events);
+        const storedEntry = appendEvent
+            ? await appendEvent({ type: 'achievement', id, timestamp, day })
+            : { type: 'achievement', id, timestamp, day };
+        if (!storedEntry) return;
+        const nextEvents = [...events, storedEntry];
+        if (!appendEvent) {
+            await saveEvents(nextEvents);
+        }
+        await onEventsUpdated(nextEvents);
     };
 
     const checkMilestoneAchievements = () => {

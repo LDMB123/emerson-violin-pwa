@@ -1,4 +1,4 @@
-import { getJSON, setJSON, getBlob } from './storage.js';
+import { appendJSONItem, getJSON, setJSON, getBlob } from './storage.js';
 import { EVENTS_KEY, RECORDINGS_KEY } from './storage-keys.js';
 import { clampRounded, finiteOrNow, positiveRound, dayFromTimestamp } from '../utils/math.js';
 import { mapArrayEntries } from '../utils/storage-utils.js';
@@ -136,6 +136,14 @@ export const loadEvents = async () => {
 /** Persists the normalized event list. */
 export const saveEvents = async (events) => {
     await setJSON(EVENTS_KEY, events);
+};
+
+/** Appends one normalized event entry without rewriting the full event history. */
+export const appendEvent = async (event, { maxEntries = Infinity } = {}) => {
+    const migrated = normalizeEvent(event);
+    if (!migrated.event) return null;
+    await appendJSONItem(EVENTS_KEY, migrated.event, { maxEntries });
+    return migrated.event;
 };
 
 /** Loads persisted recording metadata and normalizes required identifiers. */

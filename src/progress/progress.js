@@ -1,6 +1,6 @@
 import { whenReady } from '../utils/dom-ready.js';
 import { removeJSON } from '../persistence/storage.js';
-import { loadEvents, saveEvents } from '../persistence/loaders.js';
+import { appendEvent, loadEvents, saveEvents } from '../persistence/loaders.js';
 import { minutesForInput } from './progress-utils.js';
 import { createProgressInputController } from './progress-input-controller.js';
 import { todayDay } from '../utils/math.js';
@@ -185,6 +185,7 @@ const refreshProgressUi = async () => {
 const progressInputController = createProgressInputController({
     loadEvents,
     saveEvents,
+    appendEvent,
     collectEventIds,
     minutesForInput,
     todayDay,

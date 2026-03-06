@@ -229,6 +229,7 @@ self.__ASSETS__ = [
   "./src/parent/recordings.js",
   "./src/persistence/loaders.js",
   "./src/persistence/persist.js",
+  "./src/persistence/storage-collections.js",
   "./src/persistence/storage-fallback.js",
   "./src/persistence/storage-idb.js",
   "./src/persistence/storage-keys.js",

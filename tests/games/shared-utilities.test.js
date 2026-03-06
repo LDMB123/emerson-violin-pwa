@@ -12,8 +12,7 @@ const sharedDeps = vi.hoisted(() => {
         getGameTuning: vi.fn(async () => ({ difficulty: 'medium', speed: 1, complexity: 1 })),
         updateGameResult: vi.fn(async () => ({ difficulty: 'hard', speed: 1.1, complexity: 2 })),
         createTonePlayer: vi.fn(() => player),
-        getJSON: vi.fn(async () => []),
-        setJSON: vi.fn(async () => { }),
+        appendEvent: vi.fn(async (entry) => entry),
         isSoundEnabled: vi.fn(() => true),
         todayDay: vi.fn(() => 42),
         formatDifficulty: vi.fn((value) => String(value)),
@@ -29,9 +28,8 @@ vi.mock('../../src/ml/adaptive-engine.js', () => ({
 vi.mock('../../src/audio/tone-player.js', () => ({
     createTonePlayer: sharedDeps.createTonePlayer,
 }));
-vi.mock('../../src/persistence/storage.js', () => ({
-    getJSON: sharedDeps.getJSON,
-    setJSON: sharedDeps.setJSON,
+vi.mock('../../src/persistence/loaders.js', () => ({
+    appendEvent: sharedDeps.appendEvent,
 }));
 vi.mock('../../src/utils/sound-state.js', () => ({
     isSoundEnabled: sharedDeps.isSoundEnabled,
@@ -42,9 +40,6 @@ vi.mock('../../src/utils/math.js', async (importOriginal) => {
 });
 vi.mock('../../src/tuner/tuner-utils.js', () => ({
     formatDifficulty: sharedDeps.formatDifficulty,
-}));
-vi.mock('../../src/persistence/storage-keys.js', () => ({
-    EVENTS_KEY: 'events',
 }));
 vi.mock('../../src/games/game-mastery.js', () => ({
     updateGameMastery: sharedDeps.updateGameMastery,
@@ -179,7 +174,6 @@ describe('games/shared utilities', () => {
         document.addEventListener(GAME_RECORDED, (event) => recordedEvents.push(event.detail), { once: true });
         document.addEventListener(GAME_MASTERY_UPDATED, (event) => masteryEvents.push(event.detail), { once: true });
 
-        sharedDeps.getJSON.mockResolvedValueOnce([{ type: 'game', id: 'old', day: 1, timestamp: 1 }]);
         await recordGameEvent('rhythm-dash', {
             score: 93.7,
             accuracy: 91.2,
@@ -192,10 +186,9 @@ describe('games/shared utilities', () => {
             mistakes: 2.1,
         });
 
-        expect(sharedDeps.setJSON).toHaveBeenCalledTimes(1);
-        const [, saved] = sharedDeps.setJSON.mock.calls[0];
-        expect(saved).toHaveLength(2);
-        expect(saved[1]).toMatchObject({
+        expect(sharedDeps.appendEvent).toHaveBeenCalledTimes(1);
+        const [saved, options] = sharedDeps.appendEvent.mock.calls[0];
+        expect(saved).toMatchObject({
             id: 'rhythm-dash',
             score: 94,
             accuracy: 91,
@@ -209,6 +202,7 @@ describe('games/shared utilities', () => {
             day: 42,
             type: 'game',
         });
+        expect(options).toEqual({ maxEntries: 500 });
         expect(sharedDeps.updateGameMastery).toHaveBeenCalledWith({
             gameId: 'rhythm-dash',
             score: 91,
@@ -218,7 +212,7 @@ describe('games/shared utilities', () => {
         expect(masteryEvents).toHaveLength(1);
 
         await recordGameEvent('', { score: 20 });
-        expect(sharedDeps.setJSON).toHaveBeenCalledTimes(1);
+        expect(sharedDeps.appendEvent).toHaveBeenCalledTimes(1);
     });
 
 });

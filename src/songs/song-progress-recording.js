@@ -1,4 +1,4 @@
-import { loadEvents, saveEvents } from '../persistence/loaders.js';
+import { appendEvent, loadEvents } from '../persistence/loaders.js';
 import { clampRounded, todayDay } from '../utils/math.js';
 import { SONG_RECORDED, emitEvent } from '../utils/event-names.js';
 import { updateSongProgress } from './song-progression.js';
@@ -47,9 +47,10 @@ export const recordSongEvent = async (
     if (typeof payload.attemptType === 'string' && payload.attemptType.trim()) {
         entry.attemptType = payload.attemptType.trim();
     }
-    events.push(entry);
-    await saveEvents(events);
-    await updateSongProgress(songId, entry);
-    emitEvent(SONG_RECORDED, entry);
-    onUpdated(events);
+    const storedEntry = await appendEvent(entry);
+    if (!storedEntry) return;
+    const nextEvents = [...events, storedEntry];
+    await updateSongProgress(songId, storedEntry);
+    emitEvent(SONG_RECORDED, storedEntry);
+    onUpdated(nextEvents);
 };

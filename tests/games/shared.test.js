@@ -8,14 +8,12 @@ const adaptiveMocks = vi.hoisted(() => ({
 
 vi.mock('../../src/ml/adaptive-engine.js', () => adaptiveMocks);
 vi.mock('../../src/audio/tone-player.js', () => ({ createTonePlayer: vi.fn(() => null) }));
-vi.mock('../../src/persistence/storage.js', () => ({
-    getJSON: vi.fn(async () => []),
-    setJSON: vi.fn(async () => {}),
+vi.mock('../../src/persistence/loaders.js', () => ({
+    appendEvent: vi.fn(async (entry) => entry),
 }));
 vi.mock('../../src/utils/sound-state.js', () => ({ isSoundEnabled: vi.fn(() => true) }));
 vi.mock('../../src/utils/math.js', () => ({ todayDay: vi.fn(() => 1) }));
 vi.mock('../../src/tuner/tuner-utils.js', () => ({ formatDifficulty: vi.fn((value) => String(value)) }));
-vi.mock('../../src/persistence/storage-keys.js', () => ({ EVENTS_KEY: 'events' }));
 
 import { attachTuning } from '../../src/games/shared.js';
 

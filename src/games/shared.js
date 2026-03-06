@@ -1,13 +1,12 @@
 import { getGameTuning, updateGameResult } from '../ml/adaptive-engine.js';
 import { createTonePlayer } from '../audio/tone-player.js';
-import { getJSON, setJSON } from '../persistence/storage.js';
+import { appendEvent } from '../persistence/loaders.js';
 import { isSoundEnabled } from '../utils/sound-state.js';
 import { durationToMinutes, positiveRound, todayDay } from '../utils/math.js';
 import { markCheckboxInputChecked } from '../utils/checkbox-utils.js';
 import { speakVoiceCoachMessage } from '../utils/voice-coach-speech.js';
 import { isGameView } from '../utils/view-hash-utils.js';
 import { formatDifficulty } from '../tuner/tuner-utils.js';
-import { EVENTS_KEY as EVENT_KEY } from '../persistence/storage-keys.js';
 import { GAME_RECORDED, GAME_MASTERY_UPDATED, ML_RESET, SOUNDS_CHANGE, emitEvent } from '../utils/event-names.js';
 import { updateGameMastery } from './game-mastery.js';
 import { bindGameStartStop } from './game-start-stop-bindings.js';
@@ -336,8 +335,6 @@ export const updateScoreCombo = (scoreEl, comboEl, score, combo) => {
 /** Persists and emits a normalized game session event. */
 export const recordGameEvent = async (id, payload = {}) => {
     if (!id) return;
-    const events = await getJSON(EVENT_KEY);
-    const list = Array.isArray(events) ? events : [];
     const entry = {
         type: 'game',
         id,
@@ -357,17 +354,14 @@ export const recordGameEvent = async (id, payload = {}) => {
     if (Number.isFinite(payload.objectiveTotal)) entry.objectiveTotal = positiveRound(payload.objectiveTotal);
     if (Number.isFinite(payload.objectivesCompleted)) entry.objectivesCompleted = positiveRound(payload.objectivesCompleted);
     if (Number.isFinite(payload.mistakes)) entry.mistakes = positiveRound(payload.mistakes);
-    list.push(entry);
-    if (list.length > MAX_EVENTS) {
-        list.splice(0, list.length - MAX_EVENTS);
-    }
-    await setJSON(EVENT_KEY, list);
+    const storedEntry = await appendEvent(entry, { maxEntries: MAX_EVENTS });
+    if (!storedEntry) return;
     const mastery = await updateGameMastery({
         gameId: id,
-        score: Number.isFinite(entry.accuracy) ? entry.accuracy : entry.score || 0,
-        day: entry.day,
+        score: Number.isFinite(storedEntry.accuracy) ? storedEntry.accuracy : storedEntry.score || 0,
+        day: storedEntry.day,
     }).catch(() => null);
-    emitEvent(GAME_RECORDED, entry);
+    emitEvent(GAME_RECORDED, storedEntry);
     if (mastery?.game) {
         emitEvent(GAME_MASTERY_UPDATED, {
             id,
