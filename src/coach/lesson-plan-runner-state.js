@@ -37,16 +37,13 @@ const toLessonRunnerStep = (step, index, recommendedGameId) => ({
 });
 
 /** Converts persisted mission steps into the runner step shape used by the coach. */
-/** Maps mission steps into lesson runner step objects. */
 export const mapMissionRunnerSteps = (missionSteps = []) => missionSteps.map(toRunnerStep);
 
 /** Converts lesson recommendation steps into fresh runner steps with default CTAs. */
-/** Maps lesson plan steps into lesson runner step objects. */
 export const mapLessonRunnerSteps = (lessonSteps = [], recommendedGameId = 'view-games') => lessonSteps
     .map((step, index) => toLessonRunnerStep(step, index, recommendedGameId));
 
 /** Derives the current runner cursor and completed-step count from runner steps. */
-/** Derives the current runner index and completed count from runner steps. */
 export const deriveRunnerPosition = (steps = []) => {
     const completedSteps = steps.filter((step) => step.status === 'complete').length;
     const current = steps.find((step) => step.status === 'in_progress')
@@ -61,7 +58,6 @@ export const deriveRunnerPosition = (steps = []) => {
 };
 
 /** Resets runner steps back to their not-started state while preserving metadata. */
-/** Resets runner step statuses and timestamps to their initial state. */
 export const resetRunnerSteps = (steps = []) => steps.map((step) => ({
     ...step,
     status: 'not_started',
@@ -70,7 +66,6 @@ export const resetRunnerSteps = (steps = []) => steps.map((step) => ({
 }));
 
 /** Marks one runner step in progress and clears any previous in-progress marker. */
-/** Marks one runner step in progress and clears any previous in-progress step. */
 export const markRunnerStepInProgress = (steps = [], stepId, startedAt = Date.now()) => steps.map((step) => {
     if (step.id === stepId) {
         return {
@@ -89,7 +84,6 @@ export const markRunnerStepInProgress = (steps = [], stepId, startedAt = Date.no
 });
 
 /** Marks the matching runner step complete and stamps its completion time. */
-/** Marks a runner step complete and records its completion time. */
 export const markRunnerStepComplete = (steps = [], stepId, completedAt = Date.now()) => steps.map((step) => (
     step.id === stepId
         ? { ...step, status: 'complete', completedAt }

@@ -10,7 +10,6 @@ import {
 } from '../../utils/rhythm-dash-utils.js';
 
 /** Resolves the cached DOM elements used by the Rhythm Dash view. */
-/** Resolves the DOM elements used by Rhythm Dash. */
 export const resolveRhythmDashElements = (stage) => ({
     tapButton: stage.querySelector('.rhythm-tap'),
     runToggle: stage.querySelector('#rhythm-run'),
@@ -30,17 +29,14 @@ export const resolveRhythmDashElements = (stage) => ({
 });
 
 /** Maps a difficulty object to the coarse level label used by the UI. */
-/** Maps Rhythm Dash difficulty settings to a display level. */
 export const resolveDifficultyLevel = (difficulty) => (
     difficulty.complexity >= 2 ? 'hard' : difficulty.complexity >= 1 ? 'medium' : 'easy'
 );
 
 /** Writes the status message for the Rhythm Dash HUD. */
-/** Updates the Rhythm Dash status text element. */
 export const updateStatusText = setTextContent;
 
 /** Syncs the score meter width and ARIA values from a normalized score value. */
-/** Updates Rhythm Dash meter visuals and accessibility values. */
 export const updateMeter = (meterFill, meterTrack, scoreValue) => {
     const percent = clamp(scoreValue * 100, 0, 100);
     if (meterFill) {
@@ -68,7 +64,6 @@ const pushTempoHistory = ({
 };
 
 /** Updates the displayed BPM when a finite tempo estimate is available. */
-/** Syncs the BPM display from numeric tempo values. */
 export const syncBpmText = (bpmEl, bpmValue) => {
     if (Number.isFinite(bpmValue) && bpmValue > 0 && bpmEl) {
         bpmEl.textContent = String(Math.round(bpmValue));
@@ -76,7 +71,6 @@ export const syncBpmText = (bpmEl, bpmValue) => {
 };
 
 /** Formats the player-facing status message for the latest rhythm rating. */
-/** Formats the Rhythm Dash status line from rating and combo state. */
 export const formatRhythmStatusMessage = ({ ratingSource, rating, combo }) => (
     shouldShowComboStatus(combo)
         ? `${ratingSource}: ${formatComboStatus(rating, combo)}`
@@ -84,7 +78,6 @@ export const formatRhythmStatusMessage = ({ ratingSource, rating, combo }) => (
 );
 
 /** Processes a manual tap fallback input and returns the timestamp to retain. */
-/** Processes tap-based Rhythm Dash timing input. */
 export const handleRhythmTapInput = ({
     runToggle,
     setStatus,
@@ -118,7 +111,6 @@ export const handleRhythmTapInput = ({
 };
 
 /** Applies a realtime feature frame to Rhythm Dash and reports listening state. */
-/** Applies a realtime feature frame to Rhythm Dash gameplay state. */
 export const applyRealtimeRhythmFrame = ({
     detail,
     runToggle,

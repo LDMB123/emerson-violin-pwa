@@ -3,7 +3,6 @@ const startsWith = (prefix) => (viewId) => viewId.startsWith(prefix);
 const oneOf = (...checks) => (viewId) => checks.some((check) => check(viewId));
 
 /** Maps module ids to lazy import factories used by the view loader. */
-/** Maps module ids to their lazy import factories. */
 export const MODULE_LOADERS = {
     platform: () => import('../platform/native-apis.js'),
     dataSaver: () => import('../platform/data-saver.js'),
@@ -58,7 +57,6 @@ export const MODULE_LOADERS = {
 };
 
 /** Lists modules that should be initialized eagerly during app startup. */
-/** Lists modules that load immediately during bootstrap. */
 export const EAGER_MODULES = [
     'dataSaver',
     'offlineRecovery',
@@ -70,7 +68,6 @@ export const EAGER_MODULES = [
 ];
 
 /** Schedules low-priority module preloads to run after initial startup settles. */
-/** Schedules modules for deferred idle loading. */
 export const IDLE_MODULE_PLAN = [
     ['mlScheduler', 180],
     ['badging', 420],
@@ -78,7 +75,6 @@ export const IDLE_MODULE_PLAN = [
 ];
 
 /** Declares the primary view ids whose assets should be prefetched opportunistically. */
-/** Lists views whose modules are opportunistically prefetched. */
 export const PREFETCH_VIEW_IDS = [
     'view-home',
     'view-coach',
@@ -151,7 +147,6 @@ const computeModulesForView = (viewId) => {
 };
 
 /** Resolves the unique module ids required to power a given view id. */
-/** Resolves the module ids required for a given view. */
 export const resolveModulesForView = (viewId) => {
     if (typeof viewId !== 'string' || !viewId) {
         return [];

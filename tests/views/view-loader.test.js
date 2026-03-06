@@ -175,7 +175,7 @@ describe('ViewLoader — native Map.getOrInsertComputed path', () => {
   let NativeViewLoader;
 
   beforeAll(async () => {
-    // Simulate Safari 26.2+ / Chrome 133+ native method
+    // Simulate engines with native Map.getOrInsertComputed support.
     Map.prototype.getOrInsertComputed = function (key, fn) {
       if (!this.has(key)) this.set(key, fn(key));
       return this.get(key);

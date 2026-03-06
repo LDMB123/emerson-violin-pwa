@@ -2,7 +2,6 @@ import { createAudioContext } from '../audio-context.js';
 import { setParam } from './shared.js';
 
 /** Creates the mutable runtime state container used by the shared tone player. */
-/** Creates the mutable state object for the shared tone player. */
 export const createTonePlayerState = ({ playbackEnabled, samplerBlocked }) => ({
     context: null,
     sequenceToken: 0,
@@ -23,7 +22,6 @@ const closeAndResetContext = (state) => {
 };
 
 /** Ensures the tone player has a live `AudioContext`, recreating if needed. */
-/** Ensures the tone player has a usable audio context. */
 export const ensurePlayerContext = async (state) => {
     if (!state.context) {
         state.context = createAudioContext();
@@ -44,7 +42,6 @@ export const ensurePlayerContext = async (state) => {
 };
 
 /** Lazily creates the shared master output chain for tone player playback. */
-/** Ensures the tone player has a connected master output node. */
 export const ensurePlayerOutputNode = (state, ctx) => {
     if (state.outputNode) return state.outputNode;
     const masterGain = ctx.createGain();
@@ -68,7 +65,6 @@ export const ensurePlayerOutputNode = (state, ctx) => {
 };
 
 /** Attempts to resume a suspended tone-player context after a user gesture. */
-/** Attempts to resume a suspended tone player audio context. */
 export const unlockTonePlayerContext = (state) => {
     if (!state.context) return;
     if (state.context.state !== 'suspended' && state.context.state !== 'interrupted') return;
@@ -76,7 +72,6 @@ export const unlockTonePlayerContext = (state) => {
 };
 
 /** Binds one-time global gesture listeners that unlock blocked audio playback. */
-/** Registers user gestures that unlock the tone player context. */
 export const bindTonePlayerUnlockGestures = (state, unlockContext) => {
     if (state.unlockBound) return;
     state.unlockBound = true;
@@ -97,7 +92,6 @@ const unbindUnlockGestures = (state) => {
 };
 
 /** Stops active playback, removes unlock listeners, and closes the context. */
-/** Stops playback, removes unlock handlers, and releases the tone player context. */
 export const releaseTonePlayerContext = (state, stopAll) => {
     stopAll();
     unbindUnlockGestures(state);

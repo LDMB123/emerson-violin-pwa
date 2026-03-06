@@ -10,7 +10,6 @@ const STATE_VERSION = 1;
 const MAX_HISTORY = 240;
 
 /** Enumerates the supported lifecycle states for individual mission steps. */
-/** Enumerates the supported mission step statuses. */
 export const MISSION_STEP_STATES = Object.freeze({
     NOT_STARTED: 'not_started',
     IN_PROGRESS: 'in_progress',
@@ -43,7 +42,6 @@ const computeCompletionPercent = (steps = []) => {
 };
 
 /** Normalizes a mission payload into the persisted curriculum mission shape. */
-/** Normalizes stored mission data into the runtime mission shape. */
 export const normalizeMission = (mission) => {
     if (!mission || typeof mission !== 'object') return null;
     const steps = Array.isArray(mission.steps)
@@ -116,14 +114,12 @@ const normalizeHistoryEntry = (entry) => {
 };
 
 /** Loads and normalizes the persisted curriculum state snapshot. */
-/** Loads and normalizes persisted curriculum state. */
 export const loadCurriculumState = async () => {
     const stored = await getJSON(CURRICULUM_STATE_KEY);
     return normalizeState(stored);
 };
 
 /** Persists a normalized curriculum state snapshot and returns a safe clone. */
-/** Normalizes and persists curriculum state. */
 export const saveCurriculumState = async (state) => {
     const normalized = normalizeState(state);
     normalized.lastUpdatedAt = Date.now();
@@ -137,7 +133,6 @@ const loadMissionHistory = async () => {
 };
 
 /** Appends a normalized mission history snapshot, enforcing the history cap. */
-/** Appends a normalized mission history snapshot. */
 export const appendMissionHistory = async (entry) => {
     const history = await loadMissionHistory();
     const nextEntry = normalizeHistoryEntry(entry);
@@ -148,7 +143,6 @@ export const appendMissionHistory = async (entry) => {
 };
 
 /** Resets curriculum state and mission history back to their empty defaults. */
-/** Resets persisted curriculum state and mission history. */
 export const clearCurriculumState = async () => {
     const state = defaultState();
     await setJSON(CURRICULUM_STATE_KEY, state);
@@ -157,7 +151,6 @@ export const clearCurriculumState = async () => {
 };
 
 /** Creates a new normalized mission record from plan metadata and raw steps. */
-/** Creates a normalized mission from step definitions. */
 export const createMission = ({
     id,
     unitId,
@@ -187,7 +180,6 @@ export const createMission = ({
 };
 
 /** Merges mission updates into an existing mission and refreshes derived fields. */
-/** Applies updates and re-normalizes a mission. */
 export const updateMission = (mission, updates = {}) => {
     const base = normalizeMission(mission) || createMission({ id: updates.id || '', steps: [] });
     const merged = {

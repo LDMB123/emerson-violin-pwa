@@ -16,7 +16,6 @@ const getCurrentMissionStep = (recs) => {
 };
 
 /** Resolves the lesson steps to render from mission data or fallback recommendations. */
-/** Resolves lesson steps from mission data or fallback lesson recommendations. */
 export const resolveMissionSteps = (recs) => {
     if (Array.isArray(recs?.mission?.steps) && recs.mission.steps.length) {
         return recs.mission.steps;
@@ -36,7 +35,6 @@ export const resolveTotalMinutes = (recs, missionSteps = []) => {
 };
 
 /** Updates the lesson recommendation summary panel with the latest recommendation data. */
-/** Updates the lesson summary panel from recommendation data. */
 export const updateLessonPanel = (panel, recs) => {
     if (!panel || !recs) return;
     const skillEl = panel.querySelector('[data-lesson="skill"]');
@@ -64,7 +62,6 @@ export const updateLessonPanel = (panel, recs) => {
 };
 
 /** Renders the lesson step list for recommendations or mission steps. */
-/** Renders lesson steps into the recommendations step list. */
 export const renderLessonSteps = (container, steps = []) => {
     if (!container) return;
     container.innerHTML = '';
@@ -109,7 +106,6 @@ export const renderLessonSteps = (container, steps = []) => {
 };
 
 /** Syncs goal-list labels and durations from rendered recommendation steps. */
-/** Updates goal input labels and duration chips from lesson steps. */
 export const updateGoalInputs = (goalList, steps = []) => {
     if (!goalList || !steps.length) return;
 
