@@ -1,556 +1,278 @@
 # Safari / iPadOS Testing Guide
 **Installed app metadata: Emerson's Violin Studio / ViolinPanda**
 
-## Device Specs
-- **Device**: iPad mini (6th generation)
-- **Chip**: Apple A15 Bionic
-- **Screen**: 8.3" Liquid Retina (2266 x 1488 px at 326 ppi)
-- **OS**: Current target iPadOS build
-- **Browser**: Current target Safari build
+Target manual validation on a real iPad mini (6th generation) running the current target iPadOS and Safari builds.
 
-## Pre-Test Setup
+## Before You Start
 
-### 1. Deploy to Test Server
+### Deploy and connect
 ```bash
-# Build production bundle
 npm run build
-
-# Preview locally or deploy to test server with HTTPS
 npm run preview
-# OR deploy to Vercel/Netlify for HTTPS testing
 ```
 
-### 2. Access on iPad
-- Open Safari on iPad mini
-- Navigate to deployed URL (must be HTTPS for PWA features)
-- Accept any microphone permission prompts
+- Serve over HTTPS for install, badge, and other PWA checks.
+- Open the deployed URL in Safari on the iPad.
+- Accept microphone permission when prompted.
+- If needed, connect Web Inspector from macOS Safari: `Develop > [iPad] > [page]`.
 
----
+### Baseline sanity
 
-## Phase 1: Baseline Sanity
+Confirm before running deeper tests:
+- App opens to onboarding or Home without console errors.
+- Onboarding can be completed on a fresh launch.
+- Tuner is reachable from Home.
+- Service worker is active.
 
-### Pre-flight Checklist
-
-Before running individual tests, confirm:
-
-1. **App loads**: Navigate to deployed URL — onboarding or the home screen appears, and the tuner is reachable from Home with no console errors
-2. **Onboarding**: If first launch, complete onboarding flow before testing other views
-3. **Microphone permission**: Grant when prompted (required for tuner tests)
-4. **DevTools connected**: Safari on Mac > Develop > [iPad name] > localhost
-
-**Console check**:
+Console spot check:
 ```javascript
-// Confirm Service Worker is active
 const regs = await navigator.serviceWorker.getRegistrations();
-console.log('SW active:', regs[0]?.active?.state); // Expected: "activated"
-
-// Confirm no startup errors
-// Check Console panel — should be clean
+console.log(regs[0]?.active?.state);
+// Expected: "activated"
 ```
 
-**Success Criteria**:
-- ✅ App loads without console errors
-- ✅ Onboarding shown on first launch (or main view on subsequent launches)
-- ✅ Microphone permission prompt accepted
-- ✅ Service Worker active (`"activated"`)
-- ✅ DevTools connection working (Web Inspector panel visible on Mac)
+## Test Matrix
 
----
+### 1. Parent PIN / Web Crypto PBKDF2
 
-## Phase 2: Safari-Compatible API Testing
+Goal: verify secure PIN hashing and persistence.
 
-### Test 1: Web Crypto PBKDF2 (Parent PIN)
+Steps:
+1. Open `#view-parent`.
+2. Enter wrong PIN `9999` and confirm access is denied.
+3. Enter default PIN `1001` and confirm access is granted.
+4. In **Parent PIN**, set PIN to `5678` and save.
+5. Refresh, retry `1001`, then retry `5678`.
 
-**What to test**: Secure PIN hashing with PBKDF2 (100,000 iterations)
-
-**Steps**:
-1. Navigate to **#view-parent** (parent section)
-2. System prompts for PIN - try entering wrong PIN `9999`
-3. **Expected**: Access denied, returns to home
-4. Navigate to **#view-parent** again
-5. Enter default PIN `1001`
-6. **Expected**: Access granted to parent section
-7. In parent section, find the **Parent PIN** card
-8. Enter new PIN: `5678`
-9. Click "Save PIN" button
-10. **Expected**: Status shows "PIN updated (secure)."
-11. Refresh page, navigate to **#view-parent**
-12. Enter old PIN `1001`
-13. **Expected**: Access denied (old PIN no longer works)
-14. Enter new PIN `5678`
-15. **Expected**: Access granted with new PIN
-
-**Browser Console Check**:
+Console check:
 ```javascript
-// Open Safari DevTools (Settings > Safari > Advanced > Web Inspector)
-// Connect iPad to Mac, use Safari > Develop > [iPad name]
-// Check localStorage for secure PIN storage:
 JSON.parse(localStorage.getItem('panda-violin:parent-pin-v2'))
-// Expected: { hash: "...", salt: "...", createdAt: ..., updatedAt: ... }
-// hash and salt should be hex strings (64 chars each)
 ```
 
-**Success Criteria**:
-- ✅ PIN verification works (correct PIN grants access)
-- ✅ Wrong PIN denies access
-- ✅ PIN change persists across page reload
-- ✅ localStorage contains hash + salt (not plaintext PIN)
-- ✅ No console errors related to Web Crypto
+Pass if:
+- wrong PIN fails
+- new PIN survives reload
+- stored value contains hash + salt, not plaintext PIN
+- no Web Crypto errors appear
 
----
+### 2. App Badging
 
-### Test 2: Badging API (Practice Reminders)
+Goal: verify practice reminders update the installed app badge.
 
-**What to test**: App badge updates based on practice completion
+Steps:
+1. Add the app to Home Screen from Safari.
+2. Confirm install title matches current manifest metadata unless edited manually.
+3. Launch the installed app.
+4. Leave at least one practice item incomplete in **Practice Coach**.
+5. Minimize the app and confirm a badge appears.
+6. Complete tasks and confirm the badge count drops, then clears when everything is complete.
 
-**Steps**:
-1. **Setup**: Add app to Home Screen for badge testing
-   - In Safari, tap Share button
-   - Tap "Add to Home Screen"
-   - Confirm the suggested iOS title matches the current manifest metadata (`Emerson's Violin Studio` / `ViolinPanda`) or the title you intentionally edit before adding
-   - Tap "Add"
-2. Close Safari, return to Home Screen
-3. **Expected**: App icon appears with NO badge initially
-4. Open the installed app from Home Screen
-5. Navigate to **Practice Coach** (`#view-coach`)
-6. Leave at least one lesson step incomplete
-7. Press Home button (or swipe up) to minimize app
-8. **Expected**: App badge shows count of incomplete tasks (e.g., "3")
-9. Reopen app from Home Screen
-10. Complete a practice task
-11. Minimize app again
-12. **Expected**: Badge count decreases (e.g., "2")
-13. Complete all practice tasks
-14. Minimize app
-15. **Expected**: Badge clears (no number shown)
-
-**Browser Console Check**:
+Console check:
 ```javascript
-// Check Badging API availability
 'setAppBadge' in navigator && 'clearAppBadge' in navigator
-// Expected: true on Safari builds that support the Badging API
-
-// Manually test badge
-await navigator.setAppBadge(5)  // Badge shows "5"
-await navigator.clearAppBadge()  // Badge clears
 ```
 
-**Success Criteria**:
-- ✅ Badging API available (`navigator.setAppBadge` exists)
-- ✅ Badge updates when practice tasks completed
-- ✅ Badge clears when all tasks done
-- ✅ Badge visible when app minimized
-- ✅ No console errors related to Badging
+Pass if:
+- badge API is present on the target Safari build
+- badge changes while the app is installed and backgrounded
+- badge clears when no reminder remains
 
----
+### 3. Visual Viewport / Keyboard Handling
 
-## Phase 3: iPad mini 6th Gen Optimizations
+Goal: verify the keyboard does not cover inputs.
 
-### Test 3: Visual Viewport API (Keyboard Handling)
+Steps:
+1. Open a view with text input.
+2. Focus the input and show the software keyboard.
+3. Type several characters.
+4. Dismiss the keyboard.
 
-**What to test**: Keyboard appearance doesn't obscure input fields
-
-**Steps**:
-1. Navigate to "Games" section
-2. Tap any input field (e.g., note name input)
-3. On-screen keyboard appears
-4. **Expected**:
-   - Input field scrolls into view above keyboard
-   - Input remains visible while typing
-   - No part of input obscured by keyboard
-5. Type several characters
-6. **Expected**: Text visible in input field
-7. Dismiss keyboard (tap outside or "Done")
-8. **Expected**: Layout returns to normal
-
-**Browser Console Check**:
+Console check:
 ```javascript
-// Check Visual Viewport API
 window.visualViewport
-// Expected: VisualViewport object with height, offsetTop properties
-
-// Monitor keyboard appearance
-window.visualViewport.addEventListener('resize', (e) => {
-    console.log('Viewport height:', window.visualViewport.height);
-    console.log('Viewport offset:', window.visualViewport.offsetTop);
-});
-// Type in input - should log height changes
 ```
 
-**Success Criteria**:
-- ✅ Input fields remain visible when keyboard appears
-- ✅ Auto-scroll brings focused input into view
-- ✅ No layout shift bugs when keyboard dismisses
-- ✅ Visual Viewport API available
+Pass if:
+- focused input stays visible above the keyboard
+- layout returns to normal after dismissal
+- no viewport-related layout bugs appear
 
----
+### 4. Touch Targets and Gestures
 
-### Test 4: Touch Interactions
+Goal: verify touch sizing and responsiveness on iPad mini.
 
-**What to test**: Touch targets sized appropriately for iPad (44px minimum)
+Steps:
+1. Navigate through Home, Practice Coach, Games, Songs, Tuner, and Parent Zone.
+2. Tap primary buttons, toggles, links, sliders, and tuner string selectors.
+3. Check for first-tap response and obvious dead zones.
 
-**Steps**:
-1. Navigate through the primary views (Home, Practice Coach, Games, Songs, Tuner, Parent Zone)
-2. Try tapping all buttons, toggles, links
-3. **Check**:
-   - All interactive elements easily tappable
-   - No accidental mis-taps due to small targets
-   - Buttons don't feel cramped
-4. Test toggles:
-   - Tap metronome toggle (Settings)
-   - Tap recording toggle (Settings)
-   - **Expected**: Toggles respond to first tap, no need to retry
-5. Test sliders:
-   - Adjust volume slider
-   - **Expected**: Smooth dragging, no jumping
-6. Test tuner strings:
-   - Tap each string button (G, D, A, E)
-   - **Expected**: Immediate response, clear visual feedback
+Pass if:
+- interactive targets are comfortably tappable
+- toggles respond on first tap
+- sliders drag smoothly
+- tuner string buttons respond immediately
 
-**Success Criteria**:
-- ✅ All touch targets ≥44px (Apple HIG minimum)
-- ✅ No mis-taps or "dead zones"
-- ✅ Touch feedback immediate (no delay)
-- ✅ Comfortable one-handed use on iPad mini
+### 5. Screen Wake Lock
 
----
+Goal: verify the screen stays awake during active practice.
 
-### Test 5: Screen Wake Lock
+Steps:
+1. Start a song or practice flow that should hold wake lock.
+2. Leave the iPad idle for several minutes.
+3. Stop the practice flow and wait again.
 
-**What to test**: Screen stays on during practice sessions
-
-**Steps**:
-1. Navigate to song practice view (e.g., "Twinkle Twinkle")
-2. Toggle play/practice mode ON
-3. Let iPad sit idle for 2-3 minutes
-4. **Expected**:
-   - Screen remains on (doesn't auto-lock)
-   - Song playback continues
-   - No interruption to practice
-5. Toggle play/practice mode OFF
-6. Let iPad sit idle for 30 seconds
-7. **Expected**: Screen auto-lock resumes (screen dims/locks normally)
-
-**Browser Console Check**:
+Console check:
 ```javascript
-// Check Wake Lock API
 'wakeLock' in navigator
-// Expected: true
-
-// Request wake lock manually
-const wakeLock = await navigator.wakeLock.request('screen');
-console.log('Wake lock active:', !wakeLock.released);
-// Expected: true
-
-// Release wake lock
-await wakeLock.release();
-console.log('Wake lock released:', wakeLock.released);
-// Expected: true
 ```
 
-**Success Criteria**:
-- ✅ Wake Lock API available
-- ✅ Screen stays on during practice
-- ✅ Wake lock releases when practice stopped
-- ✅ Auto-lock resumes after practice
+Pass if:
+- screen stays awake during active practice
+- wake lock releases when practice stops
+- normal auto-lock resumes afterward
 
----
+### 6. AudioWorklet / Tuner Performance
 
-## Phase 4: Performance & Audio Testing
+Goal: verify real-time pitch detection feels immediate and stable.
 
-### Test 6: AudioWorklet Performance
+Steps:
+1. Open `#view-tuner`.
+2. Grant microphone access.
+3. Play sustained notes, then rapid pitch changes.
+4. Watch note name, cents feedback, and UI smoothness.
 
-**What to test**: Real-time pitch detection (<50ms latency) on iPad A15
-
-**Steps**:
-1. Open the Tuner from Home, or jump directly to `#view-tuner`
-2. Grant microphone permission if prompted
-3. Play a violin note (or hum a pitch near mic)
-4. **Check**:
-   - Pitch detection starts within 50ms
-   - Note name displays correctly (e.g., "A4" for 440 Hz)
-   - Cents indicator shows tuning accuracy
-   - Visual feedback smooth (no lag or stutter)
-5. Play different pitches rapidly (glissando)
-6. **Expected**: Pitch updates track note changes smoothly
-7. Check browser console for performance warnings
-8. **Expected**: No "AudioWorklet underrun" or latency warnings
-
-**Performance Metrics**:
+Console check:
 ```javascript
-// Check AudioContext state
 const audioContext = new AudioContext();
-console.log('Sample rate:', audioContext.sampleRate); // Expected: 48000 Hz
-console.log('Base latency:', audioContext.baseLatency); // Expected: <0.01 (10ms)
+console.log(audioContext.sampleRate, audioContext.baseLatency);
 ```
 
-**Success Criteria**:
-- ✅ Pitch detection latency <50ms (imperceptible)
-- ✅ Accurate note detection (±1 cent)
-- ✅ No audio glitches or dropouts
-- ✅ Smooth visual updates (60fps)
-- ✅ CPU usage reasonable (check with Xcode Instruments if needed)
+Pass if:
+- pitch updates feel effectively real time
+- note detection is accurate and stable
+- no audible glitches or worklet warnings appear
+- visual feedback stays smooth
 
----
+### 7. IndexedDB Persistence
 
-### Test 7: IndexedDB Storage Persistence
+Goal: verify recordings and practice progress survive restarts and offline use.
 
-**What to test**: Recordings and progress persist across sessions
+Steps:
+1. Enable **Practice recordings** in **Parent Zone**.
+2. Record a short clip from a song.
+3. Complete at least one practice step.
+4. Force-quit the app and reopen it.
+5. Confirm the recording and progress remain.
+6. Repeat a reopen check in Airplane Mode.
 
-**Steps**:
-1. Open **Parent Zone** and make sure **Practice recordings** are enabled
-2. Navigate to a song view such as **Twinkle Twinkle Little Star** (`#view-song-twinkle`)
-3. Record a short clip (5-10 seconds)
-4. Complete a practice step or song interaction so progress changes
-5. **Force quit app**:
-   - Swipe up from bottom, pause in middle of screen
-   - Swipe app preview up to close
-6. Reopen app from Home Screen
-7. Navigate to **Parent Zone > Practice Recordings**
-8. **Expected**: Recording from step 3 still present
-9. Navigate to **Practice Coach** (`#view-coach`) or back to the song you used
-10. **Expected**: Practice progress from step 4 is retained
-11. **Airplane mode test**:
-    - Enable Airplane Mode
-    - Close and reopen app
-    - Navigate to all sections
-    - **Expected**: All data still accessible offline
-
-**Browser Console Check**:
+Console check:
 ```javascript
-// Check storage persistence
-if (navigator.storage && navigator.storage.persist) {
-    const isPersisted = await navigator.storage.persist();
-    console.log('Storage persisted:', isPersisted);
-    // Expected: true
-}
-
-// Check storage usage
 const estimate = await navigator.storage.estimate();
-console.log('Usage:', (estimate.usage / 1024 / 1024).toFixed(2), 'MB');
-console.log('Quota:', (estimate.quota / 1024 / 1024).toFixed(2), 'MB');
-// Expected: Reasonable usage, quota >100MB on iPad
+console.log(estimate.usage, estimate.quota);
 ```
 
-**Success Criteria**:
-- ✅ Storage.persist() returns true
-- ✅ Recordings survive app restart
-- ✅ Practice progress survives app restart
-- ✅ Works offline (Airplane Mode)
-- ✅ No "QuotaExceededError" warnings
+Pass if:
+- recordings survive app restarts
+- progress survives app restarts
+- offline reopen still exposes saved data
+- no quota or storage errors appear
 
----
+### 8. PWA Install Flow
 
-## Phase 5: PWA Installation & Offline
+Goal: verify Home Screen install and standalone launch.
 
-### Test 8: PWA Installation
+Steps:
+1. In Safari, use **Share > Add to Home Screen**.
+2. Confirm app title and icon are correct.
+3. Add the app and launch it from Home Screen.
 
-**What to test**: Add to Home Screen experience on iPad
-
-**Steps**:
-1. In Safari, navigate to app URL
-2. Tap Share button (square with arrow up)
-3. Scroll and tap "Add to Home Screen"
-4. **Check**:
-   - App name reflects the current manifest metadata (`Emerson's Violin Studio` / `ViolinPanda`) unless you edited the install title manually
-   - App icon shows the app branding, not the Safari generic icon
-   - Option to edit name/icon before adding
-5. Tap "Add" button
-6. Return to Home Screen
-7. **Check**:
-   - App icon appears alongside other apps
-   - Icon shows correct branding
-   - Tap icon to launch
-8. **Check launch experience**:
-   - App opens in standalone mode (no Safari UI)
-   - No address bar or browser chrome
-   - Status bar shows app in full-screen
-   - Splash screen appears briefly (if configured)
-
-**Web App Manifest Check** (before adding):
+Console check:
 ```javascript
-// In Safari console
-fetch('./manifest.webmanifest')
-    .then(r => r.json())
-    .then(manifest => {
-        console.log('App name:', manifest.name);
-        console.log('Short name:', manifest.short_name);
-        console.log('Display mode:', manifest.display);
-        console.log('Icons:', manifest.icons.length);
-    });
-// Expected: name: "Emerson's Violin Studio", short_name: "ViolinPanda",
-// display: "standalone", icons: a non-zero count
+fetch('./manifest.webmanifest').then(r => r.json())
 ```
 
-**Success Criteria**:
-- ✅ "Add to Home Screen" option available
-- ✅ Correct app name and icon show in dialog
-- ✅ Icon appears on Home Screen after adding
-- ✅ Launches in standalone mode (no browser UI)
-- ✅ Splash screen appears (if configured)
+Pass if:
+- Add to Home Screen is available
+- title/icon are correct
+- app launches in standalone mode without Safari chrome
 
----
+### 9. Offline Functionality
 
-### Test 9: Offline Functionality
+Goal: verify core flows work without network access.
 
-**What to test**: App works without internet connection
+Steps:
+1. Install the app first.
+2. Enable Airplane Mode.
+3. Close and reopen the installed app.
+4. Visit Home, Practice Coach, Games, Songs, Tuner, Parent Zone, and Backup.
+5. Create new local progress and a new local recording offline.
+6. Disable Airplane Mode and confirm the app continues cleanly.
 
-**Steps**:
-1. With app already installed (from Test 8)
-2. **Enable Airplane Mode** (swipe down from top-right, tap airplane icon)
-3. Close the installed app completely
-4. Reopen app from Home Screen
-5. **Expected**: App loads successfully offline
-6. Navigate through all sections:
-   - Home
-   - Practice Coach
-   - Games
-   - Songs
-   - Tuner
-   - Parent Zone
-   - Backup
-7. **Check**:
-   - All UI elements load
-   - Tuner functionality works (microphone access)
-   - Practice tasks display
-   - Parent Zone recordings remain available
-   - Games function
-8. Try recording a new clip offline
-9. **Expected**: Recording saves locally
-10. Try creating new practice progress
-11. **Expected**: Progress saves locally
-12. **Disable Airplane Mode**
-13. **Expected**: App continues working, no errors
-
-**Service Worker Check**:
+Console checks:
 ```javascript
-// Check Service Worker registration
-navigator.serviceWorker.getRegistrations()
-    .then(regs => {
-        console.log('Service Workers:', regs.length);
-        regs.forEach(reg => {
-            console.log('  Scope:', reg.scope);
-            console.log('  Active:', !!reg.active);
-        });
-    });
-// Expected: At least 1 registration, active: true
-
-// Check cache storage
-caches.keys()
-    .then(keys => {
-        console.log('Cache names:', keys);
-        keys.forEach(key => {
-            caches.open(key).then(cache => {
-                cache.keys().then(reqs => {
-                    console.log(`  ${key}: ${reqs.length} entries`);
-                });
-            });
-        });
-    });
-// Expected: Multiple caches (static, dynamic), many entries
+await navigator.serviceWorker.getRegistrations();
+await caches.keys();
 ```
 
-**Success Criteria**:
-- ✅ App loads offline (no "No Internet" error)
-- ✅ All core features work offline (tuner, recordings, practice)
-- ✅ Service Worker active and caching
-- ✅ Smooth transition when connection restored
-- ✅ No degraded experience offline
+Pass if:
+- app launches offline
+- core flows still work offline
+- service worker remains active
+- reconnect does not break the session
 
----
+## After Testing
 
-## Phase 6: Documentation
+### Record results
+- file bugs or notes for any regressions
+- capture screenshots only for failures or notable UI regressions
+- record Safari Web Inspector metrics if performance changed
 
-### Post-Testing Documentation
-
-After completing all iPad tests:
-
-1. **Document findings** in issue tracker or notes
-2. **Take screenshots** of any issues found
-3. **Note performance metrics** from Safari Web Inspector
-   - AudioContext base latency
-   - LCP / FCP from Safari Web Inspector Timeline
-   - Memory usage during AudioWorklet processing
-
-**Success Criteria**:
-- ✅ All issues filed or noted
-- ✅ Screenshots taken for any regressions
-- ✅ Performance metrics recorded for future comparison
-
----
-
-## Phase 7: Build Validation
-
-### Post-Testing Build Check
-
-Run quality gates on development machine after testing:
-
+### Run local verification after fixes
 ```bash
 npm run lint:all
 npm run build
-npm run test        # Unit tests
-npm run handoff:verify  # Full gate (optional but recommended)
+npm run test
+npm run handoff:verify
 ```
 
-**Success Criteria**:
-- ✅ `npm run lint:all` passes
-- ✅ `npm run build` completes without errors
-- ✅ No new regressions introduced by any fixes applied during testing
+## Known Safari / iPadOS Limitations
 
----
-
-## Known Safari/iOS Limitations
-
-These are expected behaviors (not bugs):
-
-1. **No Background Sync**: Uploads only retry when app reopened
-2. **No Web Codecs compression**: MediaRecorder uses WebM/Opus instead
-3. **No Storage Buckets**: Single storage quota for all data
-4. **Push notifications**: Require explicit user permission, no silent push
-5. **Fullscreen API**: Not available in iOS Safari
-6. **Web Bluetooth/USB**: Not supported
-7. **UA string OS version may be frozen**: Parsed iPadOS version from UA can be stale — do not display or rely on it for feature detection
-8. **Prefer `screen.orientation` change events**: Use `screen.orientation.addEventListener('change', ...)` and keep the older `orientationchange` fallback where needed
-9. **AudioContext `interrupted` state** (iOS): System events (phone calls, alerts) put AudioContext in `'interrupted'` — must handle alongside `'suspended'` when resuming audio
-
----
-
-## Success Criteria Summary
-
-**Must Pass**:
-- ✅ All 10 manual tests above (Phases 1–5)
-- ✅ No console errors for Safari-compatible APIs
-- ✅ Smooth performance on iPad mini A15
-- ✅ Offline functionality works completely
-- ✅ PWA installation and standalone mode work
-
-**Nice to Have**:
-- Performance metrics logged for future optimization
-- Screenshots of successful tests for documentation
-- User feedback on touch interaction comfort
-
----
+Expected platform constraints:
+- no Background Sync; retries happen when the app reopens
+- no Storage Buckets; quota is shared
+- no Fullscreen API in iOS Safari
+- no Web Bluetooth or Web USB
+- push notifications require explicit permission and are not silent
+- UA-derived OS version can be stale; do not use it for user-facing version display
+- handle `AudioContext` `'interrupted'` alongside `'suspended'`
+- prefer `screen.orientation` change events and keep `orientationchange` as fallback
 
 ## Troubleshooting
 
-### Microphone Not Working
-- Check Settings > Safari > Microphone > Allow
-- Reload page and grant permission again
+### Microphone fails
+- check `Settings > Safari > Microphone`
+- reload and re-grant permission
 
-### Badge Not Appearing
-- Ensure app added to Home Screen (badges only work for installed PWAs)
-- Check Settings > Notifications > the installed app name > Badges enabled
+### Badge does not appear
+- confirm the app was launched from Home Screen, not Safari
+- check iPad notification settings for badge permission
 
-### Service Worker Not Caching
-- Clear Safari cache: Settings > Safari > Clear History and Website Data
-- Reinstall app from Home Screen
-- Check Service Worker in Web Inspector
+### Service worker does not cache
+- clear Safari website data
+- reinstall the Home Screen app
+- recheck registration in Web Inspector
 
-### Visual Viewport Issues
-- Ensure iOS keyboard settings configured properly
-- Try different input types (text, number, search)
+### Keyboard obscures inputs
+- retest with software keyboard visible
+- compare multiple input types before filing a layout bug
 
----
+## Exit Criteria
 
-**Testing Duration**: Approximately 60-75 minutes for complete test suite (Phases 1–7)
-**Prerequisites**: iPad mini (6th gen) on the current target iPadOS/Safari build, deployed HTTPS app
+Must pass:
+- PIN, storage, offline, install, and core Safari compatibility checks
+- no blocking console errors
+- no significant touch, keyboard, or audio regressions
+
+Nice to capture:
+- screenshots for regressions
+- performance notes for future comparison

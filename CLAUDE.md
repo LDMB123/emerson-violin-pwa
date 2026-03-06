@@ -1,12 +1,8 @@
 # Emerson Violin PWA
 
-## Project Scope
+## Scope
 
-**This project is ONLY the Emerson Violin PWA.** Do not reference, suggest, or pull context from any other project in this workspace. All work here is scoped exclusively to this repository. The Rust/WASM modules under `wasm/` (panda-audio, panda-core) belong to this project alone.
-
-Progressive Web App for violin tuning and practice assistance.
-
-Installed app metadata is defined in [manifest.webmanifest](manifest.webmanifest) with `name="Emerson's Violin Studio"` and `short_name="ViolinPanda"`.
+This repo is only the Emerson Violin PWA. Do not pull context from sibling projects in this workspace. The Rust/WASM modules under `wasm/` belong to this repo. Installed-app metadata lives in [manifest.webmanifest](manifest.webmanifest).
 
 ## Quick Start
 
@@ -17,42 +13,13 @@ npm run build  # Production build
 npm run handoff:status # Repo/env snapshot
 ```
 
-## Project Overview
-
-Local-first violin practice PWA with tuner, coach flows, games, songs, progress tracking, offline behavior, and optional WASM-backed helpers.
-
-## Documentation Map
+## Read First
 
 - [docs/README.md](docs/README.md): doc index and source-of-truth pointers
 - [docs/HANDOFF.md](docs/HANDOFF.md): verification, pickup, and Playwright worker runbook
 - [README.md](README.md): operator-facing overview and full command list
 
-## Key Technologies
-
-- Framework: Vite 7 + vanilla JavaScript (ES modules)
-- Audio: Web Audio API
-- PWA: Service Workers, Web App Manifest
-- Browser Target: Modern evergreen browsers (Chrome, Firefox, Safari) — no legacy IE/Edge fallbacks
-
-## Operator Commands
-
-Use [README.md](README.md) for the full day-to-day command list.
-
-Use [docs/HANDOFF.md](docs/HANDOFF.md) for the full verification gate, Playwright worker calibration, and handoff flow.
-
-## Gotchas
-
-- **Web Audio API**: Requires HTTPS or localhost
-- **Microphone permission**: Prompt user before accessing
-- **Audio context**: Must be created after user gesture
-- **PWA install**: Requires HTTPS and valid manifest
-
-## Architecture
-
-- App shell + nav in `index.html`, view content injected into `#main-content`
-- Lazy view HTML loaded from `public/views/**` via `src/views/view-loader.js`
-- View visibility is controlled with `.view.is-active` (JS-applied on render)
-- Persistence is IndexedDB-first (`src/persistence/storage.js`) with localStorage fallback
+Use [README.md](README.md) for day-to-day commands and [docs/HANDOFF.md](docs/HANDOFF.md) for the full verification flow.
 
 ## Worktree Notes
 

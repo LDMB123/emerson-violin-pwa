@@ -86,9 +86,8 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 ## Files To Read Before Editing
 
 1. `docs/README.md`
-2. `docs/HANDOFF.md`
-3. `CLAUDE.md`
-4. `README.md`
+2. `CLAUDE.md`
+3. `README.md`
 
 ## Recommended Next Work
 

@@ -32,8 +32,6 @@ npm run dev
 Useful commands:
 
 ```bash
-npm run handoff:status
-npm run handoff:verify
 npm run lint
 npm run lint:all
 npm test
@@ -61,19 +59,9 @@ npm run audit:full
 
 ## Playwright Workers
 
-`playwright.config.js` now defaults to:
+`playwright.config.js` defaults to `workers=1` in CI and `workers=2` for local development.
 
-- CI: `workers=1`
-- local development: `workers=2`
-
-Use `PW_WORKERS` to override per run:
-
-```bash
-PW_WORKERS=2 npm run test:e2e
-PW_WORKERS=3 npx playwright test
-```
-
-Use [docs/HANDOFF.md](docs/HANDOFF.md) for the full worker calibration matrix and high-parallelism validation flow.
+Use [docs/HANDOFF.md](docs/HANDOFF.md) for `PW_WORKERS` overrides, the calibration matrix, and high-parallelism validation flow.
 
 ## Quality Gates
 

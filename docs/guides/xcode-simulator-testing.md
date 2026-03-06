@@ -1,253 +1,159 @@
 # Xcode Simulator Testing - iPad mini (6th Gen)
 
-Quick validation using Xcode Simulator before physical device testing.
+Use Simulator for quick Safari/UI validation before moving to a physical iPad.
 
-## Setup Simulator
+## Start the Simulator
 
 ```bash
-# List available iPad mini simulators
+# Find an iPad mini simulator
 xcrun simctl list devices | grep "iPad mini"
 
-# Boot iPad mini (6th generation) — use the simulator runtime that matches your current target iPadOS build
-# Find device UDID from list above, then:
+# Boot the target device
 xcrun simctl boot <DEVICE_UDID>
-
-# Or use Xcode: Window > Devices and Simulators > + > iPad mini (6th generation)
 ```
 
-## Start Development Server
+Or create one in Xcode: `Window > Devices and Simulators`.
+
+## Start the App
 
 ```bash
-# From project root
-npm install  # Install dependencies if needed
-
-# Start dev server (microphone requires HTTPS; localhost is sufficient for dev)
+npm install  # if needed
 npm run dev -- --host
-```
-
-Note development server URL (e.g., `http://localhost:5173`)
-
-## Open in Simulator Safari
-
-```bash
-# Open Safari in running simulator
 xcrun simctl openurl booted "http://localhost:5173"
-
-# Or: In Simulator, open Safari app and navigate manually
 ```
 
-## Simulator Testing Limitations
+## What Simulator Can Validate
 
-**What works in Simulator**:
-- ✅ Web Crypto API (PBKDF2) - Full support
-- ✅ IndexedDB - Full support
-- ✅ Service Workers - Full support
-- ✅ Visual Viewport API - Full support
-- ✅ Touch simulation - Click events work
-- ✅ Screen wake lock API - Capability can be checked in console, but it will not prevent the host Mac from sleeping
-- ✅ Badging API - Capability can be checked in console, but the Simulator will not mirror iPad badge UI on the Mac Dock
+Works well:
+- Web Crypto / PIN flows
+- IndexedDB and local persistence
+- Service worker registration and cache behavior
+- Visual Viewport / keyboard layout handling
+- click-target sizing and most UI interactions
+- API capability checks for wake lock and badging
 
-**What doesn't work in Simulator**:
-- ❌ **Microphone access** - Simulator has no mic, tuner can't test
-- ❌ **AudioWorklet** - Depends on mic input
-- ❌ **Push Notifications** - Need physical device + APNs
-- ❌ **Add to Home Screen** - Simulator Safari doesn't support
-- ❌ **True offline testing** - Network simulation limited
+Do not treat Simulator as authoritative for:
+- microphone input and tuner behavior
+- AudioWorklet latency under real device conditions
+- Add to Home Screen install flow
+- real offline / reconnection behavior
+- push notification behavior
+- true badge presentation on iPad Home Screen
 
-## Recommended Simulator Tests
+## Recommended Simulator Checks
 
-### 1. Web Crypto PBKDF2 (PIN System)
+### 1. Parent PIN security
 
-**In Simulator Safari, open Web Inspector**:
-```bash
-# Enable Web Inspector in Simulator
-# Settings > Safari > Advanced > Web Inspector: ON
+Steps:
+1. Open `#view-parent`.
+2. Verify default PIN `1001` works.
+3. Change the PIN.
+4. Refresh and confirm the old PIN fails and the new one succeeds.
 
-# On Mac: Safari > Develop > [Simulator] iPad mini > localhost
-```
-
-**Test PIN security**:
-1. Navigate to `#view-parent`
-2. Enter default PIN `1001`
-3. Access parent section
-4. Change PIN to `5678`
-5. Refresh page
-6. Try old PIN `1001` - should fail
-7. Try new PIN `5678` - should succeed
-
-**Console check**:
+Console check:
 ```javascript
-// In Web Inspector console
-const pinData = JSON.parse(localStorage.getItem('panda-violin:parent-pin-v2'));
-console.log('PIN stored securely:', pinData);
-// Expected: { hash: "...", salt: "...", createdAt: ... }
-// hash and salt should be 64-char hex strings
+JSON.parse(localStorage.getItem('panda-violin:parent-pin-v2'))
 ```
 
-### 2. IndexedDB Persistence
+Pass if the stored value is hashed and the PIN change survives reload.
 
-**Test data persistence**:
-1. Navigate to **Practice Coach** (`#view-coach`)
-2. Mark a task complete
-3. **Quit and restart simulator**:
-   ```bash
-   xcrun simctl shutdown booted
-   xcrun simctl boot <DEVICE_UDID>
-   xcrun simctl openurl booted "http://localhost:5173"
-   ```
-4. Navigate back to **Practice Coach**
-5. **Expected**: Task still marked complete
+### 2. IndexedDB persistence
 
-**Console check**:
+Steps:
+1. Open **Practice Coach**.
+2. Change saved state.
+3. Shut down and reboot the simulator.
+4. Reopen the app.
+5. Confirm state is still present.
+
+Console check:
 ```javascript
-// Check storage estimate
-const estimate = await navigator.storage.estimate();
-console.log('Usage:', (estimate.usage / 1024).toFixed(2), 'KB');
-console.log('Quota:', (estimate.quota / 1024 / 1024).toFixed(2), 'MB');
-// Expected: Non-zero usage, large quota
+await navigator.storage.estimate()
 ```
 
-### 3. Visual Viewport (Keyboard Simulation)
+Pass if saved state survives simulator restart.
 
-**Test keyboard appearance**:
-1. Navigate to Games section
-2. Tap (click) text input field
-3. **Simulator keyboard appears** (Hardware > Keyboard > Toggle Software Keyboard)
-4. **Expected**: Input scrolls into view above keyboard
+### 3. Keyboard / Visual Viewport
 
-**Console monitoring**:
+Steps:
+1. Focus a text input.
+2. Toggle the software keyboard if needed.
+3. Confirm the field stays visible above the keyboard.
+
+Console check:
 ```javascript
-// Monitor viewport changes
 window.visualViewport.addEventListener('resize', () => {
-    console.log('Viewport height:', window.visualViewport.height);
-    console.log('Offset top:', window.visualViewport.offsetTop);
+  console.log(window.visualViewport.height, window.visualViewport.offsetTop);
 });
-// Type in input - should log height changes when keyboard shows
 ```
 
-### 4. Service Worker Caching
+Pass if the layout recovers cleanly when the keyboard appears and disappears.
 
-**Test offline capability** (simulated):
-1. Load app in Simulator Safari
-2. **Network throttling**:
-   - Web Inspector > Network tab > Throttling > Offline
-3. Refresh page
-4. **Expected**: App still loads from Service Worker cache
+### 4. Service worker cache behavior
 
-**Console check**:
+Steps:
+1. Load the app once online.
+2. In Web Inspector, switch Network throttling to Offline.
+3. Refresh.
+
+Console checks:
 ```javascript
-// Check Service Worker
-const regs = await navigator.serviceWorker.getRegistrations();
-console.log('SW registered:', regs.length > 0);
-console.log('SW active:', regs[0]?.active?.state);
-// Expected: registered: true, active: "activated"
-
-// Check caches
-const cacheKeys = await caches.keys();
-console.log('Caches:', cacheKeys);
-// Expected: Array with cache names prefixed by "panda-violin-" or "workbox-"
+await navigator.serviceWorker.getRegistrations();
+await caches.keys();
 ```
 
-### 5. Touch Targets (Click Simulation)
+Pass if the app still loads from cache and the service worker stays active.
 
-**Test interactive elements**:
-1. Click all buttons, toggles, links
-2. **Check hit areas**:
-   - Web Inspector > Elements > Computed > Box Model
-   - Select button elements, verify width/height ≥44px
-3. Test string selector (G, D, A, E buttons)
-4. **Expected**: All elements easily clickable
+### 5. Click-target sizing
 
-**Console check**:
+Steps:
+1. Click primary buttons, toggles, links, and tuner string selectors.
+2. Inspect any questionable controls in Web Inspector.
+
+Console check:
 ```javascript
-// Measure touch targets
-document.querySelectorAll('button, a, [role="button"]').forEach(el => {
-    const rect = el.getBoundingClientRect();
-    if (rect.width < 44 || rect.height < 44) {
-        console.warn('Small target:', el, rect.width, 'x', rect.height);
-    }
+document.querySelectorAll('button, a, [role="button"]').forEach((el) => {
+  const rect = el.getBoundingClientRect();
+  if (rect.width < 44 || rect.height < 44) console.warn('Small target', el, rect);
 });
-// Expected: No warnings (all targets ≥44px)
 ```
 
-## Physical Device Testing (Required)
+Pass if there are no obvious undersized targets or dead click zones.
 
-**After Simulator validation**, test on real iPad mini (6th gen):
+## Physical Device Follow-Up Still Required
 
-**Critical tests requiring physical device**:
-1. **Microphone + Tuner** - Pitch detection latency and accuracy
-2. **AudioWorklet** - Real-time audio processing performance
-3. **Add to Home Screen** - PWA installation flow
-4. **True offline** - Airplane Mode testing
-5. **Badge updates** - Practice reminder badges
-6. **Wake Lock** - Screen stays on during practice
-7. **A15 performance** - Frame rates, memory usage
+Move to a real iPad mini for:
+- microphone + tuner accuracy
+- AudioWorklet performance
+- Home Screen install flow
+- true offline testing
+- wake lock behavior
+- badge behavior
+- device-level performance and memory checks
 
-See [`docs/guides/safari-ipad-test-guide.md`](safari-ipad-test-guide.md) for complete physical device test suite.
+Use [docs/guides/safari-ipad-test-guide.md](safari-ipad-test-guide.md) for the full device runbook.
 
-## Xcode Instruments Profiling
+## Instruments
 
-**For deep performance analysis on physical device**:
+For deeper profiling on a physical device:
+- attach Safari from Xcode
+- use Time Profiler for CPU
+- use Allocations for memory
+- use Network to confirm request/cache behavior
 
-```bash
-# Connect iPad via USB
-# Xcode > Window > Devices and Simulators
-# Select iPad > Use for Development
-
-# Open app in Safari on iPad
-# Xcode > Debug > Attach to Process by PID or Name... > Safari
-
-# Instruments > Allocations (memory)
-# Instruments > Time Profiler (CPU)
-# Instruments > Network (API calls)
-```
-
-**Key metrics to capture**:
-- Memory usage during AudioWorklet processing
-- CPU usage for pitch detection
-- Frame rate (should maintain 60fps)
-- Network requests (Service Worker cache hits)
-
-## Automated Testing Notes
-
-**For CI/CD integration** (future):
-- Simulator automation via `xcrun simctl`
-- Project browser automation already covers WebKit + iPad emulation via Playwright; Simulator Safari remains a manual validation target
-- Limited value without microphone testing
-- Focus automation on: PIN security, storage, UI interactions
-
-## Quick Validation Script
+## Quick Helper Script
 
 ```bash
 #!/bin/bash
-# Quick Xcode Simulator validation
-# Run from project root: bash test-simulator.sh
-
-echo "Starting iPad mini simulator..."
 DEVICE_UDID=$(xcrun simctl list devices | grep "iPad mini (6th generation)" | grep -oE '[0-9A-F-]{36}' | head -1)
+[ -n "$DEVICE_UDID" ] || { echo "iPad mini simulator not found"; exit 1; }
 
-if [ -z "$DEVICE_UDID" ]; then
-    echo "iPad mini (6th generation) simulator not found"
-    echo "Create one in Xcode: Window > Devices and Simulators"
-    exit 1
-fi
-
-xcrun simctl boot "$DEVICE_UDID" 2>/dev/null || echo "Simulator already booted"
-
-echo "Starting dev server..."
+xcrun simctl boot "$DEVICE_UDID" 2>/dev/null || true
 npm run dev -- --host &
 DEV_PID=$!
-
 sleep 3
-
-echo "Opening app in Safari..."
 xcrun simctl openurl booted "http://localhost:5173"
-
-echo ""
-echo "Simulator ready! Run manual tests from docs/guides/xcode-simulator-testing.md"
-echo "Press Ctrl+C to stop dev server when done"
-
 wait $DEV_PID
 ```
 
-Save as `test-simulator.sh` (or any name), run with `bash test-simulator.sh`
+Use this only as a convenience launcher; the manual checklist above is still the real validation path.
