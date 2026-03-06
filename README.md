@@ -39,14 +39,11 @@ npm run test:e2e
 npx playwright test
 npm run build
 npm run preview
+npm run audit:static
 npm run audit:deadcode
-npm run audit:deps
-npm run audit:secrets
-npm run audit:perf:config
-npm run audit:view-sync
-npm run audit:modules
-npm run audit:a11y
-npm run audit:learning
+npm run audit:dup
+npm run qa:effectiveness
+npm run audit:dep-backed
 npm run audit:full
 ```
 
@@ -65,11 +62,14 @@ Use [docs/HANDOFF.md](docs/HANDOFF.md) for `PW_WORKERS` overrides, the calibrati
 
 ## Quality Gates
 
+- `audit:static` is the zero-dependency audit lane: secrets, duplicate-dependency allowlist check, perf budget config, home view sync, feature module completeness, accessibility, and learning completeness.
+- `audit:dep-backed` is the dependency-backed verification lane: lint, duplicate clone scan, dead-code scan, coverage effectiveness, and production build.
 - Dead code and unused exports are checked by `knip` using `knip.json`.
 - Duplicate dependency versions are checked by `scripts/audit-dependency-duplicates.mjs`.
 - Secret/credential pattern leakage is checked by `scripts/audit-secrets.mjs`.
 - Performance budget config drift is checked by `scripts/audit-performance-budget-config.mjs`.
-- CI runs `lint:all`, dead-code/dependency/security audits, production dependency vulnerability audit, unit tests, build, performance budget checks, and Playwright E2E on PRs and pushes to `main`.
+- `audit:full` runs `audit:static` plus `audit:dep-backed`.
+- CI runs the static audits, dependency-backed verification, production dependency vulnerability audit, and Playwright E2E on PRs and pushes to `main`.
 - Operator runbook for zero-context pickup: `docs/HANDOFF.md`.
 
 ## Architecture Notes

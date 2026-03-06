@@ -2,11 +2,16 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { load } from 'cheerio';
+import {
+    findElementsByTag,
+    findFirstElementById,
+    normalizeWhitespace,
+    parseAttributes,
+    stripTags,
+} from './html-audit-utils.mjs';
 
 const rootDir = process.cwd();
 const viewsDir = path.join(rootDir, 'public', 'views');
-const failures = [];
 
 const collectHtmlFiles = (dir) => {
     const files = [];
@@ -28,115 +33,142 @@ const collectHtmlFiles = (dir) => {
     return files;
 };
 
-const normalizeWhitespace = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+const getInnerText = (element) => stripTags(element?.innerHtml || '');
 
-const hasWrappingLabel = ($el) => {
-    const $label = $el.closest('label');
-    if (!$label.length) return false;
-    const text = normalizeWhitespace($label.text());
-    return Boolean(text);
-};
+const hasWrappingLabel = (element, labels) => labels.some((label) => (
+    element.start > label.start
+    && element.end < label.end
+    && Boolean(getInnerText(label))
+));
 
-const hasReferencedLabel = ($el, $) => {
-    const id = $el.attr('id');
-    if (!id) return false;
-    const direct = normalizeWhitespace($(`label[for="${id}"]`).first().text());
-    if (direct) return true;
-    const labelledBy = normalizeWhitespace($el.attr('aria-labelledby'));
+const hasReferencedLabel = (element, labels, getTextById) => {
+    const id = element.attrs.id;
+    if (id) {
+        const direct = labels.find((label) => label.attrs.for === id);
+        if (direct && getInnerText(direct)) return true;
+    }
+
+    const labelledBy = normalizeWhitespace(element.attrs['aria-labelledby']);
     if (!labelledBy) return false;
     const text = labelledBy
         .split(/\s+/)
-        .map((ref) => normalizeWhitespace($(`#${ref}`).text()))
+        .map((ref) => getTextById(ref))
         .filter(Boolean)
         .join(' ');
     return Boolean(text);
 };
 
-const hasAccessibleName = ($el, $) => {
-    const ariaLabel = normalizeWhitespace($el.attr('aria-label'));
+const hasAccessibleName = (element, labels, getTextById) => {
+    const ariaLabel = normalizeWhitespace(element.attrs['aria-label']);
     if (ariaLabel) return true;
-    if (hasReferencedLabel($el, $)) return true;
-    if (hasWrappingLabel($el)) return true;
+    if (hasReferencedLabel(element, labels, getTextById)) return true;
+    if (hasWrappingLabel(element, labels)) return true;
 
-    const text = normalizeWhitespace($el.text());
+    const text = getInnerText(element);
     if (text) return true;
 
-    const title = normalizeWhitespace($el.attr('title'));
+    const title = normalizeWhitespace(element.attrs.title);
     return Boolean(title);
 };
 
-const auditFile = (filePath) => {
-    const relativePath = path.relative(rootDir, filePath);
-    const html = fs.readFileSync(filePath, 'utf8');
-    const $ = load(html);
+export const auditAccessibilityMarkup = (relativePath, html) => {
+    const failures = [];
+    const labels = findElementsByTag(html, 'label');
+    const idTextCache = new Map();
 
-    $('section.view').each((_, section) => {
-        const $section = $(section);
-        const id = $section.attr('id') || '<missing-id>';
-        const ariaLabel = normalizeWhitespace($section.attr('aria-label'));
-        if (!ariaLabel) {
-            failures.push(`${relativePath}: section#${id} is missing aria-label`);
-        }
-    });
+    const getTextById = (id) => {
+        if (!id) return '';
+        if (idTextCache.has(id)) return idTextCache.get(id);
+        const element = findFirstElementById(html, id);
+        const text = element ? getInnerText(element) : '';
+        idTextCache.set(id, text);
+        return text;
+    };
 
-    $('img').each((_, img) => {
-        const $img = $(img);
-        const altAttr = $img.attr('alt');
-        if (typeof altAttr === 'undefined') {
+    findElementsByTag(html, 'section')
+        .filter((section) => String(section.attrs.class || '').split(/\s+/).includes('view'))
+        .forEach((section) => {
+            const id = section.attrs.id || '<missing-id>';
+            const ariaLabel = normalizeWhitespace(section.attrs['aria-label']);
+            if (!ariaLabel) {
+                failures.push(`${relativePath}: section#${id} is missing aria-label`);
+            }
+        });
+
+    findElementsByTag(html, 'img').forEach((img) => {
+        if (!Object.prototype.hasOwnProperty.call(img.attrs, 'alt')) {
             failures.push(`${relativePath}: img is missing alt attribute`);
         }
     });
 
-    $('dialog').each((_, dialog) => {
-        const $dialog = $(dialog);
-        const labelledBy = normalizeWhitespace($dialog.attr('aria-labelledby'));
+    findElementsByTag(html, 'dialog').forEach((dialog) => {
+        const labelledBy = normalizeWhitespace(dialog.attrs['aria-labelledby']);
         if (!labelledBy) {
             failures.push(`${relativePath}: dialog is missing aria-labelledby`);
             return;
         }
         const missingRef = labelledBy
             .split(/\s+/)
-            .find((id) => !$("#" + id).length);
+            .find((id) => !getTextById(id));
         if (missingRef) {
             failures.push(`${relativePath}: dialog references missing label id "${missingRef}"`);
         }
     });
 
-    $('button, a[href], input, select, textarea').each((_, element) => {
-        const $el = $(element);
-        const tag = element.tagName.toLowerCase();
+    const interactiveElements = [
+        ...findElementsByTag(html, 'button'),
+        ...findElementsByTag(html, 'a').filter((element) => Boolean(element.attrs.href)),
+        ...findElementsByTag(html, 'input'),
+        ...findElementsByTag(html, 'select'),
+        ...findElementsByTag(html, 'textarea'),
+    ];
 
+    interactiveElements.forEach((element) => {
+        const tag = element.tagName;
         if (tag === 'input') {
-            const type = ($el.attr('type') || 'text').toLowerCase();
+            const type = String(element.attrs.type || 'text').toLowerCase();
             if (type === 'hidden') return;
-            if (typeof $el.attr('hidden') !== 'undefined') return;
-            if (($el.attr('aria-hidden') || '').toLowerCase() === 'true') return;
+            if (Object.prototype.hasOwnProperty.call(element.attrs, 'hidden')) return;
+            if (String(element.attrs['aria-hidden'] || '').toLowerCase() === 'true') return;
             if (['submit', 'button', 'reset'].includes(type)) {
-                if (!hasAccessibleName($el, $) && !normalizeWhitespace($el.attr('value'))) {
+                if (!hasAccessibleName(element, labels, getTextById) && !normalizeWhitespace(element.attrs.value)) {
                     failures.push(`${relativePath}: input[type=${type}] is missing accessible name`);
                 }
                 return;
             }
-            if (!hasAccessibleName($el, $) && !hasReferencedLabel($el, $) && !hasWrappingLabel($el)) {
-                failures.push(`${relativePath}: input${$el.attr('id') ? `#${$el.attr('id')}` : ''} is missing label`);
+            if (!hasAccessibleName(element, labels, getTextById)) {
+                failures.push(`${relativePath}: input${element.attrs.id ? `#${element.attrs.id}` : ''} is missing label`);
             }
             return;
         }
 
-        if (!hasAccessibleName($el, $)) {
-            const descriptor = $el.attr('id') ? `${tag}#${$el.attr('id')}` : tag;
+        if (!hasAccessibleName(element, labels, getTextById)) {
+            const descriptor = element.attrs.id ? `${tag}#${element.attrs.id}` : tag;
             failures.push(`${relativePath}: ${descriptor} is missing accessible name`);
         }
     });
 
-    $('[role="progressbar"]').each((_, node) => {
-        const $node = $(node);
-        ['aria-valuemin', 'aria-valuemax', 'aria-valuenow'].forEach((attr) => {
-            if (typeof $node.attr(attr) === 'undefined') {
-                failures.push(`${relativePath}: progressbar is missing ${attr}`);
-            }
-        });
-    });
+    const progressbarRegex = /<([a-zA-Z][\w:-]*)\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
+    let progressbarMatch = progressbarRegex.exec(html);
+    while (progressbarMatch) {
+        const attrs = parseAttributes(progressbarMatch[2] || '');
+        if (attrs.role === 'progressbar') {
+            ['aria-valuemin', 'aria-valuemax', 'aria-valuenow'].forEach((attr) => {
+                if (!Object.prototype.hasOwnProperty.call(attrs, attr)) {
+                    failures.push(`${relativePath}: progressbar is missing ${attr}`);
+                }
+            });
+        }
+        progressbarMatch = progressbarRegex.exec(html);
+    }
+
+    return failures;
+};
+
+const auditFile = (filePath) => {
+    const relativePath = path.relative(rootDir, filePath);
+    const html = fs.readFileSync(filePath, 'utf8');
+    return auditAccessibilityMarkup(relativePath, html);
 };
 
 if (!fs.existsSync(viewsDir)) {
@@ -145,7 +177,7 @@ if (!fs.existsSync(viewsDir)) {
 }
 
 const htmlFiles = collectHtmlFiles(viewsDir);
-htmlFiles.forEach(auditFile);
+const failures = htmlFiles.flatMap(auditFile);
 
 if (failures.length) {
     console.error('Accessibility audit failed:');

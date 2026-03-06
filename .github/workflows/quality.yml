@@ -22,29 +22,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint (all code paths)
-        run: npm run lint:all
-
-      - name: Dead code audit
-        run: npm run audit:deadcode
-
-      - name: Dependency duplicate audit
-        run: npm run audit:deps
-
-      - name: Secrets audit
-        run: npm run audit:secrets
+      - name: Verification gate (static + dependency-backed)
+        run: npm run audit:full
 
       - name: Dependency vulnerability audit (prod)
         run: npm audit --omit=dev --audit-level=high
-
-      - name: Performance budget config audit
-        run: npm run audit:perf:config
-
-      - name: Unit tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
 
       - name: Install Playwright (Chromium + WebKit)
         run: npx playwright install --with-deps chromium webkit

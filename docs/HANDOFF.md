@@ -33,18 +33,12 @@ Treat command output as the source of truth. Do not rely on dated pass/fail coun
 
 ## Verification Gates
 
-- `npm run lint:all`
-- `npm run audit:deadcode`
-- `npm run audit:deps`
-- `npm run audit:secrets`
-- `npm run audit:perf:config`
-- `npm run audit:view-sync`
-- `npm run qa:effectiveness`
-- `npm run audit:modules`
-- `npm run build`
+- `npm run audit:static`
+- `npm run audit:dep-backed`
 - `npm run test:e2e`
 
-`npm run handoff:verify` runs the complete handoff sequence.
+`npm run audit:full` runs `audit:static` plus `audit:dep-backed`.
+`npm run handoff:verify` runs the full handoff sequence plus Playwright E2E.
 
 ## Playwright Worker Profiles
 

@@ -1,7 +1,7 @@
-import * as cheerio from 'cheerio';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findFirstElementById, normalizeMarkup } from './html-audit-utils.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
@@ -9,22 +9,18 @@ const indexPath = path.join(repoRoot, 'index.html');
 const routeHomePath = path.join(repoRoot, 'public', 'views', 'home.html');
 
 export const extractInlineHomeView = (indexHtml) => {
-    const $ = cheerio.load(indexHtml);
-    const homeView = $('section.view#view-home').first();
-    if (!homeView.length) {
+    const homeView = findFirstElementById(indexHtml, 'view-home');
+    if (!homeView || homeView.tagName !== 'section') {
         throw new Error('Inline view-home section not found in index.html');
     }
-    return $.html(homeView);
+    const classes = String(homeView.attrs.class || '').split(/\s+/).filter(Boolean);
+    if (!classes.includes('view')) {
+        throw new Error('Inline view-home section is missing class="view" in index.html');
+    }
+    return homeView.outerHtml;
 };
 
-export const normalizeViewMarkup = (markup) => {
-    const $ = cheerio.load(markup, null, false);
-    return $.html()
-        .replace(/\r\n/g, '\n')
-        .replace(/>\s+</g, '><')
-        .replace(/\s{2,}/g, ' ')
-        .trim();
-};
+export const normalizeViewMarkup = (markup) => normalizeMarkup(markup);
 
 export const isHomeViewSynced = (inlineMarkup, routeMarkup) =>
     normalizeViewMarkup(inlineMarkup) === normalizeViewMarkup(routeMarkup);
