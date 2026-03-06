@@ -11,6 +11,9 @@ export default defineConfig({
         // Exclude E2E tests (run via Playwright)
         exclude: ['tests/e2e/**'],
 
+        // Stabilize browser storage APIs across supported Node runtimes.
+        setupFiles: ['tests/setup/happy-dom-storage-shim.js'],
+
         // Coverage configuration
         coverage: {
             provider: 'v8',
