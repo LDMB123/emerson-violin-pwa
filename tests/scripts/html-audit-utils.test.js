@@ -54,6 +54,20 @@ describe('html-audit-utils', () => {
         });
     });
 
+    it('ignores tags inside HTML comments during scans', () => {
+        const html = `
+            <!-- <img src="./assets/illustrations/ghost.webp"> -->
+            <section class="view" id="view-home" aria-label="Home">
+                <img src="./assets/illustrations/mascot-happy.webp" alt="">
+            </section>
+        `;
+
+        const images = findElementsByTag(html, 'img');
+
+        expect(images).toHaveLength(1);
+        expect(images[0].attrs.src).toContain('mascot-happy.webp');
+    });
+
     it('normalizes markup and strips text content predictably', () => {
         const markup = `
             <section class="view" id="view-home">

@@ -12,6 +12,7 @@ import {
 
 const rootDir = process.cwd();
 const viewsDir = path.join(rootDir, 'public', 'views');
+const COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
 
 const collectHtmlFiles = (dir) => {
     const files = [];
@@ -34,6 +35,12 @@ const collectHtmlFiles = (dir) => {
 };
 
 const getInnerText = (element) => stripTags(element?.innerHtml || '');
+const getDescendantImageAltText = (element) => normalizeWhitespace(
+    findElementsByTag(element?.innerHtml || '', 'img')
+        .map((img) => normalizeWhitespace(img.attrs.alt))
+        .filter(Boolean)
+        .join(' ')
+);
 
 const hasWrappingLabel = (element, labels) => labels.some((label) => (
     element.start > label.start
@@ -66,6 +73,9 @@ const hasAccessibleName = (element, labels, getTextById) => {
 
     const text = getInnerText(element);
     if (text) return true;
+
+    const descendantImageAltText = getDescendantImageAltText(element);
+    if (descendantImageAltText) return true;
 
     const title = normalizeWhitespace(element.attrs.title);
     return Boolean(title);
@@ -148,8 +158,9 @@ export const auditAccessibilityMarkup = (relativePath, html) => {
         }
     });
 
+    const commentSafeHtml = String(html).replace(COMMENT_PATTERN, (comment) => comment.replace(/[^\r\n]/g, ' '));
     const progressbarRegex = /<([a-zA-Z][\w:-]*)\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
-    let progressbarMatch = progressbarRegex.exec(html);
+    let progressbarMatch = progressbarRegex.exec(commentSafeHtml);
     while (progressbarMatch) {
         const attrs = parseAttributes(progressbarMatch[2] || '');
         if (attrs.role === 'progressbar') {
@@ -159,7 +170,7 @@ export const auditAccessibilityMarkup = (relativePath, html) => {
                 }
             });
         }
-        progressbarMatch = progressbarRegex.exec(html);
+        progressbarMatch = progressbarRegex.exec(commentSafeHtml);
     }
 
     return failures;

@@ -17,6 +17,11 @@ const VOID_TAGS = new Set([
 
 const TAG_BODY_PATTERN = "(?:\"[^\"]*\"|'[^']*'|[^'\">])*";
 const ATTRIBUTE_PATTERN = /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+const COMMENT_PATTERN = /<!--[\s\S]*?-->/g;
+
+const maskHtmlComments = (value = '') => String(value).replace(COMMENT_PATTERN, (comment) => (
+    comment.replace(/[^\r\n]/g, ' ')
+));
 
 export const normalizeWhitespace = (value = '') => String(value).replace(/\s+/g, ' ').trim();
 
@@ -31,7 +36,7 @@ export const decodeHtmlEntities = (value = '') => String(value)
 export const stripTags = (value = '') => normalizeWhitespace(
     decodeHtmlEntities(
         String(value)
-            .replace(/<!--[\s\S]*?-->/g, ' ')
+            .replace(COMMENT_PATTERN, ' ')
             .replace(/<[^>]+>/g, ' ')
     )
 );
@@ -58,10 +63,11 @@ export const findElementsByTag = (html, tagName) => {
     const normalizedTagName = String(tagName || '').toLowerCase();
     if (!normalizedTagName) return [];
 
+    const source = maskHtmlComments(html);
     const regex = buildTagRegex(normalizedTagName);
     const elements = [];
     const stack = [];
-    let match = regex.exec(html);
+    let match = regex.exec(source);
 
     while (match) {
         const closing = match[1] === '/';
@@ -83,7 +89,7 @@ export const findElementsByTag = (html, tagName) => {
                     outerHtml: html.slice(open.start, end),
                 });
             }
-            match = regex.exec(html);
+            match = regex.exec(source);
             continue;
         }
 
@@ -105,7 +111,7 @@ export const findElementsByTag = (html, tagName) => {
             });
         }
 
-        match = regex.exec(html);
+        match = regex.exec(source);
     }
 
     return elements.sort((left, right) => left.start - right.start);
@@ -115,8 +121,9 @@ export const findFirstElementById = (html, id) => {
     const wantedId = String(id || '');
     if (!wantedId) return null;
 
+    const source = maskHtmlComments(html);
     const openingTagPattern = new RegExp(`<([a-zA-Z][\\w:-]*)\\b(${TAG_BODY_PATTERN})>`, 'gi');
-    let match = openingTagPattern.exec(html);
+    let match = openingTagPattern.exec(source);
     while (match) {
         const tagName = String(match[1] || '').toLowerCase();
         const attrs = parseAttributes(match[2] || '');
@@ -125,7 +132,7 @@ export const findFirstElementById = (html, id) => {
             const candidates = findElementsByTag(html, tagName);
             return candidates.find((element) => element.start === start) || null;
         }
-        match = openingTagPattern.exec(html);
+        match = openingTagPattern.exec(source);
     }
 
     return null;
@@ -133,7 +140,7 @@ export const findFirstElementById = (html, id) => {
 
 export const normalizeMarkup = (markup = '') => String(markup)
     .replace(/\r\n/g, '\n')
-    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(COMMENT_PATTERN, '')
     .replace(/>\s+</g, '><')
     .replace(/\s{2,}/g, ' ')
     .trim();

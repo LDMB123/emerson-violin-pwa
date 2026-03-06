@@ -37,4 +37,27 @@ describe('audit-accessibility', () => {
 
         expect(auditAccessibilityMarkup('public/views/coach.html', html)).toEqual([]);
     });
+
+    it('accepts icon-only controls named by descendant image alt text', () => {
+        const html = `
+            <section class="view" id="view-home" aria-label="Home">
+                <a href="#view-coach"><img src="./assets/icons/home.webp" alt="Go home"></a>
+                <button type="button"><img src="./assets/icons/play.webp" alt="Start session"></button>
+            </section>
+        `;
+
+        expect(auditAccessibilityMarkup('public/views/home.html', html)).toEqual([]);
+    });
+
+    it('ignores commented-out markup when checking accessibility', () => {
+        const html = `
+            <section class="view" id="view-home" aria-label="Home">
+                <!-- <img src="./assets/illustrations/ghost.webp"> -->
+                <!-- <div role="progressbar" aria-valuemin="0"></div> -->
+                <button type="button">Start</button>
+            </section>
+        `;
+
+        expect(auditAccessibilityMarkup('public/views/home.html', html)).toEqual([]);
+    });
 });
