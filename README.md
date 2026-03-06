@@ -2,7 +2,7 @@
 
 Local-first violin practice app for iPad-focused use, with an onboarding flow, practice tools, games, coach guidance, and offline behavior.
 
-Installed app metadata comes from [manifest.webmanifest](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/manifest.webmanifest):
+Installed app metadata comes from [manifest.webmanifest](manifest.webmanifest):
 
 - `name`: `Emerson's Violin Studio`
 - `short_name`: `ViolinPanda`
@@ -54,9 +54,9 @@ npm run audit:full
 
 ## Documentation
 
-- [docs/README.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/docs/README.md): documentation map and source-of-truth guide
-- [docs/HANDOFF.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/docs/HANDOFF.md): zero-context operator runbook
-- [CLAUDE.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/CLAUDE.md): repo-specific engineering notes and runtime gotchas
+- [docs/README.md](docs/README.md): documentation map and source-of-truth guide
+- [docs/HANDOFF.md](docs/HANDOFF.md): zero-context operator runbook
+- [CLAUDE.md](CLAUDE.md): repo-specific engineering notes and runtime gotchas
 - `docs/guides/`: focused workflows for asset optimization and Safari/iPad validation
 
 ## Playwright Worker Tuning

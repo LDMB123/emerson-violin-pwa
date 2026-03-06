@@ -2,11 +2,11 @@
 
 ## Project Scope
 
-**This project is ONLY the Emerson Violin PWA.** Do not reference, suggest, or pull context from any other project in this workspace (dmb-almanac, blaires-kind-heart, imagen-experiments, gemini-mcp-server). All work here is scoped exclusively to this repository. The Rust/WASM modules under `wasm/` (panda-audio, panda-core) belong to this project, not dmb-almanac.
+**This project is ONLY the Emerson Violin PWA.** Do not reference, suggest, or pull context from any other project in this workspace. All work here is scoped exclusively to this repository. The Rust/WASM modules under `wasm/` (panda-audio, panda-core) belong to this project alone.
 
 Progressive Web App for violin tuning and practice assistance.
 
-Installed app metadata is defined in [manifest.webmanifest](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/manifest.webmanifest) with `name="Emerson's Violin Studio"` and `short_name="ViolinPanda"`.
+Installed app metadata is defined in [manifest.webmanifest](manifest.webmanifest) with `name="Emerson's Violin Studio"` and `short_name="ViolinPanda"`.
 
 ## Quick Start
 
@@ -26,9 +26,9 @@ Local-first violin practice PWA with tuner, coach flows, games, songs, progress 
 
 ## Documentation Map
 
-- [docs/README.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/docs/README.md): doc index and source-of-truth pointers
-- [docs/HANDOFF.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/docs/HANDOFF.md): verification and pickup runbook
-- [README.md](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/README.md): operator-facing overview and command list
+- [docs/README.md](docs/README.md): doc index and source-of-truth pointers
+- [docs/HANDOFF.md](docs/HANDOFF.md): verification and pickup runbook
+- [README.md](README.md): operator-facing overview and command list
 
 ## Key Technologies
 
