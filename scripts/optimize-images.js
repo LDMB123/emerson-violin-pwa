@@ -101,36 +101,32 @@ function formatBytes(bytes) {
   return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
 }
 
-// Mascot WebP conversion
-async function convertMascotsToWebP() {
-  console.log('🎨 Converting mascot illustrations to WebP...\n');
+async function convertPngDirectoryToWebP({ dirPath, label, filter }) {
+  console.log(`${label}\n`);
 
   try {
-    // Get all mascot PNG files
-    const files = await fs.readdir(ILLUSTRATIONS_DIR);
-    const mascots = files.filter(f => f.startsWith('mascot-') && f.endsWith('.png'));
+    const files = await fs.readdir(dirPath);
+    const pngFiles = files.filter(filter);
 
-    if (mascots.length === 0) {
-      console.log('✅ No mascot PNG files found to convert');
+    if (pngFiles.length === 0) {
+      console.log(`✅ No matching PNG files found in ${path.relative(projectRoot, dirPath)}`);
       return;
     }
 
-    console.log(`[optimize-images] Converting ${mascots.length} mascots to WebP...`);
+    console.log(`[optimize-images] Converting ${pngFiles.length} files in ${path.relative(projectRoot, dirPath)}...`);
 
     let totalPngSize = 0;
     let totalWebPSize = 0;
 
-    for (const file of mascots) {
-      const pngPath = path.join(ILLUSTRATIONS_DIR, file);
+    for (const file of pngFiles) {
+      const pngPath = path.join(dirPath, file);
       const webpFile = file.replace('.png', '.webp');
-      const webpPath = path.join(ILLUSTRATIONS_DIR, webpFile);
+      const webpPath = path.join(dirPath, webpFile);
 
-      // Convert to WebP with high quality method
       await sharp(pngPath)
         .webp({ quality: 85, method: 6 })
         .toFile(webpPath);
 
-      // Get file sizes
       const pngStats = await fs.stat(pngPath);
       const webpStats = await fs.stat(webpPath);
       const pngSize = pngStats.size;
@@ -140,73 +136,38 @@ async function convertMascotsToWebP() {
       totalPngSize += pngSize;
       totalWebPSize += webpSize;
 
+      await fs.unlink(pngPath);
+
       console.log(`  ${file} → ${webpFile} (${reduction}% smaller)`);
     }
 
     const totalReduction = ((totalPngSize - totalWebPSize) / totalPngSize * 100).toFixed(1);
-    console.log('\n[optimize-images] Mascot conversion complete');
+    console.log(`\n[optimize-images] ${path.basename(dirPath)} conversion complete`);
     console.log(`  Total savings: ${formatBytes(totalPngSize - totalWebPSize)} (${totalReduction}% reduction)\n`);
 
   } catch (error) {
-    console.error('❌ Mascot conversion failed:', error);
+    console.error(`❌ ${path.basename(dirPath)} conversion failed:`, error);
     process.exit(1);
   }
 }
 
-// Badge WebP conversion
+async function convertIllustrationsToWebP() {
+  await convertPngDirectoryToWebP({
+    dirPath: ILLUSTRATIONS_DIR,
+    label: '🎨 Converting illustration images to WebP...',
+    filter: (file) => file.endsWith('.png'),
+  });
+}
+
 async function convertBadgesToWebP() {
-  console.log('🎖️  Converting badge images to WebP...\n');
-
-  try {
-    const BADGES_DIR = path.join(projectRoot, 'public/assets/badges');
-
-    // Get all badge PNG files
-    const files = await fs.readdir(BADGES_DIR);
-    const badges = files.filter(f => f.startsWith('badge_') && f.endsWith('.png'));
-
-    if (badges.length === 0) {
-      console.log('✅ No badge PNG files found to convert');
-      return;
-    }
-
-    console.log(`[optimize-images] Converting ${badges.length} badges to WebP...`);
-
-    let totalPngSize = 0;
-    let totalWebPSize = 0;
-
-    for (const file of badges) {
-      const pngPath = path.join(BADGES_DIR, file);
-      const webpFile = file.replace('.png', '.webp');
-      const webpPath = path.join(BADGES_DIR, webpFile);
-
-      // Convert to WebP with high quality method
-      await sharp(pngPath)
-        .webp({ quality: 85, method: 6 })
-        .toFile(webpPath);
-
-      // Get file sizes
-      const pngStats = await fs.stat(pngPath);
-      const webpStats = await fs.stat(webpPath);
-      const pngSize = pngStats.size;
-      const webpSize = webpStats.size;
-      const reduction = ((pngSize - webpSize) / pngSize * 100).toFixed(1);
-
-      totalPngSize += pngSize;
-      totalWebPSize += webpSize;
-
-      console.log(`  ${file} → ${webpFile} (${reduction}% smaller)`);
-    }
-
-    const totalReduction = ((totalPngSize - totalWebPSize) / totalPngSize * 100).toFixed(1);
-    console.log('\n[optimize-images] Badge conversion complete');
-    console.log(`  Total savings: ${formatBytes(totalPngSize - totalWebPSize)} (${totalReduction}% reduction)\n`);
-
-  } catch (error) {
-    console.error('❌ Badge conversion failed:', error);
-    process.exit(1);
-  }
+  const badgesDir = path.join(projectRoot, 'public/assets/badges');
+  await convertPngDirectoryToWebP({
+    dirPath: badgesDir,
+    label: '🎖️  Converting badge images to WebP...',
+    filter: (file) => file.startsWith('badge_') && file.endsWith('.png'),
+  });
 }
 
 optimizeImages()
-  .then(() => convertMascotsToWebP())
+  .then(() => convertIllustrationsToWebP())
   .then(() => convertBadgesToWebP());

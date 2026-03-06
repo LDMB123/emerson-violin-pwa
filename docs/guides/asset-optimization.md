@@ -75,15 +75,15 @@ Process:
 ### Image Optimization
 **Script**: `scripts/optimize-images.js`
 **Targets**:
-- `public/assets/badges/badge_*.png` → sibling `.webp`
-- `public/assets/illustrations/mascot-*.png` → sibling `.webp`
+- `public/assets/badges/badge_*.png` → `.webp` replacement
+- `public/assets/illustrations/*.png` → `.webp` replacement
 - `public/assets/*.png` → sibling `.webp` plus archived original for legacy root-level assets
 - `public/assets/icons/*.png` remain PNG
 **Archive**: `_archived/original-assets/images/` for legacy top-level PNGs only
 
 Process:
-1. Convert badge PNGs to WebP siblings
-2. Convert `mascot-*.png` illustrations to WebP siblings
+1. Convert badge PNGs to WebP and remove the PNG runtime files
+2. Convert illustration PNGs under `public/assets/illustrations/` to WebP and remove the PNG runtime files
 3. Convert any legacy top-level `public/assets/*.png` files to WebP, archive the original PNG, and remove the source file
 4. Leave icons and other non-matching PNGs untouched
 5. If you add a new image family, extend `scripts/optimize-images.js` instead of assuming recursive conversion
@@ -111,18 +111,15 @@ if (audio.canPlayType('audio/ogg; codecs=opus')) {
 4. Subset version replaces original
 
 ### New Image
-1. Add badge images as `public/assets/badges/badge_*.png` or mascot illustrations as `public/assets/illustrations/mascot-*.png`
+1. Add badge or illustration PNG source files under `public/assets/badges/` or `public/assets/illustrations/`
 2. Run production build
-3. Matching WebP files are generated alongside the PNG originals
+3. Matching WebP files replace the PNG runtime assets
 4. Keep `public/assets/icons/*.png` as PNG for manifest and platform icon flows
-5. Use `<picture>` when markup needs explicit WebP + PNG fallback:
+5. Reference the WebP asset directly in runtime markup:
 ```html
-<picture>
-  <source srcset="/assets/illustrations/mascot-happy.webp" type="image/webp">
-  <img src="/assets/illustrations/mascot-happy.png" alt="Description">
-</picture>
+<img src="/assets/illustrations/mascot-happy.webp" alt="Description">
 ```
-6. If you add a different PNG family under `public/assets/`, update `scripts/optimize-images.js` so the build knows to convert it
+6. If you add a different PNG family under `public/assets/`, update `scripts/optimize-images.js` so the build knows to convert and remove it
 
 ## Rollback Procedure
 
@@ -146,7 +143,7 @@ cp _archived/original-assets/images/*.png public/assets/ 2>/dev/null || true
 # Remove generated WebP files
 find public/assets -maxdepth 1 -name '*.webp' -delete
 find public/assets/badges -name '*.webp' -delete
-find public/assets/illustrations -name 'mascot-*.webp' -delete
+find public/assets/illustrations -name '*.webp' -delete
 ```
 
 ### Full Restore
@@ -161,7 +158,7 @@ cp -r _archived/original-assets/images/* public/assets/ 2>/dev/null || true
 rm public/assets/audio/*.{opus,mp3}
 find public/assets -maxdepth 1 -name '*.webp' -delete
 find public/assets/badges -name '*.webp' -delete
-find public/assets/illustrations -name 'mascot-*.webp' -delete
+find public/assets/illustrations -name '*.webp' -delete
 
 # Rebuild
 npm run build
@@ -238,7 +235,7 @@ find public/assets -type f -name '*.webp' | sort
 - First paint improves because less font data sits on the critical path
 
 ### Images
-- The current script generates WebP siblings for badges and `mascot-*.png` illustrations
+- The current script replaces badge and illustration PNG runtime assets with WebP files
 - App icons intentionally stay PNG for manifest and platform compatibility
 - If you add a new image family, update `scripts/optimize-images.js` so the build includes it
 

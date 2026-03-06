@@ -12,7 +12,7 @@ const CRITICAL_OFFLINE_ASSETS = [
     './src/assets/fonts/fraunces-vf.woff2',
     './src/assets/fonts/nunito-vf.woff2',
     './assets/icons/icon-192.png',
-    './assets/illustrations/mascot-happy.png',
+    './assets/illustrations/mascot-happy.webp',
     getAudioPath('./assets/audio/violin-a4.wav'),
     getAudioPath('./assets/audio/violin-g3.wav'),
     getAudioPath('./assets/audio/violin-d4.wav'),
