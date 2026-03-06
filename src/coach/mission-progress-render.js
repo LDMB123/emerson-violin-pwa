@@ -42,7 +42,7 @@ const ensureHomeMissionSummary = () => {
     let summary = home.querySelector('[data-home-mission-summary]');
     if (summary) return summary;
 
-    const anchor = home.querySelector('.home-giant-actions');
+    const anchor = home.querySelector('.home-utility-links') || home.querySelector('.home-giant-actions');
     if (!anchor?.parentElement) return null;
 
     summary = document.createElement('p');

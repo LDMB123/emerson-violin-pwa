@@ -1,6 +1,17 @@
 import { setAriaCurrent } from '../utils/dom-utils.js';
 import { canPrefetchViews, prefetchViewIfMissing } from './view-prefetch.js';
 
+const resetRouteScroll = () => {
+    const apply = () => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        document.querySelector('.main-content')?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    };
+
+    apply();
+    requestAnimationFrame(apply);
+    window.setTimeout(apply, 120);
+};
+
 /** Sets up click-driven hash navigation, nav state syncing, and view transitions. */
 export const setupNavigationController = ({
     ctx,
@@ -101,6 +112,7 @@ export const bindHashViewController = ({
     const showCurrentView = async () => {
         const viewId = getCurrentViewId() || 'view-home';
         await showView(viewId);
+        resetRouteScroll();
         onAfterViewChange?.(viewId);
     };
 
@@ -120,6 +132,7 @@ export const bindHashViewController = ({
         if (resolvedViewId !== initialViewId) {
             await showView(resolvedViewId);
         }
+        resetRouteScroll();
         onAfterViewChange?.(resolvedViewId);
     };
 
