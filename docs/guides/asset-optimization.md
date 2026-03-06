@@ -5,7 +5,7 @@
 Automatic asset optimization during production builds:
 - **Audio**: WAV → Opus (primary) + MP3 (fallback) using FFmpeg
 - **Fonts**: Subset variable fonts to Basic Latin + music notation using pyftsubset
-- **Images**: Targeted PNG → WebP generation for badges, mascot illustrations, and legacy root-level assets using Sharp
+- **Images**: Badge and illustration PNG source imports become WebP-only runtime assets, and legacy root-level PNG assets are archived and replaced via Sharp
 
 ## Running Optimizations
 
@@ -77,7 +77,7 @@ Process:
 **Targets**:
 - `public/assets/badges/badge_*.png` → `.webp` replacement
 - `public/assets/illustrations/*.png` → `.webp` replacement
-- `public/assets/*.png` → sibling `.webp` plus archived original for legacy root-level assets
+- `public/assets/*.png` → `.webp` replacement plus archived original for legacy root-level assets
 - `public/assets/icons/*.png` remain PNG
 **Archive**: `_archived/original-assets/images/` for legacy top-level PNGs only
 
@@ -119,7 +119,9 @@ if (audio.canPlayType('audio/ogg; codecs=opus')) {
 ```html
 <img src="/assets/illustrations/mascot-happy.webp" alt="Description">
 ```
-6. If you add a different PNG family under `public/assets/`, update `scripts/optimize-images.js` so the build knows to convert and remove it
+6. If an existing template already uses `<picture>`, keep the wrapper but point both `srcset` and `src` at the WebP asset
+7. Treat badge and illustration PNGs as import inputs, not shipped runtime files; the optimizer removes them after conversion
+8. If you add a different PNG family under `public/assets/`, update `scripts/optimize-images.js` so the build knows to convert and remove it
 
 ## Rollback Procedure
 
@@ -146,6 +148,8 @@ find public/assets/badges -name '*.webp' -delete
 find public/assets/illustrations -name '*.webp' -delete
 ```
 
+Badge and illustration PNG source files are not archived by the optimizer. Restore those from git history or from your original design/source files if you need editable PNG inputs again.
+
 ### Full Restore
 ```bash
 # Restore all assets
@@ -163,6 +167,8 @@ find public/assets/illustrations -name '*.webp' -delete
 # Rebuild
 npm run build
 ```
+
+If you need badge or illustration PNG inputs after a full restore, recover them from git history or re-export them from the original artwork before rerunning the optimizer.
 
 ## Troubleshooting
 
@@ -248,8 +254,8 @@ find public/assets -type f -name '*.webp' | sort
 
 ### WebP Images
 - Supported: All current target browsers
-- Fallback: PNG via `<picture>` element when markup needs one
-- Progressive enhancement
+- Runtime format: Badge and illustration assets ship as WebP only
+- `<picture>` wrappers may still appear in templates, but they are not used for PNG fallback in the current app
 
 ### WOFF2 Fonts
 - Supported: All current target browsers
