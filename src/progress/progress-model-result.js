@@ -56,6 +56,9 @@ const composeProgressResult = (model = {}) => {
     };
 };
 
+/**
+ * Composes a base progress model with supplemental curriculum, mastery, and recommendation data.
+ */
 export const composeProgressWithSupplemental = async (model) => {
     const supplemental = await loadSupplementaryProgressData();
     return composeProgressResult({

@@ -267,6 +267,9 @@ const calculateStreak = (practiceDates) => {
     return streak;
 };
 
+/**
+ * Builds the JavaScript fallback progress model when the primary runtime is unavailable.
+ */
 export const buildFallbackProgress = async (events, error) => {
     if (error) {
         console.warn('[progress] Falling back to JS shim model', error);

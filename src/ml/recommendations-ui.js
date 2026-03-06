@@ -80,4 +80,7 @@ const initRecommendationsUi = () => {
     refreshPanels();
 };
 
+/**
+ * Initializes the recommendations UI and refreshes lesson-plan panels from the latest model output.
+ */
 export const init = initRecommendationsUi;

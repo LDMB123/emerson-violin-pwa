@@ -37,6 +37,9 @@ const deriveStatus = ({ active, paused }) => {
         };
 };
 
+/**
+ * Creates the realtime session UI controller for start, stop, toggle, and status elements.
+ */
 export const createSessionUiControls = ({
     getSessionState,
     startSession,

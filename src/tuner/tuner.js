@@ -266,4 +266,7 @@ const initTuner = () => {
     applyTuning();
 };
 
+/**
+ * Initializes the tuner view, realtime session bindings, and helper tone controls.
+ */
 export const init = initTuner;

@@ -101,4 +101,7 @@ const initPerformanceReview = () => {
     refresh();
 };
 
+/**
+ * Initializes the parent performance review panel for locally collected web-vitals summaries.
+ */
 export const init = initPerformanceReview;

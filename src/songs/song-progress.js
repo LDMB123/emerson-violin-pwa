@@ -245,4 +245,7 @@ const initSongProgress = () => {
     });
 };
 
+/**
+ * Initializes song progress tracking for playback runs and persisted checkpoints.
+ */
 export const init = initSongProgress;

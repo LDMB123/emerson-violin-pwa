@@ -140,4 +140,7 @@ const initRecordings = () => {
 };
 
 export { initRecordings };
+/**
+ * Initializes recording settings, song-view capture bindings, and recording lifecycle guards.
+ */
 export const init = initRecordings;

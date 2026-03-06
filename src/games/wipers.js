@@ -8,6 +8,9 @@ const bindingState = createStartStopBindingState();
 
 const WIPES_WIN = 20;
 
+/**
+ * Initializes the Wipers game view, canvas engine, and start/stop bindings.
+ */
 export const init = () => {
     const view = document.getElementById('view-game-wipers');
     if (!view) return;

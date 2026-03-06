@@ -2,6 +2,9 @@ import { SOUNDS_CHANGE, ML_UPDATE, ML_RESET } from '../utils/event-names.js';
 import { bindHiddenAndPagehide, bindVisibleVisibilityChange } from '../utils/lifecycle-utils.js';
 import { runIfSoundDisabled } from '../utils/sound-state.js';
 
+/**
+ * Attaches the global trainer listeners for sound, ML, navigation, and visibility changes.
+ */
 export const attachTrainerGlobalListeners = ({
     metronomeController,
     drillsController,

@@ -1,6 +1,9 @@
 import { createPostureDrillController } from './drills-controller-posture.js';
 import { createBowingDrillController } from './drills-controller-bowing.js';
 
+/**
+ * Creates the combined trainer drills controller.
+ */
 export const createDrillsController = () => {
     const postureController = createPostureDrillController();
     const bowingController = createBowingDrillController();

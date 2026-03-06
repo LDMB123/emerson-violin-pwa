@@ -34,4 +34,7 @@ const initRealtimeReview = () => {
     refresh();
 };
 
+/**
+ * Initializes the parent realtime review panel and its refresh bindings.
+ */
 export const init = initRealtimeReview;

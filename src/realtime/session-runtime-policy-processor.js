@@ -6,6 +6,9 @@ import { confidenceBandFrom } from './contracts.js';
 import { cloneFeature } from './session-feature-utils.js';
 import { evaluateFrame } from './policy-engine.js';
 
+/**
+ * Creates the realtime policy processor that turns feature frames into coaching decisions.
+ */
 export const createSessionPolicyProcessor = ({
     state,
     currentViewId,

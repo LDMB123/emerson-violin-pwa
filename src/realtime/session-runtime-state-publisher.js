@@ -11,6 +11,9 @@ const DEFAULT_RT_FEATURE = Object.freeze({
     confidence: 0,
 });
 
+/**
+ * Creates the realtime state publisher used to emit throttled session snapshots.
+ */
 export const createSessionStatePublisher = ({
     state,
     currentViewId,

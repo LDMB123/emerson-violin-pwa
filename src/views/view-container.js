@@ -1,3 +1,6 @@
+/**
+ * Returns the main app content container and logs when it cannot be found.
+ */
 export const getMainContentContainer = (scope = 'View') => {
     const container = document.getElementById('main-content');
     if (container) return container;

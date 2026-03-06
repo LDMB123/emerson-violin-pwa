@@ -2,6 +2,9 @@ import { createSessionPolicyProcessor } from './session-runtime-policy-processor
 import { createSessionPresetController } from './session-runtime-preset-controller.js';
 import { createSessionStatePublisher } from './session-runtime-state-publisher.js';
 
+/**
+ * Creates the composed realtime runtime engine from its state, policy, and preset controllers.
+ */
 export const createSessionRuntimeEngine = ({
     state,
     currentViewId,

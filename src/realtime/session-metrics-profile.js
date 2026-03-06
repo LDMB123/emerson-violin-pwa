@@ -7,6 +7,9 @@ const p95 = (values) => {
     return sorted[index];
 };
 
+/**
+ * Creates the realtime metrics/profile controller for quality tracking and calibration persistence.
+ */
 export const createSessionMetricsProfile = ({
     state,
     getJSON,

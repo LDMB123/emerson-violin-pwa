@@ -207,5 +207,8 @@ const resetProgress = async () => {
 document.addEventListener('change', handleChange);
 document.addEventListener(GAME_RECORDED, refreshProgressUi);
 document.addEventListener(GOAL_TARGET_CHANGE, refreshProgressUi);
+/**
+ * Initializes the progress view and keeps it refreshed as practice data changes.
+ */
 export const init = initProgress;
 whenReady(initProgress);

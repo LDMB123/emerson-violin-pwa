@@ -1,5 +1,8 @@
 import { finiteOrNow, finiteOrZero } from '../utils/math.js';
 
+/**
+ * Normalizes and clones a realtime feature frame for downstream session processing.
+ */
 export const cloneFeature = (feature) => {
     if (!feature || typeof feature !== 'object') return null;
     return {

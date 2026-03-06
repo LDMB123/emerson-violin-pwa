@@ -203,4 +203,7 @@ const initReminders = () => {
     syncStatuses();
 };
 
+/**
+ * Initializes notification and reminder controls for practice nudges and calendar exports.
+ */
 export const init = initReminders;

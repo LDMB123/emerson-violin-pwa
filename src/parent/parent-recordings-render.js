@@ -4,6 +4,9 @@ import {
 } from '../utils/dom-utils.js';
 import { durationToMinutes } from '../utils/math.js';
 
+/**
+ * Creates the renderer for the parent recordings list, status text, and row descriptors.
+ */
 export const createParentRecordingsRenderer = () => {
     let listEl = null;
     let statusEl = null;

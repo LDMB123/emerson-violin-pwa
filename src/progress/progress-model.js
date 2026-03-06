@@ -9,6 +9,9 @@ import { collectEventIds } from './progress-model-events.js';
 
 export { collectEventIds };
 
+/**
+ * Builds the full progress summary used by the progress and parent dashboards.
+ */
 export const buildProgress = async (events) => {
     try {
         const { PlayerProgress, AchievementTracker, SkillProfile, SkillCategory, calculate_streak: calculateStreak } = await getCore();

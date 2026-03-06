@@ -1,3 +1,6 @@
+/**
+ * Creates a frame-coalescing scheduler for progress UI updates.
+ */
 export const createProgressRenderScheduler = (apply) => {
     let pendingData = null;
     let rafId = 0;

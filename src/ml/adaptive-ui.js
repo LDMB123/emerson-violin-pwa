@@ -134,4 +134,7 @@ const initAdaptiveUi = () => {
     updateSummary();
 };
 
+/**
+ * Initializes the adaptive-learning settings UI and keeps its summary in sync with model updates.
+ */
 export const init = initAdaptiveUi;

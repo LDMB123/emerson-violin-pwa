@@ -8,6 +8,9 @@ import {
     reportTrainerGameResult,
 } from './trainer-utils.js';
 
+/**
+ * Creates the bowing drill controller for the trainer tools view.
+ */
 export const createBowingDrillController = () => {
     let bowingIntro = null;
     let bowingChecks = [];

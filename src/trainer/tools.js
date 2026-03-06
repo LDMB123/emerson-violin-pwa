@@ -106,4 +106,7 @@ const initTrainerTools = () => {
     refreshTrainerTuning();
 };
 
+/**
+ * Initializes the trainer tools view, controllers, and shared listeners.
+ */
 export const init = initTrainerTools;

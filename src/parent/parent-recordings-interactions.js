@@ -5,6 +5,9 @@ import { isSoundEnabled as isPlaybackSoundEnabled } from '../utils/sound-state.j
 import { playRecordingWithSoundCheck } from '../utils/recording-playback-utils.js';
 import { removeRecordingAtIndex, clearRecordingBlobs, saveRecordings } from './parent-recordings-data.js';
 
+/**
+ * Creates the interaction handlers for parent recording playback, export, and deletion.
+ */
 export const createParentRecordingsInteractions = ({ requestRender, setStatus }) => {
     const controller = createAudioController();
     const { stop: stopPlayback } = controller;

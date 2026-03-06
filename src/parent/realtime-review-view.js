@@ -177,6 +177,9 @@ const bindPresets = (onPresetApplied) => {
     });
 };
 
+/**
+ * Creates the parent realtime review view renderer and preset controls.
+ */
 export const createRealtimeReviewView = () => ({
     resolveElements,
     bindPresets,

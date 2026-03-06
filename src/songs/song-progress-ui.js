@@ -13,6 +13,9 @@ const computeBestBySong = (events) => {
     }, {});
 };
 
+/**
+ * Updates the best-accuracy display for recorded song events.
+ */
 export const updateBestAccuracyUI = (events) => {
     const bestBySong = computeBestBySong(events);
     Object.entries(bestBySong).forEach(([songId, best]) => {

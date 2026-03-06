@@ -1,3 +1,6 @@
+/**
+ * Returns the best available score value for a song event.
+ */
 export const getSongEventScore = (event, { includeLegacyScore = false } = {}) => {
     if (Number.isFinite(event?.accuracy)) return event.accuracy;
     if (Number.isFinite(event?.timingAccuracy)) return event.timingAccuracy;

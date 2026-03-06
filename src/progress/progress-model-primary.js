@@ -154,6 +154,9 @@ const snapshotSkills = (skillProfile) => ({
     reading: skillProfile.reading,
 });
 
+/**
+ * Builds the primary progress model from normalized practice, song, and game events.
+ */
 export const buildPrimaryProgressModel = (config) => {
     const {
         events,

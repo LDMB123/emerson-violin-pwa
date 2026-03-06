@@ -1,6 +1,9 @@
 import { RT_PARENT_OVERRIDE } from '../utils/event-names.js';
 import { applyParentPreset, getPolicyState } from './policy-engine.js';
 
+/**
+ * Creates the realtime preset controller that applies and records parent overrides.
+ */
 export const createSessionPresetController = ({
     state,
     emitRealtimeEvent,

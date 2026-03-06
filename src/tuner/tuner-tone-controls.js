@@ -22,6 +22,9 @@ const playToneSample = ({ tone, toneSamples, setStatus }) => {
     sample.onended = () => card?.classList.remove('is-playing');
 };
 
+/**
+ * Binds tuner tone and reference-tone buttons to sample playback controls.
+ */
 export const bindToneButtons = ({ toneButtons, refToneButtons, toneSamples, setStatus }) => {
     toneButtons.forEach((button) => {
         if (button.dataset.tunerToneBound === 'true') return;

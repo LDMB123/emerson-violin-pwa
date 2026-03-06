@@ -66,6 +66,9 @@ const bindGlobal = () => {
     window.addEventListener('hashchange', refreshBindings, { passive: true });
 };
 
+/**
+ * Initializes the realtime session UI bindings and optional E2E test hooks.
+ */
 export const init = () => {
     initSessionController();
     exposeE2EHooks();

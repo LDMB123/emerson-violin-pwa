@@ -28,6 +28,9 @@ const shouldIgnoreProgressInput = (input) => !input.id
     || IGNORED_PROGRESS_INPUT_PREFIXES.some((prefix) => input.id.startsWith(prefix))
     || input.dataset.progressIgnore === 'true';
 
+/**
+ * Creates the progress input controller that records practice events from tracked checkboxes.
+ */
 export const createProgressInputController = ({
     loadEvents,
     saveEvents,

@@ -140,4 +140,7 @@ const initAccelerator = async () => {
     applyMode(available ? 'webgpu' : 'wasm');
 };
 
+/**
+ * Initializes the ML acceleration status UI and detects the best available local runtime.
+ */
 export const init = initAccelerator;

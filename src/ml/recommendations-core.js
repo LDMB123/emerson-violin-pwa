@@ -85,6 +85,9 @@ const buildBaseRecommendations = ({ events, adaptiveLog }) => {
     };
 };
 
+/**
+ * Builds the current recommendation payload from practice history, mastery data, and mission state.
+ */
 export const computeRecommendations = async () => {
     const {
         events,

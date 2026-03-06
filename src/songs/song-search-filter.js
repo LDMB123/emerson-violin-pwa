@@ -22,6 +22,9 @@ const updateEmptyState = (emptyState, visibleCount, query, filter) => {
     emptyState.hidden = false;
 };
 
+/**
+ * Binds the song search filter UI to a set of searchable song cards.
+ */
 export const bindSongSearchFilter = ({ input = null, cards, filterInputs, emptyState }) => {
     const applyFilter = () => {
         const query = normalize(input?.value || '');

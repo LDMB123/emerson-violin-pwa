@@ -133,4 +133,7 @@ const initParentGoals = async () => {
     }
 };
 
+/**
+ * Initializes the parent weekly-goal editor and recommendation rationale copy.
+ */
 export const init = initParentGoals;

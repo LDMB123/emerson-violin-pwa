@@ -51,4 +51,7 @@ const initDataControls = () => {
     wipeButton.addEventListener('click', handleWipe);
 };
 
+/**
+ * Initializes the parent-zone controls for wiping locally stored app data.
+ */
 export const init = initDataControls;

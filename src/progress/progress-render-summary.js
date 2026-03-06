@@ -10,6 +10,9 @@ import { GAME_META } from '../games/game-config.js';
 import { renderCoreProgressUi } from './progress-core-render.js';
 import { renderProgressAchievements } from './progress-achievements.js';
 
+/**
+ * Renders the full progress summary view, including achievements and learning panels.
+ */
 export const renderProgressSummary = ({
     summary,
     elements,

@@ -22,6 +22,9 @@ const STATIC_ROUTE_META = {
 
 const CHILD_DEFAULT_META = { persona: 'child', primaryTask: false, navGroup: 'utility' };
 
+/**
+ * Returns route metadata for a view identifier.
+ */
 export const getRouteMeta = (viewId) => {
     if (!viewId || !viewId.startsWith('view-')) return CHILD_DEFAULT_META;
     if (viewId.startsWith('view-song-')) {

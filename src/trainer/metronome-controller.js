@@ -22,6 +22,9 @@ import { createIntervalTicker } from '../utils/interval-ticker.js';
 
 const DEFAULT_BPM = 100;
 
+/**
+ * Creates the trainer metronome controller and its tuning-aware playback state.
+ */
 export const createMetronomeController = () => {
     let elements = createEmptyMetronomeElements();
     let metronomeBpm = DEFAULT_BPM;

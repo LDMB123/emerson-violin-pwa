@@ -13,6 +13,9 @@ const supportsBadging = () => {
     return 'setAppBadge' in navigator && 'clearAppBadge' in navigator;
 };
 
+/**
+ * Sets the app icon badge count when the Badging API is available.
+ */
 export const setBadge = async (count) => {
     if (!supportsBadging()) return false;
 

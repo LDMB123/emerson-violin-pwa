@@ -11,6 +11,9 @@ const tierFromAccuracy = (accuracy) => {
     return 0;
 };
 
+/**
+ * Records a song practice event and updates song progression state.
+ */
 export const recordSongEvent = async (
     songId,
     accuracyOrPayload,

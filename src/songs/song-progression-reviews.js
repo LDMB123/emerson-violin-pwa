@@ -6,6 +6,9 @@ import {
 } from '../utils/mastery-utils.js';
 import { DAY_MS } from '../utils/math.js';
 
+/**
+ * Collects the next set of due song reviews from stored song progression state.
+ */
 export const collectDueSongReviewsFromState = ({ songs = {}, now = Date.now(), limit = 5 } = {}) => {
     const entries = Object.entries(songs || {})
         .map(([id, rawEntry]) => ({ id, ...normalizeSongEntry(rawEntry) }))

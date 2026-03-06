@@ -142,6 +142,9 @@ const renderPathLocks = (level) => {
     });
 };
 
+/**
+ * Renders the core progress dashboard UI from a computed progress summary.
+ */
 export const renderCoreProgressUi = ({
     elements,
     summary,

@@ -116,6 +116,9 @@ const bindListeners = () => {
 
 };
 
+/**
+ * Initializes the parent dashboard focus card and recommendation-driven coaching checklist.
+ */
 export const init = () => {
     resolveElements();
     bindListeners();

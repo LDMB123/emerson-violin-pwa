@@ -1,5 +1,8 @@
 import { forEachUnboundSongView, getSongViewPlaybackElements } from '../songs/song-view-utils.js';
 
+/**
+ * Creates the microphone recording capture controller used by song views.
+ */
 export const createRecordingCaptureController = ({
     recordingToggleOn,
     setRecordingStatus,

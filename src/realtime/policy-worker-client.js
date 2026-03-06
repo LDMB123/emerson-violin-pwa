@@ -1,5 +1,8 @@
 const noop = () => {};
 
+/**
+ * Creates the worker client that offloads realtime policy evaluation and preset updates.
+ */
 export const createPolicyWorkerClient = ({
     createWorker,
     onPolicyUpdate = noop,

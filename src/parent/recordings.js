@@ -75,4 +75,7 @@ const initParentRecordings = () => {
     render();
 };
 
+/**
+ * Initializes the parent recordings view and wires it to recording updates and playback guards.
+ */
 export const init = initParentRecordings;

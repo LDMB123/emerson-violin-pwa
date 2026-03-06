@@ -8,6 +8,9 @@ import {
     reportTrainerGameResult,
 } from './trainer-utils.js';
 
+/**
+ * Creates the posture drill controller for the trainer tools view.
+ */
 export const createPostureDrillController = () => {
     let postureInput = null;
     let posturePreview = null;

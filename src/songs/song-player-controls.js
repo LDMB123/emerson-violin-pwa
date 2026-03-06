@@ -9,6 +9,9 @@ import { createVisibilityListener } from '../utils/lifecycle-utils.js';
 const PLAYHEAD_AUTOSCROLL_INTERVAL_MS = 80;
 const PLAYHEAD_AUTOSCROLL_DELTA_PX = 4;
 
+/**
+ * Applies playback, looping, checkpoint, and tuning controls to a song view.
+ */
 export const applyControlsToView = ({ view, controls, song, sections }) => {
     const sectionSelect = controls.querySelector('[data-song-section]');
     const tempoScaleInput = controls.querySelector('[data-song-tempo-scale]');

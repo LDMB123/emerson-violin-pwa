@@ -39,6 +39,9 @@ const celebrateAchievementUnlock = (el, id) => {
     dispatchAchievementUnlocked(id);
 };
 
+/**
+ * Updates achievement tiles and fires unlock celebrations for newly earned badges.
+ */
 export const renderProgressAchievements = ({ tracker, achievementEls = [] }) => {
     if (!tracker) return;
     achievementEls.forEach((el) => {

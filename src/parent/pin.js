@@ -135,4 +135,7 @@ const initParentPin = async () => {
     checkGate();
 };
 
+/**
+ * Initializes the parent PIN gate, save flow, and unlock handling.
+ */
 export const init = initParentPin;

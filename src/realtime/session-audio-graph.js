@@ -15,6 +15,9 @@ const disconnectNode = (node, beforeDisconnect) => {
     return null;
 };
 
+/**
+ * Creates the realtime session audio graph for microphone capture and feature worklet processing.
+ */
 export const createSessionAudioGraph = ({
     createAudioContext,
     onFeatureFrame,

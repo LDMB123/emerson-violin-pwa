@@ -40,4 +40,7 @@ const initSongSearch = () => {
     }
 };
 
+/**
+ * Initializes the song library search view and its live refresh behavior.
+ */
 export const init = initSongSearch;

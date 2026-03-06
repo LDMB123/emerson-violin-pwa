@@ -118,6 +118,9 @@ const bindGlobalListeners = () => {
     });
 };
 
+/**
+ * Initializes the realtime coaching overlay and keeps it synced to session events.
+ */
 export const init = () => {
     ensureOverlay();
     bindGlobalListeners();
