@@ -119,17 +119,23 @@ const { bind } = createGame({
             });
         };
 
-        slider?.addEventListener('input', () => {
+        const onSliderInput = () => {
             if (slider) slider.dataset.userSet = 'true';
             gameState.scaleIndex = 0;
             gameState._updateHighlight();
             updateTempo();
-        });
-        slider?.addEventListener('change', () => {
+        };
+        const onSliderChange = () => {
             const tempo = slider ? Number.parseInt(slider.value, 10) : 0;
             gameState.accuracy = deviationAccuracy(tempo, targetTempo);
             gameState.score = tempo;
             reportSession();
+        };
+        slider?.addEventListener('input', onSliderInput);
+        slider?.addEventListener('change', onSliderChange);
+        registerCleanup(() => {
+            slider?.removeEventListener('input', onSliderInput);
+            slider?.removeEventListener('change', onSliderChange);
         });
 
         const triggerTap = () => {

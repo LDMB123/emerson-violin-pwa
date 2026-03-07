@@ -23,3 +23,9 @@ This directory is a historical marker, not a live documentation source.
 - `_archived/plans/` now stays intentionally minimal.
 - Historical planning scratchpads and per-pass status logs were pruned from the working tree.
 - Archived source assets remain under other `_archived/` subdirectories when they are still useful for rollback or regeneration workflows.
+
+## Current State
+
+- The repo does not keep live implementation plan files in `docs/plans/` or `_archived/plans/`.
+- Claude scratch plans were also moved out of the live `~/.claude/plans/` load path into archive storage.
+- If a future task needs a plan, treat it as temporary working material and archive or delete it once the work is complete.

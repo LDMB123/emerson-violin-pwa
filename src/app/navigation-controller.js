@@ -128,7 +128,7 @@ export const bindHashViewController = ({
     }
 
     const syncInitialView = async (initialViewId) => {
-        const resolvedViewId = getCurrentViewId() || 'view-home';
+        const resolvedViewId = getCurrentViewId() || initialViewId;
         if (resolvedViewId !== initialViewId) {
             await showView(resolvedViewId);
         }

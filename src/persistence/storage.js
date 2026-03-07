@@ -63,6 +63,10 @@ const appendCollection = (db, definition, value, { maxEntries = Infinity } = {})
         if (!Number.isFinite(maxEntries)) return;
 
         const countRequest = store.count();
+        countRequest.onerror = (event) => {
+            console.warn('[Storage] appendCollection count failed', event.target.error);
+            event.preventDefault();
+        };
         countRequest.onsuccess = () => {
             const excess = countRequest.result - Math.max(0, Math.floor(maxEntries));
             if (excess <= 0) return;
@@ -70,6 +74,10 @@ const appendCollection = (db, definition, value, { maxEntries = Infinity } = {})
             const source = definition.trimIndexName ? store.index(definition.trimIndexName) : store;
             let remaining = excess;
             const cursorRequest = source.openCursor();
+            cursorRequest.onerror = (event) => {
+                console.warn('[Storage] appendCollection cursor failed', event.target.error);
+                event.preventDefault();
+            };
             cursorRequest.onsuccess = () => {
                 const cursor = cursorRequest.result;
                 if (!cursor || remaining <= 0) return;

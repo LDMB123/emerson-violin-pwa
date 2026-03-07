@@ -55,6 +55,10 @@ const migrateLegacyCollection = (legacyStore, collectionStore, definition) => {
         }
         legacyStore.delete(definition.key);
     };
+    request.onerror = (event) => {
+        console.warn('[Storage] Legacy collection migration failed for', definition.key, event.target.error);
+        event.preventDefault();
+    };
 };
 
 /** Opens the app IndexedDB database and caches the live connection promise. */
@@ -65,7 +69,13 @@ export const openDB = () => {
     }
     dbPromise = new Promise((resolve) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
+        let settled = false;
         const resolveWith = (db) => {
+            if (settled) {
+                if (db) { try { db.close(); } catch {} }
+                return;
+            }
+            settled = true;
             // Do not permanently cache a null DB handle on transient failures.
             if (!db) {
                 clearDBPromise();

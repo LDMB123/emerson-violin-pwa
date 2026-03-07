@@ -39,7 +39,7 @@ Runtime source of truth:
 - Shipped game views live under `public/views/games/`.
 - `src/games/sequence-game.js` is a shared runtime used by sequence-style games; it is not a standalone shipped view.
 - Song sheets live under `public/views/songs/`.
-- Historical implementation notes live in git history and `_archived/plans/README.md`.
+- Historical implementation notes live in git history and `_archived/plans/README.md`; there is no live repo plan directory to consult.
 
 ## Verification Gates
 

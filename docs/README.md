@@ -28,7 +28,7 @@ Use this file to decide which document to read before editing or validating the 
 ## Historical Material
 
 - [_archived/plans/README.md](../_archived/plans/README.md)
-  - Why the old planning archive was pruned and where historical detail lives now
+  - Why old plan files were pruned and why no live plan directory remains in the repo
 
 ## Source Of Truth
 

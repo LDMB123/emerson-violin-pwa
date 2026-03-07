@@ -23,6 +23,9 @@ const closeAndResetContext = (state) => {
 
 /** Ensures the tone player has a live `AudioContext`, recreating if needed. */
 export const ensurePlayerContext = async (state) => {
+    if (state.context?.state === 'closed') {
+        closeAndResetContext(state);
+    }
     if (!state.context) {
         state.context = createAudioContext();
         if (!state.context) return null;
@@ -67,6 +70,10 @@ export const ensurePlayerOutputNode = (state, ctx) => {
 /** Attempts to resume a suspended tone-player context after a user gesture. */
 export const unlockTonePlayerContext = (state) => {
     if (!state.context) return;
+    if (state.context.state === 'closed') {
+        closeAndResetContext(state);
+        return;
+    }
     if (state.context.state !== 'suspended' && state.context.state !== 'interrupted') return;
     state.context.resume().catch(() => {});
 };
