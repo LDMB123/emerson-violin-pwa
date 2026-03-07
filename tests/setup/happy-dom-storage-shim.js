@@ -1,13 +1,5 @@
 import { Window } from 'happy-dom';
 
-const hasWorkingStorage = (storage) => Boolean(
-    storage
-    && typeof storage.getItem === 'function'
-    && typeof storage.setItem === 'function'
-    && typeof storage.removeItem === 'function'
-    && typeof storage.clear === 'function'
-);
-
 const assignGlobal = (name, value) => {
     Object.defineProperty(globalThis, name, {
         configurable: true,
@@ -24,11 +16,7 @@ const assignGlobal = (name, value) => {
     }
 };
 
-const ensureWorkingStorage = () => {
-    if (hasWorkingStorage(globalThis.localStorage) && hasWorkingStorage(globalThis.sessionStorage)) {
-        return;
-    }
-
+const installStableStorage = () => {
     const shimWindow = new Window();
 
     assignGlobal('Storage', shimWindow.Storage);
@@ -36,4 +24,4 @@ const ensureWorkingStorage = () => {
     assignGlobal('sessionStorage', shimWindow.sessionStorage);
 };
 
-ensureWorkingStorage();
+installStableStorage();
