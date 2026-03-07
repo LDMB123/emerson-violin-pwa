@@ -436,6 +436,54 @@ Replace legacy bridges one at a time with native React components:
 - Analysis subsystem (4 files) — parent-facing charts/stats; migrate to React components in Phase 5
 - `queued-async-runner.js` / `countdown.js` / `animation-frame.js` — utility modules used by games; carry forward unchanged behind bridge
 
+### App Bootstrap Sequence
+
+The current app boots through a chain of vanilla modules that must integrate cleanly with the React shell:
+
+```
+index.html
+  └→ module-loader.js          (dynamic import orchestrator)
+       ├→ ServiceWorkerBootstrap (registers SW, waits for activation)
+       ├→ AsyncGate              (resolves when critical modules ready)
+       ├→ module-registry.js     (singleton Map of module name → factory)
+       └→ navigation-controller.js (hash → view dispatcher)
+            └→ view-loader.js    (mounts/unmounts view modules)
+```
+
+**React integration plan:**
+1. `index.html` entry point changes from `module-loader.js` to `main.tsx` (React root)
+2. `<AppRuntimeProvider>` replaces `AsyncGate` — wraps `<Suspense>` around lazy providers for storage, audio, platform, persona
+3. `module-registry.js` remains as-is during bridge period — `<LegacyBridge>` calls `registry.get(moduleName)` to obtain mount functions
+4. `navigation-controller.js` and `view-loader.js` are **fully replaced** by React Router — these do not survive Phase 1
+5. `ServiceWorkerBootstrap` stays vanilla — called once in `main.tsx` before `ReactDOM.createRoot()`, not wrapped in React lifecycle
+6. `module-loader.js` idle-stagger logic migrates to React `lazy()` + route-level code splitting; its `requestIdleCallback` pattern is no longer needed
+
+### Platform Module Strategy
+
+26 platform files install ambient listeners (orientation, visibility, viewport, wake lock, network). Strategy: **keep vanilla, mount once**.
+
+| Module | Listener Type | React Integration |
+|--------|--------------|-------------------|
+| `viewport-offset-controller.js` | `visualViewport` resize/scroll | Singleton — init in `<AppRuntimeProvider>`, expose via `usePlatform()` context |
+| `power-controls.js` | `visibilitychange`, `pagehide` | Singleton — fire-and-forget wake lock; init once, never unmount |
+| `ipados-capabilities.js` | None (read-once) | Call once in provider, memoize result |
+| `orientation-controller.js` | `screen.orientation` change | Singleton — expose `orientation` value via `usePlatform()` |
+| `network-status.js` | `online`/`offline` | Singleton — expose via `usePlatform()` |
+| `standalone-detect.js` | `matchMedia` display-mode | Read-once in provider |
+| `accelerator.js` | None (read-once) | Read-once in provider |
+
+**Pattern:** All 26 files stay as vanilla JS modules. `<AppRuntimeProvider>` calls their `init()` once on mount and never calls `dispose()` — these are app-lifetime singletons. React components access platform state via `const { orientation, isOnline, isStandalone } = usePlatform()`. No React re-renders on platform changes unless the consuming component subscribes via the context.
+
+### Curriculum Engine Integration
+
+7 curriculum files (`curriculum-engine.js`, `mission-generator.js`, `practice-session.js`, `skill-profile.js`, `practice-policy.js`, `progress-model-primary.js`, `song-progression.js`) form a complex state machine.
+
+**Strategy:** Curriculum engine stays vanilla behind `<LegacyBridge>` through **all of Phase 1 and Phase 2**. It migrates in Phase 3 when the core habit loop is native React.
+
+- **Phase 1-2:** `<CurriculumProvider>` wraps the vanilla engine in a React context. It calls `curriculumEngine.init()` on mount, subscribes to `panda:progress-updated` / `panda:mission-complete` events, and exposes `{ currentMission, skillProfile, nextStep }` to React consumers via `useCurriculum()`.
+- **Phase 3 migration:** Replace vanilla state machine with React state + reducers. Port `mission-generator.js` logic into a `useMissionGenerator()` hook. `practice-policy.js` becomes a pure function called by the hook.
+- **WASM dependency:** `progress-model-primary.js` calls `calculate_streak()` and `calculate_skill_profile()` from panda-core WASM. These calls stay synchronous — the WASM module is loaded by the provider and passed down. No async boundary needed.
+
 ### Legacy Bridge API
 
 ```typescript
@@ -459,6 +507,23 @@ Existing modules gain a thin `mount()` wrapper that:
 2. Returns a cleanup function that calls `dispose()` / teardown
 3. Forwards navigation events to React Router instead of `window.location.hash`
 
+### Utilities Inventory Strategy
+
+`src/utils/` contains ~39 files. These are pure functions and small helpers — they do not need React migration. Strategy: **keep as-is, import directly**.
+
+| Category | Files | Action |
+|----------|-------|--------|
+| Math | `math.js`, `clamp.js`, `positive-round.js` | Keep vanilla. Import in React components directly. |
+| DOM | `dom-utils.js`, `ensure-child-div.js` | Keep vanilla. Used only by `<LegacyBridge>` internals and legacy modules. Gradually unused as modules migrate. |
+| Date/Time | `day-utils.js`, `countdown.js`, `session-timer.js` | Keep vanilla. React components import `formatCountdown()`, `todayDay()`, etc. |
+| Audio | `recording-export.js`, `tone-player-utils.js` | Keep vanilla. `tryShareFile()` stays as shared export util. |
+| Canvas | `canvas-engine.js`, `canvas-engine-base.js` | Keep vanilla. Used by game canvases behind `<LegacyBridge>`. |
+| String/Format | `star-string.js`, `format-utils.js` | Keep vanilla. Import as needed. |
+| Event | `emit-event.js` | Migrates to `AppEventBus.emit()` in Phase 3. |
+| Storage | `storage.js`, `storage-collections.js`, `loaders.js` | Keep vanilla — persistence layer is frozen for v1. |
+
+**Rule:** No utility file needs a React wrapper or hook unless it manages state or subscriptions. Pure functions stay pure. If a util is only used by a single module that gets deleted during migration, delete the util too.
+
 ### Custom Event Bus Migration
 
 **Current state:** 30+ named `panda:*` custom events dispatched on `document` via `document.addEventListener` / `document.dispatchEvent` across 68+ files (~137 listener registrations). This is the most pervasive cross-cutting concern.
@@ -481,6 +546,8 @@ Existing modules gain a thin `mount()` wrapper that:
 **`VIEW_RENDERED` specifically:** This event will NOT fire under React Router. Replace with `useEffect` in route components or a `<RouteChangeTracker>` component that fires equivalent analytics/lifecycle hooks.
 
 **Rule:** Never remove a `document.dispatchEvent` call until all listeners for that event are confirmed migrated. Use `grep -r 'addEventListener.*panda:event-name'` to verify.
+
+**Dual-emit window:** Phase 3 dual-emit (dispatching on both `AppEventBus` and `document`) begins when the first dispatch site migrates and ends when the last vanilla listener for that event is removed. Track per-event migration status in `docs/architecture/event-bus-migration.md` — a table of event name, dispatch sites (vanilla/React), listener sites (vanilla/React), dual-emit active (yes/no). An event's dual-emit can be removed when its "vanilla listener" column is empty. Target: all dual-emit removed by end of Phase 4.
 
 ### State Management
 
@@ -595,7 +662,8 @@ Microphone → AudioWorklet (rt-audio-processor.js)
 5. React components receive pitch/feature data through a hook: `useRealtimeAudio()`
 6. Policy Worker stays as dedicated Web Worker; React provider posts messages to it and reads cue decisions
 7. `coach-overlay.js` migrates to a React portal (`<CoachOverlay>`) rendered from `<RealtimeSessionProvider>`
-8. **The actual audio processing chain remains unchanged** — only the UI layer is React
+8. **`<CoachOverlay>` and the practice runner coaching strip are the same `<PandaSpeech>` component** in two configurations: `<PandaSpeech size="sm" position="strip">` (fixed bottom strip in `/practice`) vs. `<PandaSpeech size="lg" position="overlay">` (body-appended portal for tuner/games). Both subscribe to the same CUE_STATE feed from the Policy Worker via `useRealtimeAudio()`. Only one renders at a time — whichever route is active.
+9. **The actual audio processing chain remains unchanged** — only the UI layer is React
 
 **Risk mitigation:** If any audio module is broken during migration, the bridge allows instant rollback to the vanilla version on that route.
 
@@ -714,6 +782,19 @@ The current app loads zero framework JS. The reboot will add React. Define hard 
 ---
 
 ## Delivery Phases
+
+### Pre-Phase 0 Checklist (Day 1 Blockers)
+
+These must be done before any Phase 0 work begins. They are pure setup — no design decisions.
+
+- [ ] **Install React stack:** `npm install react@19 react-dom@19 react-router@7`
+- [ ] **Install dev deps:** `npm install -D @vitejs/plugin-react @testing-library/react@16 @testing-library/jest-dom@6 @testing-library/user-event@14`
+- [ ] **Vite config:** Add `@vitejs/plugin-react` to `vite.config.js` plugins array. Enable JSX transform. Add CSS Modules: `css: { modules: { localsConvention: 'camelCase' } }`
+- [ ] **TypeScript (optional):** If enabling TS, add `tsconfig.json` with `allowJs: true`, `jsx: "react-jsx"`, `strict: true`. Otherwise, use JSDoc types in `.jsx` files.
+- [ ] **RTL setup:** Create `tests/setup-rtl.js` that imports `@testing-library/jest-dom`. Add to Vitest `setupFiles` in `vitest.config.js`. Verify with a trivial `render(<div>hello</div>)` test.
+- [ ] **PDF export library:** `npm install jspdf` (for parent checklist/data export). No other runtime deps.
+- [ ] **WASM + React strict mode:** Verify WASM init is idempotent — React 19 strict mode double-invokes effects in dev. `panda_audio.js` and `panda_core.js` init must not crash on double-call. Add guard: `if (wasmInstance) return wasmInstance;`
+- [ ] **Verify existing tests pass:** Run `npm run handoff:verify` — 567 unit + 45 E2E must pass with new deps installed, before any code changes.
 
 ### Phase 0: Reboot Spec + Technical Spike (1-2 weeks)
 
@@ -871,11 +952,12 @@ The current app loads zero framework JS. The reboot will add React. Define hard 
 **Problem:** All 45 existing E2E tests use hash-based navigation helpers (`navigate-view.js`, `view-navigation.js`, `open-home.js`) that will break under React Router.
 
 **Migration steps:**
-1. **Phase 1 (hash redirect active):** E2E helpers still work — hash URLs redirect to pathnames. No immediate breakage.
-2. **Phase 1 deliverable:** Create pathname-based helper wrappers that call `page.goto('/practice')` etc. Old helpers remain as aliases.
-3. **Phase 2+:** New E2E tests use pathname helpers exclusively.
-4. **Phase 6 (hash redirect removed):** Delete old hash-based helpers, update remaining E2E tests.
+1. **Phase 1, week 1 (before any route changes):** Create pathname-based helper wrappers that call `page.goto('/practice')` etc. Old helpers remain as aliases. Both helpers point to the same destinations — the pathname versions are future-proof, the hash versions work via redirect. **This is the first Phase 1 deliverable, before any component migration.**
+2. **Phase 1 (hash redirect active):** Existing 45 E2E tests continue to pass unchanged — hash URLs redirect to pathnames. No immediate breakage.
+3. **Phase 2+:** New E2E tests use pathname helpers exclusively. Existing tests are migrated to pathname helpers opportunistically (when touching a test for other reasons).
+4. **Phase 6 (hash redirect removed):** Delete old hash-based helpers. Any remaining tests using hash helpers must be migrated first. Run `grep -r 'navigate.*#view' tests/` to find stragglers.
 5. **`seed-kv.js`:** Update hardcoded `onboarding-complete` key to also seed `CHILD_NAME_KEY`. Update IDB version references if schema changes.
+6. **Pathname helper timing guarantee:** All 45 existing E2E tests must pass at every commit. If a route change breaks an E2E test, the pathname helper for that route must be updated in the same commit — not deferred.
 
 **New E2E tests to add:**
 - Onboarding complete flow (5 steps → first mission)
@@ -1003,6 +1085,10 @@ Evolve the current palette. Keep its warmth; improve contrast and semantic clari
 
 ```css
 /* ── Font Families ── */
+/* Nunito stays in fallback chains as the FOUT/FOIT fallback during font load.
+   The current app already loads Nunito — keeping it prevents blank text flash
+   while Fredoka/Figtree download. Remove Nunito from fallback chain only after
+   confirming Fredoka+Figtree are cached by SW on first install. */
 --font-display:  'Fredoka', 'Nunito', sans-serif;  /* Headings, buttons, labels */
 --font-body:     'Figtree', 'Nunito', -apple-system, sans-serif;  /* Body, captions */
 --font-mono:     'SF Mono', 'Menlo', monospace;  /* Timer displays, tuner readouts */
@@ -1075,6 +1161,60 @@ Evolve the current palette. Keep its warmth; improve contrast and semantic clari
 - Shadow color always has a warm brown tint (`rgba(106, 58, 42, ...)`) — never cold gray
 - Glass morphism used sparingly: bottom nav, game HUD, floating panels. Not on every card.
 - `translateZ(0)` for GPU promotion on animated elements, but avoid `translateZ > 0` on large elements (compositing cost on iPad)
+
+### Z-Index System
+
+```css
+/* ── Z-Index Tokens (exhaustive — no unlisted z-index values allowed) ── */
+--z-base:        0;      /* Default stacking context */
+--z-card:        1;      /* Cards that overlap siblings (e.g., skill progress overlap) */
+--z-sticky:      10;     /* Sticky headers, filter bars */
+--z-nav:         100;    /* Bottom nav bar */
+--z-game-hud:    200;    /* In-game HUD (score, timer, pause) — above nav */
+--z-overlay:     300;    /* Coach overlay, practice coaching strip */
+--z-modal:       400;    /* Modal dialogs, parent gate PIN */
+--z-toast:       500;    /* Toast notifications — above everything */
+--z-splash:      600;    /* Splash/loading screen — topmost */
+```
+
+**Rules:**
+- Every `z-index` in the codebase MUST use a token — no magic numbers
+- New stacking contexts: create with `isolation: isolate` on containers to prevent z-index bleed
+- Game views establish their own stacking context (`isolation: isolate` on game container); internal game z-indexes are local
+
+### Line-Height Tokens
+
+```css
+/* ── Line Heights ── */
+--leading-none:    1.0;    /* Display numbers (streak count, timer, Hz readout) */
+--leading-tight:   1.2;    /* Headings (Fredoka display) */
+--leading-snug:    1.3;    /* Button labels, card titles */
+--leading-normal:  1.4;    /* Body text (Figtree) */
+--leading-relaxed: 1.6;    /* Long-form parent text (settings descriptions, analysis) */
+```
+
+### Landscape And Responsive Breakpoints
+
+```css
+/* ── Breakpoints ── */
+--bp-mobile:     320px;   /* iPhone SE — minimum supported */
+--bp-tablet:     768px;   /* iPad mini 6 portrait — primary target */
+--bp-landscape:  1024px;  /* iPad mini 6 landscape / iPad Air portrait */
+--bp-desktop:    1280px;  /* Desktop dev only — not a shipping target */
+```
+
+**Landscape behavior:**
+- **Default:** Portrait-preferred. All child views render single-column at 768px.
+- **Games:** May request landscape via `screen.orientation.lock('landscape')` if supported. Game canvas scales to fill viewport. HUD repositions to horizontal strip at top.
+- **Practice runner:** Stays portrait. Landscape is not blocked but layout does not reflow — content scrolls vertically.
+- **Parent zone:** At `1024px+`, panels switch to 2-column grid (sidebar nav + content). Below 1024px, parent stays single-column with tab bar.
+- **Orientation change handler:** `screen.orientation.addEventListener('change', ...)` fires layout recalc. Canvas games call `resizeCanvas()`. Non-game views rely on CSS media queries only (no JS resize handler needed).
+
+### Dark Mode And Background Theme Override
+
+- **v1 ships light-only.** No `prefers-color-scheme: dark` media query. Explicitly set `color-scheme: light` on `<html>` to prevent Safari auto-darkening form controls.
+- **Background theme selector** (in `/parent/settings`): swaps `--color-bg` and `--color-bg-alt` to one of 3 palettes (Cream default, Calm Blue `#F0F4F8`/`#E3EAF2`, Soft Green `#F0F8F4`/`#E0F0E8`). Applied via `data-bg-theme="cream|blue|green"` attribute on `<html>`. Persisted in localStorage.
+- **Future dark mode:** When added (post-v1), implement as a 4th background theme option, not a system preference override. Children should not get unexpected dark mode from parent device settings.
 
 ---
 
@@ -1331,7 +1471,29 @@ All animation is CSS-driven (not JS RAF loops for UI). Canvas game animations ar
 └─────────────────────────────────────┘
 ```
 
-**State 2: In-Game** — Full-bleed canvas/HTML game. No nav. Minimal HUD (back, score, timer). Game engine owns the screen.
+**State 2: In-Game** — Full-bleed canvas/HTML game. No nav. Minimal HUD. Game engine owns the screen.
+
+```
+┌─────────────────────────────────────┐
+│  ← ·····························  ⏸ │  ← HUD top bar (glass-over-canvas)
+│  ^back    timer / progress     pause│
+│                                     │
+│                                     │
+│         (game canvas area)          │
+│                                     │
+│                                     │
+│                                     │
+│  Score: 420     ⭐⭐☆ (live stars) │  ← HUD bottom strip (glass)
+└─────────────────────────────────────┘
+```
+
+**HUD elements (all positioned with safe-area insets):**
+- **Top-left:** Back/exit button (`←`, 44px touch target, glass bg). Tap → confirm dialog ("Leave game? Progress won't be saved.").
+- **Top-center:** Timer (countdown games) or progress indicator (dot trail for level-based games). Fredoka mono, `--text-sm`.
+- **Top-right:** Pause button (`⏸`, 44px). Tap → pause overlay: dim canvas, show "Paused" + "Resume" / "Quit" buttons.
+- **Bottom-left:** Live score counter. Animates on increment (scale bounce). Fredoka, `--text-base`.
+- **Bottom-right:** Live star preview (shows current star tier based on running accuracy). Dims when accuracy is low.
+- **All HUD:** `z-index: var(--z-game-hud)`, `pointer-events: none` on container, `pointer-events: auto` on buttons only. Glass bg: `rgba(255,255,255,0.8)` + `backdrop-filter: blur(8px)`.
 
 **State 3: Post-Game** (bottom nav returns — focus mode only hides nav during in-game)
 ```
@@ -1639,7 +1801,7 @@ Reached when deep-linking or tapping a step from the practice session runner.
 - **Sound toggle:** Mutes tone player, game sound effects, celebration sounds. Does NOT mute mic input for tuner/games.
 - **Motion toggle:** When off, applies `prefers-reduced-motion` override. All CSS animations skip to end state. Canvas game animations respect `shouldAnimate` flag.
 - **Text size:** Adjusts `--text-base` CSS custom property scale factor (0.9x / 1.0x / 1.1x). Fluid clamp system ensures safe bounds.
-- **Background:** Cosmetic theme swap. Changes `--color-bg` and `--color-bg-alt`. Cream (default), Calm Blue (#F0F4F8), Soft Green (#F0F8F4).
+- **Background:** Cosmetic theme swap via `data-bg-theme` attribute on `<html>`. Cream (default: `--color-bg: #FFF9F3`, `--color-bg-alt: #FFEFE2`), Calm Blue (`--color-bg: #F0F4F8`, `--color-bg-alt: #E3EAF2`), Soft Green (`--color-bg: #F0F8F4`, `--color-bg-alt: #E0F0E8`). Persisted in localStorage. All other tokens unchanged — only `bg` and `bg-alt` vary.
 - **Parent Area link:** Tap → PIN gate → full parent workspace. Clearly labeled with lock icon.
 
 ### `/support/*` — Support Pages
@@ -1714,49 +1876,185 @@ Three static-content pages. Accessible from child settings ("Help" link) and par
 └─────────────────────────────────────┘
 ```
 
+**Parent Auto-Revert UX:**
+- After PIN unlock, `AppRuntime.persona` is set to `'parent'` and stored in `sessionStorage` (NOT localStorage — revert on tab close).
+- A 15-minute inactivity timer starts. Any `pointerdown` or `keydown` event on the parent zone resets the timer.
+- At 14 minutes: subtle banner appears at top of parent zone — "Returning to child mode in 1 minute" with "Stay" button.
+- At 15 minutes: auto-navigate to `/` (Home), set `persona = 'child'`, clear `sessionStorage` flag.
+- "← Back to App" button in parent header: immediately reverts to child mode (no timer needed).
+- If app is backgrounded (`visibilitychange` → `hidden`) while in parent mode, the timer continues — returning to the app after 15+ minutes reverts to child mode automatically.
+- PIN is stored as a hash in `PARENT_PIN_KEY` in localStorage. Default PIN on first use: `1234`. Parent is prompted to change it on first unlock.
+
 **Tab: Review** (`/parent/review`)
-- Last 7 sessions: date, duration, activities, completion %
-- Skill radar chart (SVG 5-axis pentagon)
-- Per-skill trend sparklines (last 10 sessions)
-- Song mastery table: song name, current tier, trend arrow
-- RT coaching replay: tap a session → timeline view of pitch contour, note events, coaching triggers. Toggle between gentle/standard/challenge presets to compare.
+
+```
+┌─────────────────────────────────────┐
+│  Recent Sessions                    │
+│  ┌─────────────────────────────┐    │
+│  │ Mon 3/4  │ 12m │ ████░ 82% │ >  │  ← Tap row → session detail
+│  │ Sun 3/3  │ 15m │ █████ 96% │ >  │
+│  │ Sat 3/2  │  8m │ ███░░ 64% │ >  │
+│  └─────────────────────────────┘    │
+│                                     │
+│  Skill Overview                     │
+│     ┌──────────────┐               │
+│     │   ╱ pitch ╲  │               │  ← SVG 5-axis radar chart
+│     │ bow ──●── rhy│               │     filled area = current level
+│     │   ╲ read  ╱  │               │
+│     └──────────────┘               │
+│  [Pitch ━━] [Rhythm ━] [Bow ━━━]  │  ← Per-skill sparklines (10 sessions)
+│                                     │
+│  Song Mastery                       │
+│  Twinkle       ⭐⭐⭐⭐⭐  ↑     │
+│  Lightly Row   ⭐⭐⭐☆☆  →     │
+│  Go Tell Aunt  ⭐⭐☆☆☆  ↑     │
+└─────────────────────────────────────┘
+```
+
+- Tap a session row → timeline view: pitch contour, note events, coaching triggers
+- Toggle coaching preset (gentle/standard/challenge) to compare session replay
 
 **Tab: Goals** (`/parent/goals`)
-- Daily practice time slider (5-30 min, default 15)
-- Weekly practice day checkboxes (default: Mon-Fri)
-- Recital date picker + countdown
-- Goal progress bar (this week's actual vs. target)
+
+```
+┌─────────────────────────────────────┐
+│  Daily Practice Goal                │
+│  ○────────●──────────○  15 min     │  ← Slider (5-30 min)
+│                                     │
+│  Practice Days                      │
+│  [M✓] [T✓] [W✓] [T✓] [F✓] [S] [S]│  ← Day checkboxes
+│                                     │
+│  This Week                          │
+│  ████████░░░░░  3/5 days  45/75m   │  ← Progress bar
+│                                     │
+│  Recital Countdown                  │
+│  🎻 Spring Recital — 23 days away  │
+│  [Change Date]                      │
+└─────────────────────────────────────┘
+```
 
 **Tab: Checklist** (`/parent/checklist`) — NEW
-- Suzuki-style home teacher observation form
+
+```
+┌─────────────────────────────────────┐
+│  Home Practice Observation          │
+│                                     │
+│  Bow Hold        ①②③④⑤            │  ← Tap number to rate
+│  Posture         ①②③④⑤            │
+│  Tone Quality    ①②③④⑤            │
+│  Rhythm          ①②③④⑤            │
+│  Left Hand       ①②③④⑤            │
+│                                     │
+│  Notes                              │
+│  ┌─────────────────────────────┐    │
+│  │ Good focus today. Bow hold  │    │  ← Free-text textarea
+│  │ improved since last week.   │    │
+│  └─────────────────────────────┘    │
+│                                     │
+│  [      Save Observation      ]     │  ← Primary button
+│                                     │
+│  ── Past Observations ──            │
+│  Mar 4  Avg: 3.8  "Good focus..."  │
+│  Mar 2  Avg: 3.2  "Struggles w..." │
+│  [Export CSV] [Export PDF]          │
+└─────────────────────────────────────┘
+```
+
 - Per-session checklist items: bow hold (1-5), posture (1-5), tone quality (1-5), rhythm accuracy (1-5), left hand position (1-5)
-- Free-text notes field
-- "Save Observation" button → timestamped entry in IndexedDB
-- History list of past observations (date, summary rating)
+- "Save Observation" → timestamped entry in IndexedDB
+- History list: date, average rating, notes preview
 - Export all observations as CSV or PDF
 
 **Tab: Recordings** (`/parent/recordings`)
-- Recording list: date, song name, duration, star rating, playback button
+
+```
+┌─────────────────────────────────────┐
+│  Recordings       [Filter ▾] [📤]  │
+│                                     │
+│  Mar 4 — Twinkle           ⭐⭐⭐ │
+│  1:42  [▶ Play]  [📤 Share]       │
+│  ─────────────────────────────────  │
+│  Mar 3 — Lightly Row       ⭐⭐   │
+│  2:15  [▶ Play]  [📤 Share]       │
+│  ─────────────────────────────────  │
+│  Mar 1 — Go Tell Aunt      ⭐⭐⭐ │
+│  1:58  [▶ Play]  [📤 Share]       │
+│                                     │
+│  Storage: 42 MB / 200 MB  ████░░   │
+└─────────────────────────────────────┘
+```
+
 - Filter by song, date range
-- Export: individual (share/download), bulk (zip)
-- Delete: individual or bulk (confirmation required)
-- Storage usage indicator
+- Export: individual (share/download via `tryShareFile()`), bulk (zip)
+- Delete: individual or bulk (long-press → multi-select → delete, confirmation required)
+- Storage usage indicator with visual bar
 
 **Tab: Data** (`/parent/data`)
+
+```
+┌─────────────────────────────────────┐
+│  Data Management                    │
+│                                     │
+│  Backup & Restore                   │
+│  [📤 Export Full Backup (JSON)]     │
+│  [📥 Import Backup]                │
+│  [📊 Export Practice Log (CSV)]     │
+│                                     │
+│  Storage Breakdown                  │
+│  Events     ████░░░░  12 MB        │
+│  Recordings ██████░░  42 MB        │
+│  ML Data    █░░░░░░░   2 MB        │
+│  SW Cache   ██░░░░░░   8 MB        │
+│  ─────────────────── Total: 64 MB  │
+│                                     │
+│  Maintenance                        │
+│  [🔍 Check Offline Integrity]       │
+│  [🗑  Clear All Data]  ← danger    │
+└─────────────────────────────────────┘
+```
+
 - Full backup: export all app data as JSON file
-- Restore: import from JSON (with confirmation)
-- Export practice log as CSV
-- Storage usage breakdown (events, recordings, ML data, cache)
-- Clear all data (double confirmation: "Are you sure?" → "Type DELETE to confirm")
+- Restore: import from JSON (with confirmation dialog)
+- Clear all data: double confirmation ("Are you sure?" → "Type DELETE to confirm")
 - Offline integrity check: verify SW cache completeness, repair if needed
 
 **Tab: Settings** (`/parent/settings`)
-- Coaching style: gentle / standard / challenge (radio buttons with descriptions)
-- Practice reminders: time picker + day checkboxes → "Download Calendar Reminder" (ICS export)
-- Per-game difficulty override: list of 17 games with auto/easy/medium/hard selector
-- Sound/haptic master controls
-- ML diagnostics: expandable panel showing EMA values, forgetting curves, recommendation weights. "Demo Mode" toggle. "Simulate Data" button (generates synthetic events for testing recommendation flow). "Reset ML" button (with confirmation). Web Vitals viewer: 40-session LCP/INP/CLS rolling history chart (reads `WEB_VITALS_KEY`).
-- App version, about, privacy policy links
+
+```
+┌─────────────────────────────────────┐
+│  Settings                           │
+│                                     │
+│  Coaching Style                     │
+│  (○) Gentle  — encouraging only     │
+│  (●) Standard — balanced feedback   │
+│  (○) Challenge — push for accuracy  │
+│                                     │
+│  Practice Reminders                 │
+│  Time: [4:00 PM ▾]                 │
+│  Days: [M✓][T✓][W✓][T✓][F✓][S][S] │
+│  [Download Calendar Reminder (ICS)] │
+│                                     │
+│  Sound & Feedback                   │
+│  Sound effects    [━━━●━━] on       │  ← Toggle + volume
+│  Haptic feedback  [━━━━●━] on       │
+│  Voice coach cues [━━━●━━] on       │  ← NEW: enables/disables
+│                                     │     PandaSpeech TTS audio
+│  Per-Game Difficulty                │
+│  echo            [Auto ▾]          │
+│  pitch-quest     [Hard ▾]          │
+│  rhythm-dash     [Auto ▾]          │
+│  ... (17 games, scrollable)         │
+│                                     │
+│  ▸ ML Diagnostics (expandable)     │
+│  ▸ Web Vitals Viewer               │
+│                                     │
+│  App v2.0.0 · About · Privacy      │
+└─────────────────────────────────────┘
+```
+
+- Voice coach toggle: when OFF, `<PandaSpeech>` renders text-only (no TTS audio). Default: ON.
+- ML diagnostics: expandable panel showing EMA values, forgetting curves, recommendation weights. "Demo Mode" toggle. "Simulate Data" button. "Reset ML" button (with confirmation). Web Vitals viewer: 40-session LCP/INP/CLS rolling history chart.
+- Per-game difficulty: list of 17 games with auto/easy/medium/hard selector. "Auto" uses ML-recommended difficulty.
 
 ---
 
@@ -1770,6 +2068,68 @@ Every tappable element responds immediately:
 - **Nav items:** Background highlight fade-in (`80ms`). Active state persists.
 - **Checkboxes:** Spring-animated check mark SVG path draw.
 - **Sliders:** Thumb scales up on touch, visual track fill follows finger.
+
+### Long-Press Interaction
+
+Long-press is used sparingly — only where it adds real value:
+- **Song cards:** Long-press (500ms) opens quick-action popover: "Practice", "Listen", "Details". Short press navigates to default action.
+- **Game cards:** Long-press (500ms) opens quick-action popover: "Play", "High Scores". Short press starts game.
+- **Recording items:** Long-press (500ms) enters multi-select mode for bulk export/delete.
+- **No long-press on buttons, nav items, or settings.** Only on list/card items.
+
+**Implementation:**
+- `pointerdown` starts a 500ms timer. `pointerup`/`pointercancel`/`pointermove` (>10px) cancels.
+- Visual feedback: subtle scale(0.96) begins at 200ms. At 500ms, haptic pulse (if available) + popover appears.
+- **iOS Safari:** Must call `e.preventDefault()` on `contextmenu` event to suppress native context menu on long-press. Register handler: `element.addEventListener('contextmenu', e => e.preventDefault())`.
+- Popover dismisses on outside tap or Escape.
+
+### Swipe Navigation
+
+- **Horizontal swipe on child bottom nav** is **disabled.** Child navigates via tab taps only — accidental swipes during practice must not switch views.
+- **CSS:** `overscroll-behavior-x: contain` on all scrollable containers to prevent back-nav on iOS.
+- **Parent tab bar:** Horizontal swipe between tabs IS allowed (uses native scroll behavior of the tab bar, not gesture detection).
+- **Game views:** Swipe gestures are game-specific (e.g., bowing direction in stir-soup). Global nav swipe is always suppressed in game state.
+- **Song list / game catalog:** Vertical scroll only. No horizontal swipe-to-delete or swipe-to-reveal actions — use long-press for multi-action instead.
+
+### Safe-Area Rules
+
+All edge-touching elements account for device safe areas:
+
+```css
+/* ── Global safe-area application ── */
+html {
+  /* Extend color behind notch/home indicator */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+/* Bottom nav */
+.nav-bar {
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* Game views (full-bleed, no nav) */
+.game-container {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Toast notifications */
+.toast {
+  bottom: calc(72px + env(safe-area-inset-bottom) + var(--space-3));
+}
+
+/* Modal close buttons / back buttons */
+.modal-close, .back-button {
+  top: calc(var(--space-3) + env(safe-area-inset-top));
+}
+```
+
+**Rules:**
+- `env(safe-area-inset-*)` on every element within `8px` of a screen edge
+- Test on iPad mini 6 in both portrait and landscape — landscape has different insets
+- Home indicator region: never place interactive elements in bottom `34px` on notchless iPads
+- Game HUD: position relative to safe area, not viewport edge
 
 ### Loading States
 
@@ -1982,6 +2342,17 @@ interface FeatureFlags {
   recordingEnabled: boolean;       // MediaRecorder for song recording
 }
 
+// Pitch data shape emitted by AudioWorklet → WASM pipeline
+interface PitchFeatures {
+  noteName: string;         // e.g. "A4"
+  frequency: number;        // Hz
+  centsOffset: number;      // -50 to +50
+  confidence: number;       // 0.0-1.0
+  rmsAmplitude: number;     // 0.0-1.0
+  inTune: boolean;          // |centsOffset| <= threshold (recomputed downstream, not from WASM)
+  stringIndex?: number;     // 0-3 (G,D,A,E) if auto-detected
+}
+
 // Wraps routes needing live audio (tuner, mic-based games)
 interface RealtimeSession {
   isActive: boolean;
@@ -2040,7 +2411,7 @@ interface SongAssessment {
   timingScore: number;       // 0-100, weight: 45%
   intonationScore: number;   // 0-100, weight: 45%
   overallScore: number;      // 0-100, weight: 10%
-  starRating: number;        // 1-5 (derived: Math.round(weightedTotal / 20), clamped 1-5; 0-20→1, 21-40→2, 41-60→3, 61-80→4, 81-100→5)
+  starRating: number;        // 1-5 (derived: Math.min(5, Math.max(1, Math.ceil(weightedTotal / 20))); 0→1, 1-20→1, 21-40→2, 41-60→3, 61-80→4, 81-100→5)
   masteryTier: 'foundation' | 'bronze' | 'silver' | 'gold';
   recordingId?: string;      // Link to recording if recorded
 }
@@ -2092,6 +2463,13 @@ interface FeatureMatrixRow {
 ## Onboarding UX Flow
 
 The current onboarding is a simple scroll-snap carousel (`onboarding.js`) with a binary completion flag (`ONBOARDING_KEY`). **This is a full rebuild, not a migration** — the existing carousel has no reusable state machine or step logic. The reboot replaces it with a focused 5-step wizard.
+
+**Onboarding detection mechanism:**
+- On every mount of `<HomePage>`, check `localStorage.getItem('onboarding-complete')`.
+- If `null` or `'false'` → render `<OnboardingWizard>` instead of normal Home content. No separate route — wizard replaces Home body.
+- On wizard completion (step 5 "Done" tap) → `localStorage.setItem('onboarding-complete', 'true')` + `localStorage.setItem('panda-violin:child-name-v1', name)` → wizard unmounts → Home renders normal content with first mission.
+- `<OnboardingWizard>` is a `React.lazy()` chunk — not loaded unless needed.
+- E2E tests: fresh context (no localStorage) → wizard appears. Seeded context (`seed-kv.js` sets `onboarding-complete: 'true'`) → wizard does NOT appear.
 
 ### Flow
 
