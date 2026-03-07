@@ -5,8 +5,7 @@
     "scripts/**/*.js",
     "scripts/**/*.mjs",
     "tests/**/*.test.js",
-    "tests/e2e/**/*.spec.js",
-    "eslint.config.js"
+    "tests/e2e/**/*.spec.js"
   ],
   "project": [
     "src/**/*.js",
@@ -16,9 +15,6 @@
     "*.config.js"
   ],
   "ignore": [
-    "src/wasm/**",
-    "wasm/**",
-    "public/views/**",
-    "dist/**"
+    "src/wasm/**"
   ]
 }

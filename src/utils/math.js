@@ -149,12 +149,3 @@ export const finiteOrNow = (x) => (Number.isFinite(x) ? x : Date.now());
  * @returns {number}
  */
 export const atLeast1 = (x) => Math.max(1, x);
-
-/**
- * Returns a random element from a non-empty array.
- *
- * @template T
- * @param {T[]} array
- * @returns {T}
- */
-export const randomFrom = (array) => array[Math.floor(Math.random() * array.length)];

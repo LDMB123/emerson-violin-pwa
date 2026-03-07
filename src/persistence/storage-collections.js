@@ -5,10 +5,10 @@ import {
     RT_EVENT_LOG_KEY,
 } from './storage-keys.js';
 
-export const COLLECTION_TIMESTAMP_INDEX = 'by-timestamp';
-export const COLLECTION_DAY_INDEX = 'by-day';
-export const COLLECTION_TYPE_INDEX = 'by-type';
-export const COLLECTION_ENTITY_INDEX = 'by-entity';
+const COLLECTION_TIMESTAMP_INDEX = 'by-timestamp';
+const COLLECTION_DAY_INDEX = 'by-day';
+const COLLECTION_TYPE_INDEX = 'by-type';
+const COLLECTION_ENTITY_INDEX = 'by-entity';
 
 const asStringOrEmpty = (value) => (typeof value === 'string' ? value : '');
 
