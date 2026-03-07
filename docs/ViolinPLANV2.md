@@ -393,7 +393,9 @@ Create `docs/architecture/reboot-feature-matrix.md` as the canonical tracker. Ea
 
 ### AI Toolchain: Antigravity + Gemini 3.1 Pro + Stitch + Nano Banana
 
-This migration is optimized for execution inside **Google Antigravity 1.19.6** (agent-first IDE, VSCode OSS 1.107.0, Chromium 142). All phases use the following tool stack:
+This migration is optimized for execution inside **Google Antigravity 1.20.3** (agent-first IDE, VSCode OSS 1.107.0, Chromium 142). All phases use the following tool stack:
+
+> **Upgrade note:** If running Antigravity < 1.20.3, update first. The [March 5, 2026 release](https://discuss.ai.google.dev/t/antigravity-update-1-20-3-2026-3-5/129320) adds **AGENTS.md** support (project-level agent instructions), auto-continue as default behavior, and a token accounting fix critical for long migration sessions.
 
 #### Antigravity Agent Manager (Multi-Agent Orchestration)
 
@@ -401,7 +403,7 @@ The [Agent Manager](https://developers.googleblog.com/build-with-google-antigrav
 
 - **Parallel migration tracks:** Spawn separate agents for "React Shell," "Component Tests," "CSS Module Migration," and "E2E Pathname Helpers" — all running simultaneously on the same branch
 - **Artifacts for review:** Each agent produces diffs, test results, and screenshots as Artifacts. Leave feedback directly on an Artifact; the agent incorporates it without stopping
-- **Rules file:** Create `.antigravity/rules.md` with project constraints:
+- **Rules file:** Create `AGENTS.md` at project root (supported since Antigravity 1.20.3 — loaded automatically by all agents alongside `GEMINI.md`):
   ```
   - Every commit must pass `npm run handoff:verify` (567 unit + 45 E2E)
   - No new runtime deps beyond React + React Router
@@ -412,6 +414,7 @@ The [Agent Manager](https://developers.googleblog.com/build-with-google-antigrav
   - All games use <GameShell> 3-state pattern (pre/in/post)
   - Touch-first: 52px min targets, no hover-only interactions
   ```
+- **Auto-continue:** Enabled by default in 1.20.3 — agents complete multi-step tasks without manual "continue" prompts. No configuration needed.
 - **Workflows:** Save per-phase prompts as Workflows (see phase-specific sections below). Trigger on demand — no re-typing migration instructions each time.
 
 **Per-phase agent allocation:**
@@ -428,25 +431,39 @@ The [Agent Manager](https://developers.googleblog.com/build-with-google-antigrav
 
 #### Gemini 3.1 Pro (High) — Primary Code Generation Model
 
-Use [Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/) as the Antigravity agent model. Set thinking level to **High** for:
+Use [Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/) as the Antigravity agent model. Follow the **80/20 thinking level rule** ([source](https://www.nxcode.io/en/resources/news/gemini-3-1-pro-developer-guide-api-coding-vibe-coding-2026)): 80% of tasks at Low/Medium, 20% at High. High activates **Deep Think Mini** — deeper reasoning chain but 3-4× token cost.
 
-- **Complex multi-file migrations:** 1M token context window ingests the entire codebase (35K LOC + 567 tests). High thinking mode reasons across file boundaries — critical for strangler fig migrations where bridge, hook, vanilla module, and test must change atomically.
-- **65K token output:** Generates complete component files without truncation (previous 21K limit caused mid-file breaks).
-- **Code review at Medium thinking:** Switch to Medium for reviewing agent-produced diffs. Saves token budget while catching regressions.
-- **Debugging at High thinking:** Complex audio pipeline bugs (AudioWorklet → WASM → Policy Worker → CoachOverlay) benefit from High thinking's deeper reasoning chain.
+**When to use High (reserve for ~20% of tasks):**
+- Multi-file atomic migrations (bridge + hook + vanilla + test must change together)
+- Audio pipeline debugging (AudioWorklet → WASM → Policy Worker → CoachOverlay)
+- Complex E2E scenario design with cross-route assertions
+
+**When to use Medium (bulk of work ~65%):**
+- Single-component migrations, code review, test generation, bridge integration
+
+**When to use Low (~15%):**
+- Documentation, comments, CSS extraction, simple refactors, file renames
 
 **Model selection per task type:**
 
-| Task | Model | Thinking Level |
-|------|-------|---------------|
-| Component migration (vanilla → React) | Gemini 3.1 Pro | High |
-| Bridge integration (mount/unmount lifecycle) | Gemini 3.1 Pro | High |
-| Unit test generation (RTL) | Gemini 3.1 Pro | Medium |
-| CSS Module extraction | Gemini 3.1 Pro | Medium |
-| E2E test writing (Playwright) | Gemini 3.1 Pro | High |
-| Code review of agent diffs | Gemini 3.1 Pro | Medium |
-| Audio/WASM debugging | Gemini 3.1 Pro | High |
-| Documentation generation | Gemini 3.1 Pro | Low |
+| Task | Model | Thinking Level | Rationale |
+|------|-------|---------------|-----------|
+| Component migration (vanilla → React) | Gemini 3.1 Pro | Medium | Single-file scope, predictable pattern |
+| Multi-file atomic migration (bridge+hook+test) | Gemini 3.1 Pro | **High** | Cross-file reasoning required |
+| Bridge integration (mount/unmount lifecycle) | Gemini 3.1 Pro | Medium | Well-defined pattern from Phase 1 |
+| Unit test generation (RTL) | Gemini 3.1 Pro | Medium | Pattern matching from existing tests |
+| CSS Module extraction | Gemini 3.1 Pro | Low | Mechanical transformation |
+| E2E test writing (Playwright) | Gemini 3.1 Pro | Medium | Template-driven, helpers from Phase 1 |
+| Complex E2E scenarios (multi-route flows) | Gemini 3.1 Pro | **High** | Cross-route state reasoning |
+| Code review of agent diffs | Gemini 3.1 Pro | Medium | Verification, not generation |
+| Audio/WASM debugging | Gemini 3.1 Pro | **High** | Deep pipeline tracing needed |
+| Documentation generation | Gemini 3.1 Pro | Low | Summarization task |
+
+**Context caching strategy** ([source](https://ai.google.dev/gemini-api/docs/caching)):
+- Enable **explicit context caching** for repeated file analysis — drops input cost from $2.00/M to $0.50/M tokens (75% savings)
+- Cache the following across agent sessions: `AGENTS.md`, design system tokens, phase plan section, shared component interfaces
+- **Prompt ordering rule:** Place cached data (files, tokens, plan context) FIRST in the prompt, questions/instructions LAST — Gemini 3.1 Pro performs best when queries appear after context
+- Estimated savings: ~$0.40/M tokens saved per agent session across 7 phases × 5 agents
 
 #### Stitch — Design-to-Component Pipeline
 
@@ -454,14 +471,32 @@ Use [Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/g
 
 **Setup:**
 1. Add Stitch MCP server in Antigravity (Settings → MCP Servers → search "stitch")
-2. Create Stitch project: "Emerson Violin PWA Reboot"
-3. Set device type: **TABLET** (768px portrait, iPad mini 6 target)
+2. Install [Stitch Agent Skills](https://github.com/google-labs-code/stitch-skills) for Antigravity:
+   ```bash
+   npx skills add google-labs-code/stitch-skills --skill design-md --global
+   npx skills add google-labs-code/stitch-skills --skill react:components --global
+   npx skills add google-labs-code/stitch-skills --skill stitch-loop --global
+   npx skills add google-labs-code/stitch-skills --skill enhance-prompt --global
+   ```
+3. Create Stitch project: "Emerson Violin PWA Reboot"
+4. Set device type: **TABLET** (768px portrait, iPad mini 6 target)
+
+**Available Stitch Agent Skills:**
+| Skill | Purpose | Phase Usage |
+|-------|---------|-------------|
+| `design-md` | Convert design specs → Markdown design docs | Phase 0 (design tokens) |
+| `react:components` | Export Stitch screens → production React + CSS Modules | All phases |
+| `stitch-loop` | Multi-screen website generation (batch mode) | Phase 2, 4, 5 (multi-screen batches) |
+| `enhance-prompt` | Optimize vague prompts before generation | All phases (pre-process wireframes) |
+| `remotion` | Video/animation components | Phase 4 (game celebrations) |
+| `shadcn-ui` | shadcn/ui component variants | Not used (custom design system) |
 
 **Workflow per screen:**
-1. Feed the ASCII wireframe from this plan + design tokens (colors, typography, spacing) as the Stitch prompt
+1. Run `enhance-prompt` on the ASCII wireframe + design tokens — produces an optimized Stitch prompt with specificity improvements
 2. Generate 3-5 design candidates at tablet resolution
-3. Select best candidate → use Stitch "React Components" skill to export production React + CSS Modules code
-4. Antigravity agent receives the exported component, integrates with hooks/providers, adds tests
+3. Select best candidate → use `react:components` skill to export production React + CSS Modules code
+4. For multi-screen batches (e.g., Onboarding 5-step wizard, Parent workspace 6 tabs), use `stitch-loop` to generate all screens in one pass with shared navigation and layout consistency
+5. Antigravity agent receives the exported component, integrates with hooks/providers, adds tests
 
 **Stitch screen generation schedule:**
 
@@ -484,7 +519,7 @@ Use [Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/g
 
 #### Nano Banana 2 — Asset Generation Pipeline
 
-[Nano Banana 2](https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/) (Gemini 3.1 Flash Image) generates custom imagery. Available in [Antigravity](https://blog.google/innovation-and-ai/technology/developers-tools/build-with-nano-banana-2/) and AI Studio.
+[Nano Banana 2](https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/) (Gemini 3.1 Flash Image) generates custom imagery. Available in [Antigravity](https://blog.google/innovation-and-ai/technology/developers-tools/build-with-nano-banana-2/) and AI Studio. Pricing: **$0.045/image** (effective March 1, 2026). Supports 512px resolution and new ultra-tall/wide aspect ratios (1:4, 4:1, 1:8, 8:1) useful for onboarding scroll illustrations and vertical banners.
 
 **Use cases for this project:**
 
@@ -2941,15 +2976,20 @@ Step 5: First Mission Launch (child-facing)
 ### Environment Requirements
 
 ```
-Google Antigravity >= 1.19.6 (VSCode OSS 1.107.0, Chromium 142)
-Gemini 3.1 Pro (model: gemini-3.1-pro, thinking: High)
+Google Antigravity >= 1.20.3 (VSCode OSS 1.107.0, Chromium 142)
+  — Upgrade from 1.19.6: AGENTS.md support, auto-continue default, token accounting fix
+Gemini 3.1 Pro (model: gemini-3.1-pro, thinking: 80% Low/Medium, 20% High)
+  — Enable explicit context caching for repeated file analysis ($0.50/M vs $2.00/M)
 Stitch MCP Server (add via Antigravity MCP settings)
-Nano Banana 2 (model: gemini-3.1-flash-image-preview, via AI Studio or Antigravity)
+  — Agent Skills: npx skills add google-labs-code/stitch-skills --skill <name> --global
+  — Required skills: design-md, react:components, stitch-loop, enhance-prompt
+Nano Banana 2 (model: gemini-3.1-flash-image-preview, $0.045/image)
+  — Supports 512px resolution, ultra-tall/wide ratios (1:4, 4:1, 1:8, 8:1)
 ```
 
 ### Antigravity Project Configuration
 
-**`.antigravity/rules.md`** — loaded automatically by all agents:
+**`AGENTS.md`** (project root) — loaded automatically by all agents (Antigravity 1.20.3+):
 ```markdown
 # Emerson Violin PWA — Agent Rules
 
@@ -3072,7 +3112,7 @@ Gemini 3.1 Pro has a 1M token context window and 65K token output. Budget alloca
 
 | Context Allocation | Tokens | Purpose |
 |-------------------|--------|---------|
-| `.antigravity/rules.md` | ~800 | Agent rules (loaded every session) |
+| `AGENTS.md` | ~800 | Agent rules (loaded every session) |
 | Current phase plan section | ~2,000 | Phase-specific instructions |
 | Relevant source files | ~15,000 | Files being migrated this session |
 | Existing test files | ~5,000 | Test patterns to match |
@@ -3081,10 +3121,13 @@ Gemini 3.1 Pro has a 1M token context window and 65K token output. Budget alloca
 | **Total per-agent context** | **~27,300** | Well within 1M budget |
 
 **Tips for efficient token use:**
-- Use Gemini 3.1 Pro High only for complex migrations; switch to Medium for reviews and simple tasks
+- Follow 80/20 rule: High thinking only for multi-file atomics and audio debugging (~20% of tasks)
+- Enable **explicit context caching** on `AGENTS.md`, design tokens, and phase plan — saves 75% on input tokens across repeated agent sessions
+- **Prompt ordering:** Cached context first, questions/instructions last (Gemini 3.1 Pro optimizes for this layout)
 - Load only the files relevant to the current migration task, not the entire codebase
 - Stitch-generated code reduces token spend on layout/styling — agent focuses on logic/hooks
 - Nano Banana asset generation is separate from code context — no token overlap
+- Auto-continue (default in 1.20.3) eliminates "continue" token waste in multi-step tasks
 
 ---
 

@@ -93,3 +93,10 @@ export const getPreferredOrientation = () => {
     const landscape = window.matchMedia('(orientation: landscape)').matches;
     return landscape ? 'landscape-primary' : 'portrait-primary';
 };
+
+// Re-export native AI integrations so they are easily accessible alongside other platform features.
+export {
+    isNativeAIAvailable,
+    generateWithNanoBananaPro,
+    generateUIWithStitch
+} from './native-ai.js';
