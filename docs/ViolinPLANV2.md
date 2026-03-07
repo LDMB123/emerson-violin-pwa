@@ -459,11 +459,17 @@ Use [Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/g
 | Audio/WASM debugging | Gemini 3.1 Pro | **High** | Deep pipeline tracing needed |
 | Documentation generation | Gemini 3.1 Pro | Low | Summarization task |
 
-**Context caching strategy** ([source](https://ai.google.dev/gemini-api/docs/caching)):
-- Enable **explicit context caching** for repeated file analysis — drops input cost from $2.00/M to $0.50/M tokens (75% savings)
-- Cache the following across agent sessions: `AGENTS.md`, design system tokens, phase plan section, shared component interfaces
+**Context caching strategy** ([source](https://ai.google.dev/gemini-api/docs/caching), [pricing source](https://www.nxcode.io/en/resources/news/gemini-3-1-pro-complete-guide-benchmarks-pricing-api-2026)):
+
+| Cost Type | Standard | Cached | Savings |
+|-----------|---------|--------|---------|
+| Input tokens | $2.00/M | $0.50/M | **75%** |
+| Output tokens | $12.00/M | $12.00/M | 0% |
+
+- Cache the following across agent sessions: `AGENTS.md` (~800 tokens), design system tokens (~1,500 tokens), phase plan section (~2,000 tokens), shared component interfaces (~3,000 tokens) — total ~7,300 tokens cached per agent
 - **Prompt ordering rule:** Place cached data (files, tokens, plan context) FIRST in the prompt, questions/instructions LAST — Gemini 3.1 Pro performs best when queries appear after context
-- Estimated savings: ~$0.40/M tokens saved per agent session across 7 phases × 5 agents
+- For repeated file analysis (code review, test generation on same files), enable context caching to avoid re-tokenizing the same source files
+- Estimated savings across full migration: 7 phases × 5 agents × ~27K tokens/session × 3 sessions avg = ~2.8M input tokens. At $1.50/M savings = **~$4.20 saved** on input alone
 
 #### Stitch — Design-to-Component Pipeline
 
@@ -485,18 +491,27 @@ Use [Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/g
 | Skill | Purpose | Phase Usage |
 |-------|---------|-------------|
 | `design-md` | Convert design specs → Markdown design docs | Phase 0 (design tokens) |
-| `react:components` | Export Stitch screens → production React + CSS Modules | All phases |
-| `stitch-loop` | Multi-screen website generation (batch mode) | Phase 2, 4, 5 (multi-screen batches) |
-| `enhance-prompt` | Optimize vague prompts before generation | All phases (pre-process wireframes) |
-| `remotion` | Video/animation components | Phase 4 (game celebrations) |
-| `shadcn-ui` | shadcn/ui component variants | Not used (custom design system) |
+| `react:components` | Convert Stitch HTML/CSS → React TypeScript + Tailwind ([source](https://deepwiki.com/google-labs-code/stitch-skills/2.1-understanding-agent-skills)). **Post-process:** Antigravity agent converts Tailwind classes → CSS Modules (see note below) | All phases |
+| `stitch-loop` | Generate complete multi-page site from enhanced prompt — iterative screen creation with shared layout ([source](https://github.com/google-labs-code/stitch-skills)) | Phase 2, 4, 5 (multi-screen batches) |
+| `enhance-prompt` | Transform vague UI descriptions → optimized Stitch prompts with specificity, UI/UX keywords, and design system context injection | All phases (pre-process wireframes) |
+| `remotion` | Create video walkthroughs from Stitch projects with transitions and overlays | Phase 6 (demo/marketing) |
+| `shadcn-ui` | shadcn/ui component library integration guidance | Not used (custom design system) |
+
+> **Tailwind → CSS Modules post-processing:** Stitch `react:components` outputs **Tailwind CSS** by default. This project uses **CSS Modules**. After each Stitch export, the Antigravity agent must convert Tailwind utility classes to CSS Modules: (1) extract Tailwind classes into a `.module.css` file using design token CSS variables, (2) replace `className="..."` strings with `styles.componentName` imports, (3) validate against the project design token set. Add this conversion step to the `AGENTS.md` rules so all agents perform it automatically.
+
+**Stitch pipeline (recommended flow):**
+```
+ASCII wireframe → enhance-prompt → next-prompt.md → Stitch generate → react:components → Tailwind→CSS Modules conversion → Antigravity agent integration
+                                                   ↘ stitch-loop (for multi-page batches)
+```
 
 **Workflow per screen:**
-1. Run `enhance-prompt` on the ASCII wireframe + design tokens — produces an optimized Stitch prompt with specificity improvements
-2. Generate 3-5 design candidates at tablet resolution
-3. Select best candidate → use `react:components` skill to export production React + CSS Modules code
-4. For multi-screen batches (e.g., Onboarding 5-step wizard, Parent workspace 6 tabs), use `stitch-loop` to generate all screens in one pass with shared navigation and layout consistency
-5. Antigravity agent receives the exported component, integrates with hooks/providers, adds tests
+1. Run `enhance-prompt` on the ASCII wireframe + design tokens — injects UI/UX keywords, validates design specs, outputs `next-prompt.md`
+2. Feed `next-prompt.md` to Stitch → generate 3-5 design candidates at tablet resolution
+3. Select best candidate → run `react:components` to export React TypeScript + Tailwind CSS
+4. **Tailwind → CSS Modules conversion** (required): Antigravity agent converts Tailwind utility classes to CSS Modules using project design tokens (see post-processing note above)
+5. For multi-screen batches (Onboarding 5-step wizard, Parent workspace 6 tabs), use `stitch-loop` instead of step 2 — generates all screens in one pass with shared navigation and layout consistency
+6. Antigravity agent integrates the converted component with hooks/providers, adds Vitest + RTL tests
 
 **Stitch screen generation schedule:**
 
@@ -519,7 +534,18 @@ Use [Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/g
 
 #### Nano Banana 2 — Asset Generation Pipeline
 
-[Nano Banana 2](https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/) (Gemini 3.1 Flash Image) generates custom imagery. Available in [Antigravity](https://blog.google/innovation-and-ai/technology/developers-tools/build-with-nano-banana-2/) and AI Studio. Pricing: **$0.045/image** (effective March 1, 2026). Supports 512px resolution and new ultra-tall/wide aspect ratios (1:4, 4:1, 1:8, 8:1) useful for onboarding scroll illustrations and vertical banners.
+[Nano Banana 2](https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/) (Gemini 3.1 Flash Image) generates custom imagery. Available in [Antigravity](https://blog.google/innovation-and-ai/technology/developers-tools/build-with-nano-banana-2/) and AI Studio. Supports 14 aspect ratios including ultra-tall/wide (1:4, 4:1, 1:8, 8:1) useful for onboarding scroll illustrations.
+
+**Pricing tiers** ([source](https://www.aifreeapi.com/en/posts/nano-banana-2-pricing)):
+
+| Resolution | Standard API | Batch API (50% off) | Project Use |
+|------------|-------------|--------------------:|-------------|
+| 512px | $0.045 | $0.022 | Icons, badges, textures |
+| 1024px | $0.067 | $0.034 | Red Panda poses (Retina 2×), illustrations |
+| 2048px | $0.101 | $0.050 | Not needed |
+| 4096px | $0.151 | $0.076 | Not needed |
+
+> **Cost optimization:** Use **Batch API** for all non-urgent asset generation (50% instant savings). Generate Red Panda pose set (8-10 images) and badge set (9 images) as batch requests. Estimated total asset cost: 33 images × $0.034 avg (batch, 1024px) ≈ **$1.12** for all project imagery.
 
 **Use cases for this project:**
 
@@ -533,11 +559,12 @@ Use [Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/g
 | Empty states (4) | "Cute red panda illustration, [context]: no songs yet / no recordings / loading / offline" | PNG, 400×300 |
 
 **Workflow:**
-1. Generate via Nano Banana 2 in AI Studio or Antigravity (model: `gemini-3.1-flash-image-preview`)
-2. Use 5-character consistency for Red Panda poses — generate in a single session/workflow for visual coherence
-3. Export at 2× resolution for Retina iPad displays
+1. Generate via Nano Banana 2 **Batch API** (model: `gemini-3.1-flash-image-preview`) — 50% cost savings on all non-urgent assets
+2. Use character consistency for Red Panda poses — generate full set in a single batch request for visual coherence
+3. Generate at **1024px** resolution (2× for Retina iPad displays). Use 512px only for icons/badges/textures.
 4. Optimize with `sharp` or `squoosh` CLI before adding to `public/assets/`
 5. Reference in CSS/JSX via standard `<img>` tags — no build-time image optimization (static PWA)
+6. For onboarding scroll illustrations, use **1:4 ultra-tall** aspect ratio (native Nano Banana 2 support, no cropping)
 
 **Asset generation schedule:**
 - **Phase 0:** Background textures (3), Red Panda coaching pose (1, for design system validation)
@@ -2983,8 +3010,10 @@ Gemini 3.1 Pro (model: gemini-3.1-pro, thinking: 80% Low/Medium, 20% High)
 Stitch MCP Server (add via Antigravity MCP settings)
   — Agent Skills: npx skills add google-labs-code/stitch-skills --skill <name> --global
   — Required skills: design-md, react:components, stitch-loop, enhance-prompt
-Nano Banana 2 (model: gemini-3.1-flash-image-preview, $0.045/image)
-  — Supports 512px resolution, ultra-tall/wide ratios (1:4, 4:1, 1:8, 8:1)
+Nano Banana 2 (model: gemini-3.1-flash-image-preview)
+  — Pricing: $0.045/img (512px), $0.067 (1024px); Batch API: 50% off all tiers
+  — 14 aspect ratios incl. ultra-tall/wide (1:4, 4:1, 1:8, 8:1)
+  — Use Batch API for all non-urgent generation (badges, poses, textures)
 ```
 
 ### Antigravity Project Configuration
@@ -3001,6 +3030,7 @@ Nano Banana 2 (model: gemini-3.1-flash-image-preview, $0.045/image)
 - All games use <GameShell> 3-state pattern (pre-game/in-game/post-game)
 - Touch-first: 52px min targets, no hover-only interactions
 - CSS Modules for new components; global CSS untouched unless explicitly migrating
+- Stitch `react:components` exports Tailwind — always convert to CSS Modules before committing
 - TypeScript strict for new files; allowJs: true for bridged legacy
 
 ## Code Style
@@ -3101,14 +3131,16 @@ No sharp corners. Generous spacing. Pillowy interactive elements.
 | `texture-wood` | Light wood grain bg | 512×512 tile | 0 | Pending |
 
 **Nano Banana prompt consistency rules:**
-- All Red Panda poses generated in a single session for character consistency
+- All Red Panda poses generated in a **single Batch API request** for character consistency (est. 8-10 images × $0.034 = ~$0.34)
 - Style anchor: "cute red panda character, warm children's book illustration, soft lighting, rounded features, warm brown and orange tones, cream background"
 - All badges use same border style: "round badge, embossed gold border, warm tones, award style"
-- Export at 2× for Retina. Optimize with `sharp` or `squoosh` CLI before committing.
+- Red Panda poses + illustrations: generate at **1024px** (Retina 2×). Icons/badges/textures: **512px**.
+- Optimize with `sharp` or `squoosh` CLI before committing.
+- **Total estimated asset cost:** 33 images ≈ **$1.12** (Batch API, mixed resolution tiers)
 
 ### Token Budget Strategy (Gemini 3.1 Pro)
 
-Gemini 3.1 Pro has a 1M token context window and 65K token output. Budget allocation:
+Gemini 3.1 Pro has a 1M token context window and 64K token output ([source](https://www.nxcode.io/en/resources/news/gemini-3-1-pro-complete-guide-benchmarks-pricing-api-2026)). Budget allocation:
 
 | Context Allocation | Tokens | Purpose |
 |-------------------|--------|---------|
