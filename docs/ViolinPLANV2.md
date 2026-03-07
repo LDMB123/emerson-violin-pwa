@@ -391,6 +391,126 @@ Create `docs/architecture/reboot-feature-matrix.md` as the canonical tracker. Ea
 - **Current custom service worker preserved** — no framework SW adapter
 - **Zero new runtime dependencies beyond React + React Router.** All other runtime code stays vanilla JS or WASM.
 
+### AI Toolchain: Antigravity + Gemini 3.1 Pro + Stitch + Nano Banana
+
+This migration is optimized for execution inside **Google Antigravity 1.19.6** (agent-first IDE, VSCode OSS 1.107.0, Chromium 142). All phases use the following tool stack:
+
+#### Antigravity Agent Manager (Multi-Agent Orchestration)
+
+The [Agent Manager](https://developers.googleblog.com/build-with-google-antigravity-our-new-agentic-development-platform/) spawns up to 5 parallel agents, each with independent context windows. Use this for:
+
+- **Parallel migration tracks:** Spawn separate agents for "React Shell," "Component Tests," "CSS Module Migration," and "E2E Pathname Helpers" — all running simultaneously on the same branch
+- **Artifacts for review:** Each agent produces diffs, test results, and screenshots as Artifacts. Leave feedback directly on an Artifact; the agent incorporates it without stopping
+- **Rules file:** Create `.antigravity/rules.md` with project constraints:
+  ```
+  - Every commit must pass `npm run handoff:verify` (567 unit + 45 E2E)
+  - No new runtime deps beyond React + React Router
+  - CSS Modules for new components; global CSS unchanged unless migrating
+  - TypeScript strict for new files; allowJs for bridged legacy
+  - WASM modules (panda-core, panda-audio) are read-only — no Rust changes
+  - 26 platform files stay vanilla JS — singleton init, never unmount
+  - All games use <GameShell> 3-state pattern (pre/in/post)
+  - Touch-first: 52px min targets, no hover-only interactions
+  ```
+- **Workflows:** Save per-phase prompts as Workflows (see phase-specific sections below). Trigger on demand — no re-typing migration instructions each time.
+
+**Per-phase agent allocation:**
+
+| Phase | Agent 1 | Agent 2 | Agent 3 | Agent 4 | Agent 5 |
+|-------|---------|---------|---------|---------|---------|
+| 0 | Framework spike | SW spike | Design system tokens | Stitch screen gen | Performance baseline |
+| 1 | React shell + router | LegacyBridge impl | E2E pathname helpers | CSS Module migration | Shared components |
+| 2 | Home + Mission | Practice runner | Onboarding wizard | Event bus migration | Wins page |
+| 3 | Tuner + RT audio | Metronome + Drone | Bowing + Posture | Child settings | CoachOverlay portal |
+| 4 | Songs library + detail | Game shell + catalog | Recording + assessment | Adaptive difficulty | Spaced repetition |
+| 5 | Parent gate + review | Goals + checklist | Recordings + data | Settings + support | CSV/PDF export |
+| 6 | Perf audit + a11y | Dead code cleanup | Offline verification | Platform features | Documentation |
+
+#### Gemini 3.1 Pro (High) — Primary Code Generation Model
+
+Use [Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/) as the Antigravity agent model. Set thinking level to **High** for:
+
+- **Complex multi-file migrations:** 1M token context window ingests the entire codebase (35K LOC + 567 tests). High thinking mode reasons across file boundaries — critical for strangler fig migrations where bridge, hook, vanilla module, and test must change atomically.
+- **65K token output:** Generates complete component files without truncation (previous 21K limit caused mid-file breaks).
+- **Code review at Medium thinking:** Switch to Medium for reviewing agent-produced diffs. Saves token budget while catching regressions.
+- **Debugging at High thinking:** Complex audio pipeline bugs (AudioWorklet → WASM → Policy Worker → CoachOverlay) benefit from High thinking's deeper reasoning chain.
+
+**Model selection per task type:**
+
+| Task | Model | Thinking Level |
+|------|-------|---------------|
+| Component migration (vanilla → React) | Gemini 3.1 Pro | High |
+| Bridge integration (mount/unmount lifecycle) | Gemini 3.1 Pro | High |
+| Unit test generation (RTL) | Gemini 3.1 Pro | Medium |
+| CSS Module extraction | Gemini 3.1 Pro | Medium |
+| E2E test writing (Playwright) | Gemini 3.1 Pro | High |
+| Code review of agent diffs | Gemini 3.1 Pro | Medium |
+| Audio/WASM debugging | Gemini 3.1 Pro | High |
+| Documentation generation | Gemini 3.1 Pro | Low |
+
+#### Stitch — Design-to-Component Pipeline
+
+[Stitch](https://developers.googleblog.com/stitch-a-new-way-to-design-uis/) generates production React code from text prompts and wireframes. Integrated via [Stitch MCP Server](https://www.geeky-gadgets.com/google-stitch-mcp-gemini-agent-skills/) in Antigravity.
+
+**Setup:**
+1. Add Stitch MCP server in Antigravity (Settings → MCP Servers → search "stitch")
+2. Create Stitch project: "Emerson Violin PWA Reboot"
+3. Set device type: **TABLET** (768px portrait, iPad mini 6 target)
+
+**Workflow per screen:**
+1. Feed the ASCII wireframe from this plan + design tokens (colors, typography, spacing) as the Stitch prompt
+2. Generate 3-5 design candidates at tablet resolution
+3. Select best candidate → use Stitch "React Components" skill to export production React + CSS Modules code
+4. Antigravity agent receives the exported component, integrates with hooks/providers, adds tests
+
+**Stitch screen generation schedule:**
+
+| Phase | Screens to Generate |
+|-------|--------------------|
+| 0 | Component primitives: Button, Card, NavBar, PandaSpeech, Skeleton |
+| 1 | App shell layout, bottom nav, parent PIN gate, error boundary |
+| 2 | Home (mission CTA), Practice runner (step UI), Wins (trophy shelf), Onboarding (5-step wizard) |
+| 3 | Tool selector hub, Tuner, Metronome, Drone, Bowing trainer, Posture trainer, Child settings |
+| 4 | Songs library, Song detail, Games catalog, GameShell (pre/in/post), Post-game celebration |
+| 5 | Parent workspace (6 tabs), Review (radar chart), Goals, Checklist, Recordings, Data, Settings |
+| 6 | Support pages (Help, About, Privacy), Install education |
+
+**Design system input for Stitch prompts:**
+- Font: Fredoka (child), Figtree (parent). Include CSS `@font-face` declarations.
+- Colors: Pass the full `--color-*` token set from this plan's Color System section
+- Corners: `--radius-sm: 8px`, `--radius-md: 12px`, `--radius-lg: 16px`, `--radius-pill: 999px`
+- Elevation: 3-tier shadow system from tokens
+- Touch targets: 52px minimum on all interactive elements
+
+#### Nano Banana 2 — Asset Generation Pipeline
+
+[Nano Banana 2](https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/) (Gemini 3.1 Flash Image) generates custom imagery. Available in [Antigravity](https://blog.google/innovation-and-ai/technology/developers-tools/build-with-nano-banana-2/) and AI Studio.
+
+**Use cases for this project:**
+
+| Asset Category | Nano Banana Prompt Strategy | Output |
+|---------------|---------------------------|--------|
+| Red Panda poses (8-10) | "Cute red panda character, warm studio illustration style, [pose]: coaching, celebrating, thinking, encouraging, sleeping, waving, playing violin, reading" | PNG, transparent bg, 512×512 |
+| Achievement badges (9) | "Round badge icon, warm gold border, embossed style: [achievement name]" — maintain 5-character consistency across all 9 | PNG, 256×256 |
+| Game skill icons (5) | "Rounded icon, [skill color] palette: pitch/rhythm/reading/bowing/posture" | SVG-style PNG, 128×128 |
+| Onboarding illustrations (5) | "Child-friendly illustration, warm tones, cozy music room: [step theme]" | PNG, 768×480 |
+| Background textures (3) | "Subtle seamless texture: warm linen / soft parchment / light wood grain" | Tileable PNG, 512×512 |
+| Empty states (4) | "Cute red panda illustration, [context]: no songs yet / no recordings / loading / offline" | PNG, 400×300 |
+
+**Workflow:**
+1. Generate via Nano Banana 2 in AI Studio or Antigravity (model: `gemini-3.1-flash-image-preview`)
+2. Use 5-character consistency for Red Panda poses — generate in a single session/workflow for visual coherence
+3. Export at 2× resolution for Retina iPad displays
+4. Optimize with `sharp` or `squoosh` CLI before adding to `public/assets/`
+5. Reference in CSS/JSX via standard `<img>` tags — no build-time image optimization (static PWA)
+
+**Asset generation schedule:**
+- **Phase 0:** Background textures (3), Red Panda coaching pose (1, for design system validation)
+- **Phase 2:** Red Panda poses (full set of 8-10), Onboarding illustrations (5), Empty states (4)
+- **Phase 4:** Achievement badges (9), Game skill icons (5)
+
+---
+
 ### Migration Strategy: Strangler Fig
 
 The core technical challenge is migrating 334 JS files (35K LOC) without breaking 567 unit tests and 45 E2E tests. A big-bang rewrite will fail. Use the **strangler fig pattern**:
@@ -815,6 +935,20 @@ These must be done before any Phase 0 work begins. They are pure setup — no de
 
 **Gate:** Spike passes all 45 E2E tests with React shell + legacy bridge. Performance baseline documented.
 
+**Antigravity Workflow — Phase 0:**
+```
+Workflow name: "phase-0-spike"
+Agents (5 parallel):
+  1. Framework spike — Vite + React SPA + LegacyBridge mounting home module
+  2. SW spike — custom SW with SPA pathname routing
+  3. Design system — CSS custom properties (full token set from plan)
+  4. Stitch screens — generate Button, Card, NavBar, PandaSpeech, Skeleton at tablet res
+  5. Perf baseline — iPad mini 6 Simulator: LCP, TTI, CLS, bundle size
+
+Nano Banana (Phase 0): Background textures (3), Red Panda coaching pose (1)
+Gemini 3.1 Pro: High for spike code, Medium for design token validation
+```
+
 ### Phase 1: React Shell + Navigation (2-3 weeks)
 
 **Goal:** React owns the shell, routing, and navigation. All content renders through legacy bridges.
@@ -832,6 +966,20 @@ These must be done before any Phase 0 work begins. They are pure setup — no de
 - [ ] Shared components built in Phase 1: `<Modal>`, `<ProgressBar>`, `<StarRating>`, `<FilterChips>`, `<ErrorBoundary>`, `<Skeleton>`, `<PandaSpeech>` — used by all later phases
 
 **Gate:** `npm run handoff:verify` passes (567 unit + 45 E2E). No visual regression on iPad Safari.
+
+**Antigravity Workflow — Phase 1:**
+```
+Workflow name: "phase-1-shell"
+Agents (5 parallel):
+  1. React shell — root layout, Suspense boundaries, error boundaries, AppRuntimeProvider
+  2. LegacyBridge — mount/unmount 17 views + 17 games, BridgeContext interface
+  3. E2E pathname helpers — create wrappers before any route changes (timing guarantee)
+  4. CSS Modules — shell components only; global CSS untouched
+  5. Shared components — Modal, ProgressBar, StarRating, FilterChips, ErrorBoundary, Skeleton
+
+Stitch screens: App shell layout, bottom nav (5 items), parent PIN gate, error fallback
+Gemini 3.1 Pro: High for bridge lifecycle code, Medium for component tests
+```
 
 ### Phase 2: Core Habit Loop (3-4 weeks)
 
@@ -851,6 +999,21 @@ These must be done before any Phase 0 work begins. They are pure setup — no de
 - [ ] Legacy bridges removed for: home, coach, progress, onboarding
 
 **Gate:** Core habit loop E2E test passes. New onboarding → first mission → completion flow tested. Performance budget met on iPad mini 6.
+
+**Antigravity Workflow — Phase 2:**
+```
+Workflow name: "phase-2-habit-loop"
+Agents (5 parallel):
+  1. Home + Mission — daily mission display, CTA, Red Panda coach embed
+  2. Practice runner — step-through UI, progress bar, timer, pause/resume
+  3. Onboarding — 5-step wizard, progressive save, CHILD_NAME_KEY
+  4. Event bus — AppEventBus singleton, useAppEvent() hook, dual-emit bridge
+  5. Wins page — streaks, stars, badges, skill meters (SVG animated fills)
+
+Stitch screens: Home, Practice runner steps, Wins trophy shelf, Onboarding wizard (5 steps)
+Nano Banana: Red Panda full pose set (8-10), Onboarding illustrations (5), Empty states (4)
+Gemini 3.1 Pro: High for curriculum/mission integration, High for event bus dual-emit
+```
 
 ### Phase 3: Tools + Child Settings (2-3 weeks)
 
@@ -872,6 +1035,20 @@ These must be done before any Phase 0 work begins. They are pure setup — no de
 - [ ] Legacy bridges removed for: tuner, trainer, bowing, posture, settings
 
 **Gate:** Tuner works on iPad mini 6 Safari with real microphone. Metronome/drone functional with Web Audio. Audio recovery from interruption tested. Child settings persist across sessions.
+
+**Antigravity Workflow — Phase 3:**
+```
+Workflow name: "phase-3-tools"
+Agents (5 parallel):
+  1. Tuner — React wrapper around RT audio pipeline, permission UX
+  2. Metronome + Drone — new pages, Web Audio synth, BPM slider, tap tempo
+  3. Bowing + Posture — camera permission pre-prompt, enhanced feedback
+  4. Child settings — sound/motion/text-size/background toggles, persistent
+  5. CoachOverlay — React portal from coach-overlay.js, RT presets wired
+
+Stitch screens: Tool selector hub, Tuner, Metronome, Drone, Bowing, Posture, Child settings
+Gemini 3.1 Pro: High for RealtimeSessionProvider + useRealtimeAudio() hook (AudioWorklet + WASM)
+```
 
 ### Phase 4: Content Libraries (4-5 weeks)
 
@@ -895,6 +1072,21 @@ These must be done before any Phase 0 work begins. They are pure setup — no de
 
 **Gate:** All 17 games launch and complete through `<GameShell>`. All 30 songs play with recording option. Song assessment working on 3+ songs. Feature matrix shows parity-plus for songs and games families.
 
+**Antigravity Workflow — Phase 4:**
+```
+Workflow name: "phase-4-content"
+Agents (5 parallel):
+  1. Songs library + detail — search, filter, skill tags, sheet music, CSS playhead
+  2. Game shell + catalog — <GameShell> 3-state, skill-filtered grid, color-coded cards
+  3. Recording + assessment — MediaRecorder, count-in, weighted scoring, mastery tiers
+  4. Adaptive difficulty — EMA per-game, auto-adjust, spaced repetition queue
+  5. Song metadata — 30 songs with enhanced tags, difficulty stars, readiness indicators
+
+Stitch screens: Songs library, Song detail, Games catalog, GameShell (pre/in/post), Post-game
+Nano Banana: Achievement badges (9), Game skill icons (5)
+Gemini 3.1 Pro: High for MediaRecorder + assessment pipeline, Medium for catalog UI
+```
+
 ### Phase 5: Parent Zone + Support (3-4 weeks)
 
 **Goal:** Parent workspace is a coherent, PIN-gated React surface with all 6 sub-panels.
@@ -912,6 +1104,20 @@ These must be done before any Phase 0 work begins. They are pure setup — no de
 - [ ] Legacy bridges removed for: parent, analysis, backup, settings, recordings
 
 **Gate:** Parent unlock → all 6 tabs navigate correctly → data export tested E2E → checklist save/load verified → ICS file downloads correctly.
+
+**Antigravity Workflow — Phase 5:**
+```
+Workflow name: "phase-5-parent"
+Agents (5 parallel):
+  1. Parent gate + review — PIN entry, session history, SVG radar chart, coaching replay
+  2. Goals + checklist — time slider, day checkboxes, Suzuki observation form, 5-point ratings
+  3. Recordings + data — library, playback, export, storage, JSON backup/restore
+  4. Settings + support — coaching presets, ICS export, ML diagnostics, FAQ/About/Privacy
+  5. CSV/PDF export — jspdf integration, checklist export, practice log export
+
+Stitch screens: Parent workspace (6-tab layout), Review (radar), Goals, Checklist, Recordings, Data, Settings
+Gemini 3.1 Pro: High for SVG radar chart + coaching replay timeline, Medium for form UIs
+```
 
 ### Phase 6: Consolidation + Launch (2-3 weeks)
 
@@ -934,6 +1140,20 @@ These must be done before any Phase 0 work begins. They are pure setup — no de
 - [ ] Spaced repetition + adaptive difficulty verified end-to-end across multiple sessions
 
 **Gate:** `npm run handoff:verify` passes. Feature matrix complete. iPad mini 6 real-device testing pass. All 17 games through `<GameShell>`. All 30 songs with recording + assessment.
+
+**Antigravity Workflow — Phase 6:**
+```
+Workflow name: "phase-6-launch"
+Agents (5 parallel):
+  1. Perf audit + a11y — iPad mini 6 budgets, WCAG 2.1 AA, Lighthouse
+  2. Dead code cleanup — legacy modules, unused CSS, stale test fixtures
+  3. Offline verification — SW cache shell, recordings offline, integrity self-test
+  4. Platform features — App Badge, wake lock, orientation, sharing, MediaSession, ICS
+  5. Documentation — HANDOFF.md, architecture docs, CLAUDE.md, feature matrix finalization
+
+Gemini 3.1 Pro: Medium for cleanup passes, High for offline E2E edge cases
+Final Stitch pass: Support pages (Help, About, Privacy), Install education screens
+```
 
 ---
 
@@ -1276,6 +1496,154 @@ Motion in this app has **one job: communicate.** It tells the child "you tapped 
 ```
 
 All animation is CSS-driven (not JS RAF loops for UI). Canvas game animations are separate and respect a `shouldAnimate` runtime flag.
+
+### SVG Animation Techniques
+
+Inline SVG animations are used for data visualization, micro-interactions, and celebratory moments. All SVG animations respect `prefers-reduced-motion` via the same CSS media query above (transitions collapse to instant).
+
+#### SVG Path Drawing (Check Marks, Progress Arcs)
+
+```css
+/* Animated checkmark — used in task completion, onboarding steps */
+.check-path {
+  stroke-dasharray: 48;       /* total path length */
+  stroke-dashoffset: 48;      /* hidden initially */
+  transition: stroke-dashoffset var(--duration-fast) var(--ease-spring);
+}
+.check-path.drawn {
+  stroke-dashoffset: 0;       /* reveals path */
+}
+```
+
+**Use cases:**
+- Task completion checkmark (practice step done, onboarding step done)
+- Circular progress arcs (session timer, loading rings)
+- Star outline fill (game stars earned)
+
+#### SVG Radar Chart (Parent Review — 5-Axis Skill Profile)
+
+```svg
+<!-- 5-axis radar: Pitch, Rhythm, Reading, Bowing, Posture -->
+<svg viewBox="0 0 200 200" class="radar-chart">
+  <!-- Static grid rings (3 levels: 33%, 66%, 100%) -->
+  <polygon class="radar-grid" points="..." fill="none" stroke="var(--color-text-muted)" opacity="0.2" />
+  <!-- Animated data polygon -->
+  <polygon class="radar-data"
+    points="..."
+    fill="var(--color-primary)" fill-opacity="0.15"
+    stroke="var(--color-primary)" stroke-width="2">
+    <animate attributeName="points"
+      from="100,100 100,100 100,100 100,100 100,100"
+      to="[computed vertex positions]"
+      dur="0.6s" fill="freeze"
+      calcMode="spline" keySplines="0.34 1.56 0.64 1" />
+  </polygon>
+  <!-- Axis labels positioned at vertices -->
+  <text x="100" y="10" class="radar-label">Pitch</text>
+  <!-- ... 4 more labels -->
+</svg>
+```
+
+**Implementation notes:**
+- Vertex positions computed from `SkillProfile` WASM output (0-100 per axis)
+- Animated via `<animate>` SMIL for Safari compatibility (CSS `d:` path animation has gaps in WebKit)
+- Grid rings: 3 concentric pentagons at 33/66/100% radius
+- Color-coded dots at each vertex using `--color-skill-*` tokens
+- Responsive: `viewBox` scales, container is `max-width: 300px`
+
+#### SVG Skill Meter Fills (Wins Page)
+
+```css
+/* Horizontal bar fill animation — used in /wins skill meters */
+.skill-bar-fill {
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform var(--duration-slow) var(--ease-bounce);
+}
+.skill-bar-fill.revealed {
+  transform: scaleX(var(--fill-pct));  /* set via CSS custom property */
+}
+```
+
+**Intersection Observer triggers reveal on scroll-into-view** — skill bars animate when the Wins page scrolls to the Skills section. Each bar staggers by 80ms (`animation-delay`).
+
+#### SVG Streak Flame (Wins Page Hero)
+
+```svg
+<svg viewBox="0 0 40 40" class="flame-icon">
+  <path class="flame-body" d="M20 5 C15 15, 8 20, 10 30 C12 35, 28 35, 30 30 C32 20, 25 15, 20 5Z"
+    fill="var(--color-secondary)">
+    <animateTransform attributeName="transform" type="scale"
+      values="1,1; 1.05,1.08; 1,1" dur="2s" repeatCount="indefinite"
+      calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+  </path>
+  <path class="flame-inner" d="M20 15 C18 20, 14 22, 16 28 C17 30, 23 30, 24 28 C26 22, 22 20, 20 15Z"
+    fill="var(--color-warning)" opacity="0.8">
+    <animateTransform attributeName="transform" type="scale"
+      values="1,1; 0.95,1.1; 1,1" dur="1.8s" repeatCount="indefinite"
+      calcMode="spline" keySplines="0.4 0 0.6 1; 0.4 0 0.6 1" />
+  </path>
+</svg>
+```
+
+**Streak flame behavior:**
+- Idle: gentle breathing scale animation (2s loop, SMIL)
+- Active (today practiced): flame becomes brighter (inner flame opacity → 1.0)
+- Streak milestone (7, 14, 30 days): sparkle particles burst from flame tip (CSS `@keyframes` + `::after`)
+
+#### SVG Confetti Burst (Practice Completion)
+
+CSS-only confetti using pseudo-elements + `@keyframes`. No JS RAF needed.
+
+```css
+.confetti-container {
+  position: relative;
+}
+.confetti-particle {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  animation: confetti-fall var(--duration-celebration) var(--ease-out) forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--x-drift), 120px) rotate(var(--spin)); opacity: 0; }
+}
+```
+
+**12 particles** with randomized `--x-drift` (-60px to 60px), `--spin` (180-720deg), and `animation-delay` (0-200ms). Colors: `--color-primary`, `--color-secondary`, `--color-accent`, `--color-warning`, `--color-success`.
+
+#### SVG Star Earn Animation (Post-Game)
+
+```css
+.star-earned {
+  transform: scale(0);
+  animation: star-pop var(--duration-celebration) var(--ease-spring) forwards;
+}
+@keyframes star-pop {
+  0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
+  50%  { transform: scale(1.3) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+/* Gold glow ring expands behind star */
+.star-glow {
+  animation: glow-ring 0.6s var(--ease-out) forwards;
+}
+@keyframes glow-ring {
+  0%   { transform: scale(0.5); opacity: 0.8; box-shadow: 0 0 0 0 var(--color-secondary); }
+  100% { transform: scale(1.5); opacity: 0; box-shadow: 0 0 20px 10px var(--color-secondary); }
+}
+```
+
+**3 stars stagger** with 200ms delay each. If all 3 earned, a fourth "bonus sparkle" burst fires.
+
+#### Gemini 3.1 Pro SVG Generation Workflow
+
+Use Gemini 3.1 Pro (High) to generate SVG animations:
+
+1. **Prompt pattern:** "Generate an inline SVG [component type] with SMIL animation. viewBox `0 0 [w] [h]`. Use CSS custom properties for colors: `var(--color-primary)`, `var(--color-secondary)`. Animation must respect `prefers-reduced-motion` via `@media` query. Target Safari 26.2 WebKit — avoid CSS `d:` path animation."
+2. **Nano Banana for complex illustrations:** Generate base illustration with Nano Banana, then trace to SVG with Potrace/SVGO for inline use. Best for Red Panda poses that need animation hooks (mouth, arms, eyes).
+3. **SVGO optimization:** Run all SVGs through `svgo --multipass` before committing. Target: <2KB per icon, <5KB per illustration.
 
 ---
 
@@ -2565,6 +2933,158 @@ Step 5: First Mission Launch (child-facing)
 - Step 5 immediately launches the practice runner — no "go to home first"
 - Progress dots at top show 5 steps. Back button available on steps 2-5.
 - All data is saved progressively — if the child quits at step 3, steps 1-2 are preserved
+
+---
+
+## AI Toolchain Integration Summary
+
+### Environment Requirements
+
+```
+Google Antigravity >= 1.19.6 (VSCode OSS 1.107.0, Chromium 142)
+Gemini 3.1 Pro (model: gemini-3.1-pro, thinking: High)
+Stitch MCP Server (add via Antigravity MCP settings)
+Nano Banana 2 (model: gemini-3.1-flash-image-preview, via AI Studio or Antigravity)
+```
+
+### Antigravity Project Configuration
+
+**`.antigravity/rules.md`** — loaded automatically by all agents:
+```markdown
+# Emerson Violin PWA — Agent Rules
+
+## Hard Constraints
+- Every commit: `npm run handoff:verify` passes (567+ unit + 45+ E2E)
+- Zero new runtime deps beyond react@19, react-dom@19, react-router@7, jspdf
+- WASM crates (panda-core, panda-audio) are read-only — no Rust modifications
+- 26 platform files stay vanilla JS — singleton init via AppRuntimeProvider
+- All games use <GameShell> 3-state pattern (pre-game/in-game/post-game)
+- Touch-first: 52px min targets, no hover-only interactions
+- CSS Modules for new components; global CSS untouched unless explicitly migrating
+- TypeScript strict for new files; allowJs: true for bridged legacy
+
+## Code Style
+- No nested/chained ternaries
+- Prefer SMIL <animate> for SVG animation (WebKit CSS d: path gaps)
+- CSS animations over JS RAF for UI motion
+- prefers-reduced-motion respected everywhere
+
+## Architecture
+- Strangler fig: <LegacyBridge> wraps vanilla modules during migration
+- Event bus dual-emit: React AppEventBus + legacy panda:* events until fully migrated
+- Curriculum engine stays vanilla through Phase 2, migrates Phase 3
+- Audio pipeline (AudioWorklet → WASM → PolicyWorker) stays vanilla through v1
+
+## Testing
+- New React components: Vitest + RTL (tests/components/)
+- Vanilla modules: existing Vitest tests unchanged (tests/unit/)
+- E2E: Playwright, pathname helpers created Phase 1 week 1
+- Audio/WASM: dedicated integration tests (tests/integration/)
+```
+
+**Saved Workflows** (one per phase, see per-phase blocks in Delivery Phases):
+- `phase-0-spike`, `phase-1-shell`, `phase-2-habit-loop`, `phase-3-tools`
+- `phase-4-content`, `phase-5-parent`, `phase-6-launch`
+
+### Stitch Project Structure
+
+```
+Project: "Emerson Violin PWA Reboot"
+Device: TABLET (768px portrait)
+
+Screens organized by phase:
+  Phase 0/  — Button, Card, NavBar, PandaSpeech, Skeleton
+  Phase 1/  — App shell, Bottom nav, PIN gate, Error boundary
+  Phase 2/  — Home, Practice runner, Wins, Onboarding (5 screens)
+  Phase 3/  — Tool hub, Tuner, Metronome, Drone, Bowing, Posture, Settings
+  Phase 4/  — Songs library, Song detail, Games catalog, GameShell (3 states)
+  Phase 5/  — Parent workspace, Review, Goals, Checklist, Recordings, Data, Settings
+  Phase 6/  — Help, About, Privacy, Install education
+```
+
+**Per-screen Stitch prompt template:**
+```
+Design a [screen name] for a children's violin practice PWA.
+Target device: iPad mini 6 (768px portrait).
+Design system:
+- Font: Fredoka (child-facing), Figtree (parent-facing)
+- Primary color: #E95639 (warm red-orange)
+- Background: #FFF9F3 (warm cream)
+- Surface: #FFFFFF with 3-tier elevation shadows
+- Touch targets: 52px minimum
+- Corner radius: 8/12/16px
+- Glass morphism for floating layers: rgba(255,255,255,0.92) + blur(12px)
+
+Layout: [paste ASCII wireframe from plan]
+
+Style: Warm, rounded, child-friendly. Inspired by a cozy music practice room.
+No sharp corners. Generous spacing. Pillowy interactive elements.
+```
+
+### Nano Banana Asset Catalog
+
+| Asset ID | Description | Dimensions | Phase | Status |
+|----------|-------------|------------|-------|--------|
+| `panda-coach` | Red Panda coaching pose | 512×512 | 0 | Pending |
+| `panda-celebrate` | Red Panda celebration | 512×512 | 2 | Pending |
+| `panda-think` | Red Panda thinking | 512×512 | 2 | Pending |
+| `panda-encourage` | Red Panda encouraging | 512×512 | 2 | Pending |
+| `panda-sleep` | Red Panda sleeping | 512×512 | 2 | Pending |
+| `panda-wave` | Red Panda waving | 512×512 | 2 | Pending |
+| `panda-violin` | Red Panda playing violin | 512×512 | 2 | Pending |
+| `panda-read` | Red Panda reading music | 512×512 | 2 | Pending |
+| `onboard-welcome` | Welcome illustration | 768×480 | 2 | Pending |
+| `onboard-name` | Name entry illustration | 768×480 | 2 | Pending |
+| `onboard-parent` | Parent setup illustration | 768×480 | 2 | Pending |
+| `onboard-install` | Install education | 768×480 | 2 | Pending |
+| `onboard-ready` | Ready to play illustration | 768×480 | 2 | Pending |
+| `empty-songs` | No songs state | 400×300 | 2 | Pending |
+| `empty-recordings` | No recordings state | 400×300 | 2 | Pending |
+| `empty-loading` | Loading state | 400×300 | 2 | Pending |
+| `empty-offline` | Offline state | 400×300 | 2 | Pending |
+| `badge-streak-7` | 7-day streak badge | 256×256 | 4 | Pending |
+| `badge-streak-14` | 14-day streak badge | 256×256 | 4 | Pending |
+| `badge-streak-30` | 30-day streak badge | 256×256 | 4 | Pending |
+| `badge-first-song` | First song completed | 256×256 | 4 | Pending |
+| `badge-all-games` | All 18 games played | 256×256 | 4 | Pending |
+| `badge-perfect-score` | Perfect game score | 256×256 | 4 | Pending |
+| `badge-recorder` | First recording made | 256×256 | 4 | Pending |
+| `badge-explorer` | All tools used | 256×256 | 4 | Pending |
+| `badge-master` | Max skill in any axis | 256×256 | 4 | Pending |
+| `icon-pitch` | Pitch skill icon | 128×128 | 4 | Pending |
+| `icon-rhythm` | Rhythm skill icon | 128×128 | 4 | Pending |
+| `icon-reading` | Reading skill icon | 128×128 | 4 | Pending |
+| `icon-bowing` | Bowing skill icon | 128×128 | 4 | Pending |
+| `icon-posture` | Posture skill icon | 128×128 | 4 | Pending |
+| `texture-linen` | Warm linen bg texture | 512×512 tile | 0 | Pending |
+| `texture-parchment` | Soft parchment bg | 512×512 tile | 0 | Pending |
+| `texture-wood` | Light wood grain bg | 512×512 tile | 0 | Pending |
+
+**Nano Banana prompt consistency rules:**
+- All Red Panda poses generated in a single session for character consistency
+- Style anchor: "cute red panda character, warm children's book illustration, soft lighting, rounded features, warm brown and orange tones, cream background"
+- All badges use same border style: "round badge, embossed gold border, warm tones, award style"
+- Export at 2× for Retina. Optimize with `sharp` or `squoosh` CLI before committing.
+
+### Token Budget Strategy (Gemini 3.1 Pro)
+
+Gemini 3.1 Pro has a 1M token context window and 65K token output. Budget allocation:
+
+| Context Allocation | Tokens | Purpose |
+|-------------------|--------|---------|
+| `.antigravity/rules.md` | ~800 | Agent rules (loaded every session) |
+| Current phase plan section | ~2,000 | Phase-specific instructions |
+| Relevant source files | ~15,000 | Files being migrated this session |
+| Existing test files | ~5,000 | Test patterns to match |
+| Design tokens (CSS) | ~1,500 | Color/type/spacing/animation tokens |
+| Stitch export (if applicable) | ~3,000 | Generated component code to integrate |
+| **Total per-agent context** | **~27,300** | Well within 1M budget |
+
+**Tips for efficient token use:**
+- Use Gemini 3.1 Pro High only for complex migrations; switch to Medium for reviews and simple tasks
+- Load only the files relevant to the current migration task, not the entire codebase
+- Stitch-generated code reduces token spend on layout/styling — agent focuses on logic/hooks
+- Nano Banana asset generation is separate from code context — no token overlap
 
 ---
 
