@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
+import { seedKVValue } from './helpers/seed-kv.js';
 import { gotoAndExpectView, setParentUnlocked } from './helpers/view-navigation.js';
 
 const clickAndExpectView = async (page, trigger, targetViewLocator, { timeout = 10000 } = {}) => {
@@ -10,6 +11,14 @@ const clickAndExpectView = async (page, trigger, targetViewLocator, { timeout = 
     return targetViewLocator.isVisible().catch(() => false);
   }, { timeout }).toBe(true);
   await expect(targetViewLocator).toBeVisible({ timeout });
+};
+
+const seedSongEvents = async (page, events) => {
+  await seedKVValue(page, 'panda-violin:events:v1', events);
+};
+
+const seedSongProgress = async (page, state) => {
+  await seedKVValue(page, 'panda-violin:song-progress-v2', state);
 };
 
 test.describe('Kid-first flows', () => {
@@ -37,6 +46,31 @@ test.describe('Kid-first flows', () => {
   });
 
   test('child can open songs and continue last song in two taps', async ({ page }) => {
+    const now = Date.now();
+    await seedSongEvents(page, [
+      { type: 'song', id: 'mary', accuracy: 84, stars: 3, day: Math.floor(now / 86400000), timestamp: now },
+    ]);
+    await seedSongProgress(page, {
+      version: 2,
+      songs: {
+        mary: {
+          attempts: 1,
+          bestAccuracy: 84,
+          bestTiming: 84,
+          bestIntonation: 84,
+          bestStars: 3,
+          sectionProgress: {},
+          checkpoint: {
+            sectionId: null,
+            elapsed: 9,
+            tempo: 88,
+            savedAt: now,
+          },
+          updatedAt: now,
+        },
+      },
+    });
+
     await clickAndExpectView(page, page.locator('a[href="#view-songs"]').first(), page.locator('#view-songs'));
     await expect.poll(async () => {
       const continueLink = page.locator('[data-continue-last-song]');

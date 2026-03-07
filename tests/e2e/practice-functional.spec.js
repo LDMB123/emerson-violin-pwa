@@ -25,6 +25,12 @@ const reopenViaGames = async (page, viewId) => {
     await gotoView(page, viewId);
 };
 
+const waitForPostureCaptureBinding = async (page) => {
+    await expect.poll(async () => {
+        return page.locator('#posture-capture').getAttribute('data-posture-bound').catch(() => '');
+    }, { timeout: 10000 }).toBe('true');
+};
+
 test('trainer metronome remains functional after navigation', async ({ page }) => {
     await openHome(page);
     await gotoView(page, 'view-trainer');
@@ -47,6 +53,7 @@ test('bowing and posture tools remain functional after navigation', async ({ pag
     await expect(page.locator('#view-bowing .game-drill-intro')).toContainText('Goal:', { timeout: 10000 });
 
     await gotoView(page, 'view-posture');
+    await waitForPostureCaptureBinding(page);
 
     const sampleFile = {
         name: 'posture.jpg',
@@ -61,6 +68,7 @@ test('bowing and posture tools remain functional after navigation', async ({ pag
     await expect(page.locator('[data-posture-preview]')).toHaveAttribute('hidden', '');
 
     await reopenViaGames(page, 'view-posture');
+    await waitForPostureCaptureBinding(page);
 
     await page.locator('#posture-capture').setInputFiles(sampleFile);
     await expect(page.locator('[data-posture-preview]')).toBeVisible();

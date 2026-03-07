@@ -172,6 +172,9 @@ const openRecordingsView = async ({
     await seedKVValue(page, RECORDINGS_KEY, [SAMPLE_RECORDING]);
     await setParentUnlocked(page, parentUnlocked);
     await gotoAndExpectView(page, viewHash);
+    await page.evaluate(() => {
+        window.dispatchEvent(new Event('panda:recordings-updated'));
+    });
     await expect(page.locator(recordingsTitleSelector).first()).toContainText('Session Clip');
     return page.locator(recordingsPlayButtonSelector).first();
 };
