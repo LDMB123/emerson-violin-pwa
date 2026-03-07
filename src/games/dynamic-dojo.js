@@ -39,6 +39,7 @@ const { bind } = createGame({
         let listening = false;
         let tuningActive = null;
         let active = false;
+        let animationTimer = 0;
 
         const handleStart = () => {
             if (listening) return;
@@ -62,7 +63,9 @@ const { bind } = createGame({
             if (!data || typeof data.rms !== 'number') return;
             const completeTarget = () => {
                 document.removeEventListener(RT_STATE, onAudioData);
-                triggerWin(gameState, checkGameOver);
+                triggerWin(gameState);
+                clearTimeout(animationTimer);
+                animationTimer = setTimeout(checkGameOver, 2000);
             };
 
             // Map 0.0 - 0.25 RMS to 5% - 100% height
@@ -104,7 +107,10 @@ const { bind } = createGame({
 
         const cleanupListeners = () => {
             active = false;
+            clearTimeout(animationTimer);
+            animationTimer = 0;
             document.removeEventListener(RT_STATE, onAudioData);
+            if (startBtn) startBtn.removeEventListener('click', handleStart);
             if (tuningActive) tuningActive.dispose();
             tuningActive = null;
             listening = false;
@@ -144,8 +150,7 @@ function nextRound(gameState) {
     }
 }
 
-function triggerWin(gameState, onComplete) {
-    // Temporarily pause analysis and wait for animation
+function triggerWin(gameState) {
     if (gameState.currentTarget === 'forte') {
         gameState._boardTarget.classList.add('dojo-board-break');
         gameState._instructionEl.textContent = "SMASH! Great Forte!";
@@ -156,9 +161,6 @@ function triggerWin(gameState, onComplete) {
     }
 
     gameState.score++;
-
-    // We expect the caller (`onAudioData`) to have unregistered `RT_STATE`.
-    setTimeout(onComplete, 2000);
 }
 
 /** Binds and initializes the Dynamic Dojo game module. */
