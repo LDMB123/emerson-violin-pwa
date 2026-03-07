@@ -42,6 +42,12 @@ const flush = async () => {
     await Promise.resolve();
 };
 
+const collectSongSectionEvents = () => {
+    const emitted = [];
+    document.addEventListener(SONG_SECTION_COMPLETED, (event) => emitted.push(event.detail));
+    return emitted;
+};
+
 const mountSongView = (id = 'twinkle', { withSheet = false } = {}) => {
     const sheetMarkup = withSheet
         ? `
@@ -162,8 +168,7 @@ describe('songs/song-player', () => {
         await initSongPlayer();
 
         const playToggle = view?.querySelector('.song-play-toggle');
-        const emitted = [];
-        document.addEventListener(SONG_SECTION_COMPLETED, (event) => emitted.push(event.detail));
+        const emitted = collectSongSectionEvents();
 
         playToggle.checked = true;
         playToggle.dispatchEvent(new Event('change', { bubbles: true }));
@@ -185,8 +190,7 @@ describe('songs/song-player', () => {
 
         const playToggle = view?.querySelector('.song-play-toggle');
         const sectionSelect = view?.querySelector('[data-song-section]');
-        const emitted = [];
-        document.addEventListener(SONG_SECTION_COMPLETED, (event) => emitted.push(event.detail));
+        const emitted = collectSongSectionEvents();
 
         playToggle.checked = true;
         playToggle.dispatchEvent(new Event('change', { bubbles: true }));

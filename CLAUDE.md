@@ -28,6 +28,7 @@ Runtime pin:
 - [docs/README.md](docs/README.md): doc index and source-of-truth pointers
 - [docs/HANDOFF.md](docs/HANDOFF.md): verification, pickup, and Playwright worker runbook
 - [README.md](README.md): operator-facing overview and full command list
+- [CONTRIBUTING.md](CONTRIBUTING.md): maintainer workflow and documentation contract
 
 Use [README.md](README.md) for day-to-day commands and [docs/HANDOFF.md](docs/HANDOFF.md) for the full verification flow.
 
@@ -50,12 +51,12 @@ Use [README.md](README.md) for day-to-day commands and [docs/HANDOFF.md](docs/HA
 - Sharing fallback logic is centralized via `tryShareFile()` in `src/utils/recording-export.js`.
 - Known transitive duplicate versions are intentionally allowlisted in `scripts/audit-dependency-duplicates.mjs`.
 - Secret leak pattern scanning is enforced by `scripts/audit-secrets.mjs`.
+- Live Markdown/JSDoc freshness is enforced by `scripts/audit-docs.mjs`.
 - Perf budget workflow consistency is validated by `scripts/audit-performance-budget-config.mjs`.
 - CI quality guard is defined in `.github/workflows/quality.yml`.
 - Zero-context pickup runbook is in `docs/HANDOFF.md`.
-- Shipped game views live under `public/views/games/`: Bow Hero, Duet Challenge, Dynamic Dojo, Ear Trainer, Echo, Melody Maker, Note Memory, Pitch Quest, Pizzicato, Rhythm Dash, Rhythm Painter, Scale Practice, Stir Soup, Story Song, String Quest, Tuning Time, Wipers.
+- Feature surface and subsystem ownership notes live under `docs/architecture/`.
 - `src/games/sequence-game.js` is a shared runtime factory used by sequence-style games such as `pizzicato.js` and `string-quest.js`; it is not a standalone shipped game view.
-- Song library currently includes 30 playable song sheets under `public/views/songs/`.
 - CSS dead code pass removed unused variables/classes; remaining CSS is auditable via `scripts/find-dead-css-vars.mjs`.
 - All game views use full-bleed immersive layout (no bottom-nav overlap).
 - Coach speech bubble is connected via `data-progress="coach-speech"` + `.coach-bubble-text` in `coach.html`.

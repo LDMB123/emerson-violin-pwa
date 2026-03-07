@@ -43,6 +43,7 @@ Runtime source of truth:
 
 ## Verification Gates
 
+- `npm run audit:docs`
 - `npm run audit:static`
 - `npm run audit:dep-backed`
 - `npm run test:e2e`
@@ -92,6 +93,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 1. `docs/README.md`
 2. `CLAUDE.md`
 3. `README.md`
+4. `CONTRIBUTING.md`
 
 ## Recommended Next Work
 

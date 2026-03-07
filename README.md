@@ -47,6 +47,7 @@ npm run lint
 npm run lint:all
 npm test
 npm run test:e2e
+npm run audit:docs
 npx playwright test
 npm run build
 npm run preview
@@ -62,7 +63,9 @@ npm run audit:full
 
 - [docs/README.md](docs/README.md): documentation map and source-of-truth guide
 - [docs/HANDOFF.md](docs/HANDOFF.md): zero-context operator runbook, verification sequence, and Playwright worker calibration
+- [CONTRIBUTING.md](CONTRIBUTING.md): maintainer workflow and documentation update contract
 - [CLAUDE.md](CLAUDE.md): repo-specific engineering notes and runtime gotchas
+- `docs/architecture/`: subsystem overviews for routing, feature ownership, offline/persistence, and audio/realtime
 - `docs/guides/`: focused workflows for asset optimization and Safari/iPad validation
 
 ## Playwright Workers
@@ -73,7 +76,8 @@ Use [docs/HANDOFF.md](docs/HANDOFF.md) for `PW_WORKERS` overrides, the calibrati
 
 ## Quality Gates
 
-- `audit:static` is the zero-dependency audit lane: secrets, duplicate-dependency allowlist check, perf budget config, home view sync, feature module completeness, accessibility, and learning completeness.
+- `audit:docs` is the fast freshness guard for live Markdown and exported/shared JSDoc contracts.
+- `audit:static` is the zero-dependency audit lane: secrets, docs freshness, duplicate-dependency allowlist check, perf budget config, home view sync, feature module completeness, accessibility, and learning completeness.
 - `audit:dep-backed` is the dependency-backed verification lane: lint, duplicate clone scan, dead-code scan, coverage effectiveness, and production build.
 - Dead code and unused exports are checked by `knip` using `knip.json`.
 - Duplicate dependency versions are checked by `scripts/audit-dependency-duplicates.mjs`.
@@ -91,6 +95,7 @@ Use [docs/HANDOFF.md](docs/HANDOFF.md) for `PW_WORKERS` overrides, the calibrati
 - Idle/secondary modules are queued with `requestIdleCallback` fallback.
 - Audio file URLs in loaded views are rewritten at render-time via `prepareAudioElementSource()`.
 - View extraction from `index.html` is retired; view parity enforced via `npm run audit:view-sync` against `public/views/home.html`.
+- Long-lived subsystem docs live under `docs/architecture/`; avoid duplicating fast-moving feature inventories in this file.
 
 ## Project Layout
 

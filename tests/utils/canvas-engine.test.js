@@ -4,6 +4,11 @@ import {
     installRafMocks,
     setDocumentVisibility,
 } from './test-lifecycle-mocks.js';
+import {
+    attachCanvasWithContext,
+    createParentWithRect,
+    expectScaledCanvasDimensions,
+} from '../games/canvas-test-helpers.js';
 
 class TestCanvasEngine extends BaseCanvasEngine {
     constructor(canvas) {
@@ -104,24 +109,12 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
     });
 
     it('sizes the canvas backing store to the displayed dimensions', () => {
-        const parent = document.createElement('div');
-        parent.getBoundingClientRect = vi.fn(() => ({
-            width: 320,
-            height: 180,
-            top: 0,
-            left: 0,
-            right: 320,
-            bottom: 180,
-        }));
-
-        const canvas = document.createElement('canvas');
+        const parent = createParentWithRect();
         const ctx = {
             clearRect: vi.fn(),
             scale: vi.fn(),
         };
-        canvas.getContext = vi.fn(() => ctx);
-        parent.appendChild(canvas);
-        document.body.appendChild(parent);
+        const canvas = attachCanvasWithContext(parent, ctx);
 
         Object.defineProperty(window, 'devicePixelRatio', {
             configurable: true,
@@ -131,10 +124,6 @@ describe('utils/canvas-engine BaseCanvasEngine', () => {
         const engine = new TestCanvasEngine(canvas);
         engines.push(engine);
 
-        expect(canvas.width).toBe(640);
-        expect(canvas.height).toBe(360);
-        expect(engine.width).toBe(320);
-        expect(engine.height).toBe(180);
-        expect(ctx.scale).toHaveBeenCalledWith(2, 2);
+        expectScaledCanvasDimensions({ canvas, engine, ctx });
     });
 });

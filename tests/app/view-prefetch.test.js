@@ -1,61 +1,41 @@
 import { describe, expect, it, vi } from 'vitest';
 import { canPrefetchViews, prefetchViewIfMissing } from '../../src/app/view-prefetch.js';
 
+const setPrefetchEnvironment = ({ visibilityState = 'visible', saveData = false, reducedData = false } = {}) => {
+    Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value: visibilityState,
+    });
+    Object.defineProperty(navigator, 'connection', {
+        configurable: true,
+        value: { saveData },
+    });
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+        matches: reducedData && query === '(prefers-reduced-data: reduce)',
+    }));
+};
+
 describe('app/view-prefetch', () => {
     it('allows prefetch when the page is visible and reduced-data is off', () => {
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            value: 'visible',
-        });
-        Object.defineProperty(navigator, 'connection', {
-            configurable: true,
-            value: { saveData: false },
-        });
-        window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+        setPrefetchEnvironment();
 
         expect(canPrefetchViews()).toBe(true);
     });
 
     it('blocks prefetch when navigator saveData is enabled', () => {
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            value: 'visible',
-        });
-        Object.defineProperty(navigator, 'connection', {
-            configurable: true,
-            value: { saveData: true },
-        });
-        window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+        setPrefetchEnvironment({ saveData: true });
 
         expect(canPrefetchViews()).toBe(false);
     });
 
     it('blocks prefetch when reduced-data media preference is enabled', () => {
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            value: 'visible',
-        });
-        Object.defineProperty(navigator, 'connection', {
-            configurable: true,
-            value: { saveData: false },
-        });
-        window.matchMedia = vi.fn().mockImplementation((query) => ({
-            matches: query === '(prefers-reduced-data: reduce)',
-        }));
+        setPrefetchEnvironment({ reducedData: true });
 
         expect(canPrefetchViews()).toBe(false);
     });
 
     it('blocks prefetch while the document is hidden', () => {
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            value: 'hidden',
-        });
-        Object.defineProperty(navigator, 'connection', {
-            configurable: true,
-            value: { saveData: false },
-        });
-        window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+        setPrefetchEnvironment({ visibilityState: 'hidden' });
 
         expect(canPrefetchViews()).toBe(false);
     });

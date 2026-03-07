@@ -4,21 +4,17 @@ import {
     installRafMocks,
     setDocumentVisibility,
 } from '../utils/test-lifecycle-mocks.js';
+import {
+    attachCanvasWithContext,
+    createParentWithRect,
+    expectScaledCanvasDimensions,
+} from './canvas-test-helpers.js';
 
 describe('games/canvas-engine-base BaseCanvasEngine', () => {
     let rafMocks;
 
     const createEngine = () => {
-        const parent = document.createElement('div');
-        parent.getBoundingClientRect = vi.fn(() => ({
-            width: 320,
-            height: 180,
-            top: 0,
-            left: 0,
-            right: 320,
-            bottom: 180,
-        }));
-
+        const parent = createParentWithRect();
         const canvas = document.createElement('canvas');
         canvas.width = 160;
         canvas.height = 90;
@@ -34,7 +30,6 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
         };
         canvas.getContext = vi.fn(() => ctx);
         parent.appendChild(canvas);
-        document.body.appendChild(parent);
 
         const engine = new BaseCanvasEngine(canvas);
         return { engine, canvas, ctx };
@@ -123,11 +118,7 @@ describe('games/canvas-engine-base BaseCanvasEngine', () => {
 
         engine.handleResize();
 
-        expect(canvas.width).toBe(640);
-        expect(canvas.height).toBe(360);
-        expect(engine.width).toBe(320);
-        expect(engine.height).toBe(180);
-        expect(ctx.scale).toHaveBeenCalledWith(2, 2);
+        expectScaledCanvasDimensions({ canvas, engine, ctx });
     });
 
     it('returns null frame when not running and caps delta time when running', () => {

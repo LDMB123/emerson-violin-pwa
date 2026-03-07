@@ -26,6 +26,6 @@ This directory is a historical marker, not a live documentation source.
 
 ## Current State
 
-- The repo does not keep live implementation plan files in `docs/plans/` or `_archived/plans/`.
+- The repo does not keep live implementation plan files in the working tree.
 - Claude scratch plans were also moved out of the live `~/.claude/plans/` load path into archive storage.
 - If a future task needs a plan, treat it as temporary working material and archive or delete it once the work is complete.

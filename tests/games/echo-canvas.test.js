@@ -1,18 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EchoGameCanvasEngine } from '../../src/games/echo-canvas.js';
+import { attachCanvasWithContext, createParentWithRect } from './canvas-test-helpers.js';
 
 const createEngine = () => {
-    const parent = document.createElement('div');
-    parent.getBoundingClientRect = vi.fn(() => ({
-        width: 320,
-        height: 180,
-        top: 0,
-        left: 0,
-        right: 320,
-        bottom: 180,
-    }));
+    const parent = createParentWithRect();
 
-    const canvas = document.createElement('canvas');
     const ctx = {
         clearRect: vi.fn(),
         beginPath: vi.fn(),
@@ -34,9 +26,7 @@ const createEngine = () => {
         textBaseline: '',
         globalAlpha: 1,
     };
-    canvas.getContext = vi.fn(() => ctx);
-    parent.appendChild(canvas);
-    document.body.appendChild(parent);
+    const canvas = attachCanvasWithContext(parent, ctx);
 
     return { engine: new EchoGameCanvasEngine(canvas), ctx };
 };
