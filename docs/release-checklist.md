@@ -28,6 +28,7 @@
   - QA signoff
   - Installed-iPad product/owner signoff
 - GitHub Pages deploys from `.github/workflows/pages.yml`.
+- Production artifact must include `dist/404.html`, generated from `dist/index.html` by `scripts/build-spa-fallback.mjs`, so deep-link refreshes work on GitHub Pages.
 - Post-deploy smoke must pass against the live URL before the release is accepted.
 
 ## Post-deploy checks

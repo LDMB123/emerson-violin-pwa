@@ -46,7 +46,8 @@ Use this file to decide which document to read before editing or validating the 
 ## Source Of Truth
 
 - Commands and quality gates: [package.json](../package.json)
-- Installed app metadata: [manifest.webmanifest](../manifest.webmanifest)
+- Installed app metadata: [public/manifest.webmanifest](../public/manifest.webmanifest)
+- GitHub Pages SPA fallback build step: `scripts/build-spa-fallback.mjs` -> `dist/404.html`
 - Current view inventory: `public/views/`
 - Current automation and audit scripts: `scripts/`
 - Documentation freshness guard: `npm run audit:docs`

@@ -806,7 +806,7 @@ The current SW (`public/sw.js`, v114) is deeply custom: generated precache manif
 5. Preserve audio codec runtime fallback (`.wav` → `.opus`/`.mp3`)
 6. Preserve recording blob caching
 
-7. Update `manifest.webmanifest` shortcuts from hash URLs to pathnames:
+7. Update `public/manifest.webmanifest` shortcuts from hash URLs to pathnames:
    - `./#view-tuner` → `./tools/tuner`
    - `./#view-coach` → `./practice`
    - `./#view-songs` → `./songs`
@@ -2254,7 +2254,7 @@ Three static-content pages. Accessible from child settings ("Help" link) and par
 └─────────────────────────────────────┘
 ```
 
-**UX:** Simple scrollable text. FAQ uses `<details>/<summary>` accordion. About page shows app version from `manifest.webmanifest`, build hash, and "Made with love" credit. Privacy policy is plain text. No Panda mascot on these pages.
+**UX:** Simple scrollable text. FAQ uses `<details>/<summary>` accordion. About page shows app version from `public/manifest.webmanifest`, build hash, and "Made with love" credit. Privacy policy is plain text. No Panda mascot on these pages.
 
 ### `/parent` — Parent Zone
 

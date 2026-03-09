@@ -33,7 +33,8 @@ Runtime source of truth:
 - Most UI is built natively in React. Legacy WASM games & songs are dynamically hosted within React via `src/views/Games/GameRunnerView.jsx` and `src/views/Songs/SongRunnerView.jsx`.
 - Persistence remains IndexedDB-first via `src/persistence/` with simple React hook synchronization.
 - Service worker and offline logic remain pure Vanilla JS in `public/` and `src/platform/`.
-- Installed app metadata, shortcuts, and icon definitions live in `manifest.webmanifest`.
+- Installed app metadata, shortcuts, and icon definitions live in `public/manifest.webmanifest`.
+- GitHub Pages SPA fallback is generated in `postbuild` by `scripts/build-spa-fallback.mjs`, which copies `dist/index.html` to `dist/404.html`.
 - Optional Rust/WASM modules live under `src/wasm/` and `wasm/`.
 - Legacy shipped game and song views still live under `public/views/games/` and `public/views/songs/`.
 - Architectural decisions are logged in `docs/architecture/reboot-feature-matrix.md` and `docs/architecture/next-reboot-target-state.md`.
