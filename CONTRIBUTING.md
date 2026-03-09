@@ -2,6 +2,8 @@
 
 Use this file for repo maintenance expectations. Use `README.md` for setup, `docs/README.md` for document discovery, and `docs/HANDOFF.md` for verification/handoff flow.
 
+GitHub pull requests should use [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) so validation, docs impact, UI evidence, and rollback notes stay consistent.
+
 ## Documentation Contract
 
 Keep documentation updates in the same PR when you change:

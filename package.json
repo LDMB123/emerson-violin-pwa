@@ -2,6 +2,22 @@
   "name": "panda-violin-pwa",
   "version": "2.0.0",
   "description": "Local-first violin teaching PWA for children with a Red Panda coach and iPadOS 26.2 optimization",
+  "keywords": [
+    "pwa",
+    "violin",
+    "music-education",
+    "offline-first",
+    "react",
+    "vite"
+  ],
+  "homepage": "https://github.com/LDMB123/emerson-violin-pwa#readme",
+  "bugs": {
+    "url": "https://github.com/LDMB123/emerson-violin-pwa/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LDMB123/emerson-violin-pwa.git"
+  },
   "packageManager": "npm@11.11.0",
   "type": "module",
   "scripts": {
