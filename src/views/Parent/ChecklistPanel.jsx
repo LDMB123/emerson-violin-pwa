@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { jsPDF } from 'jspdf';
 import { readJsonAsync, writeJsonAsync } from '../../utils/storage-utils.js';
 import { downloadBlob } from '../../utils/download-blob.js';
+
+let pdfModulePromise = null;
+
+function loadPdfModule() {
+    if (!pdfModulePromise) {
+        pdfModulePromise = import('jspdf');
+    }
+    return pdfModulePromise;
+}
 
 const CHECKLIST_AXES = [
     { key: 'bowHold', label: 'Bow Hold', prompt: 'Is the right thumb bent into a "bump"?' },
@@ -58,6 +66,7 @@ export function ChecklistPanel() {
             return;
         }
         try {
+            const { jsPDF } = await loadPdfModule();
             const doc = new jsPDF();
             doc.setFontSize(16);
             doc.text("Practice Observations Log", 10, 10);

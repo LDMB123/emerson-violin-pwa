@@ -14,7 +14,6 @@ export const MODULE_LOADERS = {
     inputCapabilities: () => import('../platform/input-capabilities.js'),
     mlScheduler: () => import('../ml/offline-scheduler.js'),
     mlAccelerator: () => import('../ml/accelerator.js'),
-    webVitals: () => import('../platform/web-vitals.js'),
     offlineIntegrity: () => import('../platform/offline-integrity.js'),
     offlineMode: () => import('../platform/offline-mode.js'),
     progress: () => import('../progress/progress.js'),
@@ -29,7 +28,6 @@ export const MODULE_LOADERS = {
     lessonPlan: () => import('../coach/lesson-plan.js'),
     missionProgress: () => import('../coach/mission-progress.js'),
     reminders: () => import('../notifications/reminders.js'),
-    badging: () => import('../notifications/badging.js'),
     backupExport: () => import('../backup/export.js'),
     gameMetrics: () => import('../games/game-metrics.js'),
     gameEnhancements: () => import('../games/game-enhancements.js'),
@@ -65,19 +63,16 @@ export const EAGER_MODULES = [
     'progress',
     'persist',
     'realtimeOverlay',
-    'webVitals',
 ];
 
 /** Lists eagerly loaded modules whose init hooks must run once at app startup. */
 export const STARTUP_INIT_MODULES = [
     'realtimeOverlay',
-    'webVitals',
 ];
 
 /** Schedules low-priority module preloads to run after initial startup settles. */
 export const IDLE_MODULE_PLAN = [
     ['mlScheduler', 180],
-    ['badging', 420],
     ['audioPlayer', 540],
 ];
 

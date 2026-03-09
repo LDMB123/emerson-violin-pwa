@@ -6,6 +6,7 @@ import { Card } from '../../components/primitives/Card.jsx';
 import { useProgressSummary } from '../../hooks/useProgressSummary.js';
 import { getLearningRecommendations } from '../../ml/recommendations.js';
 import { PandaSpeech } from '../../components/primitives/PandaSpeech.jsx';
+import { scheduleBackgroundTask } from '../../utils/idle-task.js';
 import styles from './HomeView.module.css';
 import { setBadge } from '../../notifications/badging.js';
 
@@ -38,14 +39,20 @@ export function HomeView() {
     useEffect(() => {
         let mounted = true;
 
-        // Fetch real ML recommendations for the mission
-        getLearningRecommendations({ allowCached: true })
-            .then((plan) => {
-                if (mounted && plan?.mission?.steps) {
-                    setMissionPlan(plan.mission);
-                }
-            })
-            .catch((err) => console.error('Could not fetch mission plan', err));
+        // Defer mission-plan hydration so the home shell can paint before loading ML helpers.
+        scheduleBackgroundTask(() => {
+            getLearningRecommendations({ allowCached: true })
+                .then((plan) => {
+                    if (mounted && plan?.mission?.steps) {
+                        setMissionPlan(plan.mission);
+                    }
+                })
+                .catch((err) => console.error('Could not fetch mission plan', err));
+        }, {
+            delay: 180,
+            delayBeforeIdle: true,
+            idleTimeout: 1200,
+        });
 
         // Determine complete vs incomplete based on daily login
         Promise.all([

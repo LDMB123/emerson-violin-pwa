@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import JSZip from 'jszip';
 import { readJsonAsync, writeJsonAsync } from '../../utils/storage-utils.js';
 import { getBlob } from '../../persistence/storage.js';
 import { downloadBlob } from '../../utils/download-blob.js';
+
+let jsZipModulePromise = null;
+
+function loadJsZip() {
+    if (!jsZipModulePromise) {
+        jsZipModulePromise = import('jszip');
+    }
+    return jsZipModulePromise;
+}
 
 export function RecordingsPanel() {
     const [recordings, setRecordings] = useState([]);
@@ -73,6 +81,7 @@ export function RecordingsPanel() {
 
         setStatus('Creating archive... Please wait.');
         try {
+            const { default: JSZip } = await loadJsZip();
             const zip = new JSZip();
             let addedCount = 0;
 
