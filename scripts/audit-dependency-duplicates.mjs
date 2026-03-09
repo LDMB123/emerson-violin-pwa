@@ -30,13 +30,20 @@ const duplicates = [...versionsByName.entries()]
 
 const knownTransitiveDuplicates = new Set([
     'acorn',
+    'dom-accessibility-api',
     'entities',
     'eslint-visitor-keys',
+    'fflate',
     'fsevents',
     'glob-parent',
+    'js-tokens',
+    'pako',
     'picomatch',
+    'semver',
+    'three',
     'whatwg-mimetype',
     'which',
+    'zustand',
 ]);
 const unexpected = duplicates.filter((entry) => !knownTransitiveDuplicates.has(entry.name));
 

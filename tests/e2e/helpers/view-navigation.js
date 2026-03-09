@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test';
-import { navigateToView } from './navigate-view.js';
+import { navigateToView, navigateToPath } from './navigate-view.js';
 
 export const setParentUnlocked = async (page, unlocked) => {
+    if (page.url() === 'about:blank') {
+        await page.goto('/');
+    }
     await page.evaluate((value) => {
         if (value) {
             sessionStorage.setItem('panda-violin:parent-unlocked', 'true');
@@ -11,8 +14,19 @@ export const setParentUnlocked = async (page, unlocked) => {
     }, Boolean(unlocked));
 };
 
-export const gotoAndExpectView = async (page, viewHash, { timeout = 10000 } = {}) => {
-    const viewId = String(viewHash || '#view-home').replace(/^#/, '');
+export const gotoAndExpectPath = async (page, pathname, { timeout = 10000 } = {}) => {
+    await navigateToPath(page, pathname, { timeout });
+    // Since we don't have a reliable single container ID like we did with hash routes, 
+    // we just rely on navigation success or provide an optional selector to wait for.
+};
+
+export const gotoAndExpectView = async (page, viewOrPath, { timeout = 10000 } = {}) => {
+    const rawPath = String(viewOrPath || '#view-home').replace(/^#/, '');
+    if (rawPath.startsWith('/')) {
+        await gotoAndExpectPath(page, rawPath, { timeout });
+        return;
+    }
+    const viewId = rawPath;
     await navigateToView(page, viewId, { timeout });
     await expect(page.locator(`#${viewId}`)).toBeVisible({ timeout });
 };

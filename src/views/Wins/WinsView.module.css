@@ -1,0 +1,33 @@
+.winsView {
+    padding-bottom: calc(var(--safe-bottom) + 80px);
+}
+
+html[data-ui-mode="child"] .winsView {
+    background:
+        radial-gradient(circle at 14% 10%, rgba(200, 160, 255, 0.28), transparent 36%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(248, 238, 255, 0.94)) !important;
+}
+
+.progressHero,
+.xpPanel,
+.achievementsPanel,
+.recentGames,
+.progressDetails {
+    margin-bottom: var(--space-6);
+}
+
+.lessonPlan {
+    display: grid;
+    gap: var(--space-3);
+}
+
+.lessonStepText {
+    flex: 1;
+    font-size: 1.05rem;
+    color: var(--color-text-dark);
+}
+
+.lessonStepCue {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}

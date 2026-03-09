@@ -69,16 +69,19 @@ export const shouldShowGameCard = ({ selected, id, sortTagsById, favoriteIds, ne
 
 /** Derives quick-pick and new-game sets from activity history and recommendations. */
 export const deriveDynamicSortSets = ({ events, recs, cardById, fallbackQuickIds, fallbackNewIds }) => {
+    const playedSet = new Set();
     const playedRecent = [];
-    events
-        .filter((event) => event?.type === 'game' && typeof event?.id === 'string')
-        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-        .forEach((event) => {
-            const id = toGameId(event.id);
-            if (!id || playedRecent.includes(id)) return;
+
+    const gameEvents = events.filter((e) => e?.type === 'game' && typeof e?.id === 'string');
+    gameEvents.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    for (const event of gameEvents) {
+        const id = toGameId(event.id);
+        if (id && !playedSet.has(id)) {
+            playedSet.add(id);
             playedRecent.push(id);
-        });
-    const playedSet = new Set(playedRecent);
+        }
+    }
 
     const recommendedId = toGameId(
         recs?.recommendedGameId
@@ -87,8 +90,10 @@ export const deriveDynamicSortSets = ({ events, recs, cardById, fallbackQuickIds
     );
 
     const quickOrdered = [];
+    const quickSet = new Set();
     const pushQuick = (id) => {
-        if (!id || !cardById.has(id) || quickOrdered.includes(id)) return;
+        if (!id || !cardById.has(id) || quickSet.has(id)) return;
+        quickSet.add(id);
         quickOrdered.push(id);
     };
     pushQuick(recommendedId);

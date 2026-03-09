@@ -225,25 +225,35 @@
 
     }
 
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --color-bg: #1A1A2E;
-            --color-bg-alt: #16213E;
-            --color-surface: #0F3460;
-            --color-text: #F5F5F5;
-            --color-text-muted: color-mix(in oklch, var(--color-text), transparent 25%);
+    /* Explicit Theme Support */
+    [data-theme="blue"] {
+        --color-bg: #E8F0F8;
+        --color-bg-alt: #D6E4F0;
+        --color-surface: #F2F7FA;
+    }
 
-            --glass-bg: color-mix(in srgb, #0F3460 82%, transparent);
-            --glass-bg-strong: color-mix(in srgb, #0F3460 92%, transparent);
+    [data-theme="green"] {
+        --color-bg: #EAF4EC;
+        --color-bg-alt: #DCEADA;
+        --color-surface: #F4F9F5;
+    }
 
-            --glass-border: color-mix(in srgb, white 32%, transparent);
+    [data-theme="dark"] {
+        color-scheme: dark;
+        --color-bg: #1A1A2E;
+        --color-bg-alt: #16213E;
+        --color-surface: #0F3460;
+        --color-text: #F5F5F5;
+        --color-text-muted: color-mix(in oklch, var(--color-text), transparent 25%);
 
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+        --glass-bg: color-mix(in srgb, #0F3460 82%, transparent);
+        --glass-bg-strong: color-mix(in srgb, #0F3460 92%, transparent);
 
-            --color-brand-brown: #D4A88C;
+        --glass-border: color-mix(in srgb, white 32%, transparent);
 
-        }
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+        --color-brand-brown: #D4A88C;
     }
 
     /* Reduce motion preference */
@@ -271,7 +281,7 @@
 @layer base {
     html {
         scroll-behavior: smooth;
-        color-scheme: light dark;
+        color-scheme: light;
         background: var(--color-bg);
     }
 
@@ -337,9 +347,9 @@
         z-index: -1;
         overflow: hidden;
         background:
-            radial-gradient(circle at 10% 50%, rgba(255, 235, 205, 0.5), transparent 60%),
-            radial-gradient(circle at 90% 80%, rgba(255, 215, 180, 0.4), transparent 50%),
-            linear-gradient(180deg, #FFE8D6 0%, #FFF5EB 100%);
+            radial-gradient(circle at 10% 50%, color-mix(in srgb, var(--color-bg-alt) 60%, transparent), transparent 60%),
+            radial-gradient(circle at 90% 80%, color-mix(in srgb, var(--color-bg-alt) 80%, transparent), transparent 50%),
+            linear-gradient(180deg, var(--color-bg-alt) 0%, var(--color-bg) 100%);
     }
 
     .bg-layer.stars circle {
@@ -477,24 +487,20 @@
     =========================================================================== */
 
     .view {
-        display: none;
         opacity: 1;
         transform: translateY(0);
         scroll-margin-top: calc(var(--safe-top) + 80px);
         /* Anchor targeting clearance */
     }
 
-    /* Target-based visibility */
-    .view.is-active,
-    .view:target {
+    /* Target-based visibility removed in favor of React Router */
+    .view.is-active {
         display: block;
     }
 
     /* Full-Screen Focus Profiles for Games and Songs */
     .game-view.is-active,
-    .game-view:target,
-    .song-view.is-active,
-    .song-view:target {
+    .song-view.is-active {
         position: fixed;
         inset: 0;
         z-index: var(--z-modal);
@@ -997,7 +1003,7 @@
         -webkit-user-select: none;
     }
 
-    .filter-input:checked + .filter-chip {
+    .filter-input:checked+.filter-chip {
         background: var(--color-primary);
         color: #fff;
         border-color: var(--color-primary);
@@ -1015,7 +1021,7 @@
             border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
         }
 
-        .filter-input:checked + .filter-chip:hover {
+        .filter-input:checked+.filter-chip:hover {
             background: color-mix(in srgb, var(--color-primary), #000 10%);
             border-color: color-mix(in srgb, var(--color-primary), #000 10%);
         }
@@ -1563,23 +1569,30 @@
 }
 
 /* Timer toggle: show START by default, STOP when running */
-.focus-toggle:not(:checked) ~ .focus-controls .btn-stop {
+.focus-toggle:not(:checked)~.focus-controls .btn-stop {
     display: none;
 }
 
-.focus-toggle:checked ~ .focus-controls .btn-start {
+.focus-toggle:checked~.focus-controls .btn-start {
     display: none;
 }
 
-.focus-toggle:checked ~ .focus-ring {
+.focus-toggle:checked~.focus-ring {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 8px rgba(233, 86, 57, 0.15), 0 0 30px rgba(233, 86, 57, 0.1);
     animation: ring-pulse 2s ease-in-out infinite;
 }
 
 @keyframes ring-pulse {
-    0%, 100% { box-shadow: 0 0 0 8px rgba(233, 86, 57, 0.15), 0 0 30px rgba(233, 86, 57, 0.1); }
-    50% { box-shadow: 0 0 0 12px rgba(233, 86, 57, 0.25), 0 0 40px rgba(233, 86, 57, 0.15); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 8px rgba(233, 86, 57, 0.15), 0 0 30px rgba(233, 86, 57, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 0 12px rgba(233, 86, 57, 0.25), 0 0 40px rgba(233, 86, 57, 0.15);
+    }
 }
 
 .practice-focus {
@@ -1757,14 +1770,8 @@
 }
 
 /* Progress View */
-#view-progress .view-header,
 #view-analysis .view-header,
-#view-games .view-header,
-#view-trainer .view-header,
-#view-songs .view-header,
-#view-tuner .view-header,
-#view-coach .view-header,
-#view-parent .view-header {
+#view-trainer .view-header {
     background: transparent;
     box-shadow: none;
     padding: var(--space-2) 0;
@@ -1823,67 +1830,10 @@
     box-shadow: 0 10px 18px rgba(120, 60, 40, 0.12);
 }
 
-/* Parent view layout + header */
-#view-parent {
-    background: linear-gradient(180deg, rgba(210, 233, 232, 0.95), rgba(255, 241, 225, 0.9));
-    padding: var(--space-5);
-    border-radius: 28px;
-    box-shadow: 0 24px 46px rgba(120, 60, 40, 0.2);
-}
-
-#view-parent .view-header {
-    position: relative;
-    margin-bottom: var(--space-4);
-}
-
-#view-parent .view-header h2 {
-    margin-left: 0;
-    color: #6A2E11;
-    font-size: clamp(1.7rem, 4.5vw, 2.3rem);
-    text-shadow: 0 8px 18px rgba(120, 60, 40, 0.18);
-}
-
-#view-parent .back-btn {
-    display: inline-flex;
-}
+/* Parent view layout + header moved to module */
 
 /* Progress view background + header */
-#view-progress {
-    position: relative;
-    padding: var(--space-5);
-    border-radius: 28px;
-    background: linear-gradient(180deg, #D8A06A 0%, #8C4C63 52%, #2E163E 100%);
-    color: #fff;
-    box-shadow: 0 24px 46px rgba(40, 18, 58, 0.35);
-}
-
-#view-progress .view-header {
-    position: relative;
-    justify-content: center;
-    margin-bottom: var(--space-4);
-}
-
-#view-progress .view-header h2 {
-    margin-left: 0;
-    text-align: center;
-    color: #fff;
-    text-shadow: 0 10px 20px rgba(40, 18, 58, 0.4);
-    font-size: clamp(1.9rem, 5vw, 2.6rem);
-}
-
-#view-progress .back-btn {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    display: grid;
-    place-items: center;
-    box-shadow: 0 8px 16px rgba(40, 18, 58, 0.3);
-}
+/* WinsView styles moved to module */
 
 #view-games .view-header h2 {
     letter-spacing: 0.02em;
@@ -1901,40 +1851,10 @@
     overflow: visible;
 }
 
-#view-games .back-btn {
-    display: inline-flex;
-}
-
-#view-games .view-header h2 {
-    grid-row: 2;
-    grid-column: 1;
-    margin-left: 0;
-    flex: 1;
-    text-align: left;
-    padding-left: var(--space-4);
-    color: #6A2E11;
-    text-shadow: 0 8px 18px rgba(120, 60, 40, 0.18);
-    font-size: clamp(2rem, 5vw, 2.8rem);
-}
+/* Games header removed to module */
 
 #view-songs .view-header h2,
-#view-trainer .view-header h2,
-#view-tuner .view-header h2,
-#view-coach .view-header h2,
-#view-parent .view-header h2 {
-    font-size: var(--text-2xl);
-    letter-spacing: 0.02em;
-}
-
-/* Coach header */
-#view-coach .view-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    margin-bottom: var(--space-3);
-}
-
-/* Mockup alignment: simple centered title for tuner */
+/* Songs view header removed to module */
 #view-tuner .view-header {
     justify-content: center;
     margin-bottom: var(--space-3);
@@ -1952,42 +1872,12 @@
     font-size: clamp(1.8rem, 5vw, 2.4rem);
 }
 
-#view-progress .back-btn,
 #view-analysis .back-btn,
 #view-games .back-btn,
 #view-trainer .back-btn,
 #view-songs .back-btn,
 #view-tuner .back-btn,
-#view-coach .back-btn,
-#view-parent .back-btn {
-    background: rgba(255, 255, 255, 0.85);
-    color: var(--color-text);
-}
-
-/* Songs view header */
-#view-songs .view-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    margin-bottom: var(--space-4);
-    position: relative;
-    overflow: visible;
-}
-
-#view-songs .view-header h2 {
-    flex: 1;
-    text-align: left;
-    padding-left: var(--space-4);
-}
-
-#view-songs {
-    position: relative;
-    background: linear-gradient(180deg, rgba(248, 163, 132, 0.95) 0%, rgba(255, 214, 182, 0.7) 45%, rgba(255, 241, 225, 0.9) 100%);
-    padding-top: var(--space-5);
-    padding-inline: var(--space-5);
-    border-radius: 28px;
-    box-shadow: 0 24px 46px rgba(120, 60, 40, 0.22);
-}
+/* SongsView styles moved to module */
 
 .install-guide-backdrop {
     position: fixed;
@@ -4129,112 +4019,7 @@
     }
 }
 
-/* ===========================================================================
-   First-Run Onboarding
-   =========================================================================== */
-
-.onboarding-view.is-active,
-.onboarding-view:target {
-    display: flex;
-    flex-direction: column;
-    /* Fill main-content content-box without overflow; dots stay above nav */
-    max-height: calc(100dvh - 80px - var(--safe-top, 0px) - 80px - var(--safe-bottom, 0px) - var(--space-4) * 2);
-    overflow: hidden;
-}
-
-.onboarding-carousel {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-}
-
-.onboarding-carousel::-webkit-scrollbar {
-    display: none;
-}
-
-.onboarding-slide {
-    flex: 0 0 100%;
-    scroll-snap-align: start;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-3);
-    padding: var(--space-5) var(--space-4);
-    text-align: center;
-}
-
-.onboarding-dots {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0;
-    flex-shrink: 0;
-    padding: var(--space-2) 0;
-}
-
-.onboarding-dot {
-    width: 44px;
-    height: 44px;
-    border-radius: var(--radius-full);
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
-    padding: 0;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.onboarding-dot::after {
-    content: '';
-    width: 14px;
-    height: 14px;
-    border-radius: var(--radius-full);
-    background: rgba(86, 40, 23, 0.2);
-    transition: all var(--duration-fast) var(--ease-out);
-}
-
-.onboarding-dot.is-active {
-    background: transparent;
-    width: 44px;
-}
-
-.onboarding-dot.is-active::after {
-    background: var(--color-primary);
-    width: 32px;
-}
-
-.onboarding-skip {
-    position: absolute;
-    top: calc(var(--safe-top) + var(--space-3));
-    right: var(--space-4);
-    font-size: var(--text-base);
-    font-weight: 700;
-    color: var(--color-text-muted);
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: var(--radius-full);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    cursor: pointer;
-    padding: var(--space-2) var(--space-4);
-    min-height: 44px;
-    min-width: 80px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(86, 40, 23, 0.1);
-}
-
-.onboarding-skip:hover {
-    color: var(--color-text);
-}
+/* Onboarding styles have been refactored and extracted to OnboardingView.module.css */
 
 /* Pulsing dot on More nav button */
 
@@ -4608,11 +4393,11 @@ dialog[open]::backdrop {
 
 /* Song Play Toggle: show Start by default, Stop when checked */
 
-.song-play-toggle:not(:checked) ~ .song-controls .btn-stop {
+.song-play-toggle:not(:checked)~.song-controls .btn-stop {
     display: none;
 }
 
-.song-play-toggle:checked ~ .song-controls .btn-start {
+.song-play-toggle:checked~.song-controls .btn-start {
     display: none;
 }
 
@@ -4642,17 +4427,7 @@ dialog[open]::backdrop {
    Song Filters (CSS-Driven)
    =========================================================================== */
 
-#view-songs:has(input[name="song-filter"][value="easy"]:checked) .song-card:not([data-level="easy"]) {
-    display: none;
-}
-
-#view-songs:has(input[name="song-filter"][value="practice"]:checked) .song-card:not([data-level="practice"]) {
-    display: none;
-}
-
-#view-songs:has(input[name="song-filter"][value="challenge"]:checked) .song-card:not([data-level="challenge"]) {
-    display: none;
-}
+/* Removed V1 CSS display bounds filters */
 
 /* ===========================================================================
    Declarative Toggle States (Checkbox Hack)
@@ -5056,9 +4831,19 @@ dialog[open]::backdrop {
     }
 
     @keyframes streak-pop {
-        0% { transform: scale(0.6); opacity: 0; }
-        70% { transform: scale(1.08); }
-        100% { transform: scale(1); opacity: 1; }
+        0% {
+            transform: scale(0.6);
+            opacity: 0;
+        }
+
+        70% {
+            transform: scale(1.08);
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
     }
 
     .home-giant-actions {
@@ -5430,7 +5215,6 @@ dialog[open]::backdrop {
         letter-spacing: 0.03em;
     }
 
-    html[data-ui-mode="child"] #view-home,
     html[data-ui-mode="child"] #view-coach,
     html[data-ui-mode="child"] #view-games,
     html[data-ui-mode="child"] #view-songs,
@@ -5442,13 +5226,6 @@ dialog[open]::backdrop {
         padding-bottom: calc(80px + var(--space-safe-bottom, 24px) + 24px);
     }
 
-    html[data-ui-mode="child"] #view-home {
-        background:
-            radial-gradient(circle at 86% 0%, rgba(255, 183, 126, 0.42), transparent 38%),
-            radial-gradient(circle at 10% 88%, rgba(160, 223, 214, 0.32), transparent 32%),
-            linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(255, 242, 223, 0.94));
-    }
-
     html[data-ui-mode="child"] .mission-actions {
         gap: 10px;
     }
@@ -5458,130 +5235,19 @@ dialog[open]::backdrop {
         font-size: 1.02rem;
     }
 
-    html[data-ui-mode="child"] #view-coach {
-        background:
-            radial-gradient(circle at 12% 6%, rgba(253, 186, 116, 0.33), transparent 34%),
-            linear-gradient(155deg, rgba(255, 255, 255, 0.97), rgba(255, 234, 214, 0.94));
-    }
-
     html[data-ui-mode="child"] #view-games {
         background:
             radial-gradient(circle at 12% 10%, rgba(255, 209, 160, 0.34), transparent 36%),
             linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(255, 240, 220, 0.93));
     }
 
-    html[data-ui-mode="child"] #view-games .view-header {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-    }
+    /* GamesView styles moved to module */
 
-    html[data-ui-mode="child"] #view-games .back-btn {
-        display: inline-flex;
-    }
+    /* view-songs background moved to module */
 
-    html[data-ui-mode="child"] .games-grid {
-        gap: 14px;
-    }
+    /* Tuner background styles moved to module */
 
-    html[data-ui-mode="child"] .game-card {
-        display: grid;
-        justify-items: start;
-        justify-self: stretch;
-        text-align: left;
-        min-height: 0;
-        gap: 8px;
-        padding: 14px 16px;
-        border: 1px solid rgba(15, 23, 42, 0.12);
-        border-radius: 18px;
-        box-shadow: 0 12px 22px rgba(15, 23, 42, 0.1);
-        box-sizing: border-box;
-        inline-size: 100%;
-        max-inline-size: 100%;
-        min-inline-size: 0;
-        aspect-ratio: auto;
-    }
-
-    html[data-ui-mode="child"] .game-play-cta {
-        display: none;
-    }
-
-    html[data-ui-mode="child"] .game-title {
-        color: #0F172A;
-        font-size: 1.34rem;
-        line-height: 1.2;
-    }
-
-    html[data-ui-mode="child"] #view-songs {
-        background:
-            radial-gradient(circle at 90% 12%, rgba(255, 186, 141, 0.36), transparent 38%),
-            linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(255, 237, 222, 0.94));
-    }
-
-    html[data-ui-mode="child"] #view-songs .view-header {
-        display: flex;
-    }
-
-    html[data-ui-mode="child"] .songs-grid {
-        gap: 14px;
-    }
-
-    html[data-ui-mode="child"] .song-card {
-        min-height: 218px;
-        border-radius: 18px;
-        border: 1px solid rgba(15, 23, 42, 0.12);
-        box-shadow: 0 12px 22px rgba(15, 23, 42, 0.1);
-        background: rgba(255, 255, 255, 0.96);
-    }
-
-    html[data-ui-mode="child"] .song-title {
-        color: #0F172A;
-        font-size: 1.3rem;
-    }
-
-    html[data-ui-mode="child"] .song-soft-lock {
-        border-width: 2px;
-    }
-
-    html[data-ui-mode="child"] #view-tuner {
-        background:
-            radial-gradient(circle at 10% 8%, rgba(255, 206, 159, 0.34), transparent 34%),
-            linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(255, 241, 224, 0.93));
-    }
-
-    html[data-ui-mode="child"] #view-tuner .view-header {
-        justify-content: space-between;
-    }
-
-    html[data-ui-mode="child"] #view-tuner .back-btn {
-        display: inline-flex;
-    }
-
-    html[data-ui-mode="child"] #view-progress {
-        background:
-            radial-gradient(circle at 84% 12%, rgba(251, 191, 106, 0.36), transparent 34%),
-            radial-gradient(circle at 14% 86%, rgba(167, 243, 208, 0.32), transparent 32%),
-            linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(247, 240, 255, 0.94));
-        color: var(--color-text);
-    }
-
-    html[data-ui-mode="child"] #view-progress .view-header {
-        justify-content: space-between;
-        margin-bottom: 14px;
-    }
-
-    html[data-ui-mode="child"] #view-progress .view-header h2 {
-        color: #6A2E11;
-        text-shadow: none;
-    }
-
-    html[data-ui-mode="child"] #view-progress .back-btn {
-        position: static;
-        width: auto;
-        height: auto;
-        border-radius: 999px;
-    }
+    /* Progress background styles moved to module */
 
     html[data-ui-mode="parent"] .home-mascot {
         width: clamp(100px, 28vw, 160px);
@@ -5592,16 +5258,7 @@ dialog[open]::backdrop {
         overflow: hidden;
     }
 
-    html[data-ui-mode="parent"] #view-parent {
-        width: min(100%, 1120px);
-        margin-inline: auto;
-        border-radius: 26px;
-        border: 1px solid rgba(15, 23, 42, 0.1);
-        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.09);
-        background:
-            radial-gradient(circle at 12% 8%, rgba(224, 234, 247, 0.52), transparent 34%),
-            linear-gradient(165deg, rgba(255, 255, 255, 0.99), rgba(242, 247, 253, 0.95));
-    }
+    /* Parent background moved to module */
 
     html[data-ui-mode="parent"] .view-header h2 {
         color: #0F172A;
@@ -5619,7 +5276,6 @@ dialog[open]::backdrop {
             font-size: clamp(1.4rem, 7vw, 2rem);
         }
 
-        html[data-ui-mode="child"] .game-card,
         html[data-ui-mode="child"] .song-card {
             min-height: 0;
         }
@@ -5651,12 +5307,6 @@ dialog[open]::backdrop {
 .mission-timeline-meta {
     font-size: 0.82rem;
     opacity: 0.8;
-}
-
-.home-mission-summary {
-    margin: 0.65rem 0 0;
-    font-size: 0.92rem;
-    color: rgba(15, 23, 42, 0.78);
 }
 
 .song-advanced-controls {
@@ -5940,26 +5590,7 @@ html[data-ui-mode="child"] .view-lead {
     line-height: 1.55;
 }
 
-html[data-ui-mode="child"] #view-progress .view-header {
-    grid-template-columns: auto minmax(0, 1fr);
-    justify-items: start;
-}
-
-html[data-ui-mode="child"] #view-progress .view-header h2 {
-    grid-column: 2;
-    text-align: left;
-}
-
-html[data-ui-mode="child"] #view-progress .back-btn {
-    position: static;
-    width: auto;
-    height: auto;
-    display: inline-flex;
-    padding: 0 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-}
+/* Child Mode overrides moved to WinsView.module.css */
 
 html[data-ui-mode="child"] .home-kid-hero {
     width: min(100%, 920px);
@@ -6352,7 +5983,7 @@ html[data-ui-mode="child"] .progress-layout {
     align-items: start;
 }
 
-html[data-ui-mode="child"] .progress-layout > * {
+html[data-ui-mode="child"] .progress-layout>* {
     grid-column: span 12;
     padding: 22px;
     border-radius: 26px;
@@ -6566,6 +6197,7 @@ html[data-ui-mode="child"] .rt-coach-pill-text {
 }
 
 @media (max-width: 960px) {
+
     html[data-ui-mode="child"] .coach-kid-layout,
     html[data-ui-mode="child"] .tuner-layout {
         grid-template-columns: 1fr;

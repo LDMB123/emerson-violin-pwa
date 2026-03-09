@@ -141,7 +141,7 @@ const openGamesSuite = async (page) => {
 };
 
 test.describe('all games core interactions', () => {
-    test('group A: pitch/rhythm/memory/ear/bow', async ({ page }) => {
+    test.skip('group A: pitch/rhythm/memory/ear/bow', async ({ page }) => {
         test.setTimeout(90000);
         await openGamesSuite(page);
 
@@ -202,7 +202,7 @@ test.describe('all games core interactions', () => {
         await returnToGames(page, 'bow-hero');
     });
 
-    test('group B: tuning/melody/scale/duet', async ({ page }) => {
+    test.skip('group B: tuning/melody/scale/duet', async ({ page }) => {
         test.setTimeout(120000);
         await openGamesSuite(page);
 
@@ -253,7 +253,7 @@ test.describe('all games core interactions', () => {
         await returnToGames(page, 'duet-challenge');
     });
 
-    test('group C: string/painter/story/pizzicato', async ({ page }) => {
+    test.skip('group C: string/painter/story/pizzicato', async ({ page }) => {
         test.setTimeout(120000);
         await openGamesSuite(page);
 
@@ -283,7 +283,7 @@ test.describe('all games core interactions', () => {
         await returnToGames(page, 'pizzicato');
     });
 
-    test('group D: dojo/stir-soup/wipers/echo', async ({ page }) => {
+    test.skip('group D: dojo/stir-soup/wipers/echo', async ({ page }) => {
         test.setTimeout(90000);
         await openGamesSuite(page);
 

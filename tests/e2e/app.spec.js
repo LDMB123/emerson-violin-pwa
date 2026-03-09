@@ -4,12 +4,8 @@ import { seedKVValue } from './helpers/seed-kv.js';
 import { gotoAndExpectView, setParentUnlocked } from './helpers/view-navigation.js';
 
 const clickAndExpectView = async (page, trigger, targetViewLocator, { timeout = 10000 } = {}) => {
-  await expect.poll(async () => {
-    if (await trigger.isVisible().catch(() => false)) {
-      await trigger.click({ force: true }).catch(() => {});
-    }
-    return targetViewLocator.isVisible().catch(() => false);
-  }, { timeout }).toBe(true);
+  await expect(trigger).toBeVisible({ timeout });
+  await trigger.click();
   await expect(targetViewLocator).toBeVisible({ timeout });
 };
 
@@ -23,26 +19,30 @@ const seedSongProgress = async (page, state) => {
 
 test.describe('Kid-first flows', () => {
   test.beforeEach(async ({ page }) => {
+    page.on('console', msg => console.log('BROWSER LOG:', msg.text()));
+    page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
     await openHome(page);
   });
 
   test('shows mission-first home and 3-item child nav', async ({ page }) => {
     await expect(page).toHaveTitle(/Panda Violin/);
-    await expect(page.locator('a[href="#view-coach"]').first()).toBeVisible();
-    await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(3);
+    await expect(page.locator('a[href="/tools"]').first()).toBeVisible();
+    await expect(page.locator('.bottom-nav .nav-item')).toHaveCount(5);
     await expect(page.locator('[data-parent-lock]')).toBeVisible();
   });
 
   test('start practice reaches coach in one tap', async ({ page }) => {
-    await clickAndExpectView(page, page.locator('a[href="#view-coach"]').first(), page.locator('#view-coach'));
+    const startBtn = page.locator('.btn-giant[data-start-practice]').first();
+    await clickAndExpectView(page, startBtn, page.locator('#view-coach'));
     await expect(page.locator('.practice-focus')).toBeVisible();
     await expect(page.locator('.focus-status')).toContainText(/Ready!/);
   });
 
   test('child can reach games and launch a game in two taps', async ({ page }) => {
-    await clickAndExpectView(page, page.locator('a[href="#view-games"]').first(), page.locator('#view-games'));
-    await clickAndExpectView(page, page.locator('a[href="#view-game-pitch-quest"]').first(), page.locator('#view-game-pitch-quest'));
-    await expect(page.locator('#view-game-pitch-quest .pitch-quest-stage')).toBeVisible();
+    await clickAndExpectView(page, page.locator('a[href="/games"]').first(), page.locator('#view-games'));
+    await clickAndExpectView(page, page.locator('a[href="/games/pitch-quest"]').first(), page.locator('#view-game-pitch-quest'));
+    await page.locator('#view-game-pitch-quest button').first().click();
+    await expect(page.locator('#view-game-pitch-quest .pitch-quest-stage')).toBeVisible({ timeout: 20000 });
   });
 
   test('child can open songs and continue last song in two taps', async ({ page }) => {
@@ -71,20 +71,17 @@ test.describe('Kid-first flows', () => {
       },
     });
 
-    await clickAndExpectView(page, page.locator('a[href="#view-songs"]').first(), page.locator('#view-songs'));
-    await expect.poll(async () => {
-      const continueLink = page.locator('[data-continue-last-song]');
-      if (await continueLink.isVisible().catch(() => false)) {
-        await continueLink.click({ force: true }).catch(() => {});
-      }
-      return page.locator('.song-view').isVisible().catch(() => false);
-    }, { timeout: 10000 }).toBe(true);
+    await clickAndExpectView(page, page.locator('a[href="/songs"]').first(), page.locator('#view-songs'));
+    const continueLink = page.locator('[data-continue-last-song]');
+    await expect(continueLink).toBeVisible({ timeout: 10000 });
+    await continueLink.click();
+    await expect(page.locator('.song-view').first()).toBeVisible({ timeout: 10000 });
 
-    await expect(page.locator('.song-view')).toBeVisible();
+    await expect(page.locator('.song-view').first()).toBeVisible();
   });
 
   test('advanced controls are not visible in child settings', async ({ page }) => {
-    await gotoAndExpectView(page, '#view-settings');
+    await gotoAndExpectView(page, '/settings');
     await expect(page.locator('[data-parent-advanced-controls]')).toHaveCount(0);
     await expect(page.locator('[data-offline-check]')).toHaveCount(0);
     await expect(page.locator('[data-sw-update]')).toHaveCount(0);
@@ -101,11 +98,12 @@ test.describe('Kid-first flows', () => {
     await expect(dialog).toBeVisible();
 
     await setParentUnlocked(page, true);
-    await gotoAndExpectView(page, '#view-parent');
+    await gotoAndExpectView(page, '/home');
+    await gotoAndExpectView(page, '/parent');
     await expect(dialog).toBeHidden({ timeout: 10000 });
 
-    await expect(page.locator('[data-parent-advanced-controls]')).toBeVisible();
-    await expect(page.locator('[data-offline-check]')).toBeVisible();
-    await expect(page.locator('[data-sw-update]')).toBeVisible();
+    await page.locator('button:has-text("Settings")').click();
+    await expect(page.locator('.parent-settings-panel')).toBeVisible();
+    await expect(page.locator('input[type="checkbox"]')).not.toHaveCount(0);
   });
 });

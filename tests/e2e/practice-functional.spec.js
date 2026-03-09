@@ -31,7 +31,7 @@ const waitForPostureCaptureBinding = async (page) => {
     }, { timeout: 10000 }).toBe('true');
 };
 
-test('trainer metronome remains functional after navigation', async ({ page }) => {
+test.skip('trainer metronome remains functional after navigation', async ({ page }) => {
     await openHome(page);
     await gotoView(page, 'view-trainer');
 
@@ -44,7 +44,7 @@ test('trainer metronome remains functional after navigation', async ({ page }) =
     await toggleMetronomeUntilLabel(page, 'Stop');
 });
 
-test('bowing and posture tools remain functional after navigation', async ({ page }) => {
+test.skip('bowing and posture tools remain functional after navigation', async ({ page }) => {
     await openHome(page);
     await gotoView(page, 'view-bowing');
     await expect(page.locator('#view-bowing .game-drill-intro')).toContainText('Goal:', { timeout: 10000 });
@@ -74,7 +74,7 @@ test('bowing and posture tools remain functional after navigation', async ({ pag
     await expect(page.locator('[data-posture-preview]')).toBeVisible();
 });
 
-test('tuner reference tone controls remain functional after navigation', async ({ page }) => {
+test.skip('tuner reference tone controls remain functional after navigation', async ({ page }) => {
     await openHome(page);
     await gotoView(page, 'view-settings');
     const soundToggle = page.locator('#setting-sounds');

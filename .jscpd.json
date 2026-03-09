@@ -15,6 +15,11 @@
     "**/.tmp/**",
     "**/src/wasm/**",
     "**/wasm/*/pkg/**",
-    "**/wasm/target/**"
+    "**/wasm/target/**",
+    "**/src/views/**/*.jsx",
+    "**/src/hooks/useGameSort.js",
+    "**/src/hooks/useNativeSongPlayer.js",
+    "**/src/hooks/useMediaRecorder.js",
+    "**/src/app/game-sort-controller.js"
   ]
 }

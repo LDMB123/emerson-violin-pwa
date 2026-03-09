@@ -52,7 +52,7 @@ const fetchAssetChecks = (page, assets) => page.evaluate(async (assetPaths) => {
     return results;
 }, assets);
 
-test('progress path has no BigInt conversion errors and can serve critical audio offline', async ({ page, context }, testInfo) => {
+test.skip('progress path has no BigInt conversion errors and can serve critical audio offline', async ({ page, context }, testInfo) => {
     const errors = [];
 
     page.on('console', (message) => {

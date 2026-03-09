@@ -145,7 +145,7 @@ const runTimedPlayheadLoop = ({ durationMs, onFrame, onComplete, runId } = {}) =
                 activePlayheadRafId = requestAnimationFrame(loop);
                 return;
             }
-            activePlayheadRafId = null;
+            activePlayheadRafId = null; // Clear *before* executing the callback 
             onComplete?.();
             resolve(true);
         } catch (error) {

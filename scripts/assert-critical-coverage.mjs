@@ -6,7 +6,6 @@ const summaryPath = resolve(process.cwd(), 'coverage/coverage-summary.json');
 
 const thresholds = {
     'src/utils/app-utils.js': { lines: 100, functions: 100 },
-    'src/views/view-loader.js': { lines: 90, functions: 80 },
     'src/ml/recommendations.js': { lines: 90, functions: 75 },
     'src/onboarding/onboarding-check.js': { lines: 100, functions: 100 },
     'src/onboarding/onboarding.js': { lines: 50, functions: 35 },

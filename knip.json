@@ -9,6 +9,7 @@
   ],
   "project": [
     "src/**/*.js",
+    "src/**/*.jsx",
     "scripts/**/*.js",
     "scripts/**/*.mjs",
     "tests/**/*.js",
@@ -16,5 +17,12 @@
   ],
   "ignore": [
     "src/wasm/**"
-  ]
+  ],
+  "ignoreDependencies": [
+    "@testing-library/user-event"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "rules": {
+    "exports": "off"
+  }
 }

@@ -1,8 +1,9 @@
-const CACHE_VERSION = 'v114';
+const CACHE_VERSION = 'v115';
 const CACHE_NAME = `panda-violin-local-${CACHE_VERSION}`;
 const RUNTIME_CACHE_NAME = `${CACHE_NAME}-runtime`;
 const APP_SHELL_URL = './index.html';
 const OFFLINE_URL = './offline.html';
+const MANIFEST_URL = '/manifest.webmanifest';
 const RUNTIME_CACHE_MAX_ENTRIES = 180;
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const IS_LOCAL_DEV_HOST = LOCALHOST_HOSTS.has(self.location.hostname) || self.location.hostname.endsWith('.local');
@@ -18,14 +19,14 @@ try {
 }
 
 if (!ASSETS_TO_CACHE.length) {
-    ASSETS_TO_CACHE = ['./', APP_SHELL_URL, './manifest.webmanifest'];
+    ASSETS_TO_CACHE = ['./', APP_SHELL_URL, MANIFEST_URL];
 }
 
 const buildPrecacheList = () => {
     const precache = new Set(ASSETS_TO_CACHE);
     precache.add('./');
     precache.add(APP_SHELL_URL);
-    precache.add('./manifest.webmanifest');
+    precache.add(MANIFEST_URL);
     precache.add(OFFLINE_URL);
     return Array.from(precache);
 };

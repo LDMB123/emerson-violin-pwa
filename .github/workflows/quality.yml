@@ -40,8 +40,8 @@ jobs:
       - name: Performance budget audit (LCP/FCP)
         run: npm run audit:perf
         env:
-          PERF_BUDGET_FCP_MS: '2500'
-          PERF_BUDGET_LCP_MS: '3500'
+          PERF_BUDGET_FCP_MS: '2250'
+          PERF_BUDGET_LCP_MS: '3150'
           PERF_BUDGET_SAMPLES: '3'
           PERF_BUDGET_REPORT_ONLY: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
 
@@ -59,8 +59,8 @@ jobs:
         run: npm run audit:perf:recommend -- artifacts/perf-budget-summary.json
         env:
           PERF_BUDGET_RECOMMENDATION_OUTPUT: artifacts/perf-budget-recommendation.json
-          PERF_BUDGET_CURRENT_FCP_MS: '2500'
-          PERF_BUDGET_CURRENT_LCP_MS: '3500'
+          PERF_BUDGET_CURRENT_FCP_MS: '2250'
+          PERF_BUDGET_CURRENT_LCP_MS: '3150'
           PERF_BUDGET_RECOMMENDATION_PR_TARGET_FAILURE_PCT: '5'
           PERF_BUDGET_RECOMMENDATION_MAX_TIGHTEN_PCT: '10'
           PERF_BUDGET_RECOMMENDATION_MAX_LOOSEN_PCT: '20'

@@ -1,4 +1,7 @@
 export const seedKVValue = async (page, key, value) => {
+    if (key === 'onboarding-complete' && value === true) {
+        await seedKVValue(page, 'panda-violin:child-name-v1', "Emerson");
+    }
     await page.evaluate(async ({ targetKey, targetValue }) => {
         const toTimestamp = (input, fallback = Date.now()) => (
             Number.isFinite(input) ? input : fallback

@@ -104,7 +104,10 @@ const inferPracticeGameId = (practiceId) => {
 };
 
 const collectPlayedGames = (gameEvents, practiceEvents) => {
-    const playedGames = new Set(gameEvents.map((event) => event.id).filter(Boolean));
+    const playedGames = new Set();
+    for (const event of gameEvents) {
+        if (event.id) playedGames.add(event.id);
+    }
     for (const event of practiceEvents) {
         if (!event.id) continue;
         const inferredId = inferPracticeGameId(event.id);
@@ -227,5 +230,11 @@ export const buildPrimaryProgressModel = (config) => {
         skills: snapshotSkills(skillProfile),
         weakestSkill: skillProfile.weakest_skill(),
         gameEvents,
+        experience: {
+            xp: progress.xp,
+            level: progress.level,
+            progressToNext: progress.level_progress(),
+            xpToNext: progress.xp_to_next_level()
+        }
     };
 };

@@ -5,12 +5,8 @@ const OFFLINE_CACHE_PREFIX = 'panda-violin-local-';
 const CRITICAL_OFFLINE_ASSETS = [
     './',
     './index.html',
-    './manifest.webmanifest',
+    '/manifest.webmanifest',
     './offline.html',
-    './src/app.js',
-    './src/styles/app.css',
-    './src/assets/fonts/fraunces-vf.woff2',
-    './src/assets/fonts/nunito-vf.woff2',
     './assets/icons/icon-192.png',
     './assets/illustrations/mascot-happy.webp',
     getAudioPath('./assets/audio/violin-a4.wav'),

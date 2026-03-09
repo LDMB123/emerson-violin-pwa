@@ -969,31 +969,31 @@ The current app loads zero framework JS. The reboot will add React. Define hard 
 
 These must be done before any Phase 0 work begins. They are pure setup — no design decisions.
 
-- [ ] **Install React stack:** `npm install react@19 react-dom@19 react-router@7`
-- [ ] **Install dev deps:** `npm install -D @vitejs/plugin-react @testing-library/react@16 @testing-library/jest-dom@6 @testing-library/user-event@14`
-- [ ] **Vite config:** Add `@vitejs/plugin-react` to `vite.config.js` plugins array. Enable JSX transform. Add CSS Modules: `css: { modules: { localsConvention: 'camelCase' } }`
-- [ ] **TypeScript (optional):** If enabling TS, add `tsconfig.json` with `allowJs: true`, `jsx: "react-jsx"`, `strict: true`. Otherwise, use JSDoc types in `.jsx` files.
-- [ ] **RTL setup:** Create `tests/setup-rtl.js` that imports `@testing-library/jest-dom`. Add to Vitest `setupFiles` in `vitest.config.js`. Verify with a trivial `render(<div>hello</div>)` test.
-- [ ] **PDF export library:** `npm install jspdf` (for parent checklist/data export). No other runtime deps.
-- [ ] **WASM + React strict mode:** Verify WASM init is idempotent — React 19 strict mode double-invokes effects in dev. `panda_audio.js` and `panda_core.js` init must not crash on double-call. Add guard: `if (wasmInstance) return wasmInstance;`
-- [ ] **Verify existing tests pass:** Run `npm run handoff:verify` — 567 unit + 45 E2E must pass with new deps installed, before any code changes.
+- [x] **Install React stack:** `npm install react@19 react-dom@19 react-router@7`
+- [x] **Install dev deps:** `npm install -D @vitejs/plugin-react @testing-library/react@16 @testing-library/jest-dom@6 @testing-library/user-event@14`
+- [x] **Vite config:** Add `@vitejs/plugin-react` to `vite.config.js` plugins array. Enable JSX transform. Add CSS Modules: `css: { modules: { localsConvention: 'camelCase' } }`
+- [x] **TypeScript (optional):** If enabling TS, add `tsconfig.json` with `allowJs: true`, `jsx: "react-jsx"`, `strict: true`. Otherwise, use JSDoc types in `.jsx` files.
+- [x] **RTL setup:** Create `tests/setup-rtl.js` that imports `@testing-library/jest-dom`. Add to Vitest `setupFiles` in `vitest.config.js`. Verify with a trivial `render(<div>hello</div>)` test.
+- [x] **PDF export library:** `npm install jspdf` (for parent checklist/data export). No other runtime deps.
+- [x] **WASM + React strict mode:** Verify WASM init is idempotent — React 19 strict mode double-invokes effects in dev. `panda_audio.js` and `panda_core.js` init must not crash on double-call. Add guard: `if (wasmInstance) return wasmInstance;`
+- [x] **Verify existing tests pass:** Run `npm run handoff:verify` — 567 unit + 45 E2E must pass with new deps installed, before any code changes.
 
 ### Phase 0: Reboot Spec + Technical Spike (1-2 weeks)
 
 **Goal:** Validate framework choice, prove bridge pattern, establish design system.
 
 **Deliverables:**
-- [ ] Framework spike: Vite + React SPA with `<LegacyBridge>` mounting one vanilla module (home)
-- [ ] SW spike: custom SW working with SPA pathname routing
-- [ ] Performance baseline: measure current app on iPad mini 6 Simulator (LCP, TTI, CLS, bundle)
-- [ ] Route map finalized (above)
-- [ ] Design system implemented: CSS custom properties for colors, typography, spacing, elevation, easing, duration tokens
-- [ ] Figtree font evaluation: load test on iPad mini 6, measure FOUT/FOIT, confirm fallback chain
-- [ ] Component primitives built: `<Button>`, `<Card>`, `<NavBar>`, `<PandaSpeech>`, `<Skeleton>`, `<LegacyBridge>`
-- [ ] Feature matrix created (`docs/architecture/reboot-feature-matrix.md`)
-- [ ] Hash → pathname redirect script working
-- [ ] Target state doc (`docs/architecture/next-reboot-target-state.md`)
-- [ ] Page-by-page wireframes validated on iPad mini 6 Simulator at 768px portrait
+- [x] Framework spike: Vite + React SPA with `<LegacyBridge>` mounting one vanilla module (home)
+- [x] SW spike: custom SW working with SPA pathname routing
+- [x] Performance baseline: measure current app on iPad mini 6 Simulator (LCP, TTI, CLS, bundle)
+- [x] Route map finalized (above)
+- [x] Design system implemented: CSS custom properties for colors, typography, spacing, elevation, easing, duration tokens
+- [x] Figtree font evaluation: load test on iPad mini 6, measure FOUT/FOIT, confirm fallback chain
+- [x] Component primitives built: `<Button>`, `<Card>`, `<NavBar>`, `<PandaSpeech>`, `<Skeleton>`, `<LegacyBridge>`
+- [x] Feature matrix created (`docs/architecture/reboot-feature-matrix.md`)
+- [x] Hash → pathname redirect script working
+- [x] Target state doc (`docs/architecture/next-reboot-target-state.md`)
+- [x] Page-by-page wireframes validated on iPad mini 6 Simulator at 768px portrait
 
 **Gate:** Spike passes all 45 E2E tests with React shell + legacy bridge. Performance baseline documented.
 
@@ -1016,16 +1016,16 @@ Gemini 3.1 Pro: High for spike code, Medium for design token validation
 **Goal:** React owns the shell, routing, and navigation. All content renders through legacy bridges.
 
 **Deliverables:**
-- [ ] React app shell: root layout, `<Suspense>` boundaries, error boundaries
-- [ ] Child bottom nav (5 items) as React component
-- [ ] Parent gate (PIN) as React component
-- [ ] All 17 current views mounted via `<LegacyBridge>`
-- [ ] All 17 games mounted via `<LegacyBridge>`
-- [ ] `<AppRuntimeProvider>` wrapping app (storage, audio, platform, persona)
-- [ ] Hash redirect script active
-- [ ] Eager/idle module loading ported to React lazy + Suspense
-- [ ] CSS Modules for shell components; global CSS unchanged
-- [ ] Shared components built in Phase 1: `<Modal>`, `<ProgressBar>`, `<StarRating>`, `<FilterChips>`, `<ErrorBoundary>`, `<Skeleton>`, `<PandaSpeech>` — used by all later phases
+- [x] React app shell: root layout, `<Suspense>` boundaries, error boundaries
+- [x] Child bottom nav (5 items) as React component
+- [x] Parent gate (PIN) as React component
+- [x] All 17 current views mounted via `<LegacyBridge>`
+- [x] All 17 games mounted via `<LegacyBridge>`
+- [x] `<AppRuntimeProvider>` wrapping app (storage, audio, platform, persona)
+- [x] Hash redirect script active
+- [x] Eager/idle module loading ported to React lazy + Suspense
+- [x] CSS Modules for shell components; global CSS unchanged
+- [x] Shared components built in Phase 1: `<Modal>`, `<ProgressBar>`, `<StarRating>`, `<FilterChips>`, `<ErrorBoundary>`, `<Skeleton>`, `<PandaSpeech>` — used by all later phases
 
 **Gate:** `npm run handoff:verify` passes (567 unit + 45 E2E). No visual regression on iPad Safari.
 
@@ -1048,17 +1048,17 @@ Gemini 3.1 Pro: High for bridge lifecycle code, Medium for component tests
 **Goal:** The primary user flow — open app → see mission → practice → earn reward — is fully native React.
 
 **Deliverables:**
-- [ ] **Home page** — Daily mission display, "start practice" CTA, Red Panda embedded guide
-- [ ] **Practice runner** — Step-through UI with progress bar, timing, pause/resume, completion state
-- [ ] **Wins page** — Child-friendly streaks, achievements, rewards display
-- [ ] **Onboarding** — Full rebuild (existing scroll-snap carousel not reusable): 5-step wizard, `CHILD_NAME_KEY` persisted, progressive save
-- [ ] Curriculum/mission state integrated with React via hooks
-- [ ] Progress model integrated with React via hooks (including WASM fallback path via `progress-model-fallback.js`)
-- [ ] Auto-goals engine wired: `AUTO_GOALS_KEY` populated from curriculum + ML recommendations
-- [ ] EMA baseline seeded after first song/game completion (first-activity calibration)
-- [ ] Web Vitals write-side: LCP/INP/CLS captured from first session, persisted to `WEB_VITALS_KEY`
-- [ ] Custom event bus: `AppEventBus` singleton created, `useAppEvent()` hook available, dual-emit for backward compat
-- [ ] Legacy bridges removed for: home, coach, progress, onboarding
+- [x] **Home page** — Daily mission display, "start practice" CTA, Red Panda embedded guide
+- [x] **Practice runner** — Step-through UI with progress bar, timing, pause/resume, completion state
+- [x] **Wins page** — Child-friendly streaks, achievements, rewards display
+- [x] **Onboarding** — Full rebuild (existing scroll-snap carousel not reusable): 5-step wizard, `CHILD_NAME_KEY` persisted, progressive save
+- [x] Curriculum/mission state integrated with React via hooks
+- [x] Progress model integrated with React via hooks (including WASM fallback path via `progress-model-fallback.js`)
+- [x] Auto-goals engine wired: `AUTO_GOALS_KEY` populated from curriculum + ML recommendations
+- [x] EMA baseline seeded after first song/game completion (first-activity calibration)
+- [x] Web Vitals write-side: LCP/INP/CLS captured from first session, persisted to `WEB_VITALS_KEY`
+- [x] Custom event bus: `AppEventBus` singleton created, `useAppEvent()` hook available, dual-emit for backward compat
+- [x] Legacy bridges removed for: home, coach, progress, onboarding
 
 **Gate:** Core habit loop E2E test passes. New onboarding → first mission → completion flow tested. Performance budget met on iPad mini 6.
 
@@ -1082,19 +1082,19 @@ Gemini 3.1 Pro: High for curriculum/mission integration, High for event bus dual
 **Goal:** All tools are native React with enhanced UX. Child settings page functional.
 
 **Deliverables:**
-- [ ] **Tool selector** — 5-tool hub with purpose-driven entry points
-- [ ] **Tuner** — React wrapper around existing audio pipeline, better permission/error UX
-- [ ] **Metronome** — New page: BPM slider, tap tempo, visual beat, subdivisions, accent toggle
-- [ ] **Drone tones** — New page: 4 string buttons, sustained reference tone via tone-player synth, volume control
-- [ ] **Bowing trainer** — Enhanced feedback, camera permission pre-prompt, help states
-- [ ] **Posture trainer** — Enhanced feedback, camera permission pre-prompt, help states
-- [ ] **Child settings** (`/settings`) — Sound toggle, motion toggle, text size, background theme, help + parent links
-- [ ] `<RealtimeSessionProvider>` for routes needing live audio (wraps tuner, mic games, bowing/posture)
-- [ ] `useRealtimeAudio()` hook
-- [ ] `<CoachOverlay>` React portal migrated from `coach-overlay.js` body-append pattern
-- [ ] RT coaching presets (gentle/standard/challenge) read from parent settings and wired into policy Web Worker
-- [ ] Voice coach toggle migrated to `<ChildSettings>` (reads `featureFlags.voiceCoachEnabled`)
-- [ ] Legacy bridges removed for: tuner, trainer, bowing, posture, settings
+- [x] **Tool selector** — 5-tool hub with purpose-driven entry points
+- [x] **Tuner** — React wrapper around existing audio pipeline, better permission/error UX
+- [x] **Metronome** — New page: BPM slider, tap tempo, visual beat, subdivisions, accent toggle
+- [x] **Drone tones** — New page: 4 string buttons, sustained reference tone via tone-player synth, volume control
+- [x] **Bowing trainer** — Enhanced feedback, camera permission pre-prompt, help states
+- [x] **Posture trainer** — Enhanced feedback, camera permission pre-prompt, help states
+- [x] **Child settings** (`/settings`) — Sound toggle, motion toggle, text size, background theme, help + parent links
+- [x] `<RealtimeSessionProvider>` for routes needing live audio (wraps tuner, mic games, bowing/posture)
+- [x] `useRealtimeAudio()` hook
+- [x] `<CoachOverlay>` React portal migrated from `coach-overlay.js` body-append pattern
+- [x] RT coaching presets (gentle/standard/challenge) read from parent settings and wired into policy Web Worker
+- [x] Voice coach toggle migrated to `<ChildSettings>` (reads `featureFlags.voiceCoachEnabled`)
+- [x] Legacy bridges removed for: tuner, trainer, bowing, posture, settings
 
 **Gate:** Tuner works on iPad mini 6 Safari with real microphone. Metronome/drone functional with Web Audio. Audio recovery from interruption tested. Child settings persist across sessions.
 
@@ -1117,18 +1117,18 @@ Gemini 3.1 Pro: High for RealtimeSessionProvider + useRealtimeAudio() hook (Audi
 **Goal:** Songs and Games on enhanced React shells with full detail pages.
 
 **Deliverables:**
-- [ ] **Songs library** — Search, filter, skill tags, difficulty badges, "ready to play" indicators, 3-tier organization
-- [ ] **Song detail** — Scrolling staff, CSS playhead, BPM display, practice tips, section checkpoints, mastery display
-- [ ] **Song recording** — MediaRecorder integration, count-in, auto-assess, recording history, playback
-- [ ] **Song assessment** — Weighted scoring (timing 45% + intonation 45% + overall 10%), mastery tier display
-- [ ] **Games catalog** — Skill-filtered grid with 5 color-coded skill categories, difficulty framing, personal bests
-- [ ] **Game shell component** — `<GameShell>` with consistent pre-game (objectives, tips, difficulty), in-game (full-bleed, HUD), post-game (stars, score, retry/done)
-- [ ] All 17 games mounted in new game shell (most still via `<LegacyBridge>` internally for canvas logic)
-- [ ] Per-game Panda tips (3-4 tips per game, rotated in pre-game state)
-- [ ] Adaptive difficulty integration — EMA per-game, auto-adjust after each play
-- [ ] All 30 songs with enhanced metadata (skill tags, difficulty stars, readiness indicators)
-- [ ] Spaced repetition integration — overdue songs/games appear in mission builder queue
-- [ ] Legacy bridges removed for: songs library, song detail, games catalog
+- [x] **Songs library** — Search, filter, skill tags, difficulty badges, "ready to play" indicators, 3-tier organization
+- [x] **Song detail** — Scrolling staff, CSS playhead, BPM display, practice tips, section checkpoints, mastery display
+- [x] **Song recording** — MediaRecorder integration, count-in, auto-assess, recording history, playback
+- [x] **Song assessment** — Weighted scoring (timing 45% + intonation 45% + overall 10%), mastery tier display
+- [x] **Games catalog** — Skill-filtered grid with 5 color-coded skill categories, difficulty framing, personal bests
+- [x] **Game shell component** — `<GameShell>` with consistent pre-game (objectives, tips, difficulty), in-game (full-bleed, HUD), post-game (stars, score, retry/done)
+- [x] All 17 games mounted in new game shell (most still via `<LegacyBridge>` internally for canvas logic)
+- [x] Per-game Panda tips (3-4 tips per game, rotated in pre-game state)
+- [x] Adaptive difficulty integration — EMA per-game, auto-adjust after each play
+- [x] All 30 songs with enhanced metadata (skill tags, difficulty stars, readiness indicators)
+- [x] Spaced repetition integration — overdue songs/games appear in mission builder queue
+- [x] Legacy bridges removed for: songs library, song detail, games catalog
 
 **Note:** Individual game internals (canvas rendering, game state machines) may remain vanilla JS behind the bridge through v1. The game *shell* (entry, objectives, scoring, completion) is React. The game *engine* stays vanilla where it's working.
 
@@ -1154,16 +1154,16 @@ Gemini 3.1 Pro: High for MediaRecorder + assessment pipeline, Medium for catalog
 **Goal:** Parent workspace is a coherent, PIN-gated React surface with all 6 sub-panels.
 
 **Deliverables:**
-- [ ] **Parent gate** — PIN entry/creation with clear UX (PBKDF2-hashed, existing contract)
-- [ ] **Review panel** — Session history, skill radar chart (SVG 5-axis), per-skill trends, song mastery table, RT coaching replay timeline
-- [ ] **Goals panel** — Daily time slider, weekly day checkboxes, recital date, progress bar
-- [ ] **Checklist panel** (enhanced from `home-teacher.js`) — Suzuki-style observation form, 5-point per-category ratings, notes, history, CSV/PDF export
-- [ ] **Recordings panel** — Library with playback, filter, individual + bulk export, delete, storage indicator
-- [ ] **Data panel** — JSON backup/restore, CSV practice log export, storage breakdown, clear-all with double confirmation, offline integrity check
-- [ ] **Settings panel** — Coaching style presets, ICS reminder export, per-game difficulty override, ML diagnostics (EMA values, demo mode, reset)
-- [ ] **Support pages** — `/support/help` (FAQ), `/support/about` (version), `/support/privacy` (policy)
-- [ ] All parent-facing features consolidated under tabbed workspace
-- [ ] Legacy bridges removed for: parent, analysis, backup, settings, recordings
+- [x] **Parent gate** — PIN entry/creation with clear UX (PBKDF2-hashed, existing contract)
+- [x] **Review panel** — Session history, skill radar chart (SVG 5-axis), per-skill trends, song mastery table, RT coaching replay timeline
+- [x] **Goals panel** — Daily time slider, weekly day checkboxes, recital date, progress bar
+- [x] **Checklist panel** (enhanced from `home-teacher.js`) — Suzuki-style observation form, 5-point per-category ratings, notes, history, CSV/PDF export
+- [x] **Recordings panel** — Library with playback, filter, individual + bulk export, delete, storage indicator
+- [x] **Data panel** — JSON backup/restore, CSV practice log export, storage breakdown, clear-all with double confirmation, offline integrity check
+- [x] **Settings panel** — Coaching style presets, ICS reminder export, per-game difficulty override, ML diagnostics (EMA values, demo mode, reset)
+- [x] **Support pages** — `/support/help` (FAQ), `/support/about` (version), `/support/privacy` (policy)
+- [x] All parent-facing features consolidated under tabbed workspace
+- [x] Legacy bridges removed for: parent, analysis, backup, settings, recordings
 
 **Gate:** Parent unlock → all 6 tabs navigate correctly → data export tested E2E → checklist save/load verified → ICS file downloads correctly.
 
@@ -1186,20 +1186,20 @@ Gemini 3.1 Pro: High for SVG radar chart + coaching replay timeline, Medium for 
 **Goal:** Legacy bridges removed, performance tuned, platform features verified, launched.
 
 **Deliverables:**
-- [ ] All remaining legacy bridges replaced or explicitly deferred with rationale
-- [ ] Legacy redirect script tested and verified (all hash routes including new metronome/drone/checklist)
-- [ ] Manifest shortcuts updated from hash URLs to pathnames; `display_override` and `launch_handler` preserved
-- [ ] Performance audit on iPad mini 6: all budgets met
-- [ ] Accessibility audit: all WCAG 2.1 AA violations resolved
-- [ ] Offline behavior verified: full app shell cached, recordings preserved, offline indicator works, integrity self-test functional
-- [ ] Install education: clear prompts for Home Screen installation
-- [ ] App Badge implemented: Badge API sets icon badge when no practice today, cleared after daily mission started (feature-detect + graceful degrade)
-- [ ] Platform features verified: App Badge, wake lock, orientation, sharing, audio codec fallback, ICS reminders, MediaSession
-- [ ] Web Vitals tracking confirmed: LCP/INP/CLS persisted, viewable in ML diagnostics
-- [ ] Feature matrix: every row is `parity-plus` or `deferred` with rationale
-- [ ] Dead code cleanup: removed unused legacy modules, CSS, test fixtures
-- [ ] Documentation updated: HANDOFF.md, architecture docs, CLAUDE.md
-- [ ] Spaced repetition + adaptive difficulty verified end-to-end across multiple sessions
+- [x] All remaining legacy bridges replaced or explicitly deferred with rationale
+- [x] Legacy redirect script tested and verified (all hash routes including new metronome/drone/checklist)
+- [x] Manifest shortcuts updated from hash URLs to pathnames; `display_override` and `launch_handler` preserved
+- [x] Performance audit on iPad mini 6: all budgets met
+- [x] Accessibility audit: all WCAG 2.1 AA violations resolved
+- [x] Offline behavior verified: full app shell cached, recordings preserved, offline indicator works, integrity self-test functional
+- [x] Install education: clear prompts for Home Screen installation
+- [x] App Badge implemented: Badge API sets icon badge when no practice today, cleared after daily mission started (feature-detect + graceful degrade)
+- [x] Platform features verified: App Badge, wake lock, orientation, sharing, audio codec fallback, ICS reminders, MediaSession
+- [x] Web Vitals tracking confirmed: LCP/INP/CLS persisted, viewable in ML diagnostics
+- [x] Feature matrix: every row is `parity-plus` or `deferred` with rationale
+- [x] Dead code cleanup: removed unused legacy modules, CSS, test fixtures
+- [x] Documentation updated: HANDOFF.md, architecture docs, CLAUDE.md
+- [x] Spaced repetition + adaptive difficulty verified end-to-end across multiple sessions
 
 **Gate:** `npm run handoff:verify` passes. Feature matrix complete. iPad mini 6 real-device testing pass. All 17 games through `<GameShell>`. All 30 songs with recording + assessment.
 

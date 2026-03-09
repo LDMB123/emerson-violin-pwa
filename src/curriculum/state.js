@@ -115,7 +115,7 @@ const normalizeHistoryEntry = (entry) => {
 
 /** Loads and normalizes the persisted curriculum state snapshot. */
 export const loadCurriculumState = async () => {
-    const stored = await getJSON(CURRICULUM_STATE_KEY);
+    const stored = await getJSON(CURRICULUM_STATE_KEY).catch(() => null);
     return normalizeState(stored);
 };
 

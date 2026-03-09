@@ -44,46 +44,50 @@ const fallbackCatalogFromDom = () => {
         return normalizeCatalog({ songs: [] });
     }
 
-    const songs = Array.from(document.querySelectorAll('.song-card[data-song]')).map((card) => ({
-        id: card.dataset.song,
-        title: card.querySelector('.song-title')?.textContent?.trim() || card.dataset.song,
-        tier: card.dataset.level === 'challenge'
-            ? 'challenge'
-            : card.dataset.level === 'practice'
-                ? 'intermediate'
-                : 'beginner',
-        bpm: 80,
-        time: '4/4',
-        sections: [
-            { id: 'section-a', label: 'A', start: 0, end: 8 },
-            { id: 'section-b', label: 'B', start: 8, end: 16 },
-        ],
-        prerequisites: card.dataset.level === 'challenge' ? ['u-int-04'] : [],
-    }));
+    try {
+        const songs = Array.from(document.querySelectorAll('.song-card[data-song]')).map((card) => ({
+            id: card.dataset.song,
+            title: card.querySelector('.song-title')?.textContent?.trim() || card.dataset.song,
+            tier: card.dataset.level === 'challenge'
+                ? 'challenge'
+                : card.dataset.level === 'practice'
+                    ? 'intermediate'
+                    : 'beginner',
+            bpm: 80,
+            time: '4/4',
+            sections: [
+                { id: 'section-a', label: 'A', start: 0, end: 8 },
+                { id: 'section-b', label: 'B', start: 8, end: 16 },
+            ],
+            prerequisites: card.dataset.level === 'challenge' ? ['u-int-04'] : [],
+        }));
 
-    return normalizeCatalog({ songs });
+        return normalizeCatalog({ songs });
+    } catch {
+        return normalizeCatalog({ songs: [] });
+    }
 };
 
 const fetchCatalog = async () => {
-    if (typeof fetch !== 'function') {
+    if (typeof fetch !== 'function' || typeof window === 'undefined') {
         return fallbackCatalogFromDom();
     }
 
-    const response = await fetch(CATALOG_PATH, { cache: 'no-cache' });
-    if (!response.ok) {
-        throw new Error(`Song catalog fetch failed: ${response.status}`);
+    try {
+        const response = await fetch(CATALOG_PATH, { cache: 'no-cache' });
+        if (!response.ok) {
+            return fallbackCatalogFromDom();
+        }
+        const raw = await response.json();
+        return normalizeCatalog(raw);
+    } catch (e) {
+        console.warn('[Song Library] Failed to fetch catalog, using fallback', e);
+        return fallbackCatalogFromDom();
     }
-
-    const raw = await response.json();
-    return normalizeCatalog(raw);
 };
 
 const loadCatalog = async () => {
-    try {
-        return await fetchCatalog();
-    } catch {
-        return fallbackCatalogFromDom();
-    }
+    return await fetchCatalog();
 };
 
 /** Loads the normalized song catalog, optionally bypassing the in-memory cache. */

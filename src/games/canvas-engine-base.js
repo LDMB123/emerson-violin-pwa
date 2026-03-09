@@ -2,7 +2,7 @@ import { createCanvasSurface, resizeCanvasSurface } from '../utils/canvas-surfac
 import { cancelAnimationFrameId } from '../utils/animation-frame-utils.js';
 
 export class BaseCanvasEngine {
-    constructor(canvas) {
+    constructor(canvas, ariaLabel = 'Interactive Game Canvas') {
         const surface = createCanvasSurface(canvas);
         Object.assign(this, surface);
         this.particles = [];
@@ -10,6 +10,14 @@ export class BaseCanvasEngine {
         this.isRunning = false;
         this.rafId = null;
         this.visibilityListenerBound = false;
+
+        this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            || document.documentElement.getAttribute('data-reduced-motion') === 'true';
+
+        if (!canvas.getAttribute('aria-label')) {
+            canvas.setAttribute('aria-label', ariaLabel);
+            canvas.setAttribute('role', 'application');
+        }
 
         this.render = this.render.bind(this);
         this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
@@ -126,6 +134,10 @@ export class BaseCanvasEngine {
         update = null,
         draw = null,
     } = {}) {
+        if (this.reducedMotion) {
+            this.particles.length = 0; // Suppress decorative particle animations
+            return;
+        }
         if (!Number.isFinite(dt) || dt <= 0) return;
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const particle = this.particles[i];

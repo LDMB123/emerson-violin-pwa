@@ -54,6 +54,7 @@ export const MODULE_LOADERS = {
     stirSoup: () => import('../games/stir-soup.js'),
     windshieldWipers: () => import('../games/wipers.js'),
     echo: () => import('../games/echo.js'),
+    pitchQuest: () => import('../games/pitch-quest.js'),
 };
 
 /** Lists modules that should be initialized eagerly during app startup. */
@@ -133,6 +134,7 @@ const MODULE_RULES = [
     { when: equals('view-game-stir-soup'), modules: ['stirSoup', 'gameMetrics', 'gameEnhancements'] },
     { when: equals('view-game-wipers'), modules: ['windshieldWipers', 'gameMetrics', 'gameEnhancements'] },
     { when: equals('view-game-echo'), modules: ['echo', 'gameMetrics', 'gameEnhancements'] },
+    { when: equals('view-game-pitch-quest'), modules: ['pitchQuest', 'gameMetrics', 'gameEnhancements'] },
     { when: oneOf(equals('view-games'), startsWith('view-game-')), modules: ['gameMetrics', 'gameEnhancements'] },
     { when: equals('view-progress'), modules: ['recommendationsUi'] },
 ];

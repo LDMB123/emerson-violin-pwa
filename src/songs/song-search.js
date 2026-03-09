@@ -12,11 +12,6 @@ const initSongSearch = () => {
     const grid = document.getElementById('songs-grid');
     const cards = Array.from(document.querySelectorAll('.song-card[data-song]'));
     if (!grid || !cards.length) return;
-    if (grid.dataset.songSearchBound === 'true') {
-        return;
-    }
-    grid.dataset.songSearchBound = 'true';
-
     const filterInputs = Array.from(document.querySelectorAll('input[name="song-filter"]'));
     const emptyState = document.querySelector('[data-songs-empty]');
     const continueCard = document.querySelector('[data-continue-last-song]');

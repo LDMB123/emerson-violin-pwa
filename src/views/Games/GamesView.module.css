@@ -1,0 +1,71 @@
+.gamesView {
+    background:
+        radial-gradient(circle at 12% 10%, rgba(255, 209, 160, 0.34), transparent 36%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(255, 240, 220, 0.93)) !important;
+    padding: var(--space-5);
+    border-radius: 28px;
+    box-shadow: 0 24px 46px rgba(120, 60, 40, 0.18);
+    overflow: hidden;
+}
+
+.filtersWrap {
+    padding: 0 var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.gamesGrid {
+    gap: 14px;
+    display: grid;
+    width: min(100%, 1100px);
+    margin: 0 auto;
+    padding: 0 var(--space-4) 100px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    align-items: stretch;
+}
+
+.gameCard {
+    position: relative;
+    display: grid;
+    justify-items: start;
+    justify-self: stretch;
+    text-align: left;
+    min-height: 0;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 12px 22px rgba(15, 23, 42, 0.1);
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    aspect-ratio: auto;
+}
+
+.gamePlayCta {
+    display: none;
+}
+
+.gameTitle {
+    color: #0F172A;
+    font-size: 1.34rem;
+    line-height: 1.2;
+}
+
+@media (max-width: 720px) {
+    .gamesView {
+        padding: var(--space-4);
+    }
+
+    .filtersWrap {
+        padding-inline: 0;
+    }
+
+    .gamesGrid {
+        padding-inline: 0;
+    }
+
+    .gameCard {
+        min-height: 0;
+    }
+}

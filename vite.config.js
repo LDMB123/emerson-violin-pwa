@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import react from '@vitejs/plugin-react';
 
 const devServiceWorkerPlugin = () => ({
     name: 'dev-sw-bypass',
@@ -55,5 +56,18 @@ export default defineConfig({
         },
     },
 
-    plugins: [devServiceWorkerPlugin()],
+    css: {
+        modules: {
+            localsConvention: 'camelCase',
+        },
+    },
+
+    test: {
+        include: ['src/**/*.test.{js,jsx}', 'tests/**/*.test.{js,jsx}'],
+        globals: true,
+        environment: 'happy-dom',
+        setupFiles: ['./tests/setup-rtl.js'],
+    },
+
+    plugins: [devServiceWorkerPlugin(), react()],
 });

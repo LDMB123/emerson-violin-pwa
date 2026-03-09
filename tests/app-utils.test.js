@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     getViewId,
-    getActiveNavHref,
     isNavItemActive,
-    isMissionCheckpointView,
-    toMissionCheckpointHref,
 } from '../src/utils/app-utils.js';
 import { resolveModulesForView } from '../src/app/module-registry.js';
 
@@ -64,24 +61,6 @@ describe('app-utils', () => {
         });
     });
 
-    describe('getActiveNavHref', () => {
-        it('maps practice group views to coach nav item', () => {
-            expect(getActiveNavHref('view-home')).toBe('#view-coach');
-            expect(getActiveNavHref('view-tuner')).toBe('#view-coach');
-        });
-
-        it('maps songs and games views to matching nav items', () => {
-            expect(getActiveNavHref('view-games')).toBe('#view-games');
-            expect(getActiveNavHref('view-song-twinkle')).toBe('#view-songs');
-            expect(getActiveNavHref('view-progress')).toBe('#view-coach');
-        });
-
-        it('returns null for parent and utility views', () => {
-            expect(getActiveNavHref('view-parent')).toBe(null);
-            expect(getActiveNavHref('view-help')).toBe(null);
-        });
-    });
-
     describe('isNavItemActive', () => {
         it('returns true when hrefs match', () => {
             expect(isNavItemActive('#view-games', '#view-games')).toBe(true);
@@ -93,23 +72,4 @@ describe('app-utils', () => {
         });
     });
 
-    describe('mission checkpoint helpers', () => {
-        it('marks child mission views as checkpoints', () => {
-            expect(isMissionCheckpointView('view-coach')).toBe(true);
-            expect(isMissionCheckpointView('view-tuner')).toBe(true);
-            expect(isMissionCheckpointView('view-game-pitch-quest')).toBe(true);
-            expect(isMissionCheckpointView('view-song-twinkle')).toBe(true);
-        });
-
-        it('excludes non-mission views from checkpoints', () => {
-            expect(isMissionCheckpointView('view-home')).toBe(false);
-            expect(isMissionCheckpointView('view-parent')).toBe(false);
-            expect(isMissionCheckpointView('view-settings')).toBe(false);
-        });
-
-        it('returns hash hrefs only for checkpoint views', () => {
-            expect(toMissionCheckpointHref('view-game-pitch-quest')).toBe('#view-game-pitch-quest');
-            expect(toMissionCheckpointHref('view-parent')).toBeNull();
-        });
-    });
 });

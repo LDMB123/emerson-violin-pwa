@@ -30,6 +30,14 @@ const normalizeScore = ({ score, accuracy, stars } = {}) => {
     return 0.5;
 };
 
+const resolveDifficultyLevel = (ema) => {
+    if (ema < 0.2) return 1;
+    if (ema < 0.4) return 2;
+    if (ema < 0.6) return 3;
+    if (ema < 0.8) return 4;
+    return 5;
+};
+
 const resolveDifficulty = (ema) => {
     if (ema < 0.45) return 'easy';
     if (ema < 0.7) return 'medium';
@@ -50,7 +58,7 @@ const scheduleSave = (model) => {
     const persist = () => {
         saveTimer = null;
         model.updatedAt = Date.now();
-        setJSON(MODEL_KEY, model).catch(() => {});
+        setJSON(MODEL_KEY, model).catch(() => { });
     };
     saveTimer = window.setTimeout(persist, 120);
 };
@@ -104,9 +112,24 @@ const applyTimeDecay = (game) => {
 const getTuningFor = (id, model) => {
     const game = getGameState(model, id);
     const decayedEma = applyTimeDecay(game);
-    const difficulty = resolveDifficulty(decayedEma);
+    let difficulty = resolveDifficulty(decayedEma);
+    let level = resolveDifficultyLevel(decayedEma);
+
+    // Feature: Difficulty Overrides from Parent Settings
+    try {
+        const stored = localStorage.getItem('parent-settings-extended');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            const override = parsed.difficultyOverrides?.[id];
+            if (override && override !== 'auto') {
+                difficulty = override;
+                level = difficulty === 'hard' ? 5 : difficulty === 'medium' ? 3 : 1;
+            }
+        }
+    } catch { }
+
     const config = GAME_CONFIG[id] || {};
-    const tuning = { difficulty };
+    const tuning = { difficulty, level };
 
     Object.keys(config).forEach((key) => {
         const values = config[key];
@@ -134,17 +157,20 @@ export const updateGameResult = async (id, payload = {}) => {
     // Feature: Spaced Repetition - calculate decay before applying new score
     game.ema = applyTimeDecay(game);
 
-    // Feature: Dynamic Alpha
-    // Fast start (0.5) for first 5 games to calibrate quickly, then standard 0.2
-    let alpha = game.samples < 5 ? 0.5 : 0.2;
-
-    // Feature: Momentum Boost
-    // If they get a perfect score, give them a bigger bump to unlock 'Hard' faster
-    if (normalized >= 0.95 && game.ema >= 0.5) {
-        alpha = 0.35;
+    // Feature: Discrete Stepping (Spec constraint)
+    // +1 step if >85%, -1 step if <50%, hold otherwise.
+    if (!game.samples) {
+        // Calibrate first play directly
+        game.ema = normalized;
+    } else if (normalized > 0.85) {
+        // Step up (levels are 0.2 apart)
+        game.ema = clamp(game.ema + 0.2, 0, 1);
+    } else if (normalized < 0.50) {
+        // Step down
+        game.ema = clamp(game.ema - 0.2, 0, 1);
     }
+    // "hold otherwise" means we do not alter game.ema if between 0.50 and 0.85
 
-    game.ema = game.samples ? (game.ema * (1 - alpha) + normalized * alpha) : normalized;
     game.samples += 1;
     game.lastScore = normalized;
     game.updatedAt = Date.now();
@@ -155,6 +181,7 @@ export const updateGameResult = async (id, payload = {}) => {
         id,
         timestamp: Date.now(),
         difficulty: tuning.difficulty,
+        level: tuning.level,
         score: payload.score,
         accuracy: payload.accuracy,
         stars: payload.stars,

@@ -24,6 +24,16 @@ export const speakMessage = ({
 } = {}) => {
     if (!enabled || !message) return false;
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
+
+    // Check parent settings for Voice Coach toggle
+    try {
+        const stored = localStorage.getItem('parent-settings-extended');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed.voiceCoach === false) return false;
+        }
+    } catch { }
+
     if (skipWhenHidden && document.hidden) return false;
 
     return tryRun(() => {

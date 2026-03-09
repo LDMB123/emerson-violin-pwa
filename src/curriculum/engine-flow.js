@@ -127,9 +127,9 @@ const chooseUnit = ({ units, state, flow, events }) => {
 
 const loadCurriculumSnapshotInputs = async ({ events } = {}) => {
     const [content, state, sourceEvents] = await Promise.all([
-        getCurriculumContent(),
-        loadCurriculumState(),
-        Array.isArray(events) ? Promise.resolve(events) : loadEvents(),
+        getCurriculumContent().catch(() => ({ units: [] })),
+        loadCurriculumState().catch(() => ({})),
+        Array.isArray(events) ? Promise.resolve(events) : loadEvents().catch(() => []),
     ]);
     return { content, state, sourceEvents };
 };

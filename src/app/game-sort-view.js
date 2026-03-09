@@ -72,8 +72,6 @@ export const bindGameSortFavorites = (context, syncGameSortFavorites) => {
     context.cards.forEach((card) => {
         const button = ensureFavoriteButton(card);
         syncFavoriteButton(card, context.favoriteIds);
-        if (button.dataset.gameFavoriteBound === 'true') return;
-        button.dataset.gameFavoriteBound = 'true';
         button.addEventListener('click', (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -94,8 +92,6 @@ export const bindGameSortFavorites = (context, syncGameSortFavorites) => {
 /** Binds filter controls so games are resorted when the selection changes. */
 export const bindGameSortControls = (context) => {
     context.sortControls.forEach((control) => {
-        if (control.dataset.bound === 'true') return;
-        control.dataset.bound = 'true';
         control.addEventListener('change', () => applyGameSort(context));
     });
 };

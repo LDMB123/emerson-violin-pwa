@@ -35,6 +35,9 @@ Use [README.md](README.md) for day-to-day commands and [docs/HANDOFF.md](docs/HA
 ## Worktree Notes
 
 - AudioContext can enter `'interrupted'` state on iOS (phone calls, system audio) — handle alongside `'suspended'` in `src/audio/tone-player/context-manager.js`.
+- **The Phase 1-9 React Rewrite is 100% complete.** The entire application shell, navigation (React Router 7), Core Views, Parent Zone, and Onboarding are written natively in React 19 inside `src/`.
+- Legacy HTML5 Canvas Games and WASM real-time audio song screens are hosted seamlessly inside the React tree using `src/views/Games/GameRunnerView.jsx` and `src/views/Songs/SongRunnerView.jsx`.
+- Legacy Canvas environments are initialized via GameRunnerView without the old view-loader.
 - Prefer `screen.orientation.addEventListener('change', ...)` for orientation updates and keep the `orientationchange` fallback for engines that still need it.
 - Some iPad Safari builds freeze the OS version in the UA string — `parseIPadOSVersion()` can become stale, so do not display the parsed version to users (`ipados-capabilities.js`).
 - Prefer `Map.getOrInsertComputed(key, fn)` for atomic get-or-create when available; keep the `supportsGetOrInsertComputed` fallback path in `module-registry`, `view-loader`, and `progress-model-primary`.

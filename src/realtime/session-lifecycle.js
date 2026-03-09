@@ -1,5 +1,4 @@
 import { isBfcachePagehide } from '../utils/lifecycle-utils.js';
-import { hasE2ERealtimeStartSimulation } from './session-test-flags.js';
 
 /**
  * Creates the realtime session lifecycle controller for start, pause, resume, and stop behavior.
@@ -25,7 +24,6 @@ export const createSessionLifecycle = ({
     rtQualityEvent,
 }) => {
     let globalBindingsReady = false;
-    const shouldSimulateSessionStart = () => hasE2ERealtimeStartSimulation(globalThis.window);
     const INACTIVE_LIFECYCLE_FLAGS = Object.freeze({
         active: false,
         paused: false,
@@ -49,7 +47,7 @@ export const createSessionLifecycle = ({
         setLifecycleFlags(INACTIVE_LIFECYCLE_FLAGS);
     };
     const runLifecycleAction = (promiseLike) => {
-        promiseLike.catch(() => {});
+        promiseLike.catch(() => { });
     };
 
     const resetSessionStartContext = () => {
@@ -143,9 +141,7 @@ export const createSessionLifecycle = ({
             await prepareSessionStart();
 
             try {
-                if (!shouldSimulateSessionStart()) {
-                    await audioGraph.initialize();
-                }
+                await audioGraph.initialize();
                 await announceSessionStarted();
             } catch (error) {
                 await handleSessionStartFailure(error);

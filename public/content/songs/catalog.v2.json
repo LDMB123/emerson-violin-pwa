@@ -3,8 +3,8 @@
   "version": 2,
   "tiers": {
     "beginner": 12,
-    "intermediate": 12,
-    "challenge": 6
+    "intermediate": 16,
+    "challenge": 12
   },
   "songs": [
     {
@@ -746,6 +746,246 @@
           "label": "B",
           "start": 6,
           "end": 12
+        }
+      ],
+      "prerequisites": [
+        "u-int-04"
+      ]
+    },
+    {
+      "id": "autumn_leaves",
+      "title": "Autumn Leaves",
+      "tier": "intermediate",
+      "bpm": 86,
+      "time": "4/4",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
+      ],
+      "prerequisites": [
+        "u-int-02"
+      ]
+    },
+    {
+      "id": "fiddle_dance",
+      "title": "Fiddle Dance",
+      "tier": "intermediate",
+      "bpm": 120,
+      "time": "2/4",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
+      ],
+      "prerequisites": [
+        "u-int-03"
+      ]
+    },
+    {
+      "id": "slur_study_1",
+      "title": "Slur Study No. 1",
+      "tier": "intermediate",
+      "bpm": 90,
+      "time": "3/4",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
+      ],
+      "prerequisites": [
+        "u-int-03"
+      ]
+    },
+    {
+      "id": "morning_stroll",
+      "title": "Morning Stroll",
+      "tier": "intermediate",
+      "bpm": 100,
+      "time": "4/4",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
+      ],
+      "prerequisites": [
+        "u-int-03"
+      ]
+    },
+    {
+      "id": "caprice_minor",
+      "title": "Caprice in Minor",
+      "tier": "challenge",
+      "bpm": 140,
+      "time": "4/4",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
+      ],
+      "prerequisites": [
+        "u-int-04"
+      ]
+    },
+    {
+      "id": "tarantella_fury",
+      "title": "Tarantella Fury",
+      "tier": "challenge",
+      "bpm": 150,
+      "time": "6/8",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
+      ],
+      "prerequisites": [
+        "u-int-04"
+      ]
+    },
+    {
+      "id": "gypsy_dance",
+      "title": "Gypsy Dance",
+      "tier": "challenge",
+      "bpm": 130,
+      "time": "4/4",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
+      ],
+      "prerequisites": [
+        "u-int-04"
+      ]
+    },
+    {
+      "id": "shifting_sands",
+      "title": "Shifting Sands",
+      "tier": "challenge",
+      "bpm": 110,
+      "time": "4/4",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
+      ],
+      "prerequisites": [
+        "u-int-04"
+      ]
+    },
+    {
+      "id": "vibrato_waltz",
+      "title": "Vibrato Waltz",
+      "tier": "challenge",
+      "bpm": 80,
+      "time": "3/4",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
+        }
+      ],
+      "prerequisites": [
+        "u-int-04"
+      ]
+    },
+    {
+      "id": "concertino_allegro",
+      "title": "Concertino Allegro",
+      "tier": "challenge",
+      "bpm": 144,
+      "time": "4/4",
+      "sections": [
+        {
+          "id": "section-a",
+          "label": "A",
+          "start": 0,
+          "end": 8
+        },
+        {
+          "id": "section-b",
+          "label": "B",
+          "start": 8,
+          "end": 16
         }
       ],
       "prerequisites": [

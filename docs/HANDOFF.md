@@ -29,17 +29,14 @@ Runtime source of truth:
 
 ## Current Repo Shape
 
-- App shell and navigation live in `index.html`; routed content renders into `#main-content`.
-- View HTML is loaded from `public/views/**` by `src/views/view-loader.js`.
-- Feature/module loading is orchestrated by `src/app/module-registry.js`.
-- Persistence is IndexedDB-first with localStorage fallback under `src/persistence/`.
-- Service worker and install/offline logic live under `public/` and `src/platform/`.
+- App shell and navigation now live in `src/AppShell.jsx` and `src/routes.jsx`, orchestrated entirely by React Router 7.
+- Most UI is built natively in React. Legacy WASM games & songs are dynamically hosted within React via `src/views/Games/GameRunnerView.jsx` and `src/views/Songs/SongRunnerView.jsx`.
+- Persistence remains IndexedDB-first via `src/persistence/` with simple React hook synchronization.
+- Service worker and offline logic remain pure Vanilla JS in `public/` and `src/platform/`.
 - Installed app metadata, shortcuts, and icon definitions live in `manifest.webmanifest`.
 - Optional Rust/WASM modules live under `src/wasm/` and `wasm/`.
-- Shipped game views live under `public/views/games/`.
-- `src/games/sequence-game.js` is a shared runtime used by sequence-style games; it is not a standalone shipped view.
-- Song sheets live under `public/views/songs/`.
-- Historical implementation notes live in git history and `_archived/plans/README.md`; there is no live repo plan directory to consult.
+- Legacy shipped game and song views still live under `public/views/games/` and `public/views/songs/`.
+- Architectural decisions are logged in `docs/architecture/reboot-feature-matrix.md` and `docs/architecture/next-reboot-target-state.md`.
 
 ## Verification Gates
 
@@ -97,17 +94,9 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 
 ## Recommended Next Work
 
-1. Calibrate CI LCP/FCP thresholds from downloaded workflow artifacts:
-   ```bash
-   PERF_BUDGET_RECOMMENDATION_WINDOW_DAYS=30 npm run audit:perf:recommend -- <artifact-folder>
-   ```
-2. Apply calibrated values:
-   ```bash
-   npm run audit:perf:apply -- artifacts/perf-budget-recommendation.json .github/workflows/quality.yml
-   ```
-3. Monitor PR noise for 1-2 weeks after threshold updates.
-4. Consider replacing the guarded realtime E2E start-simulation seam with a dedicated test harness.
-5. Add more song content to the library.
+1. Consider expanding the catalog with additional Suzuki Book 2+ songs.
+2. Monitor PR noise for 1-2 weeks after recent performance threshold updates.
+3. Enhance ML test coverage around the `sync-offline-engine.js` data pipelines if further modifications to the Adaptive Engine are made.
 
 ## Definition Of Ready To Hand Off
 

@@ -199,17 +199,20 @@ export class PitchResult {
 }
 if (Symbol.dispose) PitchResult.prototype[Symbol.dispose] = PitchResult.prototype.free;
 
+let _isInit = false;
 export function init() {
+    if (_isInit) return;
     wasm.init();
+    _isInit = true;
 }
 
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg___wbindgen_throw_be289d5034ed271b: function(arg0, arg1) {
+        __wbg___wbindgen_throw_be289d5034ed271b: function (arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
-        __wbg_error_7534b8e9a36f1ab4: function(arg0, arg1) {
+        __wbg_error_7534b8e9a36f1ab4: function (arg0, arg1) {
             let deferred0_0;
             let deferred0_1;
             try {
@@ -220,18 +223,18 @@ function __wbg_get_imports() {
                 wasm.__wbindgen_free(deferred0_0, deferred0_1, 1);
             }
         },
-        __wbg_new_8a6f238a6ece86ea: function() {
+        __wbg_new_8a6f238a6ece86ea: function () {
             const ret = new Error();
             return ret;
         },
-        __wbg_stack_0ed75d68575b0f3c: function(arg0, arg1) {
+        __wbg_stack_0ed75d68575b0f3c: function (arg0, arg1) {
             const ret = arg1.stack;
             const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len1 = WASM_VECTOR_LEN;
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
-        __wbindgen_init_externref_table: function() {
+        __wbindgen_init_externref_table: function () {
             const table = wasm.__wbindgen_externrefs;
             const offset = table.grow(4);
             table.set(0, undefined);
@@ -248,13 +251,13 @@ function __wbg_get_imports() {
 }
 
 const EchoBufferFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
+    ? { register: () => { }, unregister: () => { } }
     : new FinalizationRegistry(ptr => wasm.__wbg_echobuffer_free(ptr >>> 0, 1));
 const PitchDetectorFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
+    ? { register: () => { }, unregister: () => { } }
     : new FinalizationRegistry(ptr => wasm.__wbg_pitchdetector_free(ptr >>> 0, 1));
 const PitchResultFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
+    ? { register: () => { }, unregister: () => { } }
     : new FinalizationRegistry(ptr => wasm.__wbg_pitchresult_free(ptr >>> 0, 1));
 
 function getArrayF32FromWasm0(ptr, len) {
@@ -416,7 +419,7 @@ function initSync(module) {
 
     if (module !== undefined) {
         if (Object.getPrototypeOf(module) === Object.prototype) {
-            ({module} = module)
+            ({ module } = module)
         } else {
             console.warn('using deprecated parameters for `initSync()`; pass a single object instead')
         }
@@ -436,7 +439,7 @@ async function __wbg_init(module_or_path) {
 
     if (module_or_path !== undefined) {
         if (Object.getPrototypeOf(module_or_path) === Object.prototype) {
-            ({module_or_path} = module_or_path)
+            ({ module_or_path } = module_or_path)
         } else {
             console.warn('using deprecated parameters for the initialization function; pass a single object instead')
         }

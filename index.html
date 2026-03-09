@@ -3,11 +3,10 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#F56B49" />
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'" />
+    content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta http-equiv="Permissions-Policy" content="microphone=(self), camera=(), geolocation=(), payment=(), usb=()" />
 
@@ -23,26 +22,24 @@
     content="Learn violin with your Red Panda coach! Fun games, offline practice tools, and reference tones for Emerson." />
 
   <!-- PWA Assets -->
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/icon-180.png" />
-  <link rel="apple-touch-icon" sizes="167x167" href="./assets/icons/icon-167.png" />
-  <link rel="apple-touch-icon" sizes="152x152" href="./assets/icons/icon-152.png" />
-  <link rel="apple-touch-icon" sizes="120x120" href="./assets/icons/icon-120.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/icon-180.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="/assets/icons/icon-167.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="/assets/icons/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="/assets/icons/icon-120.png" />
   <!-- iPadOS Startup Images (Splash Screens) -->
-  <link rel="apple-touch-startup-image" href="./assets/icons/icon-512.png"
+  <link rel="apple-touch-startup-image" href="/assets/icons/icon-512.png"
     media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" />
-  <link rel="apple-touch-startup-image" href="./assets/icons/icon-512.png"
+  <link rel="apple-touch-startup-image" href="/assets/icons/icon-512.png"
     media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)" />
-  <link rel="apple-touch-startup-image" href="./assets/icons/icon-512.png"
+  <link rel="apple-touch-startup-image" href="/assets/icons/icon-512.png"
     media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" />
-  <link rel="apple-touch-startup-image" href="./assets/icons/icon-512.png"
+  <link rel="apple-touch-startup-image" href="/assets/icons/icon-512.png"
     media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
-  <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png" />
 
   <title>Panda Violin | Violin Practice Companion</title>
   <!-- Premium Pediatric Typography -->
-  <!-- LCP hero preload -->
-  <link rel="preload" as="image" href="./assets/illustrations/epic_mascot.webp" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -79,94 +76,11 @@
     </g>
   </svg>
 
-  <!-- App Container -->
-  <div id="app" class="app-container">
-    <header class="app-topbar glass" role="banner">
-      <div class="app-topbar-brand">
-        <span class="app-topbar-title">Panda Violin</span>
-        <span class="app-topbar-subtitle">Today&rsquo;s Practice</span>
-      </div>
-      <a href="#view-parent" class="parent-zone-lock" data-parent-lock aria-label="Open Parent Zone">
-        <span class="parent-zone-lock-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2Zm-6 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4ZM9 8V6a3 3 0 1 1 6 0v2H9Z" />
-          </svg>
-        </span>
-        <span class="parent-zone-lock-label">For Grown-Ups</span>
-      </a>
-    </header>
+  <!-- React Root Spike -->
+  <div id="react-root"></div>
+  <div id="overlay-root"></div>
 
-    <!-- Main Content Area -->
-    <main class="main-content" id="main-content" data-initial-view-id="view-home">
-      <h1 class="sr-only">Panda Violin</h1>
-      <section class="view" id="view-home" aria-label="Home">
-        <div class="home-kid-hero">
-          <picture>
-            <source srcset="./assets/illustrations/epic_mascot.webp" type="image/webp">
-            <img src="./assets/illustrations/epic_mascot.webp" alt="Epic Red Panda coach" class="home-mascot"
-              decoding="async" loading="eager" width="1024" height="1024">
-          </picture>
-          <div class="home-kid-welcome">
-            <h1 class="home-kid-title">Ready to play?</h1>
-            <p class="home-kid-streak">🔥 <span data-progress="home-streak">0</span> day streak!</p>
-          </div>
-        </div>
-
-        <div class="home-giant-actions">
-          <a href="#view-coach" class="btn btn-primary btn-giant">
-            <span class="btn-giant-icon">🐼</span>
-            <span class="btn-giant-text">Practice Coach</span>
-          </a>
-
-          <a href="#view-games" class="btn btn-giant btn-game">
-            <span class="btn-giant-icon">🎮</span>
-            <span class="btn-giant-text">Play Games</span>
-          </a>
-
-          <a href="#view-songs" class="btn btn-giant btn-song">
-            <span class="btn-giant-icon">🎵</span>
-            <span class="btn-giant-text">Play Songs</span>
-          </a>
-
-          <a href="#view-tuner" class="btn btn-giant btn-tool">
-            <span class="btn-giant-icon">🎸</span>
-            <span class="btn-giant-text">Panda Tuner</span>
-          </a>
-        </div>
-
-        <div class="home-utility-links glass" aria-label="App links">
-          <a class="btn btn-ghost" href="#view-settings" data-home-utility="settings">Settings</a>
-          <a class="btn btn-ghost" href="#view-progress" data-home-utility="progress">Wins</a>
-        </div>
-      </section>
-    </main>
-
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav glass" aria-label="Primary">
-      <a href="#view-coach" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path
-              d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 12H7v-2h10v2zm0-3H7V9h10v2zm0-3H7V6h10v2z" />
-          </svg></span>
-        <span class="nav-label">Practice</span>
-      </a>
-      <a href="#view-games" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path
-              d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H9v2H7v-2H5v-2h2V9h2v2h2v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 9 19.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
-          </svg></span>
-        <span class="nav-label">Games</span>
-      </a>
-      <a href="#view-songs" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55C7.79 13 6 14.79 6 17s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-          </svg></span>
-        <span class="nav-label">Songs</span>
-      </a>
-    </nav>
-
-  </div>
+  <!-- App Container (Removed for React Spike) -->
 
   <!-- Game Complete Modal -->
   <dialog id="game-complete-modal" class="game-complete-dialog" aria-labelledby="game-complete-heading"
@@ -301,7 +215,7 @@
     </button>
   </div>
 
-  <script type="module" src="./src/app.js"></script>
+  <script type="module" src="/src/app.jsx"></script>
 </body>
 
 </html>

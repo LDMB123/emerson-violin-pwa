@@ -125,7 +125,7 @@ const computeAdaptiveMinutes = (skillScores) => {
 };
 
 /** Builds the adaptive daily lesson plan steps and coach cue for recommendations. */
-export const buildLessonSteps = ({ weakestSkill, skillScores, recommendedGameId, metronomeTarget, songLevel }) => {
+export const buildLessonSteps = ({ weakestSkill, skillScores, recommendedGameId, metronomeTarget, songLevel, queuedGoals = [] }) => {
     const minutes = computeAdaptiveMinutes(skillScores);
     const focus = SKILL_FOCUS[weakestSkill] || SKILL_FOCUS.pitch;
     const coachCue = pickDailyCue(MASTER_CUES[weakestSkill] || MASTER_CUES.focus, (weakestSkill || '').length);
@@ -168,6 +168,6 @@ export const buildLessonSteps = ({ weakestSkill, skillScores, recommendedGameId,
                 minutes: minutes.song,
                 cue: songCue,
             },
-        ],
+        ].filter(step => !queuedGoals.includes(step.id)),
     };
 };

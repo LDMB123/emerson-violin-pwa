@@ -9,18 +9,22 @@ const indexPath = path.join(repoRoot, 'index.html');
 const routeHomePath = path.join(repoRoot, 'public', 'views', 'home.html');
 
 export const extractInlineHomeView = (indexHtml) => {
-    const homeView = findFirstElementById(indexHtml, 'view-home');
+    const homeView = findFirstElementById(indexHtml, 'legacy-view-home');
     if (!homeView || homeView.tagName !== 'section') {
-        throw new Error('Inline view-home section not found in index.html');
+        throw new Error('Inline legacy-view-home section not found in index.html');
     }
     const classes = String(homeView.attrs.class || '').split(/\s+/).filter(Boolean);
     if (!classes.includes('view')) {
-        throw new Error('Inline view-home section is missing class="view" in index.html');
+        throw new Error('Inline legacy-view-home section is missing class="view" in index.html');
     }
     return homeView.outerHtml;
 };
 
-export const normalizeViewMarkup = (markup) => normalizeMarkup(markup);
+export const normalizeViewMarkup = (markup) => {
+    // Strip the ID from the wrapper section to allow 'legacy-view-home' to match 'view-home'
+    let normalized = markup.replace(/<section[^>]*class="view"[^>]*>/i, '<section class="view">');
+    return normalizeMarkup(normalized);
+};
 
 export const isHomeViewSynced = (inlineMarkup, routeMarkup) =>
     normalizeViewMarkup(inlineMarkup) === normalizeViewMarkup(routeMarkup);
@@ -31,7 +35,7 @@ const runAudit = () => {
     const inlineHomeHtml = extractInlineHomeView(indexHtml);
 
     if (!isHomeViewSynced(inlineHomeHtml, routeHomeHtml)) {
-        console.error('Home view sync audit failed: index.html#view-home differs from public/views/home.html.');
+        console.error('Home view sync audit failed: index.html#legacy-view-home differs from public/views/home.html.');
         process.exitCode = 1;
         return;
     }

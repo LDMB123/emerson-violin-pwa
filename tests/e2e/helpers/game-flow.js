@@ -16,7 +16,7 @@ export const dispatchGameRecordedEvent = async (page, gameId, score) => {
 };
 
 export const openGamesHub = async (page) => {
-    await page.locator('.bottom-nav a[href="#view-games"]').click();
+    await page.locator('.bottom-nav a[href="/games"]').click();
     await navigateToView(page, 'view-games', { timeout: 10000 });
 };
 
@@ -25,7 +25,7 @@ const ensureGamesHubVisible = async (page) => {
     if (await gamesView.isVisible().catch(() => false)) return;
     await openGamesHub(page).catch(() => undefined);
     if (await gamesView.isVisible().catch(() => false)) return;
-    await page.goto('/#view-games', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => undefined);
+    await page.goto('/games', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => undefined);
     await expect(gamesView).toBeVisible({ timeout: 10000 });
 };
 
@@ -51,13 +51,13 @@ const settleTargetView = async (page, targetView) => {
 export const openGame = async (page, gameId) => {
     const targetViewId = `view-game-${gameId}`;
     const targetView = page.locator(`#${targetViewId}`);
-    const gameLink = page.locator(`a[href="#${targetViewId}"]`).first();
+    const gameLink = page.locator(`a[href="/games/${gameId}"]`).first();
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
         await dismissGameCompleteIfOpen(page);
         await ensureGamesHubVisible(page).catch(() => undefined);
         await navigateToView(page, targetViewId, { timeout: 7000 }).catch(() => undefined);
-        await page.waitForURL(`**/#${targetViewId}`, { timeout: 7000 }).catch(() => undefined);
+        await page.waitForURL(`**/games/${gameId}`, { timeout: 7000 }).catch(() => undefined);
         if (await settleTargetView(page, targetView)) return;
         if (await gameLink.isVisible().catch(() => false)) {
             await gameLink.click({ timeout: 3000 }).catch(() => undefined);
@@ -67,7 +67,7 @@ export const openGame = async (page, gameId) => {
     }
 
     await navigateToView(page, targetViewId, { timeout: 10000 }).catch(() => undefined);
-    await page.waitForURL(`**/#${targetViewId}`, { timeout: 10000 }).catch(() => undefined);
+    await page.waitForURL(`**/games/${gameId}`, { timeout: 10000 }).catch(() => undefined);
     await dismissGameCompleteIfOpen(page);
     if (!(await targetView.isVisible().catch(() => false))) {
         await ensureGamesHubVisible(page);

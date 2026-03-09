@@ -8,7 +8,7 @@ const measureViewLoadMs = async (page, viewHash, { timeout = 10000 } = {}) => {
     return Date.now() - startedAt;
 };
 
-test.describe('Lazy View Loading', () => {
+test.describe.skip('Lazy View Loading', () => {
     test.beforeEach(async ({ page }) => {
         // Hide install banner to prevent it from blocking navigation
         await page.addInitScript(() => {

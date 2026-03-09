@@ -3,40 +3,37 @@ import { seedKVValue } from './seed-kv.js';
 import { forceSoundsOn } from './sound-state.js';
 
 export const openHome = async (page) => {
-    await page.goto('/#view-home', { waitUntil: 'domcontentloaded', timeout: 10000 });
-    await page.waitForSelector('#main-content', { timeout: 10000 });
+    // Mock navigator.permissions.query for Safari/WebKit tests to bypass explicit permission gates
+    await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'permissions', {
+            value: { query: () => Promise.resolve({ state: 'granted', onchange: null }) },
+            configurable: true
+        });
+    });
+
+    // Navigate home natively
+    await page.goto('/', { waitUntil: 'commit' }).catch(() => { });
+
+    // Wipe local caches but immediately force onboarding flags to prevent React intercept
+    await page.evaluate(() => {
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            localStorage.setItem('onboarding-complete', 'true');
+            localStorage.setItem('e2e-skip-permissions', 'true');
+        } catch (e) { }
+    });
 
     const uiState = {
         checks: { 'setting-sounds': true },
         radios: {},
     };
-    await seedKVValue(page, 'onboarding-complete', true).catch(() => {});
-    await seedKVValue(page, 'panda-violin:ui-state:v1', uiState).catch(() => {});
+    await seedKVValue(page, 'panda-violin:ui-state:v1', uiState).catch(() => { });
 
     await forceSoundsOn(page);
 
-    const dismissOnboardingIfVisible = async () => {
-        const onboardingVisible = await page.locator('#view-onboarding').isVisible().catch(() => false);
-        if (!onboardingVisible) return;
-        const skipButton = page.locator('#onboarding-skip');
-        const startButton = page.locator('#onboarding-start');
-        if (await skipButton.isVisible().catch(() => false)) {
-            await skipButton.click().catch(() => {});
-        } else if (await startButton.isVisible().catch(() => false)) {
-            await startButton.click().catch(() => {});
-        }
-        await page.waitForFunction(() => {
-            const onboarding = document.getElementById('view-onboarding');
-            return !onboarding || onboarding.hidden || window.location.hash === '#view-home';
-        }, { timeout: 3000 }).catch(() => {});
-    };
-
-    await dismissOnboardingIfVisible();
-    await page.waitForFunction(() => window.__PANDA_APP_READY__ === true, { timeout: 10000 }).catch(() => {});
-
-    if (!(await page.locator('#view-home').isVisible().catch(() => false))) {
-        await page.goto('/#view-home', { waitUntil: 'domcontentloaded', timeout: 6000 });
-    }
-
-    await expect(page.locator('#view-home')).toBeVisible({ timeout: 6000 });
+    // Hard reload the browser context to ensure AppShell reads the populated storage flags
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => { });
+    await expect(page.locator('#view-home')).toBeVisible({ timeout: 10000 });
+    await page.waitForSelector('#main-content', { timeout: 10000 });
 };

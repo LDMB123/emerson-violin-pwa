@@ -90,11 +90,11 @@ Use [docs/HANDOFF.md](docs/HANDOFF.md) for `PW_WORKERS` overrides, the calibrati
 ## Architecture Notes
 
 - App shell lives in `index.html`; routed view content is loaded into `#main-content`.
-- Views are loaded from `public/views/**` by `src/views/view-loader.js`.
+- Views are managed directly by React Router in `src/routes.jsx`.
 - Active view visibility is JS-driven via `.view.is-active` (not solely CSS `:target`).
 - Idle/secondary modules are queued with `requestIdleCallback` fallback.
 - Audio file URLs in loaded views are rewritten at render-time via `prepareAudioElementSource()`.
-- View extraction from `index.html` is retired; view parity enforced via `npm run audit:view-sync` against `public/views/home.html`.
+- Home route entry point: `src/views/Home/HomeView.jsx`.
 - Long-lived subsystem docs live under `docs/architecture/`; avoid duplicating fast-moving feature inventories in this file.
 
 ## Project Layout

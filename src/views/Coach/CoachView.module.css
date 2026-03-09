@@ -1,0 +1,22 @@
+.coachView {
+    background:
+        radial-gradient(circle at 12% 6%, rgba(253, 186, 116, 0.33), transparent 34%),
+        linear-gradient(155deg, rgba(255, 255, 255, 0.97), rgba(255, 234, 214, 0.94)) !important;
+}
+
+.viewHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.viewHeader h2 {
+    font-size: var(--text-2xl);
+    letter-spacing: 0.02em;
+}
+
+.backBtn {
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--color-text);
+}

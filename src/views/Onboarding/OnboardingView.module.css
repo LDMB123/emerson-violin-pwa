@@ -1,0 +1,52 @@
+/* ===========================================================================
+   First-Run Onboarding
+   =========================================================================== */
+
+.onboardingView {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 80px - var(--safe-top, 0px) - 80px - var(--safe-bottom, 0px) - var(--space-4) * 2);
+    overflow: hidden;
+}
+
+.onboardingCarousel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.onboardingCarousel::-webkit-scrollbar {
+    display: none;
+}
+
+.onboardingSlide {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-4);
+    text-align: center;
+}
+
+.onboardingHeader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    padding: var(--space-4) var(--space-4) 0;
+    pointer-events: none;
+}
+
+.onboardingProgressDots {
+    display: flex;
+    gap: 8px;
+}

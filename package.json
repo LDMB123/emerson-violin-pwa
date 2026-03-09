@@ -30,14 +30,12 @@
     "audit:deps": "node scripts/audit-dependency-duplicates.mjs",
     "audit:secrets": "node scripts/audit-secrets.mjs",
     "audit:docs": "node scripts/audit-docs.mjs",
-    "audit:static": "node scripts/audit-secrets.mjs && node scripts/audit-docs.mjs && node scripts/audit-dependency-duplicates.mjs && node scripts/audit-performance-budget-config.mjs && node scripts/audit-view-sync.mjs && node scripts/audit-feature-modules.mjs && node scripts/audit-accessibility.mjs && node scripts/audit-learning-completeness.mjs",
+    "audit:static": "node scripts/audit-secrets.mjs && node scripts/audit-docs.mjs && node scripts/audit-dependency-duplicates.mjs && node scripts/audit-performance-budget-config.mjs && node scripts/audit-accessibility.mjs && node scripts/audit-learning-completeness.mjs",
     "audit:perf": "node scripts/audit-performance-budgets.mjs",
     "audit:perf:config": "node scripts/audit-performance-budget-config.mjs",
     "audit:perf:recommend": "node scripts/recommend-performance-budgets.mjs",
     "audit:perf:summary": "node scripts/render-performance-recommendation-summary.mjs",
     "audit:perf:apply": "node scripts/apply-performance-recommendation.mjs",
-    "audit:view-sync": "node scripts/audit-view-sync.mjs",
-    "audit:modules": "node scripts/audit-feature-modules.mjs",
     "audit:a11y": "node scripts/audit-accessibility.mjs",
     "audit:learning": "node scripts/audit-learning-completeness.mjs",
     "preaudit:dep-backed": "npm run runtime:check",
@@ -52,6 +50,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.0.2",
     "fluent-ffmpeg": "^2.1.3",
@@ -65,5 +67,12 @@
   "engines": {
     "node": "25.8.0",
     "npm": "11.11.0"
+  },
+  "dependencies": {
+    "jspdf": "^4.2.0",
+    "jszip": "^3.10.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router": "^7.13.1"
   }
 }

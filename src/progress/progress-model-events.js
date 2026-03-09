@@ -13,6 +13,10 @@ export const PRACTICE_GAME_RULES = [
     { test: /^mm-step-/, id: 'melody-maker' },
     { test: /^sp-step-/, id: 'scale-practice' },
     { test: /^dc-step-/, id: 'duet-challenge' },
+    { test: /^ss-step-/, id: 'stir-soup' },
+    { test: /^wp-step-/, id: 'wipers' },
+    { test: /^dd-step-/, id: 'dynamic-dojo' },
+    { test: /^ee-step-/, id: 'echo' },
 ];
 
 const byDayAscending = (left, right) => left.day - right.day;

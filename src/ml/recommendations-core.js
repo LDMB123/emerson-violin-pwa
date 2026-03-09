@@ -28,8 +28,8 @@ import {
 
 const loadRecommendationInputs = async () => {
     const [events, adaptiveLog, dueSongs, gameMasteryState, songCatalog] = await Promise.all([
-        loadEvents(),
-        getAdaptiveLog(),
+        loadEvents().catch(() => []),
+        getAdaptiveLog().catch(() => []),
         collectDueSongReviews().catch(() => []),
         loadGameMasteryState().catch(() => ({ games: {} })),
         getSongCatalog().catch(() => ({ byId: {} })),
@@ -43,7 +43,7 @@ const loadRecommendationInputs = async () => {
     };
 };
 
-const buildBaseRecommendations = ({ events, adaptiveLog }) => {
+const buildBaseRecommendations = ({ events, adaptiveLog, queuedGoals }) => {
     const skillScores = computeSkillScores(adaptiveLog);
     const weakestSkill = findWeakestSkill(skillScores);
     const songEvents = events.filter((event) => event.type === 'song');
@@ -58,6 +58,7 @@ const buildBaseRecommendations = ({ events, adaptiveLog }) => {
         recommendedGameId,
         metronomeTarget,
         songLevel,
+        queuedGoals,
     });
     const lessonSteps = lessonPlan.steps || [];
     const lessonTotal = lessonSteps.reduce((sum, step) => sum + (step.minutes || 0), 0);
@@ -88,7 +89,7 @@ const buildBaseRecommendations = ({ events, adaptiveLog }) => {
 /**
  * Builds the current recommendation payload from practice history, mastery data, and mission state.
  */
-export const computeRecommendations = async () => {
+export const computeRecommendations = async (queuedGoals = []) => {
     const {
         events,
         adaptiveLog,
@@ -106,6 +107,7 @@ export const computeRecommendations = async () => {
     const baseRecommendations = buildBaseRecommendations({
         events,
         adaptiveLog,
+        queuedGoals,
     });
     const {
         weakestSkill,
