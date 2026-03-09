@@ -96,6 +96,8 @@ Use [docs/HANDOFF.md](docs/HANDOFF.md) for `PW_WORKERS` overrides, the calibrati
 - Active view visibility is JS-driven via `.view.is-active` (not solely CSS `:target`).
 - Idle/secondary modules are queued with `requestIdleCallback` fallback.
 - Audio file URLs in loaded views are rewritten at render-time via `prepareAudioElementSource()`.
+- Song playback and song recording are intentionally different routes: normal play should work without microphone permission, record intent should request it.
+- Recording persistence is blob-first; UI playback should resolve sources through the persistence helpers rather than reading `dataUrl` directly.
 - Home route entry point: `src/views/Home/HomeView.jsx`.
 - Long-lived subsystem docs live under `docs/architecture/`; avoid duplicating fast-moving feature inventories in this file.
 

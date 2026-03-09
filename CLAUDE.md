@@ -35,8 +35,11 @@ Use [README.md](README.md) for day-to-day commands and [docs/HANDOFF.md](docs/HA
 ## Worktree Notes
 
 - AudioContext can enter `'interrupted'` state on iOS (phone calls, system audio) — handle alongside `'suspended'` in `src/audio/tone-player/context-manager.js`.
+- Standalone React audio tools should go through `src/audio/audio-context.js`; avoid raw `new AudioContext()` / `new webkitAudioContext()` in views.
 - **The Phase 1-9 React Rewrite is 100% complete.** The entire application shell, navigation (React Router 7), Core Views, Parent Zone, and Onboarding are written natively in React 19 inside `src/`.
 - Legacy HTML5 Canvas Games and WASM real-time audio song screens are hosted seamlessly inside the React tree using `src/views/Games/GameRunnerView.jsx` and `src/views/Songs/SongRunnerView.jsx`.
+- `SongRunnerView.jsx` has split behavior by intent: normal `/play` must stay microphone-free, `/play?record=1` is the mic-gated route.
+- Recording persistence is blob-first. For playback, use `resolveRecordingSource()` / `playRecordingWithSoundCheck()` instead of assuming `recording.dataUrl` exists.
 - Legacy Canvas environments are initialized via GameRunnerView without the old view-loader.
 - Prefer `screen.orientation.addEventListener('change', ...)` for orientation updates and keep the `orientationchange` fallback for engines that still need it.
 - Some iPad Safari builds freeze the OS version in the UA string — `parseIPadOSVersion()` can become stale, so do not display the parsed version to users (`ipados-capabilities.js`).
@@ -50,6 +53,7 @@ Use [README.md](README.md) for day-to-day commands and [docs/HANDOFF.md](docs/HA
 - Canvas games: `desynchronized: true` on 2D context for GPU compositor independence; avoid `translateZ` values > 0 (creates oversized compositing layers); use `100dvh` not `100vh` for mobile Safari toolbar clearance.
 - E2E runs should account for onboarding-first behavior on fresh contexts.
 - Audio source rewriting now occurs after each view render in `showView()`.
+- Audio lifecycle is part of correctness: metronome, drone, recorder, and realtime mic flows should stop or release cleanly on `visibilitychange` / `pagehide`.
 - Idle module imports are staggered with `requestIdleCallback` fallback to reduce startup contention.
 - Sharing fallback logic is centralized via `tryShareFile()` in `src/utils/recording-export.js`.
 - Known transitive duplicate versions are intentionally allowlisted in `scripts/audit-dependency-duplicates.mjs`.

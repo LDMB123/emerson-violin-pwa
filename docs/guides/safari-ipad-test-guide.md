@@ -13,7 +13,7 @@ npm run preview
 
 - Serve over HTTPS for install, badge, and other PWA checks.
 - Open the deployed URL in Safari on the iPad.
-- Accept microphone permission when prompted.
+- Do not grant microphone access until you reach a flow that actually needs it.
 - If needed, connect Web Inspector from macOS Safari: `Develop > [iPad] > [page]`.
 
 ### Baseline sanity
@@ -22,6 +22,8 @@ Confirm before running deeper tests:
 - App opens to onboarding or Home without console errors.
 - Onboarding can be completed on a fresh launch.
 - Tuner is reachable from Home.
+- Song play route opens without a microphone prompt.
+- Song record route prompts for the microphone before entering the runner.
 - Service worker is active.
 
 Console spot check:
@@ -153,6 +155,41 @@ Pass if:
 - no audible glitches or worklet warnings appear
 - visual feedback stays smooth
 
+### 6a. Song Play vs Record Gate
+
+Goal: verify normal song playback is not blocked by microphone permission, while recording still is.
+
+Steps:
+1. Open a song detail page.
+2. Enter the normal play route.
+3. Confirm the runner loads immediately without a permission gate.
+4. Return to the detail page and enter the record route.
+5. Confirm the microphone permission explainer appears before the runner.
+6. Grant permission and confirm the record flow starts normally.
+
+Pass if:
+- normal play does not request microphone access
+- record intent does request microphone access
+- granting permission enters the recording flow cleanly
+
+### 6b. Tool Audio Lifecycle
+
+Goal: verify standalone Web Audio tools recover cleanly across backgrounding.
+
+Steps:
+1. Open Metronome and start playback.
+2. Background the installed app, then foreground it.
+3. Confirm the tool is still responsive and can be started again.
+4. Open Tone Lab / Drone and start a reference tone.
+5. Background and foreground the app again.
+6. Confirm the old tone does not continue as a zombie tone and a new tone can be started.
+
+Pass if:
+- metronome stops or pauses cleanly while hidden
+- metronome can be restarted after foregrounding
+- drone tone does not remain stuck after backgrounding
+- no audio errors or frozen controls appear
+
 ### 7. IndexedDB Persistence
 
 Goal: verify recordings and practice progress survive restarts and offline use.
@@ -176,6 +213,14 @@ Pass if:
 - progress survives app restarts
 - offline reopen still exposes saved data
 - no quota or storage errors appear
+
+Additional recording playback check:
+1. Open the recorded song’s detail page.
+2. Play back the saved recording from the recording list.
+
+Pass if:
+- blob-backed recordings play back successfully from song detail
+- stopping and replaying works without reload
 
 ### 8. PWA Install Flow
 

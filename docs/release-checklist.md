@@ -20,6 +20,11 @@
 - Confirm all 40 songs support detail, play, and record entrypoints.
 - Confirm all 17 games open, initialize, change score/state, and return to the hub.
 - Confirm the 5 tools plus coach runner work from the installed child-facing flow.
+- Confirm audio behavior on installed iPad:
+  - `/songs/:id/play` opens without mic permission
+  - `/songs/:id/play?record=1` prompts for mic access
+  - song detail can replay saved recordings
+  - metronome and drone restart cleanly after backgrounding
 
 ## Deploy
 
@@ -41,7 +46,10 @@
   - Add to Home Screen
   - Cold launch from icon
   - Run one song, one game, and one tool
+  - Verify song play vs song record permission behavior
+  - Replay one saved recording from song detail
   - Resume coach after backgrounding
+  - Background/foreground metronome and drone once each
   - Offline relaunch through Home, Songs, Games, Tools
 
 ## Rollback

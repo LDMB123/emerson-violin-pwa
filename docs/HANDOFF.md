@@ -32,6 +32,8 @@ Runtime source of truth:
 - App shell and navigation now live in `src/AppShell.jsx` and `src/routes.jsx`, orchestrated entirely by React Router 7.
 - Most UI is built natively in React. Legacy WASM games & songs are dynamically hosted within React via `src/views/Games/GameRunnerView.jsx` and `src/views/Songs/SongRunnerView.jsx`.
 - Persistence remains IndexedDB-first via `src/persistence/` with simple React hook synchronization.
+- Song playback and song recording intentionally diverge at the route level: normal play should not require microphone permission, record intent should.
+- Recording storage is blob-first; consumers should resolve playback through `resolveRecordingSource()` / recording playback helpers rather than reading `dataUrl` directly.
 - Service worker and offline logic remain pure Vanilla JS in `public/` and `src/platform/`.
 - Installed app metadata, shortcuts, and icon definitions live in `public/manifest.webmanifest`.
 - GitHub Pages SPA fallback is generated in `postbuild` by `scripts/build-spa-fallback.mjs`, which copies `dist/index.html` to `dist/404.html`.
@@ -58,6 +60,7 @@ Feature-completeness gates:
 - all 40 catalog songs detail/play/record pass
 - all 17 games initialize and return to hub
 - all 5 practice tools plus coach runner pass
+- audio spot checks pass: song play route ungated, song record route mic-gated, blob-backed recording playback works, metronome/drone recover after backgrounding
 
 ## Playwright Worker Profiles
 
@@ -117,6 +120,11 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 - CI quality workflow passes on PR and `main`.
 - Post-deploy Pages smoke passes.
 - Engineering, QA, and installed-iPad owner signoff are recorded.
+- Installed-iPad audio pass confirms:
+  - song play works without mic permission
+  - song record prompts before entry
+  - saved recording replays from song detail
+  - metronome and drone recover after background/foreground
 - This runbook still matches the current repo behavior.
 
 ## Rollback And Signoff
