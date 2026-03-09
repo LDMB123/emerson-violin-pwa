@@ -30,7 +30,7 @@ Runtime source of truth:
 ## Current Repo Shape
 
 - App shell and navigation now live in `src/AppShell.jsx` and `src/routes.jsx`, orchestrated entirely by React Router 7.
-- Most UI is built natively in React. Legacy WASM games & songs are dynamically hosted within React via `src/views/Games/GameRunnerView.jsx` and `src/views/Songs/SongRunnerView.jsx`.
+- Most UI is built natively in React. Legacy game and song surfaces are still hosted within the React shell: `src/views/Games/GameRunnerView.jsx` fans out into per-game wrappers, many of which render `src/views/Games/LegacyGameView.jsx`, while `src/views/Songs/SongRunnerView.jsx` loads legacy song HTML directly.
 - Persistence remains IndexedDB-first via `src/persistence/` with simple React hook synchronization.
 - Song playback and song recording intentionally diverge at the route level: normal play should not require microphone permission, record intent should.
 - Recording storage is blob-first; consumers should resolve playback through `resolveRecordingSource()` / recording playback helpers rather than reading `dataUrl` directly.
@@ -40,6 +40,7 @@ Runtime source of truth:
 - Optional Rust/WASM modules live under `src/wasm/` and `wasm/`.
 - Legacy shipped game and song views still live under `public/views/games/` and `public/views/songs/`.
 - Current architecture source of truth lives in `docs/architecture/system-overview.md`, `docs/architecture/feature-surface.md`, `docs/architecture/offline-and-persistence.md`, and `docs/architecture/audio-and-realtime.md`.
+- Release acceptance and rollback steps live in `docs/release-checklist.md`.
 - Historical reboot planning artifacts remain in `docs/architecture/reboot-feature-matrix.md`, `docs/architecture/next-reboot-target-state.md`, and `docs/ViolinPLANV2.md`; do not use them as the current routing or runtime truth.
 
 ## Verification Gates

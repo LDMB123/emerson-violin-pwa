@@ -6,7 +6,7 @@ The repo is organized by user-facing experience areas rather than by framework l
 
 - App shell and route composition: `src/AppShell.jsx`, `src/routes.jsx`, `src/app/`
 - Native React route surfaces: `src/views/`
-- Legacy embedded games and song runners: `src/views/Games/`, `src/views/Songs/`, `public/views/games/`, `public/views/songs/`
+- Legacy embedded games and song runner markup: `src/views/Games/`, `src/views/Songs/`, `public/views/games/`, `public/views/songs/`
 - Practice game runtime and scoring: `src/games/`
 - Songs, playback, and recordings: `src/songs/`, `src/recordings/`, `src/persistence/`
 - Tuner and tool experiences: `src/views/Tools/`, `src/audio/`, `src/tuner/`, `src/trainer/`
@@ -17,7 +17,8 @@ The repo is organized by user-facing experience areas rather than by framework l
 ## How Views Pick Up Behavior
 
 - Pathname routes render React views from `src/views/` via `src/routes.jsx`
-- Some React views embed legacy HTML/WASM runners from `public/views/` to preserve shipped game and song behavior
+- Some React views embed legacy HTML from `public/views/` to preserve shipped game and song behavior
+- Game routes typically go through per-game React wrappers and `LegacyGameView.jsx`; song play routes load the legacy song HTML directly in `SongRunnerView.jsx`
 - `src/app/module-registry.js` and `src/app/legacy-view-runtime.js` decide which DOM-bound helpers still initialize for a given legacy `view-*` id
 - Some runtime helpers are eager at startup for baseline platform/runtime behavior
 - Other helpers are intentionally deferred until idle to reduce startup contention

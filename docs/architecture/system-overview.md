@@ -9,7 +9,8 @@ This app is a local-first violin practice PWA built with Vite, React 19, and Rea
 - `src/AppShell.jsx` owns shell chrome, `#main-content`, route-level suspense, and the legacy hash compatibility bridge
 - `src/routes.jsx` defines the pathname routing tree with `createBrowserRouter()`
 - `src/views/` holds the native React experience surfaces for Home, hubs, parent flows, settings, and support views
-- `public/views/games/` and `public/views/songs/` hold the legacy HTML runners mounted by `GameRunnerView.jsx` and `SongRunnerView.jsx`
+- `GameRunnerView.jsx` selects per-game React wrappers; many of those wrappers render `LegacyGameView.jsx`, which loads legacy markup from `public/views/games/`
+- `SongRunnerView.jsx` loads legacy song runner HTML from `public/views/songs/`
 - `src/app/module-registry.js` and `src/app/legacy-view-runtime.js` still hydrate the remaining DOM-bound helper modules that attach by legacy `view-*` id
 - low-priority runtime preloads still flow through the idle-task path to keep startup contention down
 
@@ -19,7 +20,8 @@ This app is a local-first violin practice PWA built with Vite, React 19, and Rea
 - Shell and legacy-hash bridge: `src/AppShell.jsx`
 - Pathname routing: `src/routes.jsx`
 - Native route surfaces: `src/views/`
-- Legacy runner embedding: `src/views/Games/GameRunnerView.jsx`, `src/views/Songs/SongRunnerView.jsx`, and `public/views/`
+- Legacy game embedding: `src/views/Games/GameRunnerView.jsx`, `src/views/Games/LegacyGameView.jsx`, and `public/views/games/`
+- Legacy song runner embedding: `src/views/Songs/SongRunnerView.jsx` and `public/views/songs/`
 - DOM-bound legacy module hydration: `src/app/module-registry.js` and `src/app/legacy-view-runtime.js`
 
 ## Maintainer Guidance

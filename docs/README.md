@@ -2,6 +2,17 @@
 
 Use this file to decide which document to read before editing or validating the repo.
 
+## Common Tasks
+
+- Need the zero-context pickup and verification flow: read [docs/HANDOFF.md](HANDOFF.md)
+- Need release signoff or rollback steps: read [docs/release-checklist.md](release-checklist.md)
+- Need routing or shell ownership: read [docs/architecture/system-overview.md](architecture/system-overview.md)
+- Need subsystem ownership: read [docs/architecture/feature-surface.md](architecture/feature-surface.md)
+- Need offline or persistence guarantees: read [docs/architecture/offline-and-persistence.md](architecture/offline-and-persistence.md)
+- Need audio, recording, or realtime boundaries: read [docs/architecture/audio-and-realtime.md](architecture/audio-and-realtime.md)
+- Need real-device Safari validation: read [docs/guides/safari-ipad-test-guide.md](guides/safari-ipad-test-guide.md)
+- Need simulator-first validation: read [docs/guides/xcode-simulator-testing.md](guides/xcode-simulator-testing.md)
+
 ## Live Docs
 
 - [README.md](../README.md)
@@ -12,6 +23,8 @@ Use this file to decide which document to read before editing or validating the 
   - Repo-specific engineering rules, runtime caveats, and implementation notes
 - [docs/HANDOFF.md](HANDOFF.md)
   - Zero-context pickup runbook, verification sequence, and Playwright worker calibration
+- [docs/release-checklist.md](release-checklist.md)
+  - Release signoff matrix, live smoke, deploy checks, and rollback steps
 
 ## Architecture
 
