@@ -41,6 +41,13 @@ export function SongsView() {
         }
     });
 
+    const getLockHint = (song) => {
+        if (song.isUnlocked !== false) {
+            return 'Unlocked: Challenge songs are now ready.';
+        }
+        return 'Goal: 3 clean songs.';
+    };
+
     return (
         <section className={`view is-active ${styles.songsView}`} id="view-songs" aria-label="Song Library" style={{ display: 'block' }} data-count={filteredSongs.length}>
             <SharedViewHeader
@@ -91,14 +98,20 @@ export function SongsView() {
                     filteredSongs.map(song => (
                         <Link
                             key={song.id}
-                            className={`song-card glass ${styles.songCard} ${song.tier === 'challenge' ? `${styles.isLocked} song-soft-lock` : ''} ${song.tier === 'advanced' ? styles.isMastered : ''} ${song.isRecommended ? styles.isRecommended : ''}`}
-                            to={`/songs/${song.id}`}
+                            className={`song-card glass ${styles.songCard} ${song.hasCheckpoint ? 'has-checkpoint' : ''} ${song.tier === 'advanced' ? styles.isMastered : ''} ${song.isRecommended ? styles.isRecommended : ''} ${song.isUnlocked === false ? 'song-soft-lock is-locked' : ''}`}
+                            to={song.isUnlocked === false ? '/songs' : `/songs/${song.id}`}
                             viewTransition
-                            onClick={(e) => { if (song.tier === 'challenge') e.preventDefault(); }}
                             {...longPressProps}
                             data-song={song.id}
                             data-tier={song.tier}
-                            aria-describedby={song.tier === 'challenge' ? `song-lock-${song.id}` : undefined}
+                            data-song-locked={song.isUnlocked === false ? 'true' : 'false'}
+                            aria-disabled={song.isUnlocked === false ? 'true' : undefined}
+                            onClick={(event) => {
+                                if (song.isUnlocked === false) {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                }
+                            }}
                         >
                             <div className="song-art">{ART_MAP[song.id] || '🎵'}</div>
                             <div className={`song-title ${styles.songTitle}`}>{song.title}</div>
@@ -107,6 +120,11 @@ export function SongsView() {
                                 <span className="song-tier-badge" style={{ color: 'var(--color-text-muted)', fontWeight: 'bold', textTransform: 'capitalize' }}>
                                     {song.tier === 'beginner' ? '🟢 Easy' : song.tier === 'intermediate' ? '🟡 Practice' : song.tier === 'challenge' ? '🔴 Challenge' : song.tier}
                                 </span>
+                                {song.hasCheckpoint && (
+                                    <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>
+                                        Resume
+                                    </span>
+                                )}
                                 {(() => {
                                     const earned = summary?.songScores?.[song.id]?.bestStars || 0;
                                     if (!earned) return null;
@@ -120,8 +138,10 @@ export function SongsView() {
                                     );
                                 })()}
                             </div>
-                            {song.tier === 'challenge' && (
-                                <div className="song-lock-hint" id={`song-lock-${song.id}`}>Goal: 3 clean songs.</div>
+                            {song.isUnlocked === false && (
+                                <div className="song-lock-hint" aria-live="polite">
+                                    {getLockHint(song)}
+                                </div>
                             )}
                             <div className={`song-play ${styles.songPlay}`} aria-hidden="true">▶</div>
                         </Link>

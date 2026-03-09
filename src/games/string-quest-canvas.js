@@ -27,13 +27,13 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
         });
     }
 
-    pluck(stringId) {
+    pluck(stringId, { emitInput = false } = {}) {
         const str = this.strings.find(s => s.id === stringId);
         if (str) {
             str.targetVibration = 1.0;
             str.highlight = 1.0;
             this.emitParticles(str.id);
-            if (this.onStringPluck) this.onStringPluck(stringId);
+            if (emitInput && this.onStringPluck) this.onStringPluck(stringId);
         }
     }
 
@@ -194,7 +194,7 @@ export class StringQuestCanvasEngine extends BaseCanvasEngine {
                 closest = str;
             }
         });
-        if (closest) this.pluck(closest.id);
+        if (closest) this.pluck(closest.id, { emitInput: true });
     }
 
 }

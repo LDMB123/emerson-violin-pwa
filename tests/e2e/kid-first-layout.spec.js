@@ -1,83 +1,53 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
-import { navigateToView } from './helpers/navigate-view.js';
+import { navigateToPath } from './helpers/navigate-view.js';
 
-const isTransientNavigationError = (error) => /Execution context was destroyed|Cannot find context with specified id|Target page, context or browser has been closed/i.test(String(error));
-
-const waitForResponsiveLayout = async (page) => {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      await page.waitForLoadState('domcontentloaded');
-      await page.evaluate(async () => {
-        const waitFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
-
-        if (document.fonts?.ready) {
-          try {
-            await document.fonts.ready;
-          } catch { }
-        }
-
-        await waitFrame();
-        await waitFrame();
-      });
-      return;
-    } catch (error) {
-      if (!isTransientNavigationError(error) || attempt === 2) {
-        throw error;
-      }
-      await page.waitForTimeout(50);
-    }
-  }
-};
+const PHONE = { width: 390, height: 844 };
+const TABLET = { width: 834, height: 1194 };
 
 const assertNoHorizontalOverflow = async (page) => {
-  await expect
-    .poll(async () => {
-      try {
-        await waitForResponsiveLayout(page);
-        return await page.evaluate(() => {
-          const htmlOverflow = Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth);
-          const bodyOverflow = Math.max(0, document.body.scrollWidth - document.body.clientWidth);
-          return Math.max(htmlOverflow, bodyOverflow);
-        });
-      } catch (error) {
-        if (isTransientNavigationError(error)) {
-          return Number.MAX_SAFE_INTEGER;
-        }
-        throw error;
-      }
-    }, { timeout: 5000 })
-    .toBeLessThanOrEqual(1);
+    await expect.poll(async () => page.evaluate(() => {
+        const htmlOverflow = Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        const bodyOverflow = Math.max(0, document.body.scrollWidth - document.body.clientWidth);
+        return Math.max(htmlOverflow, bodyOverflow);
+    }), { timeout: 10000 }).toBeLessThanOrEqual(1);
 };
 
-test.skip('captures iPad and phone layouts for core child views', async ({ page }, testInfo) => {
-  await openHome(page);
+const assertBottomNavClearance = async (page, selector) => {
+    const target = page.locator(selector).last();
+    const nav = page.locator('.bottom-nav');
 
-  const viewports = [
-    { name: 'ipad', width: 834, height: 1194 },
-    { name: 'phone', width: 390, height: 844 },
-  ];
+    await target.scrollIntoViewIfNeeded();
+    const [targetBox, navBox] = await Promise.all([target.boundingBox(), nav.boundingBox()]);
+    expect(targetBox).not.toBeNull();
+    expect(navBox).not.toBeNull();
+    expect(targetBox.y + targetBox.height).toBeLessThanOrEqual(navBox.y - 4);
+};
 
-  const routes = [
-    { name: 'home', hash: '#view-home', selector: '#view-home' },
-    { name: 'coach', hash: '#view-coach', selector: '#view-coach' },
-    { name: 'games', hash: '#view-games', selector: '#view-games' },
-    { name: 'songs', hash: '#view-songs', selector: '#view-songs' },
-    { name: 'progress', hash: '#view-progress', selector: '#view-progress' },
-  ];
+const SURFACES = [
+    { path: '/home', view: '#view-home', selector: '[data-start-practice]' },
+    { path: '/games', view: '#view-games', selector: '#view-games [data-game-id]' },
+    { path: '/songs', view: '#view-songs', selector: '#view-songs [data-song]' },
+    { path: '/tools', view: '#view-trainer', selector: '#tool-posture' },
+    { path: '/wins', view: '#view-progress', selector: '#view-progress .skill-meter' },
+];
 
-  for (const viewport of viewports) {
-    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+test('captures iPad and phone layouts for core child views', async ({ page }, testInfo) => {
+    await openHome(page);
 
-    for (const route of routes) {
-      await navigateToView(page, route.hash);
-      await expect(page.locator(route.selector)).toBeVisible({ timeout: 10000 });
-      await assertNoHorizontalOverflow(page);
+    for (const viewport of [TABLET, PHONE]) {
+        await page.setViewportSize(viewport);
 
-      await page.screenshot({
-        path: testInfo.outputPath(`${viewport.name}-${route.name}.png`),
-        fullPage: true,
-      });
+        for (const surface of SURFACES) {
+            await navigateToPath(page, surface.path);
+            await expect(page.locator(surface.view)).toBeVisible({ timeout: 10000 });
+            await assertNoHorizontalOverflow(page);
+            await assertBottomNavClearance(page, surface.selector);
+
+            await page.screenshot({
+                path: testInfo.outputPath(`${viewport.width}x${viewport.height}-${surface.path.replace(/\W+/g, '_')}.png`),
+                fullPage: true,
+            });
+        }
     }
-  }
 });

@@ -7,7 +7,7 @@ test('curriculum mission progress is reflected in progress and analysis views', 
     await openHome(page);
 
     await gotoAndExpectView(page, '/wins');
-    await expect(page.locator('#view-wins.is-active .streak-number')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#view-progress .streak-number')).toBeVisible({ timeout: 15000 });
 
     await gotoAndExpectView(page, '/parent/review');
     await expect(page.locator('.curriculum-map-grid')).toBeVisible({ timeout: 15000 });

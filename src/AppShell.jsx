@@ -1,13 +1,50 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router';
 import { useHardwareCapabilities } from './context/HardwareCapabilitiesContext.jsx';
-import { useUserPreferences } from './context/UserPreferencesContext.jsx';
 import { useLocalStorage } from './hooks/useStorage.js';
 import { OnboardingRoute } from './app/lazy-route-components.jsx';
+import { hydrateLegacyView } from './app/legacy-view-runtime.js';
+
+const LEGACY_HYDRATION_VIEW_IDS = new Set([
+    'view-tuner',
+]);
+
+const getLegacyViewHash = (pathname) => {
+    if (!pathname || pathname === '/') return '#view-home';
+    if (pathname === '/home') return '#view-home';
+    if (pathname === '/coach') return '#view-coach';
+    if (pathname === '/onboarding') return '#view-onboarding';
+    if (pathname === '/wins') return '#view-progress';
+    if (pathname === '/games') return '#view-games';
+    if (pathname.startsWith('/games/')) return `#view-game-${pathname.split('/')[2] || ''}`;
+    if (pathname === '/tools') return '#view-trainer';
+    if (pathname === '/tools/tuner') return '#view-tuner';
+    if (pathname === '/tools/metronome') return '#view-metronome';
+    if (pathname === '/tools/drone') return '#view-drone';
+    if (pathname === '/tools/bowing') return '#view-bowing';
+    if (pathname === '/tools/posture') return '#view-posture';
+    if (pathname === '/songs') return '#view-songs';
+    if (pathname.startsWith('/songs/')) {
+        const songId = pathname.split('/')[2] || '';
+        return songId ? `#view-song-${songId}` : '#view-songs';
+    }
+    if (pathname === '/parent') return '#view-parent';
+    if (pathname === '/parent/review') return '#view-analysis';
+    if (pathname === '/parent/goals') return '#view-parent';
+    if (pathname === '/parent/checklist') return '#view-parent';
+    if (pathname === '/parent/recordings') return '#view-parent';
+    if (pathname === '/parent/data') return '#view-backup';
+    if (pathname === '/parent/settings') return '#view-parent';
+    if (pathname === '/settings') return '#view-settings';
+    if (pathname === '/backup') return '#view-backup';
+    if (pathname === '/help' || pathname === '/support/help') return '#view-help';
+    if (pathname === '/about' || pathname === '/support/about') return '#view-about';
+    if (pathname === '/privacy' || pathname === '/support/privacy') return '#view-privacy';
+    return '';
+};
 
 export function AppShell() {
     const capabilities = useHardwareCapabilities();
-    const { preferences } = useUserPreferences();
     const location = useLocation();
 
     // Phase 35: Abstract Storage Hooks
@@ -62,6 +99,37 @@ export function AppShell() {
             document.removeEventListener('contextmenu', suppressContextMenu);
         };
     }, []);
+
+    useEffect(() => {
+        if (isChecking) return;
+
+        const nextHash = getLegacyViewHash(location.pathname);
+        if (!nextHash || window.location.hash === nextHash) return;
+
+        const oldURL = window.location.href;
+        window.history.replaceState(
+            window.history.state,
+            '',
+            `${window.location.pathname}${window.location.search}${nextHash}`,
+        );
+        window.dispatchEvent(new HashChangeEvent('hashchange', {
+            oldURL,
+            newURL: window.location.href,
+        }));
+    }, [isChecking, location.pathname, location.search]);
+
+    useEffect(() => {
+        if (isChecking || needsOnboarding) return;
+
+        const nextHash = getLegacyViewHash(location.pathname);
+        const viewId = nextHash.replace(/^#/, '');
+        if (!viewId || !LEGACY_HYDRATION_VIEW_IDS.has(viewId)) return;
+
+        hydrateLegacyView(viewId, `${location.pathname}${location.search}`)
+            .catch((error) => {
+                console.warn(`[AppShell] Failed to hydrate legacy view "${viewId}"`, error);
+            });
+    }, [isChecking, needsOnboarding, location.pathname, location.search]);
 
     if (isChecking) return <div style={{ height: '100dvh', background: 'var(--color-bg)' }}></div>;
 

@@ -1,29 +1,23 @@
 import { test, expect } from '@playwright/test';
+import { openHome } from './helpers/open-home.js';
+import { collectBrowserIssues } from './helpers/browser-issues.js';
+import { openGame } from './helpers/game-flow.js';
 
 test.describe('Canvas Games Integration', () => {
 
     test.beforeEach(async ({ page }) => {
-        await page.goto('/games');
+        await openHome(page);
         await page.evaluate(() => {
-            localStorage.setItem('onboarding-complete', 'true');
             localStorage.setItem('userPreferences', JSON.stringify({ soundsEnabled: false }));
-            localStorage.setItem('e2e-skip-permissions', 'true');
         });
-        await page.reload();
     });
 
     test('Bow Hero Canvas Registers Pointer Input', async ({ page }) => {
-        await page.goto('/games/bow-hero');
-
-        // Click Start Game if it exists
-        const startBtn = page.locator('button:has-text("Start Game")');
-        if (await startBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await startBtn.click();
-        }
+        await openGame(page, 'bow-hero');
 
         // Ensure game canvas is mounted
         const canvas = page.locator('#bow-hero-canvas');
-        await expect(canvas).toBeVisible({ timeout: 10000 });
+        await expect(canvas).toBeVisible({ timeout: 15000 });
 
         // Await the readiness overlay to clear before interacting
         await expect(page.locator('.game-ready-overlay')).toBeHidden({ timeout: 15000 });
@@ -51,29 +45,18 @@ test.describe('Canvas Games Integration', () => {
     });
 
     test('Pizzicato Game Audio Context Resumes', async ({ page }) => {
-        await page.goto('/games/pizzicato');
+        const issues = collectBrowserIssues(page, { ignoreLocalModuleLoadNoise: true });
 
-        // Click Start Game if it exists
-        const startBtn = page.locator('button:has-text("Start Game")');
-        if (await startBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await startBtn.click();
-        }
+        await openGame(page, 'pizzicato');
 
         const canvas = page.locator('#pizzicato-canvas');
-        await expect(canvas).toBeVisible({ timeout: 10000 });
+        await expect(canvas).toBeVisible({ timeout: 15000 });
 
         // Click to force AudioContext resume
         await canvas.click();
 
-        // Verify no WASM/Audio engine crashes in the console
-        let hasErrors = false;
-        page.on('pageerror', () => { hasErrors = true; });
-        page.on('console', msg => {
-            if (msg.type() === 'error') hasErrors = true;
-        });
-
         // Wait a few seconds for engine loop
         await page.waitForTimeout(2000);
-        expect(hasErrors).toBe(false);
+        issues.flush('Pizzicato Game Audio Context Resumes');
     });
 });

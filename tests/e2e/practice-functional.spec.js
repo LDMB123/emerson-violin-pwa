@@ -1,92 +1,76 @@
 import { expect, test } from '@playwright/test';
 import { openHome } from './helpers/open-home.js';
-import { gotoView } from './helpers/view-navigation.js';
+import { navigateToPath } from './helpers/navigate-view.js';
 
-const playToneUntilCardActive = async (page, tone = 'A') => {
-    const toneButton = page.locator(`[data-tone="${tone}"]`);
-    const toneCard = page.locator(`.audio-card[data-string="${tone}"]`);
-
-    await expect.poll(async () => {
-        await toneButton.click();
-        return (await toneCard.getAttribute('class')) || '';
-    }, { timeout: 10000 }).toMatch(/is-playing/);
+const openTool = async (page, path, selector) => {
+    await navigateToPath(page, path);
+    await expect(page.locator(selector)).toBeVisible({ timeout: 10000 });
 };
 
-const toggleMetronomeUntilLabel = async (page, label) => {
-    const toggle = page.locator('[data-metronome="toggle"]');
-    await expect.poll(async () => {
-        await toggle.click();
-        return (await toggle.innerText()).trim();
-    }, { timeout: 10000 }).toContain(label);
-};
-
-const reopenViaGames = async (page, viewId) => {
-    await gotoView(page, 'view-games');
-    await gotoView(page, viewId);
-};
-
-const waitForPostureCaptureBinding = async (page) => {
-    await expect.poll(async () => {
-        return page.locator('#posture-capture').getAttribute('data-posture-bound').catch(() => '');
-    }, { timeout: 10000 }).toBe('true');
-};
-
-test.skip('trainer metronome remains functional after navigation', async ({ page }) => {
+test('practice tools hub exposes the full shipped tool set', async ({ page }) => {
     await openHome(page);
-    await gotoView(page, 'view-trainer');
+    await navigateToPath(page, '/tools');
 
-    await toggleMetronomeUntilLabel(page, 'Stop');
-
-    await reopenViaGames(page, 'view-trainer');
-
-    await toggleMetronomeUntilLabel(page, 'Start');
-
-    await toggleMetronomeUntilLabel(page, 'Stop');
+    await expect(page.locator('#view-trainer')).toBeVisible();
+    await expect(page.locator('#view-trainer a[id^="tool-"]')).toHaveCount(5);
+    await expect(page.locator('#tool-tuner')).toBeVisible();
+    await expect(page.locator('#tool-metronome')).toBeVisible();
+    await expect(page.locator('#tool-drone')).toBeVisible();
+    await expect(page.locator('#tool-bowing')).toBeVisible();
+    await expect(page.locator('#tool-posture')).toBeVisible();
 });
 
-test.skip('bowing and posture tools remain functional after navigation', async ({ page }) => {
+test('metronome, tuner, and drone remain usable after navigation away and back', async ({ page }) => {
     await openHome(page);
-    await gotoView(page, 'view-bowing');
-    await expect(page.locator('#view-bowing .game-drill-intro')).toContainText('Goal:', { timeout: 10000 });
 
-    await reopenViaGames(page, 'view-bowing');
-    await expect(page.locator('#view-bowing .game-drill-intro')).toContainText('Goal:', { timeout: 10000 });
+    await openTool(page, '/tools/metronome', '#view-metronome');
+    const metronomeToggle = page.locator('#view-metronome button:has-text("Play"), #view-metronome button:has-text("Stop")').first();
+    await metronomeToggle.click();
+    await expect(page.locator('#view-metronome button:has-text("Stop")')).toBeVisible({ timeout: 10000 });
 
-    await gotoView(page, 'view-posture');
-    await waitForPostureCaptureBinding(page);
+    await navigateToPath(page, '/games');
+    await openTool(page, '/tools/metronome', '#view-metronome');
+    await expect(page.locator('#view-metronome button:has-text("Stop"), #view-metronome button:has-text("Play")')).toBeVisible();
 
-    const sampleFile = {
-        name: 'posture.jpg',
-        mimeType: 'image/jpeg',
-        buffer: Buffer.from('ffd8ffe000104a46494600010100000100010000ffd9', 'hex'),
-    };
+    await openTool(page, '/tools/tuner', '#view-tuner');
+    await page.locator('#view-tuner [data-ref-tone="A"]').click();
+    await expect(page.locator('#view-tuner .audio-card[data-string="A"]')).toHaveClass(/is-playing/, { timeout: 10000 });
 
-    await page.locator('#posture-capture').setInputFiles(sampleFile);
-    await expect(page.locator('[data-posture-preview]')).toBeVisible();
+    await navigateToPath(page, '/songs');
+    await openTool(page, '/tools/tuner', '#view-tuner');
+    await page.locator('#view-tuner [data-ref-tone="A"]').click();
+    await expect(page.locator('#view-tuner .audio-card[data-string="A"]')).toHaveClass(/is-playing/, { timeout: 10000 });
 
-    await page.locator('[data-posture-clear]').click();
-    await expect(page.locator('[data-posture-preview]')).toHaveAttribute('hidden', '');
-
-    await reopenViaGames(page, 'view-posture');
-    await waitForPostureCaptureBinding(page);
-
-    await page.locator('#posture-capture').setInputFiles(sampleFile);
-    await expect(page.locator('[data-posture-preview]')).toBeVisible();
+    await openTool(page, '/tools/drone', '#view-drone');
+    await page.locator('#view-drone button:has-text("A4 Tone")').click();
+    await expect(page.locator('#view-drone')).toContainText('A4', { timeout: 10000 });
 });
 
-test.skip('tuner reference tone controls remain functional after navigation', async ({ page }) => {
+test('bowing, posture, and coach runner stay functional across revisits', async ({ page }) => {
     await openHome(page);
-    await gotoView(page, 'view-settings');
-    const soundToggle = page.locator('#setting-sounds');
-    if (!(await soundToggle.isChecked())) {
-        await soundToggle.check();
-    }
 
-    await gotoView(page, 'view-tuner');
+    await openTool(page, '/tools/bowing', '#view-bowing');
+    await page.locator('#bow-set-1').check();
+    await expect(page.locator('#bow-set-1')).toBeChecked();
 
-    await playToneUntilCardActive(page, 'A');
+    await navigateToPath(page, '/home');
+    await openTool(page, '/tools/bowing', '#view-bowing');
+    await expect(page.locator('#bow-set-1')).toBeVisible();
 
-    await reopenViaGames(page, 'view-tuner');
+    await openTool(page, '/tools/posture', '#view-posture');
+    await page.locator('#view-posture button:has-text("Start Camera")').click();
+    await expect.poll(() => page.evaluate(() => {
+        const video = document.querySelector('#view-posture video');
+        if (!(video instanceof HTMLVideoElement)) return false;
+        return Boolean(video.srcObject || video.dataset.hasSrcObject === 'true');
+    }), { timeout: 10000 }).toBe(true);
 
-    await playToneUntilCardActive(page, 'A');
+    await navigateToPath(page, '/home');
+    await navigateToPath(page, '/coach');
+    await expect(page.locator('#view-coach .practice-focus')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#view-coach .focus-status')).toContainText(/Ready|Left/);
+
+    await navigateToPath(page, '/home');
+    await navigateToPath(page, '/coach');
+    await expect(page.locator('#view-coach .practice-focus')).toBeVisible({ timeout: 10000 });
 });

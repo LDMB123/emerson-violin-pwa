@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getSongCatalog } from '../songs/song-library.js';
 import { readJsonAsync } from '../utils/storage-utils.js';
+import { buildSongUnlockMap } from '../songs/song-progression.js';
 
 export function useSongCatalog() {
     const [catalog, setCatalog] = useState(null);
@@ -22,7 +23,16 @@ export function useSongCatalog() {
                 if (!mounted) return;
 
                 if (catalogData) {
-                    setCatalog(catalogData);
+                    const unlock = await buildSongUnlockMap(catalogData).catch(() => ({ unlockMap: {} }));
+                    const songs = catalogData.songs.map((song) => ({
+                        ...song,
+                        hasCheckpoint: Boolean(progressData?.songs?.[song.id]?.checkpoint),
+                        isUnlocked: unlock.unlockMap?.[song.id] !== false,
+                    }));
+                    setCatalog({
+                        ...catalogData,
+                        songs,
+                    });
                 }
 
                 if (progressData?.songs) {
@@ -53,7 +63,11 @@ export function useSongCatalog() {
             result = result.filter(song => song.tier === TIER_MAP[tierFilter]);
         }
 
-        return result;
+        return result.map((song) => ({
+            ...song,
+            hasCheckpoint: Boolean(song.hasCheckpoint),
+            isUnlocked: song.isUnlocked !== false,
+        }));
     }, [catalog, searchQuery, tierFilter]);
 
     return {

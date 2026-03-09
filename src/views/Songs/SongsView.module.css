@@ -108,6 +108,20 @@ html[data-ui-mode="child"] .songsGrid {
     background: var(--color-bg-alt);
 }
 
+.songCard :global(.song-lock-hint) {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-warning);
+    text-align: right;
+}
+
+.songCard:global(.song-soft-lock) {
+    opacity: 0.7;
+    filter: grayscale(0.45);
+    background: var(--color-bg-alt);
+}
+
 @media (max-width: 720px) {
     .songsView {
         padding-inline: var(--space-4);

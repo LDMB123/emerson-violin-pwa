@@ -6,11 +6,18 @@ export class RhythmCanvasEngine extends BaseCanvasEngine {
         super(canvas);
         this.colors = colors;
         this.notes = [];
+        this.bpm = 90;
 
         this.speed = 2.0;
         this.horizonY = this.height * 0.25;
         this.hitY = this.height * 0.85;
         this.laneWidth = 100;
+    }
+
+    setBpm(nextBpm) {
+        const bpm = Number.isFinite(nextBpm) ? nextBpm : this.bpm;
+        this.bpm = Math.max(40, Math.min(220, bpm));
+        this.speed = Math.max(1.2, Math.min(4.2, this.bpm / 55));
     }
 
     triggerHitExplosion(laneIndex, zPos) {

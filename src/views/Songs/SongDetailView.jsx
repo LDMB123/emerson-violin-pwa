@@ -108,7 +108,7 @@ export function SongDetailView() {
     };
 
     return (
-        <section className="view is-active" id="view-song-detail" aria-label="Song Details" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
+        <section className="view song-view is-active" id={`view-song-${songId}`} aria-label="Song Details" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
             <div className="view-header" style={{ padding: 'var(--space-4)' }}>
                 <Link to="/songs" className="back-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="24" height="24">

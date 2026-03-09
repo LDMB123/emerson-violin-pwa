@@ -1,59 +1,40 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { collectBrowserIssues } from './helpers/browser-issues.js';
 import { openHome } from './helpers/open-home.js';
+import { navigateToPath } from './helpers/navigate-view.js';
 
-const goToView = async (page, viewId) => {
-    await page.evaluate((targetViewId) => {
-        window.location.hash = `#${targetViewId}`;
-    }, viewId);
-    await expect(page.locator(`#${viewId}`)).toBeVisible({ timeout: 10000 });
-};
-
-test.skip('critical views should not emit runtime page/console errors', async ({ page, browserName }) => {
-    const pageErrors = [];
-    const consoleErrors = [];
-
-    page.on('pageerror', (error) => {
-        const text = error.message || String(error);
-        if (browserName === 'webkit' && text.includes('Out of bounds memory access')) return;
-        pageErrors.push(text);
-    });
-
-    page.on('console', (message) => {
-        if (message.type() !== 'error') return;
-        const text = message.text();
-        if (text.includes('favicon.ico')) return;
-        if (text.includes('Did not parse stylesheet')) return;
-        consoleErrors.push(text);
-    });
-
+test('critical views should not emit runtime page or console errors', async ({ page }) => {
+    const issues = collectBrowserIssues(page, { ignoreLocalModuleLoadNoise: true });
     await openHome(page);
 
-    const criticalViews = [
-        'view-home',
-        'view-onboarding',
-        'view-coach',
-        'view-games',
-        'view-tuner',
-        'view-trainer',
-        'view-bowing',
-        'view-posture',
-        'view-songs',
-        'view-progress',
-        'view-analysis',
-        'view-backup',
-        'view-help',
-        'view-about',
-        'view-settings',
-        'view-parent',
-        'view-game-pitch-quest',
-        'view-game-ear-trainer',
-        'view-song-twinkle',
+    const criticalPaths = [
+        '/home',
+        '/coach',
+        '/games',
+        '/games/pitch-quest',
+        '/games/ear-trainer',
+        '/songs',
+        '/songs/mary',
+        '/songs/mary/play',
+        '/tools',
+        '/tools/tuner',
+        '/tools/bowing',
+        '/tools/posture',
+        '/wins',
+        '/parent',
+        '/parent/review',
+        '/backup',
+        '/settings',
+        '/support/help',
+        '/support/about',
+        '/support/privacy',
     ];
 
-    for (const viewId of criticalViews) {
-        await goToView(page, viewId);
+    for (const path of criticalPaths) {
+        await navigateToPath(page, path);
+        await page.waitForTimeout(250);
     }
 
-    expect(pageErrors).toEqual([]);
-    expect(consoleErrors).toEqual([]);
+    expect(issues.pageErrors).toEqual([]);
+    expect(issues.consoleErrors).toEqual([]);
 });

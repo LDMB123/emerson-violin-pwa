@@ -4,6 +4,16 @@ const configuredWorkers = Number.parseInt(
     process.env.PW_WORKERS || (process.env.CI ? '1' : '2'),
     10,
 );
+const baseURL = process.env.PW_BASE_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
+const baseHost = (() => {
+    try {
+        return new URL(baseURL).hostname;
+    } catch {
+        return 'localhost';
+    }
+})();
+const useWebServer = process.env.PW_SKIP_WEBSERVER !== 'true'
+    && (baseHost === 'localhost' || baseHost === '127.0.0.1');
 
 export default defineConfig({
     testDir: './tests/e2e',
@@ -13,7 +23,7 @@ export default defineConfig({
     workers: Number.isNaN(configuredWorkers) ? (process.env.CI ? 1 : 2) : configuredWorkers,
     reporter: 'list',
     use: {
-        baseURL: 'http://localhost:5173',
+        baseURL,
         trace: 'on-first-retry',
     },
     projects: [
@@ -22,9 +32,9 @@ export default defineConfig({
             use: { ...devices['iPad Pro 11'] },
         },
     ],
-    webServer: {
+    webServer: useWebServer ? {
         command: 'npm run dev',
-        url: 'http://localhost:5173',
+        url: baseURL,
         reuseExistingServer: !process.env.CI,
-    },
+    } : undefined,
 });

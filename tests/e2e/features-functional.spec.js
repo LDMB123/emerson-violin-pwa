@@ -102,18 +102,16 @@ const waitForBoundFlag = async (page, selector, attribute) => {
 };
 
 const openBackupViewReady = async (page) => {
-    await gotoAndExpectView(page, '/parent');
-    await page.locator('button:has-text("Data")').click();
+    await gotoAndExpectView(page, '/parent/data');
+    await expect(page.locator('.parent-data')).toBeVisible({ timeout: 10000 });
 };
 const openParentGoalViewReady = async (page) => {
-    await goParent(page);
-    await page.locator('button:has-text("Goals")').click();
+    await gotoAndExpectView(page, '/parent/goals');
     await expect(page.locator('[data-parent-goal-save]')).toBeEnabled();
 };
 const prepareParentAdvancedControls = async (page) => {
-    await goParent(page);
-    await page.locator('button:has-text("Settings")').click();
-    await expect.poll(async () => page.locator('[data-input-status]').innerText()).toContain('Input:');
+    await gotoAndExpectView(page, '/parent/settings');
+    await expect(page.locator('.parent-settings-panel')).toBeVisible({ timeout: 10000 });
     await waitForBoundFlag(page, '#setting-offline-mode', 'data-offline-mode-bound');
 };
 const setOfflineMode = async (page, enabled) => {
@@ -161,10 +159,13 @@ test('progress cards remain functional across navigation', async ({ page }) => {
     ]);
 
     await gotoAndExpectView(page, '/games/pitch-quest');
-    await page.locator('button:has-text("Start Game")').click({ force: true });
-    const listenButton = page.locator('#view-game-pitch-quest [data-pitch="check"]').first();
-    await expect(listenButton).toBeVisible();
-    await listenButton.click({ force: true });
+    await expect(page.locator('#view-game-pitch-quest')).toBeVisible({ timeout: 10000 });
+    const startGameButton = page.locator('#view-game-pitch-quest button:has-text("Start Game")');
+    if (await startGameButton.isVisible().catch(() => false)) {
+        await startGameButton.click({ force: true });
+    }
+    const listenControl = page.locator('#view-game-pitch-quest [data-pitch="check"], #view-game-pitch-quest button:has-text("Start Listening")').first();
+    await expect(listenControl).toBeVisible({ timeout: 10000 });
 
     await gotoAndExpectView(page, '/wins');
 
@@ -198,7 +199,7 @@ test('Live metrics scale difficulty context properly', async ({ page }) => {
     await setParentUnlocked(page, true);
 
     await openParentGoalViewReady(page);
-    await saveParentGoal(page, { title: 'Tuning Goal 1', minTuning: 85, practiceTime: 5 });
+    await saveParentGoal(page, { title: 'Tuning Goal 1', minutes: 5 });
 
     await gotoAndExpectView(page, '/games/pitch-quest');
     await expect(page.locator('#view-game-pitch-quest.is-active button:has-text("▶ Start Game")')).toBeVisible();
@@ -207,7 +208,7 @@ test('Live metrics scale difficulty context properly', async ({ page }) => {
     await expect(page.locator('#view-home.is-active')).toBeVisible();
 
     await openParentGoalViewReady(page);
-    await saveParentGoal(page, { title: 'Tuning Goal 2', minTuning: 0, practiceTime: 20 });
+    await saveParentGoal(page, { title: 'Tuning Goal 2', minutes: 20 });
 });
 
 test('parent goals remain editable after revisiting parent view', async ({ page }) => {

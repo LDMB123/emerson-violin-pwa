@@ -23,6 +23,18 @@ const WIDTH = 56;
 
 let generatedCount = 0;
 
+const createSeededRandom = (seedSource) => {
+    let seed = 0;
+    for (const char of seedSource) {
+        seed = ((seed * 31) + char.charCodeAt(0)) >>> 0;
+    }
+
+    return () => {
+        seed = (seed * 1664525 + 1013904223) >>> 0;
+        return seed / 0x100000000;
+    };
+};
+
 for (const song of catalog.songs) {
     const filename = `${song.id}.html`;
     if (existingFiles.has(filename)) {
@@ -38,6 +50,7 @@ for (const song of catalog.songs) {
 
     const totalDuration = totalBeats * BEAT;
     const totalWidth = totalBeats * WIDTH;
+    const random = createSeededRandom(`${song.id}:${song.bpm}:${song.time}`);
 
     let notesHtml = '';
     let currentBeat = 0;
@@ -45,10 +58,10 @@ for (const song of catalog.songs) {
     while (currentBeat < totalBeats) {
         const remaining = totalBeats - currentBeat;
         const possibleLengths = [1, 1, 1, 2, 2, 4].filter(l => l <= remaining);
-        const l = possibleLengths[Math.floor(Math.random() * possibleLengths.length)];
+        const l = possibleLengths[Math.floor(random() * possibleLengths.length)];
 
-        const note = NOTES[Math.floor(Math.random() * NOTES.length)];
-        const bow = BOWS[Math.floor(Math.random() * BOWS.length)];
+        const note = NOTES[Math.floor(random() * NOTES.length)];
+        const bow = BOWS[Math.floor(random() * BOWS.length)];
 
         const start = currentBeat * BEAT;
         const duration = l * BEAT;

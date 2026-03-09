@@ -1,6 +1,10 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 import react from '@vitejs/plugin-react';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
+
+const configDir = fileURLToPath(new URL('.', import.meta.url));
 
 const devServiceWorkerPlugin = () => ({
     name: 'dev-sw-bypass',
@@ -32,42 +36,72 @@ const devServiceWorkerPlugin = () => ({
     },
 });
 
-export default defineConfig({
-    root: '.',
-    base: './',
-    publicDir: 'public',
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), '');
+    const sentryEnabled = Boolean(
+        env.SENTRY_AUTH_TOKEN
+        && env.SENTRY_ORG
+        && env.SENTRY_PROJECT
+        && env.VITE_SENTRY_RELEASE,
+    );
 
-    build: {
-        target: 'es2022',
-        outDir: 'dist',
-        sourcemap: true,
-        rollupOptions: {
-            input: {
-                main: resolve(__dirname, 'index.html'),
+    const plugins = [devServiceWorkerPlugin(), react()];
+
+    if (sentryEnabled) {
+        plugins.push(
+            sentryVitePlugin({
+                org: env.SENTRY_ORG,
+                project: env.SENTRY_PROJECT,
+                authToken: env.SENTRY_AUTH_TOKEN,
+                telemetry: false,
+                silent: true,
+                release: {
+                    name: env.VITE_SENTRY_RELEASE,
+                    create: true,
+                    finalize: true,
+                    inject: true,
+                },
+            }),
+        );
+    }
+
+    return {
+        root: '.',
+        base: './',
+        publicDir: 'public',
+
+        build: {
+            target: 'es2022',
+            outDir: 'dist',
+            sourcemap: true,
+            rollupOptions: {
+                input: {
+                    main: resolve(configDir, 'index.html'),
+                },
             },
         },
-    },
 
-    server: {
-        port: 5173,
-        host: true,
-        headers: {
-            'Cache-Control': 'no-store',
+        server: {
+            port: 5173,
+            host: true,
+            headers: {
+                'Cache-Control': 'no-store',
+            },
         },
-    },
 
-    css: {
-        modules: {
-            localsConvention: 'camelCase',
+        css: {
+            modules: {
+                localsConvention: 'camelCase',
+            },
         },
-    },
 
-    test: {
-        include: ['src/**/*.test.{js,jsx}', 'tests/**/*.test.{js,jsx}'],
-        globals: true,
-        environment: 'happy-dom',
-        setupFiles: ['./tests/setup-rtl.js'],
-    },
+        test: {
+            include: ['src/**/*.test.{js,jsx}', 'tests/**/*.test.{js,jsx}'],
+            globals: true,
+            environment: 'happy-dom',
+            setupFiles: ['./tests/setup-rtl.js'],
+        },
 
-    plugins: [devServiceWorkerPlugin(), react()],
+        plugins,
+    };
 });

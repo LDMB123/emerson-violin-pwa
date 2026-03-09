@@ -11,23 +11,45 @@ import {
 } from './helpers/game-flow.js';
 import { forceSoundsOn } from './helpers/sound-state.js';
 
-const ensureRhythmRunStarted = async (page) => {
-    const runToggle = page.locator('#view-game-rhythm-dash #rhythm-run');
-    if (await runToggle.isChecked().catch(() => false)) return;
+const ensureRunToggleChecked = async ({
+    page,
+    toggleSelector,
+    startSelector,
+    bootDelayMs = 0,
+}) => {
+    const runToggle = page.locator(toggleSelector);
+    if (await runToggle.isChecked().catch(() => false)) return runToggle;
 
-    const startLabel = page.locator('#view-game-rhythm-dash label.btn-start');
-    await startLabel.waitFor({ state: 'visible', timeout: 8000 });
-    await startLabel.click();
+    if (startSelector) {
+        const startControl = page.locator(startSelector);
+        if (await startControl.isVisible().catch(() => false)) {
+            await startControl.click();
+        }
+    }
+
     if (!(await runToggle.isChecked().catch(() => false))) {
-        await page.evaluate(() => {
-            const toggle = document.querySelector('#view-game-rhythm-dash #rhythm-run');
+        await page.evaluate((selector) => {
+            const toggle = document.querySelector(selector);
             if (!(toggle instanceof HTMLInputElement)) return;
             toggle.checked = true;
             toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        });
+        }, toggleSelector);
     }
 
     await expect(runToggle).toBeChecked({ timeout: 5000 });
+    if (bootDelayMs > 0) {
+        await page.waitForTimeout(bootDelayMs);
+    }
+
+    return runToggle;
+};
+
+const ensureRhythmRunStarted = async (page) => {
+    await ensureRunToggleChecked({
+        page,
+        toggleSelector: '#view-game-rhythm-dash #rhythm-run',
+        startSelector: '#view-game-rhythm-dash label.btn-start',
+    });
 };
 
 const runUntilNumericValueIncreases = async ({ attempts = 8, readValue, runAttempt }) => {
@@ -63,9 +85,11 @@ const tapPainterUntilScoreIncreases = async (page, scoreLocator) => {
     await runUntilNumericValueIncreases({
         readValue: () => readNumericValue(scoreLocator),
         runAttempt: async () => {
-            const dot = page.locator('#view-game-rhythm-painter .paint-dot.dot-blue');
-            await dot.scrollIntoViewIfNeeded();
-            await dot.click({ force: true });
+            await page.evaluate(() => {
+                const dot = document.querySelector('#view-game-rhythm-painter .paint-dot.dot-blue');
+                if (!(dot instanceof HTMLElement)) return;
+                dot.click();
+            });
             await page.waitForTimeout(120);
         },
     });
@@ -73,14 +97,13 @@ const tapPainterUntilScoreIncreases = async (page, scoreLocator) => {
 
 const tapBowUntilStarsIncrease = async (page, starsLocator) => {
     const startStars = await readNumericValue(starsLocator);
-    const runToggle = page.locator('#view-game-bow-hero #bow-hero-run');
-
-    if (!(await runToggle.isChecked().catch(() => false))) {
-        await page.locator('#view-game-bow-hero .btn-start').click();
-        await expect(runToggle).toBeChecked({ timeout: 5000 });
+    await ensureRunToggleChecked({
+        page,
+        toggleSelector: '#view-game-bow-hero #bow-hero-run',
+        startSelector: '#view-game-bow-hero .btn-start',
         // Phase 17 engine: game takes 3 seconds to boot up
-        await page.waitForTimeout(3200);
-    }
+        bootDelayMs: 3200,
+    });
 
     for (let attempt = 0; attempt < 8; attempt += 1) {
         // Phase 17: Bow Hero is exclusively audio-driven. Force the test condition.
@@ -141,12 +164,11 @@ const openGamesSuite = async (page) => {
 };
 
 test.describe('all games core interactions', () => {
-    test.skip('group A: pitch/rhythm/memory/ear/bow', async ({ page }) => {
+    test('group A1: pitch/rhythm', async ({ page }) => {
         test.setTimeout(90000);
         await openGamesSuite(page);
 
         await openGame(page, 'pitch-quest');
-        const pitchScore = page.locator('#view-game-pitch-quest [data-pitch="score"]');
         const pitchStatus = page.locator('#view-game-pitch-quest [data-pitch="status"]');
         await expect(pitchStatus).toContainText('±', { timeout: 10000 });
         await dispatchGameRecordedEvent(page, 'pitch-quest', 95);
@@ -158,6 +180,11 @@ test.describe('all games core interactions', () => {
         await tapRhythmUntilScoreIncreases(page, rhythmScore);
         await page.locator('#view-game-rhythm-dash label.btn-stop').click();
         await returnToGames(page, 'rhythm-dash');
+    });
+
+    test('group A2: memory/ear/bow', async ({ page }) => {
+        test.setTimeout(90000);
+        await openGamesSuite(page);
 
         await openGame(page, 'note-memory');
         await page.waitForTimeout(200);
@@ -202,7 +229,7 @@ test.describe('all games core interactions', () => {
         await returnToGames(page, 'bow-hero');
     });
 
-    test.skip('group B: tuning/melody/scale/duet', async ({ page }) => {
+    test('group B: tuning/melody/scale/duet', async ({ page }) => {
         test.setTimeout(120000);
         await openGamesSuite(page);
 
@@ -246,21 +273,23 @@ test.describe('all games core interactions', () => {
         }, { timeout: 12000 }).toBe(true);
         const duetSequence = await page.locator('#view-game-duet-challenge .duet-notes').innerText();
         const notes = duetSequence.split('·').map((note) => note.trim()).filter(Boolean);
-        for (const note of notes) {
+        const [firstNote, ...remainingNotes] = notes;
+        await page.locator(`#view-game-duet-challenge .duet-btn[data-duet-note="${firstNote}"]`).click();
+        await expect(page.locator('#view-game-duet-challenge #dc-step-2')).toBeChecked();
+        for (const note of remainingNotes) {
             await page.locator(`#view-game-duet-challenge .duet-btn[data-duet-note="${note}"]`).click();
         }
-        await expect(page.locator('#view-game-duet-challenge #dc-step-2')).toBeChecked();
+        await expect(page.locator('#view-game-duet-challenge')).toContainText('Amazing! You got', { timeout: 10000 });
         await returnToGames(page, 'duet-challenge');
     });
 
-    test.skip('group C: string/painter/story/pizzicato', async ({ page }) => {
+    test('group C: string/painter/story/pizzicato', async ({ page }) => {
         test.setTimeout(120000);
         await openGamesSuite(page);
 
         await openGame(page, 'string-quest');
-        const stringScore = page.locator('#view-game-string-quest [data-string="score"]');
         await dispatchGameRecordedEvent(page, 'string-quest', 150);
-        await page.waitForTimeout(300);
+        await expect(page.locator('#view-game-string-quest')).toContainText('Amazing! You got 150 points!', { timeout: 10000 });
         await returnToGames(page, 'string-quest');
 
         await openGame(page, 'rhythm-painter');
@@ -277,30 +306,36 @@ test.describe('all games core interactions', () => {
         await returnToGames(page, 'story-song');
 
         await openGame(page, 'pizzicato');
-        const pizzScore = page.locator('#view-game-pizzicato [data-pizzicato="score"]');
         await dispatchGameRecordedEvent(page, 'pizzicato', 200);
-        await page.waitForTimeout(300);
+        await expect(page.locator('#view-game-pizzicato')).toContainText('Amazing! You got 200 points!', { timeout: 10000 });
         await returnToGames(page, 'pizzicato');
     });
 
-    test.skip('group D: dojo/stir-soup/wipers/echo', async ({ page }) => {
+    test('group D: dojo/stir-soup/wipers/echo', async ({ page }) => {
         test.setTimeout(90000);
         await openGamesSuite(page);
 
         await openGame(page, 'dynamic-dojo');
-        await expect(page.locator('#view-game-dynamic-dojo')).toBeVisible();
+        await page.locator('#view-game-dynamic-dojo [data-dojo="listen"]').click();
+        await expect(page.locator('#view-game-dynamic-dojo [data-dojo="listen"]')).toBeHidden({ timeout: 10000 });
+        await expect(page.locator('#view-game-dynamic-dojo [data-dojo="prompt"]')).not.toHaveText('Loading Dojo...');
         await returnToGames(page, 'dynamic-dojo');
 
         await openGame(page, 'stir-soup');
         await expect(page.locator('#view-game-stir-soup #stir-start-btn')).toBeVisible({ timeout: 10000 });
+        await page.locator('#view-game-stir-soup #stir-start-btn').click();
+        await expect(page.locator('#view-game-stir-soup #stir-start-btn')).toHaveText('Stop Stirring');
         await returnToGames(page, 'stir-soup');
 
         await openGame(page, 'wipers');
         await expect(page.locator('#view-game-wipers #wipers-start-btn')).toBeVisible({ timeout: 10000 });
+        await page.locator('#view-game-wipers #wipers-start-btn').click();
+        await expect(page.locator('#view-game-wipers #wipers-start-btn')).toHaveText('Stop Engine');
         await returnToGames(page, 'wipers');
 
         await openGame(page, 'echo');
-        await expect(page.locator('#view-game-echo')).toBeVisible();
+        await page.locator('#view-game-echo [data-echo="start"]').click();
+        await expect(page.locator('#view-game-echo [data-echo="curtain"]')).toBeHidden({ timeout: 10000 });
         await returnToGames(page, 'echo');
     });
 });

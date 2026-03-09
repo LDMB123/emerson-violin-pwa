@@ -83,7 +83,7 @@ export function WinsView() {
     const skills = summary.skills || {};
 
     return (
-        <section className={`view is-active ${styles.winsView}`} id="view-wins" aria-label="Progress" style={{ display: 'block' }}>
+        <section className={`view is-active ${styles.winsView}`} id="view-progress" aria-label="Progress" style={{ display: 'block' }}>
             <SharedViewHeader title="Wins" backTo="/home" />
 
             <Typography className="view-lead">Check today's streak, see what's next, and hand off the review to a grown-up when you're done.</Typography>

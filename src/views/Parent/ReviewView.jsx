@@ -93,7 +93,7 @@ export function ReviewView() {
                                         from={zeroPoints}
                                         to={dataPoints}
                                         dur="0.6s" fill="freeze"
-                                        calcMode="spline" keySplines="0.34 1.56 0.64 1; 0.34 1.56 0.64 1; 0.34 1.56 0.64 1; 0.34 1.56 0.64 1; 0.34 1.56 0.64 1" />
+                                        calcMode="spline" keySplines="0.4 0 0.6 1" />
                                 </polygon>
                                 <g className="radar-points">
                                     {dataPoints.split(' ').map((pt, i) => {

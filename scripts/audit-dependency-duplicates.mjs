@@ -37,6 +37,7 @@ const knownTransitiveDuplicates = new Set([
     'fsevents',
     'glob-parent',
     'js-tokens',
+    'lru-cache',
     'pako',
     'picomatch',
     'semver',

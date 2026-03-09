@@ -102,7 +102,7 @@ test.describe('Kid-first flows', () => {
     await gotoAndExpectView(page, '/parent');
     await expect(dialog).toBeHidden({ timeout: 10000 });
 
-    await page.locator('button:has-text("Settings")').click();
+    await gotoAndExpectView(page, '/parent/settings');
     await expect(page.locator('.parent-settings-panel')).toBeVisible();
     await expect(page.locator('input[type="checkbox"]')).not.toHaveCount(0);
   });

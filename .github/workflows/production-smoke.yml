@@ -1,0 +1,46 @@
+name: Production Smoke
+
+on:
+  schedule:
+    - cron: '0 15 * * *'
+  workflow_dispatch:
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+      - name: Align npm version
+        run: npm install -g npm@11.11.0
+      - name: Runtime version check
+        run: npm run runtime:check
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: Resolve live URL
+        id: live-url
+        run: |
+          if [ -n "${{ vars.PAGES_URL }}" ]; then
+            echo "url=${{ vars.PAGES_URL }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run production smoke
+        run: npm run test:e2e:live
+        env:
+          PW_BASE_URL: ${{ steps.live-url.outputs.url }}
+          PW_SKIP_WEBSERVER: 'true'
+      - name: Upload production smoke artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: production-smoke-artifacts
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: warn

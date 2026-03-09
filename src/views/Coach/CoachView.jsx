@@ -3,10 +3,13 @@ import { Link, useNavigate } from 'react-router';
 import { Button } from '../../components/primitives/Button.jsx';
 import { Typography } from '../../components/primitives/Typography.jsx';
 import { getLearningRecommendations } from '../../ml/recommendations.js';
+import { getSongCatalog } from '../../songs/song-library.js';
 import { ConfettiBurst } from '../../components/primitives/ConfettiBurst.jsx';
 import { Checkmark } from '../../components/primitives/Checkmark.jsx';
 import { useWakeLock } from '../../hooks/useWakeLock.js';
 import { useSessionStorage } from '../../hooks/useStorage.js';
+import { readJsonAsync } from '../../utils/storage-utils.js';
+import { pickCoachSongId } from '../../coach/coach-song-contract.js';
 
 // Embedded Views
 import { GameRunnerView } from '../Games/GameRunnerView.jsx';
@@ -22,6 +25,7 @@ export function CoachView() {
     const [timeLeft, setTimeLeft] = useState(null);
     const [isPaused, setIsPaused] = useState(false);
     const [showResume, setShowResume] = useState(() => currentStepIndex > 0);
+    const [embeddedSongId, setEmbeddedSongId] = useState(null);
 
     useEffect(() => {
         let mounted = true;
@@ -32,6 +36,30 @@ export function CoachView() {
         }).catch(err => console.error("CoachView ML fetch failed:", err));
         return () => { mounted = false; };
     }, []);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const loadEmbeddedSong = async () => {
+            try {
+                const [catalog, progressState] = await Promise.all([
+                    getSongCatalog(),
+                    readJsonAsync('panda-violin:song-progress-v2', null),
+                ]);
+                if (!mounted) return;
+                setEmbeddedSongId(pickCoachSongId({
+                    catalog,
+                    progressState,
+                    preferredLabel: missionPlan?.steps?.[currentStepIndex]?.label || '',
+                }));
+            } catch {
+                if (mounted) setEmbeddedSongId('open_strings');
+            }
+        };
+
+        loadEmbeddedSong();
+        return () => { mounted = false; };
+    }, [currentStepIndex, missionPlan]);
 
     // Phase 35: Abstracted Wake Lock
     useWakeLock(true);
@@ -134,10 +162,9 @@ export function CoachView() {
             );
         }
         if (actionStr === 'view-songs') {
-            // ML just says 'songs', so we default to a beginner song for embedding
             return (
                 <div style={wrapperStyle}>
-                    <SongRunnerView propSongId="hot-cross-buns" onComplete={handleNextStep} />
+                    <SongRunnerView propSongId={embeddedSongId || 'open_strings'} onComplete={handleNextStep} />
                 </div>
             );
         }

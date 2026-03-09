@@ -63,6 +63,7 @@ npm run audit:full
 
 - [docs/README.md](docs/README.md): documentation map and source-of-truth guide
 - [docs/HANDOFF.md](docs/HANDOFF.md): zero-context operator runbook, verification sequence, and Playwright worker calibration
+- [docs/release-checklist.md](docs/release-checklist.md): release signoff, live smoke, and rollback checklist
 - [CONTRIBUTING.md](CONTRIBUTING.md): maintainer workflow and documentation update contract
 - [CLAUDE.md](CLAUDE.md): repo-specific engineering notes and runtime gotchas
 - `docs/architecture/`: subsystem overviews for routing, feature ownership, offline/persistence, and audio/realtime

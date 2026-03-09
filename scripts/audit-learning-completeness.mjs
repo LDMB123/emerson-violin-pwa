@@ -42,10 +42,10 @@ const beginnerSongs = songs.filter((song) => song.tier === 'beginner');
 const intermediateSongs = songs.filter((song) => song.tier === 'intermediate');
 const challengeSongs = songs.filter((song) => song.tier === 'challenge');
 
-assertRule(songs.length >= 30, 'Song catalog must contain at least 30 songs.');
+assertRule(songs.length >= 40, 'Song catalog must contain all 40 shipped songs.');
 assertRule(beginnerSongs.length >= 12, 'Song catalog must contain at least 12 beginner songs.');
 assertRule(intermediateSongs.length >= 12, 'Song catalog must contain at least 12 intermediate songs.');
-assertRule(challengeSongs.length >= 6, 'Song catalog must contain at least 6 challenge songs.');
+assertRule(challengeSongs.length >= 10, 'Song catalog must contain at least 10 challenge songs.');
 
 songs.forEach((song) => {
     assertRule(Array.isArray(song.sections) && song.sections.length > 0,
@@ -56,7 +56,7 @@ const gameConfigModule = await import(pathToFileURL(resolve(process.cwd(), 'src/
 const gameMeta = gameConfigModule.GAME_META || {};
 const defaultMasteryThresholds = gameConfigModule.DEFAULT_MASTERY_THRESHOLDS || {};
 
-assertRule(Object.keys(gameMeta).length >= 13, 'Game config must expose at least 13 games.');
+assertRule(Object.keys(gameMeta).length >= 17, 'Game config must expose all 17 shipped games.');
 assertRule(defaultMasteryThresholds.bronze >= 60, 'Mastery bronze threshold must be at least 60.');
 assertRule(defaultMasteryThresholds.silver >= 80, 'Mastery silver threshold must be at least 80.');
 assertRule(defaultMasteryThresholds.gold >= 92, 'Mastery gold threshold must be at least 92.');

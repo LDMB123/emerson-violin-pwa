@@ -17,7 +17,7 @@ const setPitchScoreAndExpectIncrease = async ({ page, scoreLocator, baseline, fo
     }, { timeout: 5000 }).toBeGreaterThan(baseline);
 };
 
-test.skip('games remain interactive after leaving and re-entering the same game', async ({ page }) => {
+test('games remain interactive after leaving and re-entering the same game', async ({ page }) => {
     test.setTimeout(60000);
     await openHome(page);
 

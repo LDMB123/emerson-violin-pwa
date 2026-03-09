@@ -43,10 +43,20 @@ Runtime source of truth:
 - `npm run audit:docs`
 - `npm run audit:static`
 - `npm run audit:dep-backed`
+- `npm audit --omit=dev --audit-level=high`
 - `npm run test:e2e`
+- `PW_BASE_URL="<live-url>" PW_SKIP_WEBSERVER=true npm run test:e2e:live`
 
 `npm run audit:full` runs `audit:static` plus `audit:dep-backed`.
 `npm run handoff:verify` runs the full handoff sequence plus Playwright E2E.
+
+Feature-completeness gates:
+
+- `npm run audit:feature-parity`
+- `npm run audit:release-tests`
+- all 40 catalog songs detail/play/record pass
+- all 17 games initialize and return to hub
+- all 5 practice tools plus coach runner pass
 
 ## Playwright Worker Profiles
 
@@ -101,5 +111,23 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 ## Definition Of Ready To Hand Off
 
 - `npm run handoff:verify` passes with no manual patching.
+- `npm audit --omit=dev --audit-level=high` passes or has explicit written risk acceptance.
+- `npm run test:e2e:live` passes against the deployed Pages URL.
 - CI quality workflow passes on PR and `main`.
+- Post-deploy Pages smoke passes.
+- Engineering, QA, and installed-iPad owner signoff are recorded.
 - This runbook still matches the current repo behavior.
+
+## Rollback And Signoff
+
+- Branch protection should require the `quality` workflow on `main`.
+- Release records should include:
+  - release commit SHA
+  - deploy URL
+  - verification timestamp
+  - accepted risks
+  - rollback target SHA
+- Rollback path:
+  1. Identify the last known-good `main` commit.
+  2. Redeploy that commit through `.github/workflows/pages.yml`.
+  3. Rerun live smoke and confirm the deployed URL.

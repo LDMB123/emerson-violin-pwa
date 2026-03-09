@@ -21,6 +21,14 @@ const resolveCriticalAudioAssets = (page, assetPaths) => page.evaluate((basePath
 }, assetPaths);
 
 const ensureServiceWorkerControl = async (page) => {
+    const localDev = await page.evaluate(() => (
+        location.hostname === 'localhost'
+        || location.hostname === '127.0.0.1'
+        || location.hostname === '[::1]'
+        || location.hostname.endsWith('.local')
+    ));
+    if (localDev) return;
+
     await page.evaluate(() => navigator.serviceWorker.ready);
 
     try {
@@ -52,7 +60,7 @@ const fetchAssetChecks = (page, assets) => page.evaluate(async (assetPaths) => {
     return results;
 }, assets);
 
-test.skip('progress path has no BigInt conversion errors and can serve critical audio offline', async ({ page, context }, testInfo) => {
+test('progress path has no BigInt conversion errors and can serve critical audio offline', async ({ page, context }, testInfo) => {
     const errors = [];
 
     page.on('console', (message) => {
@@ -65,18 +73,20 @@ test.skip('progress path has no BigInt conversion errors and can serve critical 
     await page.goto('/');
     await expect(page).toHaveTitle(/Panda Violin/);
 
-    await ensureServiceWorkerControl(page);
     const localDev = await page.evaluate(() => (
         location.hostname === 'localhost'
         || location.hostname === '127.0.0.1'
         || location.hostname === '[::1]'
         || location.hostname.endsWith('.local')
     ));
+    await ensureServiceWorkerControl(page);
     const criticalAudioAssets = await resolveCriticalAudioAssets(page, CRITICAL_AUDIO_ASSET_BASES);
 
     const onlineChecks = await fetchAssetChecks(page, criticalAudioAssets);
 
-    await ensureServiceWorkerControl(page);
+    if (!localDev) {
+        await ensureServiceWorkerControl(page);
+    }
 
     await context.setOffline(true);
 

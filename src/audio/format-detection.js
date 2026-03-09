@@ -30,6 +30,14 @@ const splitSuffix = (path = '') => {
 
 const stripAudioExtension = (path = '') => path.replace(AUDIO_EXTENSION_PATTERN, '');
 
+const normalizeAudioAssetPath = (path = '') => {
+    if (!path) return path;
+    if (path.startsWith('/assets/audio/')) return path;
+    if (path.startsWith('./assets/audio/')) return `/${path.slice(2)}`;
+    if (path.startsWith('assets/audio/')) return `/${path}`;
+    return path;
+};
+
 /** Returns whether a path points at an audio asset managed by this fallback helper. */
 export const isAudioAssetPath = (path = '') => AUDIO_ASSET_PATTERN.test(path);
 
@@ -37,7 +45,7 @@ export const isAudioAssetPath = (path = '') => AUDIO_ASSET_PATTERN.test(path);
 export const getAudioPathCandidates = (basePath) => {
     if (!basePath) return [];
     const [pathOnly, suffix] = splitSuffix(basePath);
-    const cleanPath = stripAudioExtension(pathOnly);
+    const cleanPath = normalizeAudioAssetPath(stripAudioExtension(pathOnly));
     return SOURCE_ORDER.map((ext) => `${cleanPath}.${ext}${suffix}`);
 };
 

@@ -8,6 +8,7 @@ import { Button } from '../../components/primitives/Button.jsx';
 import { Typography } from '../../components/primitives/Typography.jsx';
 import { PermissionGate } from '../../components/shared/PermissionGate.jsx';
 import { GAME_RECORDED } from '../../utils/event-names.js';
+import { getSongCheckpoint, saveSongCheckpoint } from '../../songs/song-progression.js';
 
 function SongRunnerContent({ propSongId, onComplete }) {
     const params = useParams();
@@ -29,6 +30,8 @@ function SongRunnerContent({ propSongId, onComplete }) {
     const [playMelody, setPlayMelody] = useState(true);
     const [metronome, setMetronome] = useState(true);
     const [loopSection, setLoopSection] = useState(null);
+    const [checkpointStatus, setCheckpointStatus] = useState('Sectional practice ready.');
+    const [savedCheckpoint, setSavedCheckpoint] = useState(null);
 
     const isRecordIntent = searchParams.get('record') === '1';
 
@@ -74,9 +77,13 @@ function SongRunnerContent({ propSongId, onComplete }) {
             if (!songId) return;
             setLoading(true);
             try {
-                const data = await getSongById(songId);
+                const [data, checkpoint] = await Promise.all([
+                    getSongById(songId),
+                    getSongCheckpoint(songId),
+                ]);
                 if (!mounted) return;
                 setSong(data);
+                setSavedCheckpoint(checkpoint);
 
                 const response = await fetch(`/views/songs/${songId}.html`);
                 if (!response.ok) throw new Error('Song HTML not found');
@@ -107,6 +114,17 @@ function SongRunnerContent({ propSongId, onComplete }) {
         loadSong();
         return () => { mounted = false; };
     }, [songId]);
+
+    useEffect(() => {
+        if (savedCheckpoint?.sectionId && Array.isArray(song?.sections)) {
+            const matchingSection = song.sections.find((section) => section.id === savedCheckpoint.sectionId) || null;
+            setLoopSection(matchingSection);
+        }
+        if (Number.isFinite(savedCheckpoint?.tempo) && savedCheckpoint.tempo > 0 && Number.isFinite(song?.bpm) && song.bpm > 0) {
+            const nextScale = Math.max(0.5, Math.min(1.3, savedCheckpoint.tempo / song.bpm));
+            setTempoScale(nextScale);
+        }
+    }, [savedCheckpoint, song]);
 
     // Handle auto-record intent
     useEffect(() => {
@@ -146,8 +164,46 @@ function SongRunnerContent({ propSongId, onComplete }) {
         );
     }
 
+    const handleSaveCheckpoint = async () => {
+        if (!songId) return;
+        const tempo = Math.round((song?.bpm || 80) * tempoScale);
+        const checkpoint = {
+            sectionId: loopSection?.id || null,
+            elapsed: 0,
+            tempo,
+        };
+        await saveSongCheckpoint(songId, checkpoint);
+        setSavedCheckpoint({
+            ...checkpoint,
+            savedAt: Date.now(),
+        });
+        setCheckpointStatus('Checkpoint saved.');
+    };
+
+    const handleResumeCheckpoint = () => {
+        if (!savedCheckpoint) {
+            setCheckpointStatus('No checkpoint yet.');
+            return;
+        }
+        if (savedCheckpoint.sectionId && Array.isArray(song?.sections)) {
+            const matchingSection = song.sections.find((section) => section.id === savedCheckpoint.sectionId) || null;
+            setLoopSection(matchingSection);
+        }
+        if (Number.isFinite(savedCheckpoint.tempo) && Number.isFinite(song?.bpm) && song.bpm > 0) {
+            setTempoScale(Math.max(0.5, Math.min(1.3, savedCheckpoint.tempo / song.bpm)));
+        }
+        setCheckpointStatus('Checkpoint restored.');
+    };
+
     return (
-        <section className="view song-view is-active" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <section
+            className="view song-view is-active"
+            id={`view-song-${songId}`}
+            data-song-tempo={Math.round((song?.bpm || 80) * tempoScale)}
+            data-song-section-id={loopSection?.id || 'full'}
+            data-song-advanced-audio="true"
+            style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+        >
 
             {/* Header Area */}
             <div className="view-header" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', zIndex: 10 }}>
@@ -185,16 +241,27 @@ function SongRunnerContent({ propSongId, onComplete }) {
             </div>
 
             {/* Native Advanced Controls Footer */}
-            <div className="glass" style={{ margin: 'var(--space-4)', padding: 'var(--space-4)', borderRadius: '16px' }}>
+            <div className="glass song-advanced-controls" data-song-advanced-controls="true" style={{ margin: 'var(--space-4)', padding: 'var(--space-4)', borderRadius: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
 
                     {song?.sections?.length > 0 && (
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', borderRight: '1px solid rgba(0,0,0,0.1)', paddingRight: '16px' }}>
-                            <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Loop:</span>
-                            <button className="btn" onClick={() => setLoopSection(null)} style={{ padding: '6px 12px', background: !loopSection ? 'var(--color-primary)' : 'transparent', color: !loopSection ? '#fff' : 'var(--color-text)', border: '2px solid rgba(0,0,0,0.1)' }}>Full</button>
-                            {song.sections.map(s => (
-                                <button key={s.id} className="btn" onClick={() => setLoopSection(s)} style={{ padding: '6px 12px', background: loopSection?.id === s.id ? 'var(--color-primary)' : 'transparent', color: loopSection?.id === s.id ? '#fff' : 'var(--color-text)', border: '2px solid rgba(0,0,0,0.1)' }}>{s.label}</button>
-                            ))}
+                            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Section</span>
+                                <select
+                                    data-song-section
+                                    value={loopSection?.id || ''}
+                                    onChange={(event) => {
+                                        const nextSection = song.sections.find((section) => section.id === event.target.value) || null;
+                                        setLoopSection(nextSection);
+                                    }}
+                                >
+                                    <option value="">Full song</option>
+                                    {song.sections.map((section) => (
+                                        <option key={section.id} value={section.id}>{section.label}</option>
+                                    ))}
+                                </select>
+                            </label>
                         </div>
                     )}
 
@@ -202,6 +269,7 @@ function SongRunnerContent({ propSongId, onComplete }) {
                         <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>Tempo</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <input
+                                data-song-tempo-scale
                                 type="range" min="50" max="130" step="5"
                                 value={Math.round(tempoScale * 100)}
                                 onChange={(e) => setTempoScale(parseInt(e.target.value, 10) / 100)}
@@ -218,18 +286,39 @@ function SongRunnerContent({ propSongId, onComplete }) {
 
                 <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                        <input type="checkbox" checked={waitMode} onChange={e => setWaitMode(e.target.checked)} />
+                        <input data-song-wait-for-me type="checkbox" checked={waitMode} onChange={e => setWaitMode(e.target.checked)} />
                         Wait for me
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                        <input type="checkbox" checked={playMelody} onChange={e => setPlayMelody(e.target.checked)} />
+                        <input data-song-play-melody type="checkbox" checked={playMelody} onChange={e => setPlayMelody(e.target.checked)} />
                         Play Melody
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                        <input type="checkbox" checked={metronome} onChange={e => setMetronome(e.target.checked)} />
+                        <input data-song-metronome type="checkbox" checked={metronome} onChange={e => setMetronome(e.target.checked)} />
                         Metronome
                     </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                        <input data-song-loop type="checkbox" checked={Boolean(loopSection)} onChange={(event) => {
+                            if (!event.target.checked) {
+                                setLoopSection(null);
+                                return;
+                            }
+                            setLoopSection(song?.sections?.[0] || null);
+                        }} />
+                        Loop section
+                    </label>
                 </div>
+
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
+                    <Button variant="secondary" type="button" data-song-save-checkpoint onClick={handleSaveCheckpoint}>
+                        Save checkpoint
+                    </Button>
+                    <Button variant="ghost" type="button" data-song-resume-checkpoint onClick={handleResumeCheckpoint}>
+                        Resume checkpoint
+                    </Button>
+                </div>
+
+                <p data-song-advanced-status style={{ margin: '12px 0 0', color: 'var(--color-text-muted)' }}>{checkpointStatus}</p>
             </div>
 
         </section>

@@ -16,16 +16,13 @@ export const dispatchGameRecordedEvent = async (page, gameId, score) => {
 };
 
 export const openGamesHub = async (page) => {
-    await page.locator('.bottom-nav a[href="/games"]').click();
     await navigateToView(page, 'view-games', { timeout: 10000 });
 };
 
 const ensureGamesHubVisible = async (page) => {
     const gamesView = page.locator('#view-games');
     if (await gamesView.isVisible().catch(() => false)) return;
-    await openGamesHub(page).catch(() => undefined);
-    if (await gamesView.isVisible().catch(() => false)) return;
-    await page.goto('/games', { waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => undefined);
+    await page.goto('/games', { waitUntil: 'commit', timeout: 10000 }).catch(() => undefined);
     await expect(gamesView).toBeVisible({ timeout: 10000 });
 };
 
@@ -48,6 +45,17 @@ const settleTargetView = async (page, targetView) => {
     return targetView.isVisible().catch(() => false);
 };
 
+const activateGameShellIfNeeded = async (page, gameId) => {
+    const startButton = page.locator(`#view-game-${gameId} button:has-text("Start Game")`).first();
+    if (!(await startButton.isVisible().catch(() => false))) {
+        return;
+    }
+
+    await startButton.click({ force: true }).catch(() => undefined);
+    await expect(startButton).not.toBeVisible({ timeout: 10000 }).catch(() => undefined);
+    await page.waitForTimeout(1000);
+};
+
 export const openGame = async (page, gameId) => {
     const targetViewId = `view-game-${gameId}`;
     const targetView = page.locator(`#${targetViewId}`);
@@ -58,10 +66,16 @@ export const openGame = async (page, gameId) => {
         await ensureGamesHubVisible(page).catch(() => undefined);
         await navigateToView(page, targetViewId, { timeout: 7000 }).catch(() => undefined);
         await page.waitForURL(`**/games/${gameId}`, { timeout: 7000 }).catch(() => undefined);
-        if (await settleTargetView(page, targetView)) return;
+        if (await settleTargetView(page, targetView)) {
+            await activateGameShellIfNeeded(page, gameId);
+            return;
+        }
         if (await gameLink.isVisible().catch(() => false)) {
             await gameLink.click({ timeout: 3000 }).catch(() => undefined);
-            if (await settleTargetView(page, targetView)) return;
+            if (await settleTargetView(page, targetView)) {
+                await activateGameShellIfNeeded(page, gameId);
+                return;
+            }
         }
         await ensureGamesHubVisible(page).catch(() => undefined);
     }
@@ -76,6 +90,8 @@ export const openGame = async (page, gameId) => {
     await expect(targetView).toBeVisible({ timeout: 10000 });
     await dismissGameCompleteIfOpen(page);
 
+    await activateGameShellIfNeeded(page, gameId);
+
     await page.evaluate((id) => {
         const view = document.getElementById(id);
         if (!view) return;
@@ -88,9 +104,11 @@ export const returnToGames = async (page, gameId) => {
     const completeModal = page.locator('#game-complete-modal');
     try {
         if (await completeModal.isVisible().catch(() => false)) {
-            await page.locator('#game-complete-back').click({ timeout: 3000 });
+            await page.locator('#game-complete-back').click({ timeout: 1500 });
+        } else if (await page.locator(`#view-game-${gameId} button:has-text("Exit")`).isVisible().catch(() => false)) {
+            await page.locator(`#view-game-${gameId} button:has-text("Exit")`).click({ timeout: 1500 });
         } else {
-            await page.locator(`#view-game-${gameId} .back-btn`).click({ timeout: 3000 });
+            await page.locator(`#view-game-${gameId} .back-btn`).click({ timeout: 1500 });
         }
     } catch {
         if (await completeModal.isVisible().catch(() => false)) {
@@ -98,6 +116,7 @@ export const returnToGames = async (page, gameId) => {
         }
     }
 
-    await navigateToView(page, 'view-games', { timeout: 10000 });
+    await page.goto('/games', { waitUntil: 'commit', timeout: 10000 }).catch(() => undefined);
+    await ensureGamesHubVisible(page);
     await dismissGameCompleteIfOpen(page);
 };
