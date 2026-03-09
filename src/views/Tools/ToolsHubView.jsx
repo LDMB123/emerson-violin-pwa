@@ -4,6 +4,7 @@ import { Typography } from '../../components/primitives/Typography.jsx';
 import { SharedViewHeader } from '../../components/shared/SharedViewHeader.jsx';
 import { TOOL_HUB_LINKS } from './tools-hub-contract.js';
 import styles from './ToolsHubView.module.css';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 export function ToolsHubView() {
 
@@ -22,7 +23,7 @@ export function ToolsHubView() {
 
             <div className={styles.heroCard}>
                 <img
-                    src="./assets/illustrations/mascot-focus.webp"
+                    src={getPublicAssetPath('./assets/illustrations/mascot-focus.webp')}
                     alt="Panda ready to help you practice"
                     className={styles.heroMascot}
                     loading="eager"

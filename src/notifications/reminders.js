@@ -131,7 +131,7 @@ const showNotification = async () => {
     if (registration?.showNotification) {
         await registration.showNotification('Panda Violin', {
             body: 'Notifications are enabled for practice reminders.',
-            icon: './assets/icons/icon-192.png',
+            icon: getPublicAssetPath('./assets/icons/icon-192.png'),
         });
     } else {
         new Notification('Panda Violin', {
@@ -207,3 +207,4 @@ const initReminders = () => {
  * Initializes notification and reminder controls for practice nudges and calendar exports.
  */
 export const init = initReminders;
+import { getPublicAssetPath } from '../utils/public-asset-path.js';

@@ -4,6 +4,7 @@ import { useAppEvent } from '../../hooks/useAppEvent.js';
 import { RT_CUE } from '../../utils/event-names.js';
 import { useUserPreferences } from '../../context/UserPreferencesContext.jsx';
 import { Typography } from '../primitives/Typography.jsx';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 /**
  * CoachOverlay (PandaSpeech Portal)
@@ -117,7 +118,7 @@ export function CoachOverlay() {
                 </Typography>
             </div>
             <img
-                src="./assets/illustrations/mascot-encourage.webp"
+                src={getPublicAssetPath('./assets/illustrations/mascot-encourage.webp')}
                 alt="Panda Coach"
                 width="100"
                 height="100"

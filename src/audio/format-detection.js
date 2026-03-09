@@ -1,3 +1,5 @@
+import { getPublicAssetPath } from '../utils/public-asset-path.js';
+
 const AUDIO_EXTENSION_PATTERN = /\.(wav|mp3|opus)(?=($|[?#]))/i;
 const AUDIO_ASSET_PATTERN = /(?:^|\/)\.?\/?assets\/audio\//i;
 
@@ -33,10 +35,10 @@ const stripAudioExtension = (path = '') => path.replace(AUDIO_EXTENSION_PATTERN,
 const normalizeAudioAssetPath = (path = '') => {
     if (!path) return path;
     if (path.includes('/assets/audio/')) {
-        return `./assets/audio/${path.split('/assets/audio/')[1]}`;
+        return getPublicAssetPath(`assets/audio/${path.split('/assets/audio/')[1]}`);
     }
-    if (path.startsWith('./assets/audio/')) return path;
-    if (path.startsWith('assets/audio/')) return `./${path}`;
+    if (path.startsWith('./assets/audio/')) return getPublicAssetPath(path);
+    if (path.startsWith('assets/audio/')) return getPublicAssetPath(path);
     return path;
 };
 

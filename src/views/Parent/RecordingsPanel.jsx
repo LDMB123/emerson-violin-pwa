@@ -2,15 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { readJsonAsync, writeJsonAsync } from '../../utils/storage-utils.js';
 import { getBlob } from '../../persistence/storage.js';
 import { downloadBlob } from '../../utils/download-blob.js';
+import { createRetryableModuleLoader } from '../../utils/lazy-module.js';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
-let jsZipModulePromise = null;
-
-function loadJsZip() {
-    if (!jsZipModulePromise) {
-        jsZipModulePromise = import('jszip');
-    }
-    return jsZipModulePromise;
-}
+const loadJsZip = createRetryableModuleLoader(() => import('jszip'));
 
 export function RecordingsPanel() {
     const [recordings, setRecordings] = useState([]);
@@ -155,7 +150,7 @@ export function RecordingsPanel() {
             <div className="parent-recording-list" data-parent-recordings style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {filtered.length === 0 && !loading && (
                     <div className="empty-state" style={{ padding: 'var(--space-4)', textAlign: 'center', background: 'var(--color-bg)', borderRadius: 'var(--radius-lg)' }}>
-                        <img src="./assets/illustrations/empty-no-recordings.png" alt="Panda waiting for recordings" style={{ width: 140, height: 140, marginBottom: 'var(--space-3)' }} />
+                        <img src={getPublicAssetPath('./assets/illustrations/empty-no-recordings.png')} alt="Panda waiting for recordings" style={{ width: 140, height: 140, marginBottom: 'var(--space-3)' }} />
                         <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>No recordings available yet.</p>
                         <p style={{ margin: '8px 0 0 0', fontSize: '0.9rem' }}>Use the Practice Coach to record audio!</p>
                     </div>

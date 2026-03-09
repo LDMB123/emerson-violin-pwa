@@ -6,6 +6,7 @@ import { loadRecordings } from '../../persistence/loaders.js';
 import { useProgressSummary } from '../../hooks/useProgressSummary.js';
 import { Button } from '../../components/primitives/Button.jsx';
 import { useTapTempo } from '../../hooks/useTapTempo.js';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 const ART_MAP = {
     'open_strings': '🎻',
@@ -197,8 +198,8 @@ export function SongDetailView() {
                     return (
                         <div className="glass" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
                             <picture>
-                                <source srcSet="./assets/illustrations/mascot-happy.webp" type="image/webp" />
-                                <img src="./assets/illustrations/mascot-happy.webp" alt="Panda Tip" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
+                                <source srcSet={getPublicAssetPath('./assets/illustrations/mascot-happy.webp')} type="image/webp" />
+                                <img src={getPublicAssetPath('./assets/illustrations/mascot-happy.webp')} alt="Panda Tip" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
                             </picture>
                             <Typography variant="body" style={{ fontStyle: 'italic', margin: 0 }}>
                                 "{tip}"

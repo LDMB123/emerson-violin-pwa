@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router';
 import { Typography } from '../primitives/Typography.jsx';
 import styles from '../../styles/components/SharedViewHeader.module.css';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 export function SharedViewHeader({
     title,
@@ -15,6 +16,7 @@ export function SharedViewHeader({
 }) {
     const headerClassName = [styles.viewHeader, className].filter(Boolean).join(' ');
     const mascotClassName = [styles.mascot, heroClassName].filter(Boolean).join(' ');
+    const resolvedHeroSrc = heroSrc ? getPublicAssetPath(heroSrc) : heroSrc;
 
     return (
         <div className={headerClassName} data-view-header>
@@ -35,7 +37,7 @@ export function SharedViewHeader({
             {heroSrc ? (
                 <div className={styles.mascotWrap}>
                     <img
-                        src={heroSrc}
+                        src={resolvedHeroSrc}
                         alt={heroAlt}
                         className={mascotClassName}
                         loading="eager"

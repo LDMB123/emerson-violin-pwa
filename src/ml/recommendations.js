@@ -33,8 +33,9 @@ export const shouldPreferInlineRecommendationsWorker = ({
 } = {}) => {
     if (!isDev || !userAgent) return false;
     const isAppleWebKit = /AppleWebKit/i.test(userAgent);
-    const isChromiumVariant = /Chrome|Chromium|CriOS|Edg\//i.test(userAgent);
-    return isAppleWebKit && !isChromiumVariant;
+    const isIOSWebKitShell = /CriOS|EdgiOS|FxiOS/i.test(userAgent);
+    const isDesktopChromium = /Chrome|Chromium|Edg\//i.test(userAgent) && !isIOSWebKitShell;
+    return isAppleWebKit && !isDesktopChromium;
 };
 
 const getWorker = () => {

@@ -5,6 +5,7 @@ import { useGameSort } from '../../hooks/useGameSort.js';
 import { FilterChips } from '../../components/primitives/FilterChips.jsx';
 import { SharedViewHeader } from '../../components/shared/SharedViewHeader.jsx';
 import styles from './GamesView.module.css';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 export function GamesView() {
     const { selectedSort, setSelectedSort, filteredGames, favoriteIds, toggleFavorite, gameMastery, SKILL_FILTERS } = useGameSort();
@@ -93,8 +94,8 @@ export function GamesView() {
             {filteredGames.length === 0 && (
                 <div className="games-empty glass" role="status" aria-live="polite">
                     <picture>
-                        <source srcSet="./assets/illustrations/mascot-encourage.webp" type="image/webp" />
-                        <img src="./assets/illustrations/mascot-encourage.webp" alt="Encouraging panda coach" className="empty-state-mascot" loading="lazy" decoding="async" />
+                        <source srcSet={getPublicAssetPath('./assets/illustrations/mascot-encourage.webp')} type="image/webp" />
+                        <img src={getPublicAssetPath('./assets/illustrations/mascot-encourage.webp')} alt="Encouraging panda coach" className="empty-state-mascot" loading="lazy" decoding="async" />
                     </picture>
                     <div className="empty-state-content">
                         <h3>Oh no, no games found!</h3>
@@ -104,8 +105,8 @@ export function GamesView() {
             )}
 
             <picture>
-                <source srcSet="./assets/illustrations/mascot-celebrate.webp" type="image/webp" />
-                <img src="./assets/illustrations/mascot-celebrate.webp" alt="" className="corner-mascot" loading="lazy" decoding="async" />
+                <source srcSet={getPublicAssetPath('./assets/illustrations/mascot-celebrate.webp')} type="image/webp" />
+                <img src={getPublicAssetPath('./assets/illustrations/mascot-celebrate.webp')} alt="" className="corner-mascot" loading="lazy" decoding="async" />
             </picture>
         </section>
     );

@@ -17,6 +17,7 @@ import { BowingView } from '../Tools/BowingView.jsx';
 import { PostureView } from '../Tools/PostureView.jsx';
 import { SongRunnerView } from '../Songs/SongRunnerView.jsx';
 import styles from './CoachView.module.css';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 export function CoachView() {
     const navigate = useNavigate();
@@ -112,7 +113,7 @@ export function CoachView() {
                         <Typography variant="h2" style={{ color: 'var(--color-primary)', fontSize: '2.5rem', margin: 0 }}>Excellent Focus!</Typography>
                     </div>
                     <Typography style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', marginBottom: 'var(--space-4)' }}>You practiced for {totalMinutes} minutes.</Typography>
-                    <img src="./assets/illustrations/mascot-happy.webp" alt="Happy Panda" style={{ height: '200px', objectFit: 'contain', margin: 'var(--space-4) 0' }} />
+                    <img src={getPublicAssetPath('./assets/illustrations/mascot-happy.webp')} alt="Happy Panda" style={{ height: '200px', objectFit: 'contain', margin: 'var(--space-4) 0' }} />
                     <Button variant="primary" size="giant" as={Link} to="/home" style={{ marginTop: 'var(--space-6)', width: '80%', maxWidth: '300px' }}>
                         Back to Home
                     </Button>

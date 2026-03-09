@@ -4,6 +4,7 @@ import { useSessionStorage } from '../../hooks/useStorage.js';
 import { Typography } from '../../components/primitives/Typography.jsx';
 import { lazyNamedWithRetry } from '../../app/lazy-import.js';
 import styles from './ParentView.module.css';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 const WARN_TIMEOUT = 14 * 60 * 1000; // 14 minutes
@@ -170,8 +171,8 @@ export function ParentView({ defaultTab = 'review' }) {
             </div>
 
             <picture>
-                <source srcSet="./assets/illustrations/mascot-focus.webp" type="image/webp" />
-                <img src="./assets/illustrations/mascot-focus.webp" alt="" className="corner-mascot parent-mascot" loading="lazy" decoding="async" style={{ position: 'fixed', bottom: -20, right: -20, width: '200px', opacity: 0.8, pointerEvents: 'none', zIndex: -1 }} />
+                <source srcSet={getPublicAssetPath('./assets/illustrations/mascot-focus.webp')} type="image/webp" />
+                <img src={getPublicAssetPath('./assets/illustrations/mascot-focus.webp')} alt="" className="corner-mascot parent-mascot" loading="lazy" decoding="async" style={{ position: 'fixed', bottom: -20, right: -20, width: '200px', opacity: 0.8, pointerEvents: 'none', zIndex: -1 }} />
             </picture>
         </section >
     );

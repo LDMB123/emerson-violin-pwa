@@ -4,6 +4,7 @@ import { Typography } from '../../components/primitives/Typography.jsx';
 import { useProgressSummary } from '../../hooks/useProgressSummary.js';
 import { SharedViewHeader } from '../../components/shared/SharedViewHeader.jsx';
 import styles from './WinsView.module.css';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 const BADGE_META = [
     { id: 'first_note', name: 'First Note', icon: 'first_note.png', pandaSpeech: 'You played your very first note! Every musician starts here.' },
@@ -28,7 +29,7 @@ function SkillMeter({ label, value, colorVar, icon }) {
     return (
         <div className="skill-meter">
             <span className="skill-name" style={{ width: '100px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {icon && <img src={`/assets/icons/${icon}`} alt="" width="24" height="24" loading="lazy" decoding="async" />}
+                {icon && <img src={getPublicAssetPath(`assets/icons/${icon}`)} alt="" width="24" height="24" loading="lazy" decoding="async" />}
                 {label}
             </span>
             <svg viewBox="0 0 100 10" preserveAspectRatio="none" className="skill-meter-svg" style={{ flex: 1, height: '16px', marginLeft: '12px' }}>
@@ -92,8 +93,8 @@ export function WinsView() {
                 {/* Hero Streak Card */}
                 <div className="progress-hero glass">
                     <picture>
-                        <source srcSet="./assets/illustrations/mascot-celebrate.webp" type="image/webp" />
-                        <img src="./assets/illustrations/mascot-celebrate.webp" alt="Great job!" className="progress-mascot" loading="lazy" decoding="async" />
+                        <source srcSet={getPublicAssetPath('./assets/illustrations/mascot-celebrate.webp')} type="image/webp" />
+                        <img src={getPublicAssetPath('./assets/illustrations/mascot-celebrate.webp')} alt="Great job!" className="progress-mascot" loading="lazy" decoding="async" />
                     </picture>
                     <div className="streak-display">
                         <svg viewBox="0 0 40 40" className="flame-icon" aria-hidden="true">
@@ -171,8 +172,8 @@ export function WinsView() {
                                     <div className="badge-art">
                                         {meta.icon ? (
                                             <picture>
-                                                {meta.icon.endsWith('.webp') && <source srcSet={`/assets/badges/${meta.icon}`} type="image/webp" />}
-                                                <img src={`/assets/badges/${meta.icon}`} alt="" width="200" height="200" loading="lazy" decoding="async" />
+                                                {meta.icon.endsWith('.webp') && <source srcSet={getPublicAssetPath(`assets/badges/${meta.icon}`)} type="image/webp" />}
+                                                <img src={getPublicAssetPath(`assets/badges/${meta.icon}`)} alt="" width="200" height="200" loading="lazy" decoding="async" />
                                             </picture>
                                         ) : (
                                             <span className="badge-fallback">{meta.name}</span>
@@ -194,7 +195,7 @@ export function WinsView() {
                     <div style={{ background: 'var(--color-surface, #fff)', borderRadius: '22px', padding: '32px 24px', maxWidth: '380px', width: '90%', textAlign: 'center', boxShadow: 'var(--shadow-lg)' }}
                         onClick={e => e.stopPropagation()}>
                         <div style={{ marginBottom: '16px' }}>
-                            <img src={`/assets/badges/${selectedBadge.icon}`} alt={selectedBadge.name} width="120" height="120" style={{ borderRadius: '50%' }} />
+                            <img src={getPublicAssetPath(`assets/badges/${selectedBadge.icon}`)} alt={selectedBadge.name} width="120" height="120" style={{ borderRadius: '50%' }} />
                         </div>
                         <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', marginBottom: '8px' }}>{selectedBadge.name}</h3>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'var(--color-bg-alt, #FFEFE2)', borderRadius: '16px', padding: '12px', marginBottom: '16px', textAlign: 'left' }}>

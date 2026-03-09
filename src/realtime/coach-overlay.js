@@ -1,15 +1,16 @@
 import { RT_CUE, RT_STATE } from '../utils/event-names.js';
+import { getPublicAssetPath } from '../utils/public-asset-path.js';
 
-const FALLBACK_ASSET = './assets/illustrations/mascot-happy.webp';
+const FALLBACK_ASSET = getPublicAssetPath('./assets/illustrations/mascot-happy.webp');
 const LISTENING_PULSE_INTERVAL_MS = 750;
 
 const DEFAULT_STATE_MAP = Object.freeze({
     listening: FALLBACK_ASSET,
-    steady: './assets/illustrations/mascot-focus.webp',
-    'adjust-up': './assets/illustrations/mascot-encourage.webp',
-    'adjust-down': './assets/illustrations/mascot-encourage.webp',
-    'retry-calm': './assets/illustrations/mascot-focus.webp',
-    'celebrate-lock': './assets/illustrations/mascot-celebrate.webp',
+    steady: getPublicAssetPath('./assets/illustrations/mascot-focus.webp'),
+    'adjust-up': getPublicAssetPath('./assets/illustrations/mascot-encourage.webp'),
+    'adjust-down': getPublicAssetPath('./assets/illustrations/mascot-encourage.webp'),
+    'retry-calm': getPublicAssetPath('./assets/illustrations/mascot-focus.webp'),
+    'celebrate-lock': getPublicAssetPath('./assets/illustrations/mascot-celebrate.webp'),
 });
 
 let overlay = null;
@@ -81,7 +82,7 @@ const loadStateMap = async () => {
         Object.keys(byState).forEach((state) => {
             const tierOneAsset = byState[state]?.tier1;
             if (typeof tierOneAsset === 'string' && tierOneAsset.trim()) {
-                stateMap[state] = tierOneAsset;
+                stateMap[state] = getPublicAssetPath(tierOneAsset);
             }
         });
     } catch {

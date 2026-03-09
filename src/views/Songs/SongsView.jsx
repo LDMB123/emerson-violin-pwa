@@ -8,6 +8,7 @@ import { Skeleton } from '../../components/primitives/Skeleton.jsx';
 import { useLongPress } from '../../hooks/useLongPress.js';
 import { SharedViewHeader } from '../../components/shared/SharedViewHeader.jsx';
 import styles from './SongsView.module.css';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 const ART_MAP = {
     // ... existing ART_MAP ...
@@ -152,8 +153,8 @@ export function SongsView() {
             {(!isLoading && filteredSongs.length === 0) && (
                 <div className="songs-empty glass" role="status" aria-live="polite">
                     <picture>
-                        <source srcSet="./assets/illustrations/mascot-encourage.webp" type="image/webp" />
-                        <img src="./assets/illustrations/mascot-encourage.webp" alt="Encouraging panda coach" className="empty-state-mascot" loading="lazy" decoding="async" />
+                        <source srcSet={getPublicAssetPath('./assets/illustrations/mascot-encourage.webp')} type="image/webp" />
+                        <img src={getPublicAssetPath('./assets/illustrations/mascot-encourage.webp')} alt="Encouraging panda coach" className="empty-state-mascot" loading="lazy" decoding="async" />
                     </picture>
                     <div className="empty-state-content">
                         <h3>I can't find that song!</h3>
@@ -163,8 +164,8 @@ export function SongsView() {
             )}
 
             <picture>
-                <source srcSet="./assets/illustrations/mascot-happy.webp" type="image/webp" />
-                <img src="./assets/illustrations/mascot-happy.webp" alt="" className="corner-mascot" loading="lazy" decoding="async" width="1024" height="1024" />
+                <source srcSet={getPublicAssetPath('./assets/illustrations/mascot-happy.webp')} type="image/webp" />
+                <img src={getPublicAssetPath('./assets/illustrations/mascot-happy.webp')} alt="" className="corner-mascot" loading="lazy" decoding="async" width="1024" height="1024" />
             </picture>
         </section>
     );

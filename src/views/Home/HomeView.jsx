@@ -9,6 +9,7 @@ import { PandaSpeech } from '../../components/primitives/PandaSpeech.jsx';
 import { scheduleBackgroundTask } from '../../utils/idle-task.js';
 import styles from './HomeView.module.css';
 import { setBadge } from '../../notifications/badging.js';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 export function HomeView() {
     const { summary } = useProgressSummary();
@@ -117,7 +118,7 @@ export function HomeView() {
 
             <div className={styles.homeHero}>
                 <img
-                    src="./assets/illustrations/mascot-playing-violin.png"
+                    src={getPublicAssetPath('./assets/illustrations/mascot-playing-violin.png')}
                     alt="Panda playing violin"
                     className={styles.homeMascotArt}
                     width="640"
