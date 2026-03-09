@@ -40,7 +40,7 @@ console.log(regs[0]?.active?.state);
 Goal: verify secure PIN hashing and persistence.
 
 Steps:
-1. Open `#view-parent`.
+1. Open Parent Zone at `/parent`.
 2. Enter wrong PIN `9999` and confirm access is denied.
 3. Enter default PIN `1001` and confirm access is granted.
 4. In **Parent PIN**, set PIN to `5678` and save.
@@ -138,7 +138,7 @@ Pass if:
 Goal: verify real-time pitch detection feels immediate and stable.
 
 Steps:
-1. Open `#view-tuner`.
+1. Open Tuner at `/tools/tuner`.
 2. Grant microphone access.
 3. Play sustained notes, then rapid pitch changes.
 4. Watch note name, cents feedback, and UI smoothness.
@@ -233,7 +233,8 @@ Steps:
 
 Console check:
 ```javascript
-fetch('./manifest.webmanifest').then(r => r.json())
+const manifestUrl = document.querySelector('link[rel="manifest"]')?.href;
+fetch(manifestUrl).then((r) => r.json())
 ```
 
 Pass if:

@@ -51,7 +51,7 @@ Do not treat Simulator as authoritative for:
 ### 1. Parent PIN security
 
 Steps:
-1. Open `#view-parent`.
+1. Open Parent Zone at `/parent`.
 2. Verify default PIN `1001` works.
 3. Change the PIN.
 4. Refresh and confirm the old PIN fails and the new one succeeds.

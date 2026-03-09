@@ -4,20 +4,23 @@ The repo is organized by user-facing experience areas rather than by framework l
 
 ## Primary Areas
 
-- App shell and routing: `src/app/`, `src/views/`, `public/views/`
-- Practice games: `src/games/`, `public/views/games/`
-- Songs and playback: `src/songs/`, `public/views/songs/`
-- Tuner and trainer tools: `src/tuner/`, `src/trainer/`
-- Coach and curriculum flows: `src/coach/`, `src/curriculum/`
-- Parent/review/reporting flows: `src/parent/`, `src/analysis/`, `src/recordings/`
-- Cross-cutting platform behavior: `src/platform/`, `src/notifications/`, `src/progress/`
+- App shell and route composition: `src/AppShell.jsx`, `src/routes.jsx`, `src/app/`
+- Native React route surfaces: `src/views/`
+- Legacy embedded games and song runners: `src/views/Games/`, `src/views/Songs/`, `public/views/games/`, `public/views/songs/`
+- Practice game runtime and scoring: `src/games/`
+- Songs, playback, and recordings: `src/songs/`, `src/recordings/`, `src/persistence/`
+- Tuner and tool experiences: `src/views/Tools/`, `src/audio/`, `src/tuner/`, `src/trainer/`
+- Coach and curriculum flows: `src/views/Coach/`, `src/coach/`, `src/curriculum/`
+- Parent/review/reporting flows: `src/views/Parent/`, `src/analysis/`, `src/progress/`
+- Cross-cutting platform/runtime behavior: `src/platform/`, `src/notifications/`, `src/realtime/`
 
 ## How Views Pick Up Behavior
 
-- Each routed view loads HTML from `public/views/`
-- `src/app/module-registry.js` decides which feature modules initialize for a given `view-*` id
-- Some modules are eager at startup for baseline platform/runtime behavior
-- Some modules are intentionally deferred until idle to reduce startup contention
+- Pathname routes render React views from `src/views/` via `src/routes.jsx`
+- Some React views embed legacy HTML/WASM runners from `public/views/` to preserve shipped game and song behavior
+- `src/app/module-registry.js` and `src/app/legacy-view-runtime.js` decide which DOM-bound helpers still initialize for a given legacy `view-*` id
+- Some runtime helpers are eager at startup for baseline platform/runtime behavior
+- Other helpers are intentionally deferred until idle to reduce startup contention
 
 ## When To Update Docs
 

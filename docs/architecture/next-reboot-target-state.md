@@ -1,5 +1,7 @@
 # Target Architecture State: React 19 SPA
 
+> Historical migration snapshot. This file captures the intended end-state during the reboot project. For current routing, shell ownership, and runtime behavior, use `system-overview.md`, `feature-surface.md`, `offline-and-persistence.md`, and `audio-and-realtime.md`.
+
 This document defines the final architectural shape of the Panda Violin PWA after completing the React 19 migration (Phases 1-9).
 
 ## 1. Core Shell & Routing

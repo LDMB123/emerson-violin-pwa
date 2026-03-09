@@ -40,6 +40,12 @@ Use this file to decide which document to read before editing or validating the 
 
 ## Historical Material
 
+- [docs/architecture/next-reboot-target-state.md](architecture/next-reboot-target-state.md)
+  - Historical React reboot target-state snapshot; not the live routing/runtime source of truth
+- [docs/architecture/reboot-feature-matrix.md](architecture/reboot-feature-matrix.md)
+  - Historical migration tracker retained for reboot context; not the current feature inventory
+- [docs/ViolinPLANV2.md](ViolinPLANV2.md)
+  - Historical reboot planning document retained for decision history, not day-to-day maintenance
 - [_archived/plans/README.md](../_archived/plans/README.md)
   - Why old plan files were pruned and why no live plan directory remains in the repo
 
@@ -48,7 +54,8 @@ Use this file to decide which document to read before editing or validating the 
 - Commands and quality gates: [package.json](../package.json)
 - Installed app metadata: [public/manifest.webmanifest](../public/manifest.webmanifest)
 - GitHub Pages SPA fallback build step: `scripts/build-spa-fallback.mjs` -> `dist/404.html`
-- Current view inventory: `public/views/`
+- Current route inventory: `src/routes.jsx` and `src/views/`
+- Embedded legacy game/song HTML surfaces: `public/views/`
 - Current automation and audit scripts: `scripts/`
 - Documentation freshness guard: `npm run audit:docs`
 

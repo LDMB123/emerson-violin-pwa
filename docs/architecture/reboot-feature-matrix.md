@@ -1,5 +1,7 @@
 # React Reboot Feature Matrix
 
+> Historical migration tracker. This file is retained as reboot context, not as the live source of truth for routes, feature inventory, or runtime ownership. Use `system-overview.md`, `feature-surface.md`, and `docs/HANDOFF.md` for current behavior.
+
 This matrix tracks the migration of features from the Vanilla JS/HTML shell to the native React 19 architecture. Every feature from the legacy application must be accounted for here, with its final status documented.
 
 | Category | Feature | Status | Notes |

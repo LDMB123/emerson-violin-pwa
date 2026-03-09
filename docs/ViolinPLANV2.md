@@ -1,5 +1,7 @@
 # Emerson Violin PWA Reboot Plan — V2
 
+> Historical planning artifact. This document is retained for reboot decision history only. For current repo behavior, use `README.md`, `docs/HANDOFF.md`, `docs/README.md`, and the live docs under `docs/architecture/`.
+
 ## Executive Summary
 
 Rebuild the app as a **child-first, daily-practice PWA** and retire the hash-driven UI model. The new product centers on one clear next step, guided practice, optional exploration, and a gated parent zone.

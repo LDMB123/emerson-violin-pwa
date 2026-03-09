@@ -39,7 +39,8 @@ Runtime source of truth:
 - GitHub Pages SPA fallback is generated in `postbuild` by `scripts/build-spa-fallback.mjs`, which copies `dist/index.html` to `dist/404.html`.
 - Optional Rust/WASM modules live under `src/wasm/` and `wasm/`.
 - Legacy shipped game and song views still live under `public/views/games/` and `public/views/songs/`.
-- Architectural decisions are logged in `docs/architecture/reboot-feature-matrix.md` and `docs/architecture/next-reboot-target-state.md`.
+- Current architecture source of truth lives in `docs/architecture/system-overview.md`, `docs/architecture/feature-surface.md`, `docs/architecture/offline-and-persistence.md`, and `docs/architecture/audio-and-realtime.md`.
+- Historical reboot planning artifacts remain in `docs/architecture/reboot-feature-matrix.md`, `docs/architecture/next-reboot-target-state.md`, and `docs/ViolinPLANV2.md`; do not use them as the current routing or runtime truth.
 
 ## Verification Gates
 
