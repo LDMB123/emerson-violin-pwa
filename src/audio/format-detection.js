@@ -32,9 +32,11 @@ const stripAudioExtension = (path = '') => path.replace(AUDIO_EXTENSION_PATTERN,
 
 const normalizeAudioAssetPath = (path = '') => {
     if (!path) return path;
-    if (path.startsWith('/assets/audio/')) return path;
-    if (path.startsWith('./assets/audio/')) return `/${path.slice(2)}`;
-    if (path.startsWith('assets/audio/')) return `/${path}`;
+    if (path.includes('/assets/audio/')) {
+        return `./assets/audio/${path.split('/assets/audio/')[1]}`;
+    }
+    if (path.startsWith('./assets/audio/')) return path;
+    if (path.startsWith('assets/audio/')) return `./${path}`;
     return path;
 };
 

@@ -83,8 +83,8 @@ export function PermissionGate({ permissionType = 'microphone', required = true,
             background: 'var(--color-bg)'
         }}>
             <picture>
-                <source srcSet="/assets/illustrations/mascot-focus.webp" type="image/webp" />
-                <img src="/assets/illustrations/mascot-focus.webp" alt="Panda asking to listen" style={{ width: '200px', marginBottom: '24px' }} decoding="async" loading="eager" data-permission-mascot />
+                <source srcSet="./assets/illustrations/mascot-focus.webp" type="image/webp" />
+                <img src="./assets/illustrations/mascot-focus.webp" alt="Panda asking to listen" style={{ width: '200px', marginBottom: '24px' }} decoding="async" loading="eager" data-permission-mascot />
             </picture>
 
             <Typography variant="h2" style={{ marginBottom: '16px' }}>

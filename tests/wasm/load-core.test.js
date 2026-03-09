@@ -60,4 +60,19 @@ describe('wasm/load-core', () => {
         expect(secondAttempt.default).toBe(pandaCoreMocks.init);
         expect(pandaCoreMocks.init).toHaveBeenCalledTimes(2);
     });
+
+    it('retries transient type errors within the same getCore call', async () => {
+        pandaCoreMocks.init
+            .mockImplementationOnce(async () => {
+                throw new TypeError('Load failed');
+            })
+            .mockResolvedValueOnce(undefined);
+
+        const { getCore } = await import('../../src/wasm/load-core.js');
+        const loadedModule = await getCore();
+
+        expect(loadedModule.mocked).toBe(true);
+        expect(loadedModule.default).toBe(pandaCoreMocks.init);
+        expect(pandaCoreMocks.init).toHaveBeenCalledTimes(2);
+    });
 });

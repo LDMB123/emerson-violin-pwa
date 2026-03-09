@@ -53,7 +53,7 @@ export function SongsView() {
             <SharedViewHeader
                 title="Songs"
                 backTo="/home"
-                heroSrc="/assets/illustrations/mascot-reading.png"
+                heroSrc="./assets/illustrations/mascot-reading.png"
                 heroAlt="Panda reading violin sheet music"
             />
 
@@ -152,8 +152,8 @@ export function SongsView() {
             {(!isLoading && filteredSongs.length === 0) && (
                 <div className="songs-empty glass" role="status" aria-live="polite">
                     <picture>
-                        <source srcSet="/assets/illustrations/mascot-encourage.webp" type="image/webp" />
-                        <img src="/assets/illustrations/mascot-encourage.webp" alt="Encouraging panda coach" className="empty-state-mascot" loading="lazy" decoding="async" />
+                        <source srcSet="./assets/illustrations/mascot-encourage.webp" type="image/webp" />
+                        <img src="./assets/illustrations/mascot-encourage.webp" alt="Encouraging panda coach" className="empty-state-mascot" loading="lazy" decoding="async" />
                     </picture>
                     <div className="empty-state-content">
                         <h3>I can't find that song!</h3>
@@ -163,8 +163,8 @@ export function SongsView() {
             )}
 
             <picture>
-                <source srcSet="/assets/illustrations/mascot-happy.webp" type="image/webp" />
-                <img src="/assets/illustrations/mascot-happy.webp" alt="" className="corner-mascot" loading="lazy" decoding="async" width="1024" height="1024" />
+                <source srcSet="./assets/illustrations/mascot-happy.webp" type="image/webp" />
+                <img src="./assets/illustrations/mascot-happy.webp" alt="" className="corner-mascot" loading="lazy" decoding="async" width="1024" height="1024" />
             </picture>
         </section>
     );

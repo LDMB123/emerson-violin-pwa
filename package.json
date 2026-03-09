@@ -12,7 +12,7 @@
     "preoptimize": "node scripts/optimize-images.js && node scripts/optimize-audio.js && node scripts/optimize-fonts.js",
     "prebuild": "npm run runtime:check && npm run preoptimize && node scripts/build-sw-assets.js",
     "build": "vite build",
-    "postbuild": "node scripts/build-sw-assets.js --dist",
+    "postbuild": "node scripts/build-spa-fallback.mjs && node scripts/build-sw-assets.js --dist",
     "preview": "vite preview",
     "pretest": "npm run runtime:check",
     "test": "vitest run",

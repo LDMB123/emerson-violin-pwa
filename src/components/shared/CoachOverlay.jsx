@@ -117,7 +117,7 @@ export function CoachOverlay() {
                 </Typography>
             </div>
             <img
-                src="/assets/illustrations/mascot-encourage.webp"
+                src="./assets/illustrations/mascot-encourage.webp"
                 alt="Panda Coach"
                 width="100"
                 height="100"

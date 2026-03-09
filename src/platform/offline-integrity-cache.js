@@ -5,7 +5,7 @@ const OFFLINE_CACHE_PREFIX = 'panda-violin-local-';
 const CRITICAL_OFFLINE_ASSETS = [
     './',
     './index.html',
-    '/manifest.webmanifest',
+    './manifest.webmanifest',
     './offline.html',
     './assets/icons/icon-192.png',
     './assets/illustrations/mascot-happy.webp',
@@ -41,6 +41,16 @@ const buildSelfTestResult = (selfTestPass) => ({
     selfTestAt: Date.now(),
 });
 
+const getDefaultBaseHref = () => {
+    if (typeof document !== 'undefined' && document.baseURI) {
+        return document.baseURI;
+    }
+    if (typeof window !== 'undefined' && window.location?.href) {
+        return window.location.href;
+    }
+    return 'http://panda.local/';
+};
+
 /**
  * Counts cached assets in the latest offline cache.
  *
@@ -59,10 +69,10 @@ export const runOfflineCacheCheck = async () => {
  * Verifies that critical offline assets exist in the latest offline cache.
  *
  * @param {Object} [options={}]
- * @param {string} [options.baseHref=window.location.href]
+ * @param {string} [options.baseHref=document.baseURI]
  * @returns {Promise<{ selfTestPass: number, selfTestTotal: number, selfTestAt: number }>}
  */
-export const runOfflineAssetSelfTest = async ({ baseHref = window.location.href } = {}) => {
+export const runOfflineAssetSelfTest = async ({ baseHref = getDefaultBaseHref() } = {}) => {
     const cache = await selectOfflineCache();
     if (!cache) {
         return buildSelfTestResult(0);

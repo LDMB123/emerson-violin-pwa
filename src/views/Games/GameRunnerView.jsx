@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router';
 import { GameShell } from '../../components/shared/GameShell.jsx';
+import '../../styles/games.css';
 import { NoteMemoryGame } from './NoteMemoryGame.jsx';
 import { BowHeroGame } from './BowHeroGame.jsx';
 import { DynamicDojoGame } from './DynamicDojoGame.jsx';

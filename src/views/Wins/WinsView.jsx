@@ -92,8 +92,8 @@ export function WinsView() {
                 {/* Hero Streak Card */}
                 <div className="progress-hero glass">
                     <picture>
-                        <source srcSet="/assets/illustrations/mascot-celebrate.webp" type="image/webp" />
-                        <img src="/assets/illustrations/mascot-celebrate.webp" alt="Great job!" className="progress-mascot" loading="lazy" decoding="async" />
+                        <source srcSet="./assets/illustrations/mascot-celebrate.webp" type="image/webp" />
+                        <img src="./assets/illustrations/mascot-celebrate.webp" alt="Great job!" className="progress-mascot" loading="lazy" decoding="async" />
                     </picture>
                     <div className="streak-display">
                         <svg viewBox="0 0 40 40" className="flame-icon" aria-hidden="true">

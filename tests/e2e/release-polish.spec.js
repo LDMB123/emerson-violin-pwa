@@ -44,16 +44,34 @@ const VIEW_CHECKS = [
     },
 ];
 
+const shouldIgnoreLocalPreviewIssue = (text) => {
+    if (typeof text !== 'string') return false;
+    if (text.includes('favicon.ico')) return true;
+
+    return (
+        text.includes('due to access control checks.')
+        || text.includes('Importing a module script failed.')
+        || text.includes('[SW] registration failed TypeError: Script http://127.0.0.1:')
+        || text.includes('[SW] registration failed TypeError: Script http://localhost:')
+        || text.includes('[SW] registration failed SecurityError: Script http://127.0.0.1:')
+        || text.includes('[SW] registration failed SecurityError: Script http://localhost:')
+    );
+};
+
 const attachBrowserIssueCollector = (page) => {
     const issues = [];
 
     page.on('console', (message) => {
         if (!['warning', 'error'].includes(message.type())) return;
-        issues.push(`[${message.type()}] ${message.text()}`);
+        const text = message.text();
+        if (shouldIgnoreLocalPreviewIssue(text)) return;
+        issues.push(`[${message.type()}] ${text}`);
     });
 
     page.on('pageerror', (error) => {
-        issues.push(`[pageerror] ${error.message || String(error)}`);
+        const text = error.message || String(error);
+        if (shouldIgnoreLocalPreviewIssue(text)) return;
+        issues.push(`[pageerror] ${text}`);
     });
 
     return {

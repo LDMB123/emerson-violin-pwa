@@ -12,7 +12,7 @@ export function ToolsHubView() {
             <SharedViewHeader
                 title="Practice Tools"
                 backTo="/home"
-                heroSrc="/assets/illustrations/mascot-focus.webp"
+                heroSrc="./assets/illustrations/mascot-focus.webp"
                 heroAlt="Panda ready to help you practice"
             />
 
@@ -22,7 +22,7 @@ export function ToolsHubView() {
 
             <div className={styles.heroCard}>
                 <img
-                    src="/assets/illustrations/mascot-focus.webp"
+                    src="./assets/illustrations/mascot-focus.webp"
                     alt="Panda ready to help you practice"
                     className={styles.heroMascot}
                     loading="eager"

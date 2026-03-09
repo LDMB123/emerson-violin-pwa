@@ -1,18 +1,12 @@
+import {
+    DEFAULT_RETRY_DELAY_MS,
+    DEFAULT_RETRIABLE_ATTEMPTS,
+    loadWithRetries,
+    waitFor,
+} from './import-retry.js';
+
 const DEFAULT_BASE_COOLDOWN_MS = 1500;
 const DEFAULT_MAX_COOLDOWN_MS = 20000;
-const DEFAULT_RETRY_DELAY_MS = 80;
-const DEFAULT_RETRIABLE_ATTEMPTS = 1;
-
-const waitFor = (delayMs) => new Promise((resolve) => {
-    globalThis.setTimeout(resolve, Math.max(0, Number(delayMs) || 0));
-});
-
-const isRetriableImportError = (error) => {
-    if (!error) return false;
-    if (error instanceof TypeError) return true;
-    const message = String(error?.message || '').toLowerCase();
-    return message.includes('module script') || message.includes('import');
-};
 
 const nextCooldownMs = (previousCooldownMs, baseCooldownMs, maxCooldownMs) => {
     if (!Number.isFinite(previousCooldownMs) || previousCooldownMs <= 0) {
@@ -36,23 +30,6 @@ export const createModuleLoader = ({
     const loadedModules = new Map();
     const failedLoads = new Map();
 
-    const loadWithRetries = async (loader) => {
-        let attempt = 0;
-        // Initial attempt + retriableAttempts retries
-        while (attempt <= retriableAttempts) {
-            try {
-                return await loader();
-            } catch (error) {
-                if (!isRetriableImportError(error) || attempt >= retriableAttempts) {
-                    throw error;
-                }
-                attempt += 1;
-                await wait(retryDelayMs);
-            }
-        }
-        return null;
-    };
-
     const loadModule = (key) => {
         const loader = moduleLoaders?.[key];
         if (!loader) return Promise.resolve(null);
@@ -66,7 +43,12 @@ export const createModuleLoader = ({
             return Promise.resolve(null);
         }
 
-        const pendingLoad = loadWithRetries(loader)
+        const pendingLoad = loadWithRetries({
+            loader,
+            wait,
+            retryDelayMs,
+            retriableAttempts,
+        })
             .then((module) => {
                 failedLoads.delete(key);
                 loadedModules.set(key, module);

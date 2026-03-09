@@ -1,15 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CanvasGameRunner } from './CanvasGameRunner.jsx';
 
-const rewriteLegacyAssetPaths = (section) => {
-    section.querySelectorAll('[src]').forEach((node) => {
-        const src = node.getAttribute('src') || '';
-        if (src.startsWith('./assets/')) {
-            node.setAttribute('src', `/${src.slice(2)}`);
-        }
-    });
-};
-
 const extractLegacyMarkup = (rawHtml, gameId) => {
     if (typeof DOMParser === 'undefined') {
         return rawHtml;
@@ -20,7 +11,6 @@ const extractLegacyMarkup = (rawHtml, gameId) => {
     const section = doc.querySelector(`#view-game-${gameId}`) || doc.querySelector('section');
     if (!section) return rawHtml;
 
-    rewriteLegacyAssetPaths(section);
     return section.innerHTML;
 };
 
@@ -32,7 +22,7 @@ export function LegacyGameView({ gameId, bindCanvasEngine, onFinish }) {
 
         const loadMarkup = async () => {
             try {
-                const response = await fetch(`/views/games/${gameId}.html`);
+                const response = await fetch(`./views/games/${gameId}.html`);
                 if (!response.ok) throw new Error(`Legacy markup missing for ${gameId}`);
                 const rawHtml = await response.text();
                 if (mounted) {

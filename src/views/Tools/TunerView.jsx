@@ -10,7 +10,7 @@ export function TunerView() {
             <SharedViewHeader
                 title="Tuner"
                 backTo="/tools"
-                heroSrc="/assets/illustrations/mascot-focus.webp"
+                heroSrc="./assets/illustrations/mascot-focus.webp"
                 heroAlt="Panda listening closely for your tuning"
             />
 
@@ -21,8 +21,8 @@ export function TunerView() {
                     {/* Live Tuner Panel */}
                     <div className="tuner-card glass" id="tuner-live">
                         <picture>
-                            <source srcSet="/assets/illustrations/mascot-focus.webp" type="image/webp" />
-                            <img src="/assets/illustrations/mascot-focus.webp" alt="Panda tuning" className="tuner-card-mascot" loading="lazy" decoding="async" width="1024" height="1024" />
+                            <source srcSet="./assets/illustrations/mascot-focus.webp" type="image/webp" />
+                            <img src="./assets/illustrations/mascot-focus.webp" alt="Panda tuning" className="tuner-card-mascot" loading="lazy" decoding="async" width="1024" height="1024" />
                         </picture>
                         <div className="tuner-card-header">
                             <div className="tuner-note-pill">
@@ -79,7 +79,7 @@ export function TunerView() {
                                                 <rect x="6" y="6" width="12" height="12" rx="2" />
                                             </svg>
                                         </button>
-                                        <audio preload="none" src={`/assets/audio/violin-${tone.toLowerCase()}.wav`} aria-labelledby={`ref-${tone.toLowerCase()}-label`} data-tone-audio={stringKey} hidden></audio>
+                                        <audio preload="none" src={`./assets/audio/violin-${tone.toLowerCase()}.wav`} aria-labelledby={`ref-${tone.toLowerCase()}-label`} data-tone-audio={stringKey} hidden></audio>
                                     </div>
                                 );
                             })}

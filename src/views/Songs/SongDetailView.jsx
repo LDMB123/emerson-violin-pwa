@@ -197,8 +197,8 @@ export function SongDetailView() {
                     return (
                         <div className="glass" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
                             <picture>
-                                <source srcSet="/assets/illustrations/mascot-happy.webp" type="image/webp" />
-                                <img src="/assets/illustrations/mascot-happy.webp" alt="Panda Tip" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
+                                <source srcSet="./assets/illustrations/mascot-happy.webp" type="image/webp" />
+                                <img src="./assets/illustrations/mascot-happy.webp" alt="Panda Tip" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
                             </picture>
                             <Typography variant="body" style={{ fontStyle: 'italic', margin: 0 }}>
                                 "{tip}"

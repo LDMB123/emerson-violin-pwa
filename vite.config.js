@@ -38,6 +38,9 @@ const devServiceWorkerPlugin = () => ({
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
+    const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1] || '';
+    const basePath = env.VITE_APP_BASE_PATH
+        || (process.env.GITHUB_ACTIONS && repositoryName ? `/${repositoryName}/` : '/');
     const sentryEnabled = Boolean(
         env.SENTRY_AUTH_TOKEN
         && env.SENTRY_ORG
@@ -67,7 +70,7 @@ export default defineConfig(({ mode }) => {
 
     return {
         root: '.',
-        base: './',
+        base: basePath,
         publicDir: 'public',
 
         build: {

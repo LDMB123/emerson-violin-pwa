@@ -1,3 +1,5 @@
+import { loadWithRetries } from '../app/import-retry.js';
+
 let wasmModule = null;
 let wasmModulePromise = null;
 /**
@@ -9,12 +11,17 @@ export const getCore = async () => {
     }
 
     if (!wasmModulePromise) {
-        console.log('[DEBUG] getCore(): STARTING IMPORT of panda_core.js');
-        wasmModulePromise = import('./panda_core.js')
-            .then(async (mod) => {
+        wasmModulePromise = loadWithRetries({
+            loader: async () => {
+                console.log('[DEBUG] getCore(): STARTING IMPORT of panda_core.js');
+                const mod = await import('./panda_core.js');
                 console.log('[DEBUG] getCore(): IMPORT RESOLVED. STARTING mod.default() compilation');
                 await mod.default();
                 console.log('[DEBUG] getCore(): mod.default() RESOLVED. WASM MOUNTED.');
+                return mod;
+            },
+        })
+            .then((mod) => {
                 wasmModule = mod;
                 return mod;
             })

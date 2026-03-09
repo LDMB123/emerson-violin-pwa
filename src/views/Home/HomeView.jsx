@@ -117,7 +117,7 @@ export function HomeView() {
 
             <div className={styles.homeHero}>
                 <img
-                    src="/assets/illustrations/mascot-playing-violin.png"
+                    src="./assets/illustrations/mascot-playing-violin.png"
                     alt="Panda playing violin"
                     className={styles.homeMascotArt}
                     width="640"

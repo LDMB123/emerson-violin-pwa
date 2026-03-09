@@ -1,18 +1,18 @@
-import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
+import React, { Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useSessionStorage } from '../../hooks/useStorage.js';
 import { Typography } from '../../components/primitives/Typography.jsx';
+import { lazyNamedWithRetry } from '../../app/lazy-import.js';
 import styles from './ParentView.module.css';
 
 const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 const WARN_TIMEOUT = 14 * 60 * 1000; // 14 minutes
-const lazyNamed = (loader, exportName) => lazy(() => loader().then((module) => ({ default: module[exportName] })));
-const ReviewPanel = lazyNamed(() => import('./ReviewPanel.jsx'), 'ReviewPanel');
-const GoalsPanel = lazyNamed(() => import('./GoalsPanel.jsx'), 'GoalsPanel');
-const ChecklistPanel = lazyNamed(() => import('./ChecklistPanel.jsx'), 'ChecklistPanel');
-const RecordingsPanel = lazyNamed(() => import('./RecordingsPanel.jsx'), 'RecordingsPanel');
-const DataPanel = lazyNamed(() => import('./DataPanel.jsx'), 'DataPanel');
-const SettingsPanel = lazyNamed(() => import('./SettingsPanel.jsx'), 'SettingsPanel');
+const ReviewPanel = lazyNamedWithRetry(() => import('./ReviewPanel.jsx'), 'ReviewPanel');
+const GoalsPanel = lazyNamedWithRetry(() => import('./GoalsPanel.jsx'), 'GoalsPanel');
+const ChecklistPanel = lazyNamedWithRetry(() => import('./ChecklistPanel.jsx'), 'ChecklistPanel');
+const RecordingsPanel = lazyNamedWithRetry(() => import('./RecordingsPanel.jsx'), 'RecordingsPanel');
+const DataPanel = lazyNamedWithRetry(() => import('./DataPanel.jsx'), 'DataPanel');
+const SettingsPanel = lazyNamedWithRetry(() => import('./SettingsPanel.jsx'), 'SettingsPanel');
 
 export function ParentView({ defaultTab = 'review' }) {
     const navigate = useNavigate();
@@ -170,8 +170,8 @@ export function ParentView({ defaultTab = 'review' }) {
             </div>
 
             <picture>
-                <source srcSet="/assets/illustrations/mascot-focus.webp" type="image/webp" />
-                <img src="/assets/illustrations/mascot-focus.webp" alt="" className="corner-mascot parent-mascot" loading="lazy" decoding="async" style={{ position: 'fixed', bottom: -20, right: -20, width: '200px', opacity: 0.8, pointerEvents: 'none', zIndex: -1 }} />
+                <source srcSet="./assets/illustrations/mascot-focus.webp" type="image/webp" />
+                <img src="./assets/illustrations/mascot-focus.webp" alt="" className="corner-mascot parent-mascot" loading="lazy" decoding="async" style={{ position: 'fixed', bottom: -20, right: -20, width: '200px', opacity: 0.8, pointerEvents: 'none', zIndex: -1 }} />
             </picture>
         </section >
     );

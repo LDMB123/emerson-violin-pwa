@@ -30,7 +30,7 @@ export function GamesView() {
             <SharedViewHeader
                 title="Games"
                 backTo="/home"
-                heroSrc="/assets/illustrations/mascot-celebrate.webp"
+                heroSrc="./assets/illustrations/mascot-celebrate.webp"
                 heroAlt="Panda celebrating your progress"
             />
 
@@ -93,8 +93,8 @@ export function GamesView() {
             {filteredGames.length === 0 && (
                 <div className="games-empty glass" role="status" aria-live="polite">
                     <picture>
-                        <source srcSet="/assets/illustrations/mascot-encourage.webp" type="image/webp" />
-                        <img src="/assets/illustrations/mascot-encourage.webp" alt="Encouraging panda coach" className="empty-state-mascot" loading="lazy" decoding="async" />
+                        <source srcSet="./assets/illustrations/mascot-encourage.webp" type="image/webp" />
+                        <img src="./assets/illustrations/mascot-encourage.webp" alt="Encouraging panda coach" className="empty-state-mascot" loading="lazy" decoding="async" />
                     </picture>
                     <div className="empty-state-content">
                         <h3>Oh no, no games found!</h3>
@@ -104,8 +104,8 @@ export function GamesView() {
             )}
 
             <picture>
-                <source srcSet="/assets/illustrations/mascot-celebrate.webp" type="image/webp" />
-                <img src="/assets/illustrations/mascot-celebrate.webp" alt="" className="corner-mascot" loading="lazy" decoding="async" />
+                <source srcSet="./assets/illustrations/mascot-celebrate.webp" type="image/webp" />
+                <img src="./assets/illustrations/mascot-celebrate.webp" alt="" className="corner-mascot" loading="lazy" decoding="async" />
             </picture>
         </section>
     );

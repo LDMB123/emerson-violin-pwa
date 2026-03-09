@@ -172,7 +172,7 @@ export function ChecklistPanel() {
 
             {history.length === 0 && (
                 <div style={{ marginTop: 'var(--space-6)', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: 'var(--space-4)', textAlign: 'center' }}>
-                    <img src="/assets/illustrations/mascot-reading.png" alt="Panda reading checklist" style={{ width: 140, height: 140, marginBottom: 'var(--space-3)' }} />
+                    <img src="./assets/illustrations/mascot-reading.png" alt="Panda reading checklist" style={{ width: 140, height: 140, marginBottom: 'var(--space-3)' }} />
                     <h4 style={{ marginBottom: 'var(--space-2)' }}>No Observations Yet</h4>
                     <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0 }}>Rate your child's practice today to start building a log!</p>
                 </div>

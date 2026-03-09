@@ -1,28 +1,26 @@
-import React, { lazy } from 'react';
+import { lazyNamedWithRetry } from './lazy-import.js';
 
-const lazyNamed = (loader, exportName) => lazy(() => loader().then((module) => ({ default: module[exportName] })));
-
-const LazyCoachView = lazyNamed(() => import('../views/Coach/CoachView.jsx'), 'CoachView');
-const LazyGamesView = lazyNamed(() => import('../views/Games/GamesView.jsx'), 'GamesView');
-const LazyGameRunnerView = lazyNamed(() => import('../views/Games/GameRunnerView.jsx'), 'GameRunnerView');
-const LazyWinsView = lazyNamed(() => import('../views/Wins/WinsView.jsx'), 'WinsView');
-const LazyToolsHubView = lazyNamed(() => import('../views/Tools/ToolsHubView.jsx'), 'ToolsHubView');
-const LazyTunerView = lazyNamed(() => import('../views/Tools/TunerView.jsx'), 'TunerView');
-const LazyBowingView = lazyNamed(() => import('../views/Tools/BowingView.jsx'), 'BowingView');
-const LazyPostureView = lazyNamed(() => import('../views/Tools/PostureView.jsx'), 'PostureView');
-const LazyMetronomeView = lazyNamed(() => import('../views/Tools/MetronomeView.jsx'), 'MetronomeView');
-const LazyDroneView = lazyNamed(() => import('../views/Tools/DroneView.jsx'), 'DroneView');
-const LazySongsView = lazyNamed(() => import('../views/Songs/SongsView.jsx'), 'SongsView');
-const LazySongDetailView = lazyNamed(() => import('../views/Songs/SongDetailView.jsx'), 'SongDetailView');
-const LazySongRunnerView = lazyNamed(() => import('../views/Songs/SongRunnerView.jsx'), 'SongRunnerView');
-const LazyChildSettingsView = lazyNamed(() => import('../views/Settings/ChildSettingsView.jsx'), 'ChildSettingsView');
-const LazyOnboardingView = lazyNamed(() => import('../views/Onboarding/OnboardingView.jsx'), 'OnboardingView');
-const LazyParentView = lazyNamed(() => import('../views/Parent/ParentView.jsx'), 'ParentView');
-const LazyReviewView = lazyNamed(() => import('../views/Parent/ReviewView.jsx'), 'ReviewView');
-const LazyBackupView = lazyNamed(() => import('../views/Settings/BackupView.jsx'), 'BackupView');
-const LazyHelpView = lazyNamed(() => import('../views/Settings/HelpView.jsx'), 'HelpView');
-const LazyAboutView = lazyNamed(() => import('../views/Settings/AboutView.jsx'), 'AboutView');
-const LazyPrivacyView = lazyNamed(() => import('../views/Settings/PrivacyView.jsx'), 'PrivacyView');
+const LazyCoachView = lazyNamedWithRetry(() => import('../views/Coach/CoachView.jsx'), 'CoachView');
+const LazyGamesView = lazyNamedWithRetry(() => import('../views/Games/GamesView.jsx'), 'GamesView');
+const LazyGameRunnerView = lazyNamedWithRetry(() => import('../views/Games/GameRunnerView.jsx'), 'GameRunnerView');
+const LazyWinsView = lazyNamedWithRetry(() => import('../views/Wins/WinsView.jsx'), 'WinsView');
+const LazyToolsHubView = lazyNamedWithRetry(() => import('../views/Tools/ToolsHubView.jsx'), 'ToolsHubView');
+const LazyTunerView = lazyNamedWithRetry(() => import('../views/Tools/TunerView.jsx'), 'TunerView');
+const LazyBowingView = lazyNamedWithRetry(() => import('../views/Tools/BowingView.jsx'), 'BowingView');
+const LazyPostureView = lazyNamedWithRetry(() => import('../views/Tools/PostureView.jsx'), 'PostureView');
+const LazyMetronomeView = lazyNamedWithRetry(() => import('../views/Tools/MetronomeView.jsx'), 'MetronomeView');
+const LazyDroneView = lazyNamedWithRetry(() => import('../views/Tools/DroneView.jsx'), 'DroneView');
+const LazySongsView = lazyNamedWithRetry(() => import('../views/Songs/SongsView.jsx'), 'SongsView');
+const LazySongDetailView = lazyNamedWithRetry(() => import('../views/Songs/SongDetailView.jsx'), 'SongDetailView');
+const LazySongRunnerView = lazyNamedWithRetry(() => import('../views/Songs/SongRunnerView.jsx'), 'SongRunnerView');
+const LazyChildSettingsView = lazyNamedWithRetry(() => import('../views/Settings/ChildSettingsView.jsx'), 'ChildSettingsView');
+const LazyOnboardingView = lazyNamedWithRetry(() => import('../views/Onboarding/OnboardingView.jsx'), 'OnboardingView');
+const LazyParentView = lazyNamedWithRetry(() => import('../views/Parent/ParentView.jsx'), 'ParentView');
+const LazyReviewView = lazyNamedWithRetry(() => import('../views/Parent/ReviewView.jsx'), 'ReviewView');
+const LazyBackupView = lazyNamedWithRetry(() => import('../views/Settings/BackupView.jsx'), 'BackupView');
+const LazyHelpView = lazyNamedWithRetry(() => import('../views/Settings/HelpView.jsx'), 'HelpView');
+const LazyAboutView = lazyNamedWithRetry(() => import('../views/Settings/AboutView.jsx'), 'AboutView');
+const LazyPrivacyView = lazyNamedWithRetry(() => import('../views/Settings/PrivacyView.jsx'), 'PrivacyView');
 
 export function OnboardingRoute(props) {
     return <LazyOnboardingView {...props} />;

@@ -65,6 +65,8 @@ self.__ASSETS__ = [
   "./src/app/game-sort-controller.js",
   "./src/app/game-sort-model.js",
   "./src/app/game-sort-view.js",
+  "./src/app/import-retry.js",
+  "./src/app/lazy-import.js",
   "./src/app/legacy-view-runtime.js",
   "./src/app/module-loader.js",
   "./src/app/module-registry.js",

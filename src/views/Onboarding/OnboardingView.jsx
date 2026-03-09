@@ -137,8 +137,8 @@ export function OnboardingView({ onComplete }) {
                             return (
                                 <div key={step.id} className={styles.onboardingSlide}>
                                     <picture>
-                                        <source srcSet="/assets/illustrations/mascot-happy.webp" type="image/webp" />
-                                        <img src="/assets/illustrations/mascot-happy.webp" alt="Panda waving hello" width="1024" height="1024" style={{ width: '100%', maxWidth: '400px', height: 'auto', objectFit: 'contain' }} loading="eager" />
+                                        <source srcSet="./assets/illustrations/mascot-happy.webp" type="image/webp" />
+                                        <img src="./assets/illustrations/mascot-happy.webp" alt="Panda waving hello" width="1024" height="1024" style={{ width: '100%', maxWidth: '400px', height: 'auto', objectFit: 'contain' }} loading="eager" />
                                     </picture>
                                     <h2 style={{ fontSize: '2.5rem', textAlign: 'center', margin: 'var(--space-4) 0 var(--space-2)' }}>Hi! I'm Panda.</h2>
                                     <p style={{ fontSize: '1.5rem', textAlign: 'center', marginBottom: 'var(--space-6)', padding: '0 var(--space-4)', color: 'var(--color-text-muted)' }}>Let's learn violin together!</p>
@@ -150,8 +150,8 @@ export function OnboardingView({ onComplete }) {
                             return (
                                 <div key={step.id} className={styles.onboardingSlide}>
                                     <picture>
-                                        <source srcSet="/assets/illustrations/mascot-focus.webp" type="image/webp" />
-                                        <img src="/assets/illustrations/mascot-focus.webp" alt="Panda asking name" style={{ width: '100%', maxWidth: '300px', height: 'auto', objectFit: 'contain' }} loading="lazy" />
+                                        <source srcSet="./assets/illustrations/mascot-focus.webp" type="image/webp" />
+                                        <img src="./assets/illustrations/mascot-focus.webp" alt="Panda asking name" style={{ width: '100%', maxWidth: '300px', height: 'auto', objectFit: 'contain' }} loading="lazy" />
                                     </picture>
                                     <h2 style={{ fontSize: '2rem', textAlign: 'center', margin: 'var(--space-4) 0 var(--space-2)' }}>What's your name?</h2>
                                     <input
@@ -241,8 +241,8 @@ export function OnboardingView({ onComplete }) {
                             return (
                                 <div key={step.id} className={styles.onboardingSlide}>
                                     <picture>
-                                        <source srcSet="/assets/illustrations/mascot-celebrate.webp" type="image/webp" />
-                                        <img src="/assets/illustrations/mascot-celebrate.webp" alt="Panda celebrating" style={{ width: '100%', maxWidth: '400px', height: 'auto', objectFit: 'contain' }} loading="lazy" />
+                                        <source srcSet="./assets/illustrations/mascot-celebrate.webp" type="image/webp" />
+                                        <img src="./assets/illustrations/mascot-celebrate.webp" alt="Panda celebrating" style={{ width: '100%', maxWidth: '400px', height: 'auto', objectFit: 'contain' }} loading="lazy" />
                                     </picture>
                                     <h2 style={{ fontSize: '2.5rem', textAlign: 'center', margin: 'var(--space-4) 0 var(--space-2)' }}>Let's Get Started!</h2>
                                     <p style={{ fontSize: '1.5rem', textAlign: 'center', marginBottom: 'var(--space-6)', padding: '0 var(--space-4)', color: 'var(--color-text-muted)' }}>

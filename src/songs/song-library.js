@@ -1,6 +1,6 @@
 import { clone, finiteOrZero } from '../utils/math.js';
 
-const CATALOG_PATH = '/content/songs/catalog.v2.json';
+const CATALOG_PATH = './content/songs/catalog.v2.json';
 
 let cachedCatalog = null;
 let catalogPromise = null;

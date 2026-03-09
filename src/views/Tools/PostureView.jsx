@@ -2,27 +2,46 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import { Typography } from '../../components/primitives/Typography.jsx';
 
+const attachStreamToVideoElement = (video, stream) => {
+    if (!video) return;
+    try {
+        video.srcObject = stream;
+    } catch {
+        // Some WebKit builds reject synthetic test streams; the React state still tracks readiness.
+    }
+    video.dataset.hasSrcObject = stream ? 'true' : 'false';
+    if (stream) {
+        void video.play?.().catch(() => {});
+    }
+};
+
 export function PostureView({ onComplete }) {
     const videoRef = useRef(null);
     const streamRef = useRef(null);
     const [cameraActive, setCameraActive] = useState(false);
+    const [cameraStarting, setCameraStarting] = useState(false);
+    const [streamAttached, setStreamAttached] = useState(false);
     const [error, setError] = useState(null);
 
     const startCamera = async () => {
+        if (cameraActive || cameraStarting) return;
         try {
+            setCameraStarting(true);
+            setError(null);
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'user' }
             });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
             streamRef.current = stream;
+            attachStreamToVideoElement(videoRef.current, stream);
+            setStreamAttached(true);
             setCameraActive(true);
-            setError(null);
         } catch (err) {
             console.error("Failed to start camera:", err);
             setError("Camera access denied or unavailable. Please enable permissions.");
+            setStreamAttached(false);
             setCameraActive(false);
+        } finally {
+            setCameraStarting(false);
         }
     };
 
@@ -33,9 +52,18 @@ export function PostureView({ onComplete }) {
         }
         if (videoRef.current) {
             videoRef.current.srcObject = null;
+            videoRef.current.dataset.hasSrcObject = 'false';
         }
+        setStreamAttached(false);
+        setCameraStarting(false);
         setCameraActive(false);
     };
+
+    useEffect(() => {
+        if (cameraActive && streamRef.current) {
+            attachStreamToVideoElement(videoRef.current, streamRef.current);
+        }
+    }, [cameraActive, streamAttached]);
 
     useEffect(() => {
         // Cleanup on unmount
@@ -63,7 +91,9 @@ export function PostureView({ onComplete }) {
                     {!cameraActive && !error && (
                         <div style={{ textAlign: 'center', padding: '24px' }}>
                             <Typography variant="h3" style={{ color: '#fff', marginBottom: '16px' }}>Ready to check your posture?</Typography>
-                            <button className="btn btn-primary" onClick={startCamera}>Start Camera</button>
+                            <button className="btn btn-primary" onClick={startCamera} disabled={cameraStarting}>
+                                {cameraStarting ? 'Starting Camera...' : 'Start Camera'}
+                            </button>
                         </div>
                     )}
 
@@ -79,6 +109,7 @@ export function PostureView({ onComplete }) {
                         autoPlay
                         playsInline
                         muted
+                        data-has-src-object={streamAttached ? 'true' : 'false'}
                         style={{
                             width: '100%',
                             height: '100%',

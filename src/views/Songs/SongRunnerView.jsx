@@ -85,7 +85,7 @@ function SongRunnerContent({ propSongId, onComplete }) {
                 setSong(data);
                 setSavedCheckpoint(checkpoint);
 
-                const response = await fetch(`/views/songs/${songId}.html`);
+                const response = await fetch(`./views/songs/${songId}.html`);
                 if (!response.ok) throw new Error('Song HTML not found');
                 const htmlText = await response.text();
 

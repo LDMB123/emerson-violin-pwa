@@ -155,7 +155,7 @@ export function RecordingsPanel() {
             <div className="parent-recording-list" data-parent-recordings style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {filtered.length === 0 && !loading && (
                     <div className="empty-state" style={{ padding: 'var(--space-4)', textAlign: 'center', background: 'var(--color-bg)', borderRadius: 'var(--radius-lg)' }}>
-                        <img src="/assets/illustrations/empty-no-recordings.png" alt="Panda waiting for recordings" style={{ width: 140, height: 140, marginBottom: 'var(--space-3)' }} />
+                        <img src="./assets/illustrations/empty-no-recordings.png" alt="Panda waiting for recordings" style={{ width: 140, height: 140, marginBottom: 'var(--space-3)' }} />
                         <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>No recordings available yet.</p>
                         <p style={{ margin: '8px 0 0 0', fontSize: '0.9rem' }}>Use the Practice Coach to record audio!</p>
                     </div>

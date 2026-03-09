@@ -1,7 +1,7 @@
 import { clone } from '../utils/math.js';
 import { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
 
-const CURRICULUM_PATH = '/content/curriculum/track-beginner-intermediate.v1.json';
+const CURRICULUM_PATH = './content/curriculum/track-beginner-intermediate.v1.json';
 
 const FALLBACK_CONTENT = Object.freeze({
     id: 'track-beginner-intermediate.v1',

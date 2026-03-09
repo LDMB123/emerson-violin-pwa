@@ -88,8 +88,8 @@ export function GameShell({ gameId, title, children, onExit }) {
                 </div>
 
                 <picture>
-                    <source srcSet="/assets/illustrations/mascot-focus.webp" type="image/webp" />
-                    <img src="/assets/illustrations/mascot-focus.webp" alt="Panda coaching" style={{ width: '220px', marginBottom: 'var(--space-4)' }} decoding="async" loading="eager" />
+                    <source srcSet="./assets/illustrations/mascot-focus.webp" type="image/webp" />
+                    <img src="./assets/illustrations/mascot-focus.webp" alt="Panda coaching" style={{ width: '220px', marginBottom: 'var(--space-4)' }} decoding="async" loading="eager" />
                 </picture>
 
                 <Typography variant="h1" style={{ fontSize: '3rem', marginBottom: 'var(--space-2)' }}>
@@ -155,8 +155,8 @@ export function GameShell({ gameId, title, children, onExit }) {
                 </div>
 
                 <picture>
-                    <source srcSet="/assets/illustrations/mascot-celebrate.webp" type="image/webp" />
-                    <img src="/assets/illustrations/mascot-celebrate.webp" alt="Panda cheering" style={{ width: '220px', marginBottom: 'var(--space-4)' }} decoding="async" loading="eager" />
+                    <source srcSet="./assets/illustrations/mascot-celebrate.webp" type="image/webp" />
+                    <img src="./assets/illustrations/mascot-celebrate.webp" alt="Panda cheering" style={{ width: '220px', marginBottom: 'var(--space-4)' }} decoding="async" loading="eager" />
                 </picture>
 
                 <Typography variant="h1" style={{ fontSize: '3rem', marginBottom: 'var(--space-2)', textAlign: 'center' }}>

@@ -31,6 +31,10 @@ import {
     WinsRoute,
 } from './app/lazy-route-components.jsx';
 
+const routerBasename = import.meta.env.BASE_URL === '/'
+    ? '/'
+    : import.meta.env.BASE_URL.replace(/\/$/, '');
+
 /**
  * Phase 1-9 Router Configuration
  * Maps native React views and legacy game/song runners
@@ -90,4 +94,6 @@ export const router = createBrowserRouter([
             { path: '*', element: <Navigate to="/home" replace /> }
         ]
     }
-]);
+], {
+    basename: routerBasename,
+});
