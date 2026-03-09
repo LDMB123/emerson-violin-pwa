@@ -9,28 +9,50 @@ let refreshPromise = null;
 let cacheReadPromise = null;
 let workerInstance = null;
 
+const createInlineWorker = () => ({
+    listeners: {},
+    addEventListener: function (type, cb) {
+        this.listeners[type] = cb;
+    },
+    removeEventListener: function (type, cb) {
+        if (this.listeners[type] === cb) this.listeners[type] = null;
+    },
+    postMessage: async function (data) {
+        try {
+            const result = await computeRecommendations(data.queuedGoals || []);
+            if (this.listeners.message) this.listeners.message({ data: { id: data.id, result } });
+        } catch (e) {
+            if (this.listeners.message) this.listeners.message({ data: { id: data.id, error: e.message } });
+        }
+    }
+});
+
+export const shouldPreferInlineRecommendationsWorker = ({
+    isDev = import.meta.env.DEV,
+    userAgent = typeof navigator === 'object' ? navigator.userAgent || '' : '',
+} = {}) => {
+    if (!isDev || !userAgent) return false;
+    const isAppleWebKit = /AppleWebKit/i.test(userAgent);
+    const isChromiumVariant = /Chrome|Chromium|CriOS|Edg\//i.test(userAgent);
+    return isAppleWebKit && !isChromiumVariant;
+};
+
 const getWorker = () => {
     if (!workerInstance) {
-        if (typeof Worker !== 'undefined' && typeof MLWorker === 'function') {
-            workerInstance = new MLWorker();
-        } else {
-            workerInstance = {
-                listeners: {},
-                addEventListener: function (type, cb) {
-                    this.listeners[type] = cb;
-                },
-                removeEventListener: function (type, cb) {
-                    if (this.listeners[type] === cb) this.listeners[type] = null;
-                },
-                postMessage: async function (data) {
-                    try {
-                        const result = await computeRecommendations(data.queuedGoals || []);
-                        if (this.listeners['message']) this.listeners['message']({ data: { id: data.id, result } });
-                    } catch (e) {
-                        if (this.listeners['message']) this.listeners['message']({ data: { id: data.id, error: e.message } });
-                    }
-                }
-            };
+        const canUseModuleWorker = !shouldPreferInlineRecommendationsWorker()
+            && typeof Worker !== 'undefined'
+            && typeof MLWorker === 'function';
+
+        if (canUseModuleWorker) {
+            try {
+                workerInstance = new MLWorker();
+            } catch {
+                workerInstance = null;
+            }
+        }
+
+        if (!workerInstance) {
+            workerInstance = createInlineWorker();
         }
     }
     return workerInstance;

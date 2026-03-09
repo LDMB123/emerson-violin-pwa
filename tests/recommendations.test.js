@@ -88,6 +88,7 @@ vi.mock('../src/songs/song-library.js', () => songLibraryMocks);
 import {
     getLearningRecommendations,
     refreshRecommendationsCache,
+    shouldPreferInlineRecommendationsWorker,
 } from '../src/ml/recommendations.js';
 
 const waitForAsyncWork = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -194,6 +195,24 @@ describe('learning recommendations', () => {
             recommendations: expect.any(Object),
             updatedAt: expect.any(Number),
         });
+    });
+
+    it('prefers inline recommendation compute for local WebKit development', () => {
+        expect(shouldPreferInlineRecommendationsWorker({
+            isDev: true,
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+        })).toBe(true);
+    });
+
+    it('keeps module workers for Chromium dev and production Safari', () => {
+        expect(shouldPreferInlineRecommendationsWorker({
+            isDev: true,
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+        })).toBe(false);
+        expect(shouldPreferInlineRecommendationsWorker({
+            isDev: false,
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+        })).toBe(false);
     });
 
     it('dedupes concurrent refreshes into a single compute/write cycle', async () => {
