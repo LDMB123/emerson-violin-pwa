@@ -3,12 +3,14 @@ import { Link } from 'react-router';
 import { Button } from '../../components/primitives/Button.jsx';
 import { Typography } from '../../components/primitives/Typography.jsx';
 import { useTapTempo } from '../../hooks/useTapTempo.js';
+import { createAudioContext } from '../../audio/audio-context.js';
 
 export function MetronomeView() {
     const [bpm, setBpm] = useState(100);
     const [isPlaying, setIsPlaying] = useState(false);
     const [subdivision, setSubdivision] = useState(1); // 1 = quarter, 2 = eighth, 3 = triplet
     const [flash, setFlash] = useState(false);
+    const [audioError, setAudioError] = useState('');
 
     const { handleTap: tapTempoTap } = useTapTempo({
         minBpm: 40, maxBpm: 208, windowMs: 2000, maxTaps: 4,
@@ -20,6 +22,8 @@ export function MetronomeView() {
     const nextNoteTimeRef = useRef(0);
     const currentNoteRef = useRef(0);
     const timerIDRef = useRef(null);
+    const isPlayingRef = useRef(false);
+    const resumeAfterVisibilityRef = useRef(false);
 
     // To use current BPM and Subdivision in the scheduler without stale closures
     const bpmRef = useRef(bpm);
@@ -31,16 +35,46 @@ export function MetronomeView() {
     }, [bpm, subdivision]);
 
     useEffect(() => {
+        isPlayingRef.current = isPlaying;
+    }, [isPlaying]);
+
+    useEffect(() => {
         return () => {
             if (timerIDRef.current) clearTimeout(timerIDRef.current);
-            if (audioCtxRef.current) audioCtxRef.current.close();
+            if (audioCtxRef.current) {
+                audioCtxRef.current.close().catch(() => {});
+            }
         };
+    }, []);
+
+    const ensureContext = useCallback(async () => {
+        if (audioCtxRef.current?.state === 'closed') {
+            audioCtxRef.current = null;
+        }
+        if (!audioCtxRef.current) {
+            audioCtxRef.current = createAudioContext({ latencyHint: 'interactive' });
+        }
+        if (!audioCtxRef.current) {
+            setAudioError('Audio is unavailable on this device.');
+            return null;
+        }
+        if (audioCtxRef.current.state === 'suspended' || audioCtxRef.current.state === 'interrupted') {
+            try {
+                await audioCtxRef.current.resume();
+            } catch {
+                audioCtxRef.current.close().catch(() => {});
+                audioCtxRef.current = null;
+                setAudioError('Audio could not start. Tap Play again.');
+                return null;
+            }
+        }
+        return audioCtxRef.current;
     }, []);
 
     const nextNote = useCallback(() => {
         const secondsPerBeat = 60.0 / bpmRef.current;
         nextNoteTimeRef.current += secondsPerBeat / subRef.current;
-        currentNoteRef.current++;
+        currentNoteRef.current += 1;
         if (currentNoteRef.current >= subRef.current * 4) {
             currentNoteRef.current = 0; // 4/4 time signature
         }
@@ -58,11 +92,10 @@ export function MetronomeView() {
         const isDownbeat = beatNumber % subRef.current === 0;
         const isFirstBeat = isDownbeat && beatNumber === 0;
 
-        // Frequencies for click
         if (isDownbeat) {
             osc.frequency.value = isFirstBeat ? 880.0 : 440.0;
         } else {
-            osc.frequency.value = 220.0; // Subdivisions
+            osc.frequency.value = 220.0;
         }
 
         envelope.gain.value = 1;
@@ -72,7 +105,6 @@ export function MetronomeView() {
         osc.start(time);
         osc.stop(time + 0.05);
 
-        // Visual flash logic
         if (isDownbeat) {
             const diff = time - ctx.currentTime;
             requestAnimationFrame(() => {
@@ -97,24 +129,58 @@ export function MetronomeView() {
         timerIDRef.current = setTimeout(scheduler, lookahead);
     }, [nextNote, scheduleNote]);
 
-    const togglePlay = () => {
-        if (isPlaying) {
+    const stopMetronome = useCallback(() => {
+        if (timerIDRef.current) {
             clearTimeout(timerIDRef.current);
-            setIsPlaying(false);
-        } else {
-            if (!audioCtxRef.current) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtxRef.current = new AudioContext();
-            }
-            if (audioCtxRef.current.state === 'suspended') {
-                audioCtxRef.current.resume();
-            }
-            setIsPlaying(true);
-            currentNoteRef.current = 0;
-            nextNoteTimeRef.current = audioCtxRef.current.currentTime + 0.05;
-            scheduler();
+            timerIDRef.current = null;
         }
-    };
+        setIsPlaying(false);
+    }, []);
+
+    const startMetronome = useCallback(async () => {
+        const ctx = await ensureContext();
+        if (!ctx) return false;
+        setAudioError('');
+        setIsPlaying(true);
+        currentNoteRef.current = 0;
+        nextNoteTimeRef.current = ctx.currentTime + 0.05;
+        scheduler();
+        return true;
+    }, [ensureContext, scheduler]);
+
+    const togglePlay = useCallback(async () => {
+        if (isPlayingRef.current) {
+            stopMetronome();
+            return;
+        }
+        await startMetronome();
+    }, [startMetronome, stopMetronome]);
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                resumeAfterVisibilityRef.current = isPlayingRef.current;
+                stopMetronome();
+                return;
+            }
+            if (resumeAfterVisibilityRef.current) {
+                resumeAfterVisibilityRef.current = false;
+                void startMetronome();
+            }
+        };
+
+        const handlePageHide = () => {
+            resumeAfterVisibilityRef.current = false;
+            stopMetronome();
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('pagehide', handlePageHide, { passive: true });
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('pagehide', handlePageHide);
+        };
+    }, [startMetronome, stopMetronome]);
 
     const handleTapTempo = () => {
         tapTempoTap();
@@ -215,13 +281,11 @@ export function MetronomeView() {
             `}</style>
 
             <div className="metronome-layout">
-                {/* Visual Display */}
                 <div className="metronome-circle">
                     <span className="bpm-display">{bpm}</span>
                     <span className="bpm-label">BPM</span>
                 </div>
 
-                {/* Main Controls */}
                 <div className="controls-row">
                     <Button variant="ghost" size="giant" onClick={() => updateBpm(bpm - 1)} aria-label="Decrease BPM" style={{ fontSize: '2rem' }}>-</Button>
                     <input
@@ -235,7 +299,6 @@ export function MetronomeView() {
                     <Button variant="ghost" size="giant" onClick={() => updateBpm(bpm + 1)} aria-label="Increase BPM" style={{ fontSize: '2rem' }}>+</Button>
                 </div>
 
-                {/* Subdivisions */}
                 <div className="controls-row">
                     <div className="subdivision-pills">
                         <button className={`subdivision-pill ${subdivision === 1 ? 'active' : ''}`} onClick={() => setSubdivision(1)}>♩</button>
@@ -244,7 +307,6 @@ export function MetronomeView() {
                     </div>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="controls-row" style={{ marginTop: '16px' }}>
                     <Button
                         variant={isPlaying ? 'secondary' : 'primary'}
@@ -263,6 +325,12 @@ export function MetronomeView() {
                         Tap Tempo
                     </Button>
                 </div>
+
+                {audioError ? (
+                    <Typography variant="body" style={{ margin: 0, textAlign: 'center', color: 'var(--color-danger, #c62828)' }}>
+                        {audioError}
+                    </Typography>
+                ) : null}
             </div>
         </section>
     );

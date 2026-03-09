@@ -7,6 +7,8 @@ import { useProgressSummary } from '../../hooks/useProgressSummary.js';
 import { Button } from '../../components/primitives/Button.jsx';
 import { useTapTempo } from '../../hooks/useTapTempo.js';
 import { getPublicAssetPath } from '../../utils/public-asset-path.js';
+import { createAudioController } from '../../utils/audio-utils.js';
+import { playRecordingWithSoundCheck } from '../../utils/recording-playback-utils.js';
 
 const ART_MAP = {
     'open_strings': '🎻',
@@ -59,9 +61,13 @@ export function SongDetailView() {
     const [song, setSong] = useState(null);
     const [recordings, setRecordings] = useState([]);
     const [playingRec, setPlayingRec] = useState(null);
-    const audioRef = useRef(new Audio());
+    const playbackControllerRef = useRef(null);
     const { summary } = useProgressSummary();
     const { bpmOverride, handleTap: tapTempo, reset: resetTap } = useTapTempo({ onBpm: () => { } });
+
+    if (!playbackControllerRef.current) {
+        playbackControllerRef.current = createAudioController();
+    }
 
     useEffect(() => {
         let mounted = true;
@@ -82,6 +88,10 @@ export function SongDetailView() {
 
         return () => { mounted = false; };
     }, [songId]);
+
+    useEffect(() => () => {
+        playbackControllerRef.current?.stop();
+    }, []);
 
     if (!song) {
         return (
@@ -255,15 +265,26 @@ export function SongDetailView() {
                                     </div>
                                     <button
                                         className="btn"
-                                        onClick={() => {
+                                        onClick={async () => {
+                                            const controller = playbackControllerRef.current;
                                             if (playingRec === rec.createdAt) {
-                                                audioRef.current.pause();
+                                                controller?.stop();
+                                                if (controller?.audio) {
+                                                    controller.audio.onended = null;
+                                                }
                                                 setPlayingRec(null);
                                             } else {
-                                                audioRef.current.src = rec.dataUrl;
-                                                audioRef.current.play().catch(e => console.error(e));
-                                                setPlayingRec(rec.createdAt);
-                                                audioRef.current.onended = () => setPlayingRec(null);
+                                                if (controller?.audio) {
+                                                    controller.audio.onended = () => setPlayingRec(null);
+                                                }
+                                                const started = await playRecordingWithSoundCheck({
+                                                    recording: rec,
+                                                    controller,
+                                                });
+                                                setPlayingRec(started ? rec.createdAt : null);
+                                                if (!started && controller?.audio) {
+                                                    controller.audio.onended = null;
+                                                }
                                             }
                                         }}
                                         style={{ background: playingRec === rec.createdAt ? 'var(--color-warning)' : 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

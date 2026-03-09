@@ -9,6 +9,7 @@ import { Typography } from '../../components/primitives/Typography.jsx';
 import { PermissionGate } from '../../components/shared/PermissionGate.jsx';
 import { GAME_RECORDED } from '../../utils/event-names.js';
 import { getSongCheckpoint, saveSongCheckpoint } from '../../songs/song-progression.js';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 function SongRunnerContent({ propSongId, onComplete }) {
     const params = useParams();
@@ -36,8 +37,10 @@ function SongRunnerContent({ propSongId, onComplete }) {
     const isRecordIntent = searchParams.get('record') === '1';
 
     // Hook: Media Recorder
-    const { isRecording, durationSecs, startRecording, stopRecording } = useMediaRecorder({
+    const { isRecording, durationSecs, error: recordingError, startRecording, stopRecording } = useMediaRecorder({
         songId,
+        getSongTitle: () => song?.title || songId || 'Practice Clip',
+        maxRecordings: 4,
         onFinish: (result) => {
             console.log('Recording finished:', result.duration, 'secs');
             // Mock dispatching legacy RECORDED event for progression logic
@@ -85,7 +88,7 @@ function SongRunnerContent({ propSongId, onComplete }) {
                 setSong(data);
                 setSavedCheckpoint(checkpoint);
 
-                const response = await fetch(`./views/songs/${songId}.html`);
+                const response = await fetch(getPublicAssetPath(`views/songs/${songId}.html`));
                 if (!response.ok) throw new Error('Song HTML not found');
                 const htmlText = await response.text();
 
@@ -128,10 +131,20 @@ function SongRunnerContent({ propSongId, onComplete }) {
 
     // Handle auto-record intent
     useEffect(() => {
-        if (!loading && !error && sheetHtml && isRecordIntent && !isRecording && !isPlaying) {
+        if (loading || error || !sheetHtml || !isRecordIntent || isRecording || isPlaying) return;
+        let cancelled = false;
+
+        const autoStartRecording = async () => {
+            const started = await startRecording();
+            if (cancelled || !started) return;
             setIsPlaying(true);
-            startRecording();
-        }
+        };
+
+        void autoStartRecording();
+
+        return () => {
+            cancelled = true;
+        };
     }, [loading, error, sheetHtml, isRecordIntent, isRecording, isPlaying, startRecording]);
 
     // MediaSession metadata: show song title in Now Playing (spec line 376)
@@ -319,6 +332,11 @@ function SongRunnerContent({ propSongId, onComplete }) {
                 </div>
 
                 <p data-song-advanced-status style={{ margin: '12px 0 0', color: 'var(--color-text-muted)' }}>{checkpointStatus}</p>
+                {recordingError ? (
+                    <p style={{ margin: '8px 0 0', color: 'var(--color-danger, #c62828)' }}>
+                        {recordingError.message || 'Recording could not start on this device.'}
+                    </p>
+                ) : null}
             </div>
 
         </section>
@@ -326,9 +344,12 @@ function SongRunnerContent({ propSongId, onComplete }) {
 }
 
 export function SongRunnerView({ propSongId, onComplete }) {
+    const [searchParams] = useSearchParams();
+    const isRecordIntent = searchParams.get('record') === '1';
+
     return (
         <ErrorBoundary>
-            <PermissionGate permissionType="microphone" required={true}>
+            <PermissionGate permissionType="microphone" required={isRecordIntent}>
                 <SongRunnerContent propSongId={propSongId} onComplete={onComplete} />
             </PermissionGate>
         </ErrorBoundary>

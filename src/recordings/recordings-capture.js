@@ -19,6 +19,18 @@ export const createRecordingCaptureController = ({
     let stopPromise = null;
     let stopResolve = null;
 
+    const cleanupRecorderResources = () => {
+        if (recordingStream) {
+            recordingStream.getTracks().forEach((track) => track.stop());
+        }
+        recorder = null;
+        recordingStream = null;
+        recordingSongId = null;
+        chunks = [];
+        stopPromise = null;
+        stopResolve = null;
+    };
+
     const pickMimeType = () => {
         if (typeof MediaRecorder === 'undefined') return '';
         if (typeof MediaRecorder.isTypeSupported !== 'function') return '';
@@ -35,16 +47,8 @@ export const createRecordingCaptureController = ({
                 stopPromise,
                 new Promise((resolve) => setTimeout(resolve, 800)),
             ]);
-            stopPromise = null;
-            stopResolve = null;
         }
-        if (recordingStream) {
-            recordingStream.getTracks().forEach((track) => track.stop());
-        }
-        recorder = null;
-        recordingStream = null;
-        recordingSongId = null;
-        chunks = [];
+        cleanupRecorderResources();
         if (recordingToggleOn()) {
             setRecordingStatus('Recording status: ready.');
         }
@@ -72,34 +76,39 @@ export const createRecordingCaptureController = ({
             return;
         }
 
-        const mimeType = pickMimeType();
-        recorder = new MediaRecorder(recordingStream, mimeType ? { mimeType } : undefined);
-        const recordingId = songId;
-        const startedAt = performance.now();
-        const actualMimeType = recorder.mimeType || mimeType || 'audio/webm';
-        recordingSongId = recordingId;
-        chunks = [];
-        stopPromise = new Promise((resolve) => {
-            stopResolve = resolve;
-        });
+        try {
+            const mimeType = pickMimeType();
+            recorder = new MediaRecorder(recordingStream, mimeType ? { mimeType } : undefined);
+            const recordingId = songId;
+            const startedAt = performance.now();
+            const actualMimeType = recorder.mimeType || mimeType || 'audio/webm';
+            recordingSongId = recordingId;
+            chunks = [];
+            stopPromise = new Promise((resolve) => {
+                stopResolve = resolve;
+            });
 
-        recorder.addEventListener('dataavailable', (event) => {
-            if (event.data?.size) chunks.push(event.data);
-        });
+            recorder.addEventListener('dataavailable', (event) => {
+                if (event.data?.size) chunks.push(event.data);
+            });
 
-        recorder.addEventListener('stop', async () => {
-            try {
-                if (!recordingId || !chunks.length) return;
-                const blob = new Blob(chunks, { type: actualMimeType });
-                const duration = (performance.now() - startedAt) / 1000;
-                await saveRecording(recordingId, duration, blob);
-            } finally {
-                stopResolve?.();
-            }
-        });
+            recorder.addEventListener('stop', async () => {
+                try {
+                    if (!recordingId || !chunks.length) return;
+                    const blob = new Blob(chunks, { type: actualMimeType });
+                    const duration = (performance.now() - startedAt) / 1000;
+                    await saveRecording(recordingId, duration, blob);
+                } finally {
+                    stopResolve?.();
+                }
+            });
 
-        recorder.start();
-        setRecordingStatus('Recording status: recording in progress.');
+            recorder.start();
+            setRecordingStatus('Recording status: recording in progress.');
+        } catch {
+            cleanupRecorderResources();
+            setRecordingStatus('Recording status: recording unsupported on this browser.');
+        }
     };
 
     const bindSongViews = () => {

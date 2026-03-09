@@ -8,7 +8,12 @@ const pickMimeType = () => {
     return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || '';
 };
 
-export function useMediaRecorder({ songId, onFinish }) {
+const stopStreamTracks = (stream) => {
+    if (!stream) return;
+    stream.getTracks().forEach((track) => track.stop());
+};
+
+export function useMediaRecorder({ songId, getSongTitle, maxRecordings = 4, onFinish }) {
     const [isRecording, setIsRecording] = useState(false);
     const [durationSecs, setDurationSecs] = useState(0);
     const [error, setError] = useState(null);
@@ -21,8 +26,16 @@ export function useMediaRecorder({ songId, onFinish }) {
     const stopPromiseRef = useRef(null);
     const stopResolveRef = useRef(null);
 
+    const resetRecorderState = useCallback(() => {
+        recorderRef.current = null;
+        streamRef.current = null;
+        stopPromiseRef.current = null;
+        stopResolveRef.current = null;
+        chunksRef.current = [];
+    }, []);
+
     const startRecording = useCallback(async () => {
-        if (isRecording) return;
+        if (isRecording) return true;
         try {
             setError(null);
 
@@ -55,7 +68,13 @@ export function useMediaRecorder({ songId, onFinish }) {
 
                     if (songId && chunksRef.current.length > 0) {
                         try {
-                            await saveRecording(songId, elapsed, blob);
+                            await saveRecording({
+                                songId,
+                                duration: elapsed,
+                                blob,
+                                getSongTitle,
+                                maxRecordings,
+                            });
                         } catch (e) {
                             console.error('Failed to save recording to DB', e);
                         }
@@ -78,15 +97,20 @@ export function useMediaRecorder({ songId, onFinish }) {
             timerRef.current = setInterval(() => {
                 setDurationSecs(Math.floor((performance.now() - startTimeRef.current) / 1000));
             }, 1000);
+            return true;
 
         } catch (err) {
+            stopStreamTracks(streamRef.current);
+            resetRecorderState();
+            setIsRecording(false);
             console.error('Failed to start recording', err);
             setError(err);
+            return false;
         }
-    }, [isRecording, songId, onFinish]);
+    }, [getSongTitle, isRecording, maxRecordings, onFinish, resetRecorderState, songId]);
 
     const stopRecording = useCallback(async (_forcedDuration) => {
-        if (!isRecording || !recorderRef.current) return;
+        if (!isRecording || !recorderRef.current) return false;
         try {
             if (timerRef.current) clearInterval(timerRef.current);
             setIsRecording(false);
@@ -102,31 +126,26 @@ export function useMediaRecorder({ songId, onFinish }) {
                 ]);
             }
 
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach((track) => track.stop());
-            }
-
-            recorderRef.current = null;
-            streamRef.current = null;
-            stopPromiseRef.current = null;
-            stopResolveRef.current = null;
+            stopStreamTracks(streamRef.current);
+            resetRecorderState();
+            return true;
         } catch (err) {
             console.error('Failed to stop recording', err);
             setError(err);
+            return false;
         }
-    }, [isRecording]);
+    }, [isRecording, resetRecorderState]);
 
     useEffect(() => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
-            if (isRecording && recorderRef.current) {
+            if (recorderRef.current && recorderRef.current.state !== 'inactive') {
                 recorderRef.current.stop();
-                if (streamRef.current) {
-                    streamRef.current.getTracks().forEach((track) => track.stop());
-                }
             }
+            stopStreamTracks(streamRef.current);
+            resetRecorderState();
         };
-    }, [isRecording]);
+    }, [resetRecorderState]);
 
     return {
         isRecording,

@@ -47,8 +47,23 @@ export const migrateRecordingsToBlobs = async () => {
 };
 
 /** Persists a new recording entry and prunes any displaced blob payloads. */
-export const saveRecording = async ({ songId, duration, blob, getSongTitle, maxRecordings }) => {
+export const saveRecording = async (optionsOrSongId, legacyDuration, legacyBlob) => {
+    const options = optionsOrSongId && typeof optionsOrSongId === 'object'
+        ? optionsOrSongId
+        : {
+            songId: optionsOrSongId,
+            duration: legacyDuration,
+            blob: legacyBlob,
+        };
+    const {
+        songId,
+        duration,
+        blob,
+        getSongTitle = (id) => id || 'Practice Clip',
+        maxRecordings = 4,
+    } = options;
     const recordings = await loadRecordings();
+    const recordingLimit = Math.max(1, Math.round(Number(maxRecordings) || 4));
 
     let blobKey = null;
     if (blob) {
@@ -59,14 +74,14 @@ export const saveRecording = async ({ songId, duration, blob, getSongTitle, maxR
     const dataUrl = blobKey ? null : await blobToDataUrl(blob);
     const entry = {
         id: songId,
-        title: getSongTitle(songId),
+        title: typeof getSongTitle === 'function' ? getSongTitle(songId) : (songId || 'Practice Clip'),
         duration: Math.round(duration || 0),
         createdAt: new Date().toISOString(),
         dataUrl,
         blobKey,
         mimeType: blob?.type || 'audio/webm',
     };
-    const next = [entry, ...recordings].slice(0, maxRecordings);
+    const next = [entry, ...recordings].slice(0, recordingLimit);
     await setJSON(RECORDINGS_KEY, next);
     await pruneBlobs(recordings, next);
     dispatchRecordingsUpdated();
