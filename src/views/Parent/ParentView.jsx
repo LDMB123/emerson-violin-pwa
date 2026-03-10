@@ -5,6 +5,13 @@ import { Typography } from '../../components/primitives/Typography.jsx';
 import { lazyNamedWithRetry } from '../../app/lazy-import.js';
 import styles from './ParentView.module.css';
 import { getPublicAssetPath } from '../../utils/public-asset-path.js';
+import { verifyPin } from '../../parent/pin-crypto.js';
+import { loadPinData, normalizePin, savePinData } from '../../parent/pin-state.js';
+import {
+    PARENT_PIN_KEY,
+    PARENT_PIN_LEGACY_KEY,
+    PARENT_UNLOCK_KEY,
+} from '../../persistence/storage-keys.js';
 
 const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 const WARN_TIMEOUT = 14 * 60 * 1000; // 14 minutes
@@ -17,13 +24,40 @@ const SettingsPanel = lazyNamedWithRetry(() => import('./SettingsPanel.jsx'), 'S
 
 export function ParentView({ defaultTab = 'review' }) {
     const navigate = useNavigate();
-    const [pinUnlocked, setPinUnlocked] = useSessionStorage('panda-violin:parent-unlocked', false);
+    const [pinUnlocked, setPinUnlocked] = useSessionStorage(PARENT_UNLOCK_KEY, false);
     const [pinInput, setPinInput] = useState('');
-    const [pinError, setPinError] = useState(false);
+    const [pinErrorMessage, setPinErrorMessage] = useState('');
+    const [pinData, setPinData] = useState(null);
+    const [isPinReady, setIsPinReady] = useState(false);
+    const [pinLoadFailed, setPinLoadFailed] = useState(false);
     const [activeTab, setActiveTab] = useState(defaultTab);
     const [showRevertWarning, setShowRevertWarning] = useState(false);
     const idleTimerRef = useRef(null);
     const warnTimerRef = useRef(null);
+
+    useEffect(() => {
+        let mounted = true;
+
+        loadPinData({
+            pinKey: PARENT_PIN_KEY,
+            legacyPinKey: PARENT_PIN_LEGACY_KEY,
+        }).then((nextPinData) => {
+            if (!mounted) return;
+            setPinData(nextPinData);
+            setPinLoadFailed(false);
+            setIsPinReady(true);
+        }).catch((error) => {
+            console.error('Failed to load parent PIN', error);
+            if (!mounted) return;
+            setPinLoadFailed(true);
+            setPinErrorMessage('We could not load the Parent Zone lock. Refresh and try again.');
+            setIsPinReady(true);
+        });
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     // Parent auto-revert: 15-min inactivity → child mode (spec lines 2309-2316)
     const resetIdleTimer = useCallback(() => {
@@ -32,7 +66,7 @@ export function ParentView({ defaultTab = 'review' }) {
         clearTimeout(warnTimerRef.current);
         warnTimerRef.current = setTimeout(() => setShowRevertWarning(true), WARN_TIMEOUT);
         idleTimerRef.current = setTimeout(() => {
-            setPinUnlocked(null);
+            setPinUnlocked(false);
             navigate('/home', { replace: true });
         }, IDLE_TIMEOUT);
     }, [navigate]);
@@ -49,19 +83,51 @@ export function ParentView({ defaultTab = 'review' }) {
         };
     }, [pinUnlocked, resetIdleTimer]);
 
-    const handlePinSubmit = (e) => {
+    const handlePinSubmit = async (e) => {
         e.preventDefault();
-        // Simple demo PIN logic. Compare with hardcoded '1234' for tests.
-        if (pinInput === '1234') {
+        const normalizedPin = normalizePin(pinInput);
+
+        if (normalizedPin.length !== 4) {
+            setPinErrorMessage('Enter a 4-digit PIN.');
+            return;
+        }
+
+        if (pinLoadFailed) {
+            setPinErrorMessage('We could not load the Parent Zone lock. Refresh and try again.');
+            return;
+        }
+
+        if (!pinData?.hash || !pinData?.salt) {
+            try {
+                const nextPinData = await savePinData({
+                    pinKey: PARENT_PIN_KEY,
+                    pin: normalizedPin,
+                });
+                setPinData(nextPinData);
+                setPinUnlocked(true);
+                setPinErrorMessage('');
+                setPinInput('');
+            } catch (error) {
+                console.error('Failed to create parent PIN', error);
+                setPinErrorMessage('We could not save that PIN. Try again.');
+            }
+            return;
+        }
+
+        const isValid = await verifyPin(normalizedPin, pinData.hash, pinData.salt);
+        if (isValid) {
             setPinUnlocked(true);
-            setPinError(false);
+            setPinErrorMessage('');
+            setPinInput('');
         } else {
-            setPinError(true);
+            setPinErrorMessage('Incorrect PIN. Try again.');
             setPinInput('');
         }
     };
 
     if (!pinUnlocked) {
+        const hasConfiguredPin = Boolean(pinData?.hash && pinData?.salt);
+        const canCreatePin = !pinLoadFailed && !hasConfiguredPin;
         return (
             <section className={`view is-active ${styles.parentView}`} id="view-parent" aria-label="Parent Zone Unlock">
                 <div className={`view-header ${styles.viewHeader}`}>
@@ -76,8 +142,16 @@ export function ParentView({ defaultTab = 'review' }) {
                 <div style={{ padding: '24px', maxWidth: '400px', margin: '40px auto' }}>
                     <div className="pin-dialog glass" data-pin-dialog style={{ position: 'relative', display: 'block', margin: 0 }}>
                         <form className="pin-form" onSubmit={handlePinSubmit}>
-                            <h3 id="parent-pin-title">Unlock Zone</h3>
-                            <p>Enter your 4-digit PIN to continue.</p>
+                            <h3 id="parent-pin-title">
+                                {pinLoadFailed ? 'Parent Zone unavailable' : hasConfiguredPin ? 'Unlock Zone' : 'Create Parent PIN'}
+                            </h3>
+                            <p>
+                                {pinLoadFailed
+                                    ? 'The saved Parent Zone lock could not be loaded in this session.'
+                                    : hasConfiguredPin
+                                    ? 'Enter your 4-digit PIN to continue.'
+                                    : 'Set a 4-digit PIN to protect Parent Zone tools, settings, and recordings.'}
+                            </p>
                             <label className="sr-only" htmlFor="parent-pin-input">Parent PIN</label>
                             <input
                                 type="password"
@@ -85,17 +159,40 @@ export function ParentView({ defaultTab = 'review' }) {
                                 inputMode="numeric"
                                 pattern="[0-9]*"
                                 maxLength="4"
+                                placeholder="1234"
                                 value={pinInput}
-                                onChange={e => setPinInput(e.target.value)}
+                                onChange={e => {
+                                    setPinInput(normalizePin(e.target.value));
+                                    if (pinErrorMessage) setPinErrorMessage('');
+                                }}
                                 autoComplete="off"
+                                disabled={!isPinReady || pinLoadFailed}
                                 style={{
-                                    fontSize: '2rem', padding: '12px', textAlign: 'center', letterSpacing: '0.5em', width: '100%', marginBottom: '16px', borderRadius: '12px', border: '2px solid var(--color-border)'
+                                    fontSize: '2rem',
+                                    padding: '12px',
+                                    textAlign: 'center',
+                                    letterSpacing: '0.5em',
+                                    width: '100%',
+                                    marginBottom: '16px',
+                                    borderRadius: '16px',
+                                    border: '2px solid rgba(15, 23, 42, 0.16)',
+                                    background: 'rgba(248, 250, 252, 0.96)',
+                                    color: 'var(--color-text)',
+                                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.8), 0 10px 20px rgba(15, 23, 42, 0.08)',
                                 }}
                             />
-                            {pinError && <p className="pin-error" style={{ color: 'var(--color-warning)', fontWeight: 600, marginBottom: '16px' }}>Incorrect PIN. Try again.</p>}
+                            {!isPinReady && <p style={{ color: 'var(--color-text-muted)', marginBottom: '16px' }}>Loading your Parent Zone lock…</p>}
+                            {canCreatePin && isPinReady && (
+                                <p style={{ color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+                                    You skipped this during onboarding. Set it now and the app will remember it on this device.
+                                </p>
+                            )}
+                            {pinErrorMessage && <p className="pin-error" style={{ color: 'var(--color-warning)', fontWeight: 600, marginBottom: '16px' }}>{pinErrorMessage}</p>}
                             <div className="pin-actions">
                                 <Link className="btn btn-secondary" to="/home">Cancel</Link>
-                                <button className="btn btn-primary" type="submit" value="confirm">Unlock</button>
+                                <button className="btn btn-primary" type="submit" value="confirm" disabled={!isPinReady || pinLoadFailed || pinInput.length !== 4}>
+                                    {pinLoadFailed ? 'Reload required' : hasConfiguredPin ? 'Unlock' : 'Create PIN & Enter'}
+                                </button>
                             </div>
                         </form>
                     </div>

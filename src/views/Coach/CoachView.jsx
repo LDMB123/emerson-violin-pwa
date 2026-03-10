@@ -18,10 +18,15 @@ import { PostureView } from '../Tools/PostureView.jsx';
 import { SongRunnerView } from '../Songs/SongRunnerView.jsx';
 import styles from './CoachView.module.css';
 import { getPublicAssetPath } from '../../utils/public-asset-path.js';
+import { readChildName } from '../../utils/child-profile.js';
+import { resolveDailyLessonPlan } from '../../utils/daily-lesson-plan.js';
+import { markPracticeSessionComplete } from '../../utils/practice-session.js';
 
 export function CoachView() {
     const navigate = useNavigate();
-    const [missionPlan, setMissionPlan] = useState(null);
+    const childName = readChildName();
+    const [missionPlan, setMissionPlan] = useState(() => resolveDailyLessonPlan(null, { childName }));
+    const [hasHydratedMissionPlan, setHasHydratedMissionPlan] = useState(false);
     const [currentStepIndex, setCurrentStepIndex] = useSessionStorage('panda-violin:coach-step-index', 0);
     const [timeLeft, setTimeLeft] = useState(null);
     const [isPaused, setIsPaused] = useState(false);
@@ -30,15 +35,20 @@ export function CoachView() {
 
     useEffect(() => {
         let mounted = true;
-        getLearningRecommendations({ allowCached: true }).then(plan => {
-            if (mounted && plan?.mission?.steps) {
-                setMissionPlan(plan.mission);
-            }
-        }).catch(err => console.error("CoachView ML fetch failed:", err));
+        getLearningRecommendations({ allowCached: true }).then((recommendations) => {
+            if (!mounted) return;
+            setMissionPlan(resolveDailyLessonPlan(recommendations, { childName }));
+            setHasHydratedMissionPlan(true);
+        }).catch(err => {
+            console.error("CoachView ML fetch failed:", err);
+            if (!mounted) return;
+            setHasHydratedMissionPlan(true);
+        });
         return () => { mounted = false; };
-    }, []);
+    }, [childName]);
 
     useEffect(() => {
+        if (!hasHydratedMissionPlan) return;
         let mounted = true;
 
         const loadEmbeddedSong = async () => {
@@ -60,27 +70,41 @@ export function CoachView() {
 
         loadEmbeddedSong();
         return () => { mounted = false; };
-    }, [currentStepIndex, missionPlan]);
+    }, [currentStepIndex, hasHydratedMissionPlan, missionPlan]);
 
     // Phase 35: Abstracted Wake Lock
     useWakeLock(true);
 
-    const isComplete = missionPlan && currentStepIndex >= missionPlan.steps.length;
+    const safeStepIndex = Math.max(0, Math.min(currentStepIndex, Math.max(0, missionPlan.steps.length - 1)));
+    const isComplete = hasHydratedMissionPlan && missionPlan.steps.length > 0 && currentStepIndex >= missionPlan.steps.length;
+    const currentStep = missionPlan.steps[safeStepIndex] || missionPlan.steps[0];
+    const actionStr = (currentStep?.action || currentStep?.cta || '').toString();
+    const isImmersiveStep = actionStr.startsWith('view-game-')
+        || actionStr === 'view-bowing'
+        || actionStr === 'view-posture'
+        || actionStr === 'view-songs';
 
     useEffect(() => {
         if (isComplete) {
             sessionStorage.removeItem('panda-violin:coach-step-index');
+            markPracticeSessionComplete();
         }
     }, [isComplete]);
 
     useEffect(() => {
-        if (missionPlan && !isComplete && timeLeft === null) {
-            setTimeLeft(missionPlan.steps[currentStepIndex].minutes * 60);
+        if (missionPlan && !isComplete && !isImmersiveStep && timeLeft === null) {
+            setTimeLeft(missionPlan.steps[safeStepIndex].minutes * 60);
         }
-    }, [missionPlan, currentStepIndex, timeLeft, isComplete]);
+    }, [missionPlan, safeStepIndex, timeLeft, isComplete, isImmersiveStep]);
 
     useEffect(() => {
-        if (timeLeft === null || timeLeft <= 0 || isComplete || isPaused) return;
+        if (isImmersiveStep && timeLeft !== null) {
+            setTimeLeft(null);
+        }
+    }, [isImmersiveStep, timeLeft]);
+
+    useEffect(() => {
+        if (isImmersiveStep || timeLeft === null || timeLeft <= 0 || isComplete || isPaused) return;
         const timer = setInterval(() => {
             setTimeLeft(prev => {
                 if (prev <= 1) {
@@ -92,13 +116,18 @@ export function CoachView() {
             });
         }, 1000);
         return () => clearInterval(timer);
-    }, [timeLeft, isComplete, isPaused]);
+    }, [timeLeft, isComplete, isPaused, isImmersiveStep]);
 
-    if (!missionPlan) {
+    if (!hasHydratedMissionPlan) {
         return (
-            <div className="view is-active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <section
+                id="view-coach"
+                className={`view is-active coach-runner-view ${styles.coachView}`}
+                aria-label="Practice Runner"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}
+            >
                 <Typography variant="h3">Preparing your mission...</Typography>
-            </div>
+            </section>
         );
     }
 
@@ -112,7 +141,9 @@ export function CoachView() {
                         <Checkmark size={40} color="var(--color-success)" />
                         <Typography variant="h2" style={{ color: 'var(--color-primary)', fontSize: '2.5rem', margin: 0 }}>Excellent Focus!</Typography>
                     </div>
-                    <Typography style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', marginBottom: 'var(--space-4)' }}>You practiced for {totalMinutes} minutes.</Typography>
+                    <Typography style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', marginBottom: 'var(--space-4)' }}>
+                        {childName ? `${childName}, you practiced` : 'You practiced'} for {totalMinutes} minutes.
+                    </Typography>
                     <img src={getPublicAssetPath('./assets/illustrations/mascot-happy.webp')} alt="Happy Panda" style={{ height: '200px', objectFit: 'contain', margin: 'var(--space-4) 0' }} />
                     <Button variant="primary" size="giant" as={Link} to="/home" style={{ marginTop: 'var(--space-6)', width: '80%', maxWidth: '300px' }}>
                         Back to Home
@@ -121,8 +152,6 @@ export function CoachView() {
             </section>
         );
     }
-
-    const currentStep = missionPlan.steps[currentStepIndex] || missionPlan.steps[0];
 
     const handleNextStep = () => {
         setTimeLeft(null);
@@ -135,8 +164,6 @@ export function CoachView() {
     };
 
     const renderEmbeddedStep = () => {
-        const actionStr = (currentStep.action || currentStep.cta || '').toString();
-
         // We use a CSS wrapper to force the embedded tools to look flush
         const wrapperStyle = { flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.1)' };
 
@@ -178,6 +205,19 @@ export function CoachView() {
         );
     };
 
+    if (isImmersiveStep) {
+        return (
+            <section
+                id="view-coach"
+                className={`view is-active coach-runner-view ${styles.coachView}`}
+                aria-label="Practice Runner"
+                style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden', padding: 0 }}
+            >
+                {renderEmbeddedStep()}
+            </section>
+        );
+    }
+
     const mins = Math.floor((timeLeft || 0) / 60);
     const secs = (timeLeft || 0) % 60;
     const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -185,11 +225,16 @@ export function CoachView() {
     const fillPercent = Math.max(0, Math.min(100, 100 - ((timeLeft || 0) / totalSecs) * 100));
 
     return (
-        <section id="view-coach" className={`view is-active coach-runner-view ${styles.coachView}`} aria-label="Practice Runner" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 'var(--space-4)' }}>
+        <section
+            id="view-coach"
+            className={`view is-active coach-runner-view ${styles.coachView}`}
+            aria-label="Practice Runner"
+            style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflowY: 'auto', padding: 'var(--space-4)', paddingBottom: 'calc(72px + var(--safe-bottom))' }}
+        >
 
-            {showResume && missionPlan && (
+            {showResume && safeStepIndex > 0 && (
                 <div style={{ background: 'var(--color-primary)', color: 'white', padding: '12px 16px', borderRadius: '12px', marginBottom: 'var(--space-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>🐼 Continue where you left off? (Step {currentStepIndex + 1}/{missionPlan.steps.length})</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>🐼 Continue where you left off? (Step {safeStepIndex + 1}/{missionPlan.steps.length})</span>
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <Button variant="ghost" onClick={() => setShowResume(false)} style={{ color: 'white', fontSize: '0.85rem', padding: '6px 12px' }}>Resume</Button>
                         <Button variant="ghost" onClick={() => { setCurrentStepIndex(0); setTimeLeft(null); setShowResume(false); }} style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', padding: '6px 12px' }}>Start Over</Button>
@@ -205,13 +250,25 @@ export function CoachView() {
                 </Button>
 
                 <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>
-                    Step {currentStepIndex + 1} of {missionPlan.steps.length}
+                    Step {safeStepIndex + 1} of {missionPlan.steps.length}
                 </div>
             </div>
 
             {/* Runner Progress Bar */}
             <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', marginBottom: 'var(--space-4)', overflow: 'hidden' }}>
-                <div style={{ width: `${(currentStepIndex / missionPlan.steps.length) * 100}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 0.4s ease-out' }} />
+                <div style={{ width: `${(safeStepIndex / missionPlan.steps.length) * 100}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 0.4s ease-out' }} />
+            </div>
+
+            <div className={styles.stepRail} aria-label="Mission roadmap">
+                {missionPlan.steps.map((step, index) => {
+                    const state = index < safeStepIndex ? 'complete' : index === safeStepIndex ? 'active' : 'upcoming';
+                    return (
+                        <div key={step.id} className={`${styles.stepChip} ${styles[`stepChip${state.charAt(0).toUpperCase() + state.slice(1)}`]}`}>
+                            <span className={styles.stepChipIndex}>{index + 1}</span>
+                            <span className={styles.stepChipLabel}>{step.label}</span>
+                        </div>
+                    );
+                })}
             </div>
 
             <div className="practice-focus" style={{ marginBottom: 'var(--space-4)' }}>
@@ -221,7 +278,7 @@ export function CoachView() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-bg-alt)', padding: '8px 14px', borderRadius: '12px', marginBottom: '8px' }}>
                     <span style={{ fontSize: '1.4rem' }}>🐼</span>
                     <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                        {currentStep.coachCue || currentStep.tip || (
+                        {currentStep.cue || currentStep.coachCue || currentStep.tip || (
                             timeLeft !== null && timeLeft > 0 ? 'Great focus! Keep going...' : 'Tap Start when ready!'
                         )}
                     </span>

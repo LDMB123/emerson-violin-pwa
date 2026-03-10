@@ -20,3 +20,58 @@
     background: rgba(255, 255, 255, 0.85);
     color: var(--color-text);
 }
+
+.stepRail {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    margin-bottom: var(--space-4);
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+
+.stepRail::-webkit-scrollbar {
+    display: none;
+}
+
+.stepChip {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-width: 180px;
+    padding: 10px 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(53, 32, 25, 0.08);
+    background: rgba(255, 255, 255, 0.84);
+}
+
+.stepChipActive {
+    border-color: rgba(233, 86, 57, 0.28);
+    background: rgba(233, 86, 57, 0.12);
+}
+
+.stepChipComplete {
+    border-color: rgba(79, 182, 158, 0.25);
+    background: rgba(79, 182, 158, 0.14);
+}
+
+.stepChipUpcoming {
+    opacity: 0.88;
+}
+
+.stepChipIndex {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: rgba(53, 32, 25, 0.08);
+    font-weight: 800;
+}
+
+.stepChipLabel {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.25;
+}

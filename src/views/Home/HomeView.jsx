@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { readJsonAsync } from '../../utils/storage-utils.js';
 import { Button } from '../../components/primitives/Button.jsx';
 import { Card } from '../../components/primitives/Card.jsx';
 import { useProgressSummary } from '../../hooks/useProgressSummary.js';
@@ -10,27 +9,27 @@ import { scheduleBackgroundTask } from '../../utils/idle-task.js';
 import styles from './HomeView.module.css';
 import { setBadge } from '../../notifications/badging.js';
 import { getPublicAssetPath } from '../../utils/public-asset-path.js';
+import { readChildName } from '../../utils/child-profile.js';
+import { resolveDailyLessonPlan } from '../../utils/daily-lesson-plan.js';
+import { getPracticeSessionState } from '../../utils/practice-session.js';
 
 export function HomeView() {
     const { summary } = useProgressSummary();
     const navigate = useNavigate();
     const streak = summary?.streakDays ?? 0;
+    const childName = readChildName();
 
     // App Badge: show badge if no practice today, clear on visit (spec line 348)
     useEffect(() => {
-        const today = new Date().toISOString().split('T')[0];
-        const lastPractice = localStorage.getItem('panda-violin:last-practice-date');
-        if (lastPractice === today) {
-            setBadge(0);
-        } else {
-            setBadge(1);
-        }
+        const sessionState = getPracticeSessionState();
+        setBadge(sessionState.practicedToday ? 0 : 1);
     }, []);
 
     // Mission states: 'none', 'incomplete', 'complete'
     const [missionState, setMissionState] = useState('incomplete');
     const [streakAtRisk, setStreakAtRisk] = useState(false);
-    const [missionPlan, setMissionPlan] = useState(null);
+    const [hasCompletedFirstMission, setHasCompletedFirstMission] = useState(false);
+    const [missionPlan, setMissionPlan] = useState(() => resolveDailyLessonPlan(null, { childName }));
     const missionSummary = missionPlan?.steps
         ?.slice(0, 3)
         .map((step) => step?.label)
@@ -43,9 +42,9 @@ export function HomeView() {
         // Defer mission-plan hydration so the home shell can paint before loading ML helpers.
         scheduleBackgroundTask(() => {
             getLearningRecommendations({ allowCached: true })
-                .then((plan) => {
-                    if (mounted && plan?.mission?.steps) {
-                        setMissionPlan(plan.mission);
+                .then((recommendations) => {
+                    if (mounted) {
+                        setMissionPlan(resolveDailyLessonPlan(recommendations, { childName }));
                     }
                 })
                 .catch((err) => console.error('Could not fetch mission plan', err));
@@ -55,31 +54,15 @@ export function HomeView() {
             idleTimeout: 1200,
         });
 
-        // Determine complete vs incomplete based on daily login
-        Promise.all([
-            readJsonAsync('last-practice-date'),
-            readJsonAsync('last-practice-time')
-        ]).then(([lastPracticeStr, lastTime]) => {
-            if (!mounted) return;
-            const todayStr = new Date().toDateString();
-
-            if (lastPracticeStr === todayStr) {
-                setMissionState('complete');
-            } else {
-                setMissionState('incomplete');
-            }
-
-            const hoursSinceLastPractice = lastTime
-                ? (Date.now() - parseInt(lastTime, 10)) / (1000 * 60 * 60)
-                : 0;
-
-            if (hoursSinceLastPractice > 24 && hoursSinceLastPractice < 48) {
-                setStreakAtRisk(true);
-            }
-        });
+        const sessionState = getPracticeSessionState();
+        if (mounted) {
+            setMissionState(sessionState.practicedToday ? 'complete' : 'incomplete');
+            setStreakAtRisk(sessionState.streakAtRisk);
+            setHasCompletedFirstMission(sessionState.hasCompletedFirstMission);
+        }
 
         return () => { mounted = false; };
-    }, []);
+    }, [childName]);
 
     // Determine Mascot Pose & Speech based on spec
     let mascotPose = 'happy';
@@ -97,8 +80,10 @@ export function HomeView() {
     }
 
     // Default to a new user state if they just finished onboarding
-    if (!localStorage.getItem('first-mission-completed')) {
-        pandaSpeech = "Let's set up your first practice!";
+    if (!hasCompletedFirstMission) {
+        pandaSpeech = childName
+            ? `${childName}, your first mission is ready.`
+            : "Your first mission is ready.";
         mascotPose = 'happy';
     }
 
@@ -114,6 +99,15 @@ export function HomeView() {
                 <div className={styles.streakPill}>
                     🔥 {streak}
                 </div>
+            </div>
+
+            <div className={styles.welcomeCopy}>
+                <h1 className={styles.welcomeTitle}>
+                    {childName ? `Hi, ${childName}!` : 'Hi there!'}
+                </h1>
+                <p className={styles.welcomeBody}>
+                    Start with one calm mission, then jump into songs, games, or warm-up tools.
+                </p>
             </div>
 
             <div className={styles.homeHero}>
@@ -135,17 +129,13 @@ export function HomeView() {
                     <div className={styles.missionIcon}>🎵</div>
                     <div className={styles.missionHeading}>
                         <h3 className={styles.missionTitle}>Today's Mission</h3>
-                        {missionPlan ? (
-                            <p className={styles.missionMeta}>
-                                {missionPlan.steps.reduce((acc, s) => acc + (typeof s.minutes === 'number' ? s.minutes : 1), 0)} min · {missionPlan.steps.length} activities
-                            </p>
-                        ) : (
-                            <p className={styles.missionMeta}>Loading plan...</p>
-                        )}
+                        <p className={styles.missionMeta}>
+                            {missionPlan.totalMinutes} min · {missionPlan.steps.length} activities
+                        </p>
                     </div>
                 </div>
 
-                {missionState === 'incomplete' && missionPlan && missionSummary && (
+                {missionState === 'incomplete' && missionSummary && (
                     <p className={styles.missionSummary}>{missionSummary}</p>
                 )}
 
@@ -155,13 +145,24 @@ export function HomeView() {
                     size="giant"
                     onClick={() => navigate('/coach', { replace: true })}
                     className={styles.startPracticeButton}
-                    disabled={!missionPlan}
                 >
-                    ▶ {missionState === 'complete' ? 'Practice Again' : 'Start Practice'}
+                    ▶ {missionState === 'complete' ? 'Practice Again' : "Start Today's Mission"}
                 </Button>
+
+                <div className={styles.missionSteps} aria-label="Mission steps">
+                    {missionPlan.steps.map((step) => (
+                        <span key={step.id} className={styles.missionStepChip}>
+                            {step.minutes} min · {step.label}
+                        </span>
+                    ))}
+                </div>
             </Card>
 
             <div className={styles.quickGrid}>
+                <Card as={Link} to="/tools" className={styles.quickCard}>
+                    <div className={styles.quickIcon}>🛠️</div>
+                    <strong className={styles.quickLabel}>Warm Up</strong>
+                </Card>
                 <Card as={Link} to="/songs" className={styles.quickCard}>
                     <div className={styles.quickIcon}>🎵</div>
                     <strong className={styles.quickLabel}>Songs</strong>

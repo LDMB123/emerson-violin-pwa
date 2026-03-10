@@ -228,9 +228,14 @@ export function SongDetailView() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <strong>Sections:</strong>
                             {song.sections.map(s => (
-                                <button key={s.id} className="btn" style={{ padding: '6px 12px', fontSize: '1rem', border: '2px solid rgba(0,0,0,0.1)', background: 'transparent' }}>
+                                <Link
+                                    key={s.id}
+                                    to={`/songs/${songId}/play?section=${encodeURIComponent(s.id)}`}
+                                    className="btn"
+                                    style={{ padding: '6px 12px', fontSize: '1rem', border: '2px solid rgba(0,0,0,0.1)', background: 'transparent' }}
+                                >
                                     {s.label}
-                                </button>
+                                </Link>
                             ))}
                         </div>
                     )}

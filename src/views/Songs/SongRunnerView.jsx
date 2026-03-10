@@ -16,6 +16,7 @@ function SongRunnerContent({ propSongId, onComplete }) {
     const songId = propSongId || params.songId;
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const requestedSectionId = searchParams.get('section');
 
     const containerRef = useRef(null);
 
@@ -119,6 +120,13 @@ function SongRunnerContent({ propSongId, onComplete }) {
     }, [songId]);
 
     useEffect(() => {
+        if (requestedSectionId && Array.isArray(song?.sections)) {
+            const requestedSection = song.sections.find((section) => section.id === requestedSectionId) || null;
+            if (requestedSection) {
+                setLoopSection(requestedSection);
+                return;
+            }
+        }
         if (savedCheckpoint?.sectionId && Array.isArray(song?.sections)) {
             const matchingSection = song.sections.find((section) => section.id === savedCheckpoint.sectionId) || null;
             setLoopSection(matchingSection);
@@ -127,7 +135,7 @@ function SongRunnerContent({ propSongId, onComplete }) {
             const nextScale = Math.max(0.5, Math.min(1.3, savedCheckpoint.tempo / song.bpm));
             setTempoScale(nextScale);
         }
-    }, [savedCheckpoint, song]);
+    }, [requestedSectionId, savedCheckpoint, song]);
 
     // Handle auto-record intent
     useEffect(() => {

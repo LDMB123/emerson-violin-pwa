@@ -8,14 +8,14 @@ export const getPinElements = () => {
     return { dialog, input, pinDisplayEl, pinInputEl, pinStatusEl };
 };
 
-/** Resets the parent PIN summary display to its masked default state. */
-export const updatePinDisplay = () => {
+/** Resets the parent PIN summary display based on whether a PIN is configured. */
+export const updatePinDisplay = (isConfigured = true) => {
     const { pinDisplayEl, pinStatusEl } = getPinElements();
     if (pinDisplayEl) {
-        pinDisplayEl.textContent = '🔒 PIN ••••';
+        pinDisplayEl.textContent = isConfigured ? '🔒 PIN ••••' : '🔓 PIN not set';
     }
     if (pinStatusEl) {
-        pinStatusEl.textContent = 'PIN is set.';
+        pinStatusEl.textContent = isConfigured ? 'PIN is set.' : 'No PIN set yet.';
     }
 };
 

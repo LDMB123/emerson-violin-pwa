@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useLocalStorage } from '../../hooks/useStorage.js';
 import styles from './OnboardingView.module.css';
 import { getPublicAssetPath } from '../../utils/public-asset-path.js';
+import { persistChildName, readChildName } from '../../utils/child-profile.js';
+import { savePinData } from '../../parent/pin-state.js';
+import { PARENT_PIN_KEY } from '../../persistence/storage-keys.js';
 
 export function OnboardingView({ onComplete }) {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(0);
-    // Phase 35: Extracted Hook
-    const [childName, setChildName] = useLocalStorage('emerson_violin_child_name', '');
+    const [childName, setChildName] = useState(() => readChildName());
     const [parentPin, setParentPin] = useState('');
     const [isStandalone, setIsStandalone] = useState(true);
+    const [saveError, setSaveError] = useState('');
 
     useEffect(() => {
         // Check if installed
@@ -29,17 +31,27 @@ export function OnboardingView({ onComplete }) {
 
     const totalSteps = steps.length;
 
-    const handleNext = () => {
+    const handleNext = async () => {
+        setSaveError('');
         // Progressive save: persist data immediately at each step
         const step = steps[currentStep];
-        if (step?.id === 'name' && childName.trim()) {
-            localStorage.setItem('emerson_violin_child_name', childName.trim());
-            localStorage.setItem('panda-violin:child-name-v1', childName.trim());
-            localStorage.setItem('CHILD_NAME_KEY', childName.trim());
+        try {
+            if (step?.id === 'name' && childName.trim()) {
+                const nextName = persistChildName(childName);
+                setChildName(nextName);
+            }
+            if (step?.id === 'parentSetup' && parentPin.length === 4) {
+                await savePinData({
+                    pinKey: PARENT_PIN_KEY,
+                    pin: parentPin,
+                });
+            }
+        } catch (error) {
+            console.error('Onboarding save failed', error);
+            setSaveError('That save did not stick. Please try again.');
+            return;
         }
-        if (step?.id === 'parentSetup' && parentPin.length === 4) {
-            localStorage.setItem('PARENT_PIN_KEY', btoa(parentPin));
-        }
+
         if (currentStep < totalSteps - 1) {
             setCurrentStep(currentStep + 1);
         }
@@ -59,20 +71,18 @@ export function OnboardingView({ onComplete }) {
         setParentPin(parentPin.slice(0, -1));
     };
 
-    const finishOnboarding = () => {
+    const finishOnboarding = async () => {
+        setSaveError('');
         try {
             if (childName.trim()) {
-                localStorage.setItem('emerson_violin_child_name', childName.trim());
-                // Also set the new V2 key for consistency
-                localStorage.setItem('panda-violin:child-name-v1', childName.trim());
-                localStorage.setItem('CHILD_NAME_KEY', childName.trim());
+                const nextName = persistChildName(childName);
+                setChildName(nextName);
             }
             if (parentPin.length === 4) {
-                // In a real app we'd crypto-hash this.
-                localStorage.setItem('PARENT_PIN_KEY', btoa(parentPin));
-            } else if (!localStorage.getItem('PARENT_PIN_KEY')) {
-                // Default PIN
-                localStorage.setItem('PARENT_PIN_KEY', btoa('1234'));
+                await savePinData({
+                    pinKey: PARENT_PIN_KEY,
+                    pin: parentPin,
+                });
             }
             localStorage.setItem('onboarding-complete', 'true');
 
@@ -86,6 +96,8 @@ export function OnboardingView({ onComplete }) {
             } catch (_) { /* ignore */ }
         } catch (e) {
             console.error("Storage error during onboarding finish", e);
+            setSaveError('We could not finish setup. Please try again.');
+            return;
         }
 
         if (onComplete) {
@@ -106,7 +118,12 @@ export function OnboardingView({ onComplete }) {
                 fontFamily: currentStepData.isChildFacing ? 'var(--font-display)' : 'var(--font-body)'
             }}
         >
-            <div className={styles.onboardingCarousel} style={{ transform: `translateX(-${currentStep * 100}%)`, display: 'flex', transition: 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
+            <div
+                className={styles.onboardingCarousel}
+                style={{
+                    display: 'flex',
+                }}
+            >
 
                 {/* Step Header (rendered outside carousel, overlays sliding content) */}
                 <header className={styles.onboardingHeader}>
@@ -131,8 +148,13 @@ export function OnboardingView({ onComplete }) {
                         </div>
                     </div>
                 </header>
+                {saveError ? (
+                    <div className={styles.onboardingError} role="alert">
+                        {saveError}
+                    </div>
+                ) : null}
 
-                {steps.map((step) => {
+                {steps.filter((step) => step.id === currentStepData.id).map((step) => {
                     switch (step.id) {
                         case 'welcome':
                             return (
@@ -215,6 +237,9 @@ export function OnboardingView({ onComplete }) {
                                         <button className="btn btn-primary" onClick={handleNext} disabled={parentPin.length > 0 && parentPin.length < 4}>
                                             {parentPin.length === 4 ? "Save PIN" : (parentPin.length === 0 ? "Skip for now" : "Enter 4 digits")}
                                         </button>
+                                        <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)' }}>
+                                            You can change this later in Parent Zone settings.
+                                        </p>
                                     </div>
                                 </div>
                             );
@@ -247,7 +272,7 @@ export function OnboardingView({ onComplete }) {
                                     </picture>
                                     <h2 style={{ fontSize: '2.5rem', textAlign: 'center', margin: 'var(--space-4) 0 var(--space-2)' }}>Let's Get Started!</h2>
                                     <p style={{ fontSize: '1.5rem', textAlign: 'center', marginBottom: 'var(--space-6)', padding: '0 var(--space-4)', color: 'var(--color-text-muted)' }}>
-                                        {childName ? `${childName}, your ` : 'Your '} first mission is ready! Let's warm up and play a song.
+                                        {childName ? `${childName}, your ` : 'Your '}first mission is ready. We&apos;ll warm up, listen carefully, and finish with a song.
                                     </p>
                                     <button className="btn btn-primary btn-giant" style={{ width: '80%', maxWidth: '340px' }} onClick={finishOnboarding}>▶ Start First Mission</button>
                                 </div>

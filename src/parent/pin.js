@@ -29,7 +29,7 @@ const loadPin = async () => {
         pinKey: PIN_KEY,
         legacyPinKey: PIN_KEY_LEGACY,
     });
-    updatePinDisplay();
+    updatePinDisplay(Boolean(cachedPinData?.hash && cachedPinData?.salt));
     return cachedPinData;
 };
 
@@ -65,6 +65,10 @@ const handleSubmit = async (event) => {
     }
 
     const pinData = await getPinData();
+    if (!pinData?.hash || !pinData?.salt) {
+        unlock();
+        return;
+    }
     const enteredPin = normalizePin(input?.value);
     const valid = await verifyPin(enteredPin, pinData.hash, pinData.salt);
 
@@ -102,7 +106,10 @@ const savePin = async () => {
 const checkGate = () => {
     if (window.location.hash !== '#view-parent') return;
     if (isParentUnlocked(UNLOCK_KEY)) return;
-    showPinDialog();
+    void getPinData().then((pinData) => {
+        if (!pinData?.hash || !pinData?.salt) return;
+        showPinDialog();
+    });
 };
 
 const bindGlobalListeners = () => {
