@@ -1,21 +1,29 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { playToneNote } from '../games/shared.js';
 
 const PLAYHEAD_AUTOSCROLL_INTERVAL_MS = 80;
 
 export function useNativeSongPlayer({
-    songId, containerRef, isPlaying, tempoScale = 1, waitMode = false, playMelody = true, metronome = true, onFinish, songStartBeat = 4, sectionStart = 0, sectionEnd = null
+    containerRef,
+    sheetMarkup = null,
+    isPlaying,
+    tempoScale = 1,
+    playMelody = true,
+    metronome = true,
+    onFinish,
+    songStartBeat = 4,
+    sectionStart = 0,
+    sectionEnd = null
 }) {
-    const playheadPosRef = useRef(0);
     const audioTriggersRef = useRef(new Set());
     const animationRef = useRef(null);
     const notesRef = useRef([]);
-    const [status] = useState('Ready');
-    const [currentNote] = useState(null);
-
     // Initialize notes array by traversing DOM in containerRef
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {
+            notesRef.current = [];
+            return;
+        }
         const noteEls = Array.from(containerRef.current.querySelectorAll('.song-note'));
         notesRef.current = noteEls.map(el => {
             const style = el.getAttribute('style') || '';
@@ -26,11 +34,10 @@ export function useNativeSongPlayer({
                 el,
                 pitch: pitchEl ? pitchEl.textContent.trim() : null,
                 start: startMatch ? Number.parseFloat(startMatch[1]) : 0,
-                duration: durMatch ? Number.parseFloat(durMatch[1]) : 0,
-                completed: false
+                duration: durMatch ? Number.parseFloat(durMatch[1]) : 0
             };
         }).sort((a, b) => a.start - b.start);
-    }, [containerRef.current, songId]);
+    }, [containerRef.current, sheetMarkup]);
 
     // Cleanup RAF
     useEffect(() => {
@@ -52,7 +59,6 @@ export function useNativeSongPlayer({
             lastTime = now;
 
             elapsed += (delta * tempoScale);
-            playheadPosRef.current = elapsed;
 
             const sheet = containerRef.current?.querySelector('.song-sheet');
             const playhead = containerRef.current?.querySelector('.song-playhead');
@@ -103,7 +109,6 @@ export function useNativeSongPlayer({
                 if (sectionEnd) {
                     // Loop back to start
                     elapsed = sectionStart || 0;
-                    playheadPosRef.current = elapsed;
                     audioTriggersRef.current.clear();
                 } else {
                     if (onFinish) onFinish();
@@ -117,17 +122,12 @@ export function useNativeSongPlayer({
         if (isPlaying) {
             audioTriggersRef.current.clear();
             elapsed = sectionStart || 0;
-            playheadPosRef.current = elapsed;
             lastTime = performance.now();
             animationRef.current = requestAnimationFrame(updateLoop);
         } else {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         }
 
-    }, [isPlaying, tempoScale, playMelody, metronome, waitMode, onFinish, containerRef.current, sectionStart, sectionEnd]);
+    }, [isPlaying, tempoScale, playMelody, metronome, onFinish, containerRef, sectionStart, sectionEnd]);
 
-    return {
-        status,
-        currentNote
-    };
 }

@@ -109,7 +109,7 @@ export function useMediaRecorder({ songId, getSongTitle, maxRecordings = 4, onFi
         }
     }, [getSongTitle, isRecording, maxRecordings, onFinish, resetRecorderState, songId]);
 
-    const stopRecording = useCallback(async (_forcedDuration) => {
+    const stopRecording = useCallback(async () => {
         if (!isRecording || !recorderRef.current) return false;
         try {
             if (timerRef.current) clearInterval(timerRef.current);

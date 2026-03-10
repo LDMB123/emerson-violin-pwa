@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { getSongById } from '../../songs/song-library.js';
 import { useNativeSongPlayer } from '../../hooks/useNativeSongPlayer.js';
@@ -28,7 +28,6 @@ function SongRunnerContent({ propSongId, onComplete }) {
     // Playback state
     const [isPlaying, setIsPlaying] = useState(false);
     const [tempoScale, setTempoScale] = useState(1);
-    const [waitMode, setWaitMode] = useState(false);
     const [playMelody, setPlayMelody] = useState(true);
     const [metronome, setMetronome] = useState(true);
     const [loopSection, setLoopSection] = useState(null);
@@ -60,12 +59,11 @@ function SongRunnerContent({ propSongId, onComplete }) {
         }
     }, [isRecording, stopRecording]);
 
-    const { status, currentNote } = useNativeSongPlayer({
-        songId,
+    useNativeSongPlayer({
         containerRef,
+        sheetMarkup: sheetHtml,
         isPlaying,
         tempoScale,
-        waitMode,
         playMelody,
         metronome,
         sectionStart: loopSection?.start || 0,
@@ -306,10 +304,6 @@ function SongRunnerContent({ propSongId, onComplete }) {
                 </div>
 
                 <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                        <input data-song-wait-for-me type="checkbox" checked={waitMode} onChange={e => setWaitMode(e.target.checked)} />
-                        Wait for me
-                    </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                         <input data-song-play-melody type="checkbox" checked={playMelody} onChange={e => setPlayMelody(e.target.checked)} />
                         Play Melody
