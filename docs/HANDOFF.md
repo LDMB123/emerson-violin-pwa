@@ -23,8 +23,8 @@ Treat command output as the source of truth. Do not rely on dated pass/fail coun
 
 Runtime source of truth:
 
-- Node: [.nvmrc](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/.nvmrc)
-- npm: [package.json](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/package.json) `packageManager`
+- Node: [.nvmrc](../.nvmrc)
+- npm: [package.json](../package.json) `packageManager`
 - Fail-fast check: `npm run runtime:check`
 
 ## Current Repo Shape
@@ -98,7 +98,7 @@ If either run hangs or intermittently flakes, reduce `PW_WORKERS` by one.
 - `audit:perf` enforces LCP via native LCP entries when available and falls back to Chromium `FirstMeaningfulPaint` delta when unavailable.
 - `audit:perf` supports `PERF_BUDGET_REPORT_ONLY` (`false` blocks, `true` reports only).
 - Realtime E2E hooks are localhost-only and inert unless both `window.__PANDA_E2E_HOOKS__` and `window.__PANDA_E2E_RT_SIMULATE_START__` are set to `true`.
-- Duplicate dependency audit allowlists known transitive duplicates: `entities`, `fsevents`, `whatwg-mimetype`.
+- Duplicate dependency allowlist is maintained in `scripts/audit-dependency-duplicates.mjs` and enforced by `npm run audit:static`.
 - `depcheck` may report `@vitest/coverage-v8` unused; coverage is invoked by CLI config, so this is expected.
 
 ## Files To Read Before Editing

@@ -6,7 +6,7 @@ This document defines the final architectural shape of the Panda Violin PWA afte
 
 ## 1. Core Shell & Routing
 The legacy custom hash-router and vanilla DOM manipulation have entirely been replaced by **React Router 7**. All navigation actions now trigger React state changes within `AppShell.jsx`.
-- **Legacy URL preservation:** A pre-React execution script in `src/app.jsx` intercepts old `#view-xyz` URLs and maps them to standard React Router hashes (`#/xyz`). This ensures that user bookmarks and installed PWA shortcuts do not 404.
+- **Legacy URL preservation:** A pre-React execution script in `src/app.jsx` intercepts old `#view-xyz` URLs and maps them to standard React Router pathnames (for example, `/games`). This helps preserve bookmarks and installed-PWA shortcuts.
 - **Service Worker integration:** The custom `sw.js` remains largely untouched, preserving its excellent offline caching strategy, while `web-vitals.js` and `badging.js` APIs initialize inside the `whenReady` callback of the new React shell.
 
 ## 2. Shared Interface Tokens

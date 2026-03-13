@@ -6,7 +6,7 @@ This matrix tracks the migration of features from the Vanilla JS/HTML shell to t
 
 | Category | Feature | Status | Notes |
 | :--- | :--- | :--- | :--- |
-| **Shell & Routing** | Hash Navigation | **Deferred** | Replaced entirely by React Router (`createHashRouter`). Legacy `#view-*` hashes are intercepted and rewritten at boot for backwards compatibility. |
+| **Shell & Routing** | Hash Navigation | **Deferred** | Replaced entirely by React Router (`createBrowserRouter`). Legacy `#view-*` hashes are intercepted and rewritten at boot for backwards compatibility. |
 | | Eager/Idle Module Loading | **Parity-Plus** | `module-registry.js` retained as the bridge for legacy module initialization, wrapped cleanly by React Router dynamic suspense logic and View Loaders. |
 | | App Shell UI | **Parity-Plus** | Fully rebuilt natively in `AppShell.jsx` including Bottom Nav, Parent Lock gate, and responsive CSS Modules. |
 | | Service Worker / Offline | **Parity-Plus** | Preserved the highly-customized `sw.js` and `offline-integrity-cache.js` setup. React SPA chunks are now successfully served offline. |

@@ -1,6 +1,52 @@
 # Emerson Violin PWA
 
+## Description
+
 Repository for Emerson's Violin Studio, a local-first violin practice app built for iPad-first lessons, guided home practice, and offline use.
+
+## Installation
+
+### Prerequisites
+
+- Node.js `25.8.0`
+- npm `11.11.0`
+
+### Setup
+
+```bash
+git clone https://github.com/LDMB123/emerson-violin-pwa.git
+cd emerson-violin-pwa
+nvm install
+nvm use
+npm install -g npm@11.11.0
+npm install
+npm run runtime:check
+```
+
+## Usage
+
+- Start development server:
+
+```bash
+npm run dev
+```
+
+- Build and preview production bundle:
+
+```bash
+npm run build
+npm run preview
+```
+
+- Run core checks before merge:
+
+```bash
+npm run lint:all
+npm run test:e2e
+npm run audit:static
+npm run audit:dep-backed
+npm run handoff:verify
+```
 
 Installed app metadata comes from [public/manifest.webmanifest](public/manifest.webmanifest):
 
@@ -86,11 +132,22 @@ npm run audit:full
 - `docs/guides/`: focused workflows for asset optimization and Safari/iPad validation
 - historical reboot planning artifacts remain in `docs/`, but [docs/README.md](docs/README.md) marks which docs are still live
 
+## Source Mapping
+
+Vite production builds are configured with `sourcemap: true` in `vite.config.js`. Build outputs include source maps with valid `sourceMappingURL` references.
+
+- Keep sourcemaps available for production triage workflows.
+- If source disclosure is a concern, switch to hidden/source-map upload flow in your release pipeline and keep map upload parity with deployed bundles.
+
 ## Playwright Workers
 
 `playwright.config.js` defaults to `workers=1` in CI and `workers=2` for local development.
 
 Use [docs/HANDOFF.md](docs/HANDOFF.md) for `PW_WORKERS` overrides, the calibration matrix, and high-parallelism validation flow.
+
+## License
+
+No repository-level `LICENSE` file is currently tracked. Add a root license document before redistribution and align it with all third-party dependency terms.
 
 ## Quality Gates
 
@@ -101,6 +158,7 @@ Use [docs/HANDOFF.md](docs/HANDOFF.md) for `PW_WORKERS` overrides, the calibrati
 - Duplicate dependency versions are checked by `scripts/audit-dependency-duplicates.mjs`.
 - Secret/credential pattern leakage is checked by `scripts/audit-secrets.mjs`.
 - Performance budget config drift is checked by `scripts/audit-performance-budget-config.mjs`.
+- Performance budget recommendations are advisory until at least 5 runs are collected with `audit:perf`.
 - `audit:full` runs `audit:static` plus `audit:dep-backed`.
 - CI runs the static audits, dependency-backed verification, production dependency vulnerability audit, and Playwright E2E on PRs and pushes to `main`.
 - Operator runbook for zero-context pickup: `docs/HANDOFF.md`.

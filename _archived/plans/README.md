@@ -1,6 +1,21 @@
 # Archived Plans
 
-This directory is a historical marker, not a live documentation source.
+## Description
+
+This directory is a historical marker, not a live documentation source. It preserves the rationale for archive strategy and the boundary between current and historical planning artifacts.
+
+## Installation
+
+No install is required. This folder is read-only historical context in the active repo.
+
+## Usage
+
+- Use this README first when deciding whether a planning artifact should remain under `_archived/`.
+- Check linked live docs before reactivating any plan-like content:
+  - [README.md](../../README.md)
+  - [CLAUDE.md](../../CLAUDE.md)
+  - [docs/HANDOFF.md](../../docs/HANDOFF.md)
+- Do not add active implementation plans here; keep it as reference-only material.
 
 ## Why The Old Files Were Removed
 
@@ -20,12 +35,16 @@ This directory is a historical marker, not a live documentation source.
 
 ## Scope Of The Archive
 
-- `_archived/plans/` now stays intentionally minimal.
-- Historical planning scratchpads and per-pass status logs were pruned from the working tree.
+- `_archived/plans/` stays intentionally minimal.
+- Historical planning scratchpads and per-pass status logs are intentionally pruned from the active tree.
 - Archived source assets remain under other `_archived/` subdirectories when they are still useful for rollback or regeneration workflows.
 
 ## Current State
 
-- The repo does not keep live implementation plan files in the working tree.
-- Claude scratch plans were also moved out of the live `~/.claude/plans/` load path into archive storage.
+- The repo does not keep live implementation plan files in the active working tree.
+- Claude scratch plans were moved out of `~/.claude/plans/` to archive storage.
 - If a future task needs a plan, treat it as temporary working material and archive or delete it once the work is complete.
+
+## License
+
+No plan-file license is expected here; apply the repository-wide license policy for external sharing.

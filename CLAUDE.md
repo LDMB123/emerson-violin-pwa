@@ -19,8 +19,8 @@ npm run handoff:status # Repo/env snapshot
 
 Runtime pin:
 
-- Node version lives in [.nvmrc](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/.nvmrc)
-- npm version lives in [package.json](/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/package.json) `packageManager`
+- Node version lives in [.nvmrc](.nvmrc)
+- npm version lives in [package.json](package.json) `packageManager`
 - Fail-fast validation runs through `npm run runtime:check`
 
 ## Read First

@@ -2,6 +2,24 @@
 
 Use this file to decide which document to read before editing or validating the repo.
 
+## Description
+
+`docs/README.md` is the documentation routing layer for this repository. It links operators to current runbooks, architecture references, and validation guides while marking historical material that is no longer source-of-truth.
+
+## Installation
+
+No setup is required to read this file. For command-driven workflows, ensure the repository is current and dependencies are installed:
+
+- `git pull` to your target branch
+- `npm install`
+- `npm run runtime:check`
+
+## Usage
+
+- Start at [../README.md](../README.md) for project orientation and command shortcuts.
+- Use this map before editing documentation or architecture to avoid updating out-of-scope files.
+- Use links below when routing: handoff, architecture, guides, or historical references.
+
 ## Common Tasks
 
 - Need the zero-context pickup and verification flow: read [docs/HANDOFF.md](HANDOFF.md)
@@ -73,3 +91,7 @@ Use this file to decide which document to read before editing or validating the 
 - Documentation freshness guard: `npm run audit:docs`
 
 Treat generated counts, route lists, and performance outputs from the current checkout as authoritative over older prose snapshots.
+
+## License
+
+No repository-level `LICENSE` file is currently present. Track project license decisions here before redistribution.
