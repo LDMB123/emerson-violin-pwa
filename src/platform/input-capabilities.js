@@ -3,6 +3,7 @@ import {
     createOnceBinder,
     runOnceBinding,
 } from '../utils/lifecycle-utils.js';
+import { addMediaQueryListener } from '../utils/media-query-listener.js';
 
 const claimGlobalListenersBinding = createOnceBinder();
 const elements = {
@@ -45,8 +46,8 @@ const bindGlobalListeners = () => {
             updateInputType(event.pointerType);
         }, { passive: true });
 
-        window.matchMedia('(pointer: fine)').addEventListener('change', updateHoverCapability);
-        window.matchMedia('(hover: hover)').addEventListener('change', updateHoverCapability);
+        addMediaQueryListener(window.matchMedia('(pointer: fine)'), updateHoverCapability);
+        addMediaQueryListener(window.matchMedia('(hover: hover)'), updateHoverCapability);
     });
 };
 

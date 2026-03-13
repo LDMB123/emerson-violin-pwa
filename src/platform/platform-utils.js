@@ -46,6 +46,38 @@ export const isIPadOS = () => /iPad/.test(navigator.userAgent)
     || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
 
 /**
+ * Checks if the device is running iPhone OS.
+ *
+ * @returns {boolean} True if running on iPhone or iPod.
+ */
+export const isIPhoneOS = () => /iPhone|iPod/.test(navigator.userAgent);
+
+/**
+ * Checks if the current browser is Safari on macOS.
+ *
+ * @returns {boolean} True for desktop Safari on macOS.
+ */
+export const isMacOSSafari = () => {
+    const userAgent = navigator.userAgent;
+    if (!/Macintosh/.test(userAgent)) return false;
+    if (!/Safari\//.test(userAgent)) return false;
+    if (/Chrome\/|Chromium\/|Edg\/|OPR\/|Firefox\//.test(userAgent)) return false;
+    return !isIPadOS();
+};
+
+/**
+ * Classifies the current Apple install surface for platform-specific guidance.
+ *
+ * @returns {'ipad' | 'iphone' | 'mac' | 'other'} The current Apple install surface.
+ */
+export const getAppleInstallSurface = () => {
+    if (isIPadOS()) return 'ipad';
+    if (isIPhoneOS()) return 'iphone';
+    if (isMacOSSafari()) return 'mac';
+    return 'other';
+};
+
+/**
  * Checks if app is running in standalone/installed mode
  * @returns {boolean} True if running as installed PWA
  */

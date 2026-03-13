@@ -9,20 +9,33 @@ const setupDom = () => {
 };
 
 const installMatchMedia = () => {
-    const listeners = new Set();
     const query = {
         matches: false,
-        addEventListener: vi.fn((event, callback) => {
-            if (event === 'change') listeners.add(callback);
+        addEventListener: vi.fn((event) => {
+            if (event !== 'change') return;
         }),
-        removeEventListener: vi.fn((event, callback) => {
-            if (event === 'change') listeners.delete(callback);
+        removeEventListener: vi.fn((event) => {
+            if (event !== 'change') return;
         }),
     };
     Object.defineProperty(window, 'matchMedia', {
         configurable: true,
         value: vi.fn(() => query),
     });
+    return query;
+};
+
+const installLegacyMatchMedia = () => {
+    const query = {
+        matches: false,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+    };
+    Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: vi.fn(() => query),
+    });
+    return query;
 };
 
 describe('ipados-capabilities', () => {
@@ -40,5 +53,14 @@ describe('ipados-capabilities', () => {
 
         expect(document.documentElement.dataset.voiceCoach).toBe('off');
         expect(document.documentElement.dataset.voiceSupport).toBe('true');
+    });
+
+    it('binds standalone change listeners through the legacy Safari fallback', async () => {
+        const query = installLegacyMatchMedia();
+
+        const module = await import('../src/platform/ipados-capabilities.js');
+        module.init();
+
+        expect(query.addListener).toHaveBeenCalledTimes(1);
     });
 });

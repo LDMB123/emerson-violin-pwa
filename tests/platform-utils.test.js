@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
     shouldRetryPersist,
     formatBytes,
+    getAppleInstallSurface,
+    isIPhoneOS,
+    isMacOSSafari,
     isIPadOS,
     isStandalone,
     setRootDataset,
@@ -155,6 +158,123 @@ describe('isIPadOS', () => {
         Object.defineProperty(navigator, 'platform', { value: 'Win32', configurable: true });
         Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
         expect(isIPadOS()).toBe(false);
+    });
+});
+
+describe('isIPhoneOS', () => {
+    let originalUserAgent;
+
+    beforeEach(() => {
+        originalUserAgent = navigator.userAgent;
+    });
+
+    afterEach(() => {
+        Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
+    });
+
+    it('returns true for iPhone user agents', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
+            configurable: true,
+        });
+        expect(isIPhoneOS()).toBe(true);
+    });
+
+    it('returns false for iPad user agents', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X)',
+            configurable: true,
+        });
+        expect(isIPhoneOS()).toBe(false);
+    });
+});
+
+describe('isMacOSSafari', () => {
+    let originalUserAgent;
+    let originalMaxTouchPoints;
+
+    beforeEach(() => {
+        originalUserAgent = navigator.userAgent;
+        originalMaxTouchPoints = navigator.maxTouchPoints;
+    });
+
+    afterEach(() => {
+        Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: originalMaxTouchPoints, configurable: true });
+    });
+
+    it('returns true for desktop Safari on macOS', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+            configurable: true,
+        });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
+        expect(isMacOSSafari()).toBe(true);
+    });
+
+    it('returns false for Chrome on macOS', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            configurable: true,
+        });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
+        expect(isMacOSSafari()).toBe(false);
+    });
+});
+
+describe('getAppleInstallSurface', () => {
+    let originalUserAgent;
+    let originalPlatform;
+    let originalMaxTouchPoints;
+
+    beforeEach(() => {
+        originalUserAgent = navigator.userAgent;
+        originalPlatform = navigator.platform;
+        originalMaxTouchPoints = navigator.maxTouchPoints;
+    });
+
+    afterEach(() => {
+        Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
+        Object.defineProperty(navigator, 'platform', { value: originalPlatform, configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: originalMaxTouchPoints, configurable: true });
+    });
+
+    it('classifies iPad install surfaces', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X)',
+            configurable: true,
+        });
+        expect(getAppleInstallSurface()).toBe('ipad');
+    });
+
+    it('classifies iPhone install surfaces', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
+            configurable: true,
+        });
+        Object.defineProperty(navigator, 'platform', { value: 'iPhone', configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: 5, configurable: true });
+        expect(getAppleInstallSurface()).toBe('iphone');
+    });
+
+    it('classifies macOS Safari install surfaces', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
+            configurable: true,
+        });
+        Object.defineProperty(navigator, 'platform', { value: 'MacIntel', configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
+        expect(getAppleInstallSurface()).toBe('mac');
+    });
+
+    it('classifies non-Apple browsers as other', () => {
+        Object.defineProperty(navigator, 'userAgent', {
+            value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0 Safari/537.36',
+            configurable: true,
+        });
+        Object.defineProperty(navigator, 'platform', { value: 'Win32', configurable: true });
+        Object.defineProperty(navigator, 'maxTouchPoints', { value: 0, configurable: true });
+        expect(getAppleInstallSurface()).toBe('other');
     });
 });
 

@@ -1,3 +1,5 @@
+import { addMediaQueryListener } from '../utils/media-query-listener.js';
+
 const media = window.matchMedia('(prefers-reduced-data: reduce)');
 
 const setRootFlag = (enabled) => {
@@ -26,4 +28,4 @@ const evaluate = () => {
 
 evaluate();
 
-media.addEventListener('change', evaluate);
+addMediaQueryListener(media, evaluate);

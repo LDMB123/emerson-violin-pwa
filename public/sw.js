@@ -351,11 +351,20 @@ self.addEventListener('periodicsync', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clientList) => {
+            const targetUrl = new URL('./coach', self.location.href).href;
             for (const client of clientList) {
-                if ('focus' in client) return client.focus();
+                if (!('focus' in client)) continue;
+                if ('navigate' in client) {
+                    try {
+                        await client.navigate(targetUrl);
+                    } catch {
+                        // Ignore navigation failures and fall back to focus.
+                    }
+                }
+                return client.focus();
             }
-            if (clients.openWindow) return clients.openWindow('./#view-coach');
+            if (clients.openWindow) return clients.openWindow(targetUrl);
             return undefined;
         })
     );

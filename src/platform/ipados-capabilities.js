@@ -3,6 +3,7 @@ import { setDisabled } from '../utils/dom-utils.js';
 import {
     createOnceBinder,
 } from '../utils/lifecycle-utils.js';
+import { addMediaQueryListener } from '../utils/media-query-listener.js';
 
 let statusEl = null;
 let voiceToggle = null;
@@ -55,7 +56,7 @@ const refreshStandaloneStatus = () => {
 
 function bindGlobalListeners() {
     if (!claimGlobalListenersBinding()) return;
-    window.matchMedia('(display-mode: standalone)').addEventListener('change', () => {
+    addMediaQueryListener(window.matchMedia('(display-mode: standalone)'), () => {
         refreshStandaloneStatus();
     });
     window.addEventListener('appinstalled', () => {

@@ -1,5 +1,5 @@
 import { INSTALL_GUIDE_KEY as DISMISS_KEY } from '../persistence/storage-keys.js';
-import { isIPadOS, isStandalone, isAutomated, setRootDataset } from './platform-utils.js';
+import { getAppleInstallSurface, isStandalone, isAutomated, setRootDataset } from './platform-utils.js';
 import { markDismissed, wasDismissed } from './dismiss-helpers.js';
 import { setHidden } from '../utils/dom-utils.js';
 
@@ -10,7 +10,46 @@ const resolveElements = () => {
     helpButton = document.querySelector('[data-install-help]');
 };
 
-const buildGuide = () => {
+const resolveGuideContent = (surface) => {
+    if (surface === 'iphone') {
+        return {
+            title: 'Install Panda Violin on iPhone',
+            description: 'For the best offline experience in Safari on iPhone:',
+            steps: [
+                ['Open Safari’s ', 'Share', ' menu.'],
+                ['Tap ', 'Add to Home Screen', '.'],
+                ['Turn on ', 'Open as Web App', ' if Safari shows the option.'],
+                ['Launch Panda Violin from your Home Screen.'],
+            ],
+        };
+    }
+
+    if (surface === 'mac') {
+        return {
+            title: 'Install Panda Violin on Mac',
+            description: 'For the best desktop web-app experience in Safari on Mac:',
+            steps: [
+                ['Open Panda Violin in Safari.'],
+                ['Choose ', 'File > Add to Dock', '.'],
+                ['Launch Panda Violin from the Dock or Applications folder.'],
+            ],
+        };
+    }
+
+    return {
+        title: 'Install Panda Violin on iPad',
+        description: 'For the best offline experience in Safari on iPad:',
+        steps: [
+            ['Open Safari’s ', 'Share', ' menu.'],
+            ['Tap ', 'Add to Home Screen', '.'],
+            ['Turn on ', 'Open as Web App', ' if Safari shows the option.'],
+            ['Launch Panda Violin from your Home Screen.'],
+        ],
+    };
+};
+
+const buildGuide = (surface) => {
+    const content = resolveGuideContent(surface);
     const backdrop = document.createElement('div');
     backdrop.className = 'install-guide-backdrop';
     backdrop.setAttribute('role', 'presentation');
@@ -23,29 +62,32 @@ const buildGuide = () => {
 
     const title = document.createElement('h3');
     title.id = 'install-guide-title';
-    title.textContent = 'Install Panda Violin';
+    title.textContent = content.title;
 
     const desc = document.createElement('p');
-    desc.textContent = 'For the best offline experience on iPad:';
+    desc.textContent = content.description;
 
     const steps = document.createElement('ol');
-    const step1 = document.createElement('li');
-    step1.append('Open Safari\u2019s ');
-    const chip = document.createElement('span');
-    chip.className = 'install-guide-chip';
-    chip.textContent = 'Share';
-    step1.append(chip, ' menu.');
+    content.steps.forEach((parts) => {
+        const item = document.createElement('li');
+        parts.forEach((part, index) => {
+            if (index % 2 === 0) {
+                item.append(part);
+                return;
+            }
 
-    const step2 = document.createElement('li');
-    step2.append('Select ');
-    const bold = document.createElement('strong');
-    bold.textContent = 'Add to Home Screen';
-    step2.append(bold, '.');
+            const emphasis = surface === 'mac' && part.includes('Add to Dock')
+                ? document.createElement('strong')
+                : document.createElement('span');
 
-    const step3 = document.createElement('li');
-    step3.textContent = 'Launch Panda Violin from your Home Screen.';
-
-    steps.append(step1, step2, step3);
+            if (emphasis.tagName === 'SPAN') {
+                emphasis.className = 'install-guide-chip';
+            }
+            emphasis.textContent = part;
+            item.append(emphasis);
+        });
+        steps.appendChild(item);
+    });
 
     const actions = document.createElement('div');
     actions.className = 'install-guide-actions';
@@ -114,15 +156,16 @@ const buildGuide = () => {
     return backdrop;
 };
 
-const hideHelpButtonIfNotIPadOS = () => {
-    if (isIPadOS()) return false;
+const hideHelpButtonIfUnsupported = (surface) => {
+    if (surface !== 'other') return false;
     setHidden(helpButton, true);
     return true;
 };
 
 const showGuide = async (force = false) => {
+    const surface = getAppleInstallSurface();
     if (isAutomated()) return;
-    if (hideHelpButtonIfNotIPadOS()) return;
+    if (hideHelpButtonIfUnsupported(surface)) return;
 
     if (isStandalone() && !force) {
         setHidden(helpButton, true);
@@ -133,7 +176,7 @@ const showGuide = async (force = false) => {
     if (document.querySelector('.install-guide-backdrop')) return;
 
     lastFocused = document.activeElement;
-    const guide = buildGuide();
+    const guide = buildGuide(surface);
     document.body.appendChild(guide);
     document.documentElement.classList.add('install-guide-open');
     requestAnimationFrame(() => {
@@ -143,13 +186,14 @@ const showGuide = async (force = false) => {
 
 const initInstallGuide = () => {
     resolveElements();
+    const surface = getAppleInstallSurface();
     if (isAutomated()) {
         setHidden(helpButton, true);
         return;
     }
-    if (hideHelpButtonIfNotIPadOS()) return;
+    if (hideHelpButtonIfUnsupported(surface)) return;
 
-    setRootDataset('platform', 'ipados');
+    setRootDataset('installSurface', surface);
 
     if (helpButton && helpButton.dataset.installGuideBound !== 'true') {
         helpButton.dataset.installGuideBound = 'true';

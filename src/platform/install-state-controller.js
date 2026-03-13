@@ -1,8 +1,9 @@
 import {
-    isIPadOS,
+    getAppleInstallSurface,
     isStandalone,
 } from './platform-utils.js';
 import { INSTALL_PROMPT_CHANGE_EVENT, canPromptInstall } from './install-prompt.js';
+import { addMediaQueryListener } from '../utils/media-query-listener.js';
 
 /**
  * Creates the controller that keeps install status UI in sync with app state.
@@ -17,21 +18,32 @@ export const createInstallStateController = () => {
     let installStatusEl = null;
     let installGlobalsBound = false;
 
+    const describeInstallStatus = (surface) => {
+        if (surface === 'iphone' || surface === 'ipad') {
+            return 'Install status: In Safari, choose Add to Home Screen, then turn on Open as Web App when Safari offers it.';
+        }
+        if (surface === 'mac') {
+            return 'Install status: In Safari on Mac, choose File > Add to Dock for the installed app window.';
+        }
+        return 'Install status: Install prompt unavailable. Use browser install controls if available.';
+    };
+
     const update = (storageController) => {
         const standalone = isStandalone();
+        const installSurface = getAppleInstallSurface();
         if (document.documentElement) {
             document.documentElement.dataset.installed = standalone ? 'true' : 'false';
         }
 
         if (installStatusEl) {
             if (standalone) {
-                installStatusEl.textContent = 'Install status: Installed on Home Screen.';
+                installStatusEl.textContent = installSurface === 'mac'
+                    ? 'Install status: Installed as a Safari web app window.'
+                    : 'Install status: Installed on Home Screen.';
             } else if (canPromptInstall()) {
                 installStatusEl.textContent = 'Install status: Ready. Use the Install button in the app prompt.';
-            } else if (isIPadOS()) {
-                installStatusEl.textContent = 'Install status: Use Add to Home Screen for the best offline experience.';
             } else {
-                installStatusEl.textContent = 'Install status: Install prompt unavailable. Use browser install controls if available.';
+                installStatusEl.textContent = describeInstallStatus(installSurface);
             }
         }
 
@@ -46,7 +58,10 @@ export const createInstallStateController = () => {
         if (installGlobalsBound) return;
         installGlobalsBound = true;
         window.addEventListener('appinstalled', () => update(storageController));
-        window.matchMedia('(display-mode: standalone)').addEventListener('change', () => update(storageController));
+        addMediaQueryListener(
+            window.matchMedia('(display-mode: standalone)'),
+            () => update(storageController)
+        );
         document.addEventListener(INSTALL_PROMPT_CHANGE_EVENT, () => update(storageController));
     };
 
