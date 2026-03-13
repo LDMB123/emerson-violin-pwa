@@ -1,6 +1,7 @@
 import { clone, finiteOrZero } from '../utils/math.js';
+import { getPublicAssetPath } from '../utils/public-asset-path.js';
 
-const CATALOG_PATH = './content/songs/catalog.v2.json';
+const CATALOG_PATH = getPublicAssetPath('content/songs/catalog.v2.json');
 
 let cachedCatalog = null;
 let catalogPromise = null;

@@ -205,19 +205,6 @@ export function CoachView() {
         );
     };
 
-    if (isImmersiveStep) {
-        return (
-            <section
-                id="view-coach"
-                className={`view is-active coach-runner-view ${styles.coachView}`}
-                aria-label="Practice Runner"
-                style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden', padding: 0 }}
-            >
-                {renderEmbeddedStep()}
-            </section>
-        );
-    }
-
     const mins = Math.floor((timeLeft || 0) / 60);
     const secs = (timeLeft || 0) % 60;
     const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;

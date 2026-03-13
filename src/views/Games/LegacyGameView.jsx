@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CanvasGameRunner } from './CanvasGameRunner.jsx';
+import { getPublicAssetPath } from '../../utils/public-asset-path.js';
 
 const extractLegacyMarkup = (rawHtml, gameId) => {
     if (typeof DOMParser === 'undefined') {
@@ -22,7 +23,7 @@ export function LegacyGameView({ gameId, bindCanvasEngine, onFinish }) {
 
         const loadMarkup = async () => {
             try {
-                const response = await fetch(`./views/games/${gameId}.html`);
+                const response = await fetch(getPublicAssetPath(`views/games/${gameId}.html`));
                 if (!response.ok) throw new Error(`Legacy markup missing for ${gameId}`);
                 const rawHtml = await response.text();
                 if (mounted) {

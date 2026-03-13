@@ -216,7 +216,49 @@
 }
 
 @media (max-width: 520px) {
+    .homeView {
+        padding: 12px;
+        padding-bottom: calc(132px + var(--safe-bottom));
+    }
+
+    .homeTopRow {
+        margin-bottom: 12px;
+    }
+
+    .welcomeCopy {
+        margin-bottom: 10px;
+    }
+
+    .homeHero {
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .homeMascotArt {
+        width: 104px;
+    }
+
+    .homeSpeechWrap {
+        transform: scale(0.84);
+        transform-origin: top center;
+        margin-bottom: -14px;
+    }
+
+    .missionCard {
+        margin-bottom: 14px;
+    }
+
+    .startPracticeButton {
+        min-height: 80px;
+        padding: 12px 16px;
+    }
+
     .quickGrid {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .quickCard {
+        min-height: 112px;
     }
 }

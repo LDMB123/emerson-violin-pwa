@@ -1,7 +1,8 @@
 import { clone } from '../utils/math.js';
 import { DEFAULT_MASTERY_THRESHOLDS } from '../utils/mastery-utils.js';
+import { getPublicAssetPath } from '../utils/public-asset-path.js';
 
-const CURRICULUM_PATH = './content/curriculum/track-beginner-intermediate.v1.json';
+const CURRICULUM_PATH = getPublicAssetPath('content/curriculum/track-beginner-intermediate.v1.json');
 
 const FALLBACK_CONTENT = Object.freeze({
     id: 'track-beginner-intermediate.v1',

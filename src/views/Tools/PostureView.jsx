@@ -15,6 +15,26 @@ const attachStreamToVideoElement = (video, stream) => {
     }
 };
 
+const shouldUseSyntheticCameraStream = () => {
+    try {
+        return typeof localStorage !== 'undefined' && localStorage.getItem('e2e-skip-permissions') === 'true';
+    } catch {
+        return false;
+    }
+};
+
+const createSyntheticCameraStream = () => {
+    if (typeof MediaStream === 'function') {
+        return new MediaStream();
+    }
+
+    return {
+        getTracks: () => [],
+        getAudioTracks: () => [],
+        getVideoTracks: () => [],
+    };
+};
+
 export function PostureView({ onComplete }) {
     const videoRef = useRef(null);
     const streamRef = useRef(null);
@@ -28,9 +48,11 @@ export function PostureView({ onComplete }) {
         try {
             setCameraStarting(true);
             setError(null);
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user' }
-            });
+            const stream = shouldUseSyntheticCameraStream()
+                ? createSyntheticCameraStream()
+                : await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user' }
+                });
             streamRef.current = stream;
             attachStreamToVideoElement(videoRef.current, stream);
             setStreamAttached(true);
